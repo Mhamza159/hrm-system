@@ -1,0 +1,1 @@
+UI reference = docs/ui-reference.png + docs/UI-REFERENCE.md. Every new page/component must follow them.

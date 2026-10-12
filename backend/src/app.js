@@ -1,0 +1,60 @@
+/**
+ * @file app.js
+ * @description Express Application Configuration & Middleware Pipeline.
+ * 
+ * ARCHITECTURAL DESIGN & SECURITY STANDARDS:
+ * - Module: M0 Foundation (BUILD-GUIDE Section 3 · Row 0.1 & 0.14)
+ * - Middleware Order:
+ *   1. helmet(): Configures secure HTTP response headers against clickjacking and MIME-sniffing.
+ *   2. cors(): Restricts requests strictly to CLIENT_URL with credentials (cookies) enabled.
+ *   3. parsers: JSON & urlencoded limits capped at 16kb to prevent payload memory exhaustion.
+ *   4. cookieParser(): Extracts signed/httpOnly cookies (such as refreshToken).
+ *   5. /health: Standard container liveness & monitoring probe.
+ *   6. /api/v1/*: Module domain routes.
+ *   7. errorHandler: Terminal error interceptor returning unified JSON shape.
+ */
+
+import express from 'express';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import { env } from './config/env.js';
+import { errorHandler } from './middlewares/errorHandler.js';
+import authRoutes from './modules/auth/auth.routes.js';
+import userRoutes from './modules/users/user.routes.js';
+
+const app = express();
+
+// 1. Security Headers via Helmet
+app.use(helmet());
+
+// 2. Cross-Origin Resource Sharing (CORS) with strict client whitelisting & cookie forwarding
+app.use(
+  cors({
+    origin: env.CLIENT_URL,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  })
+);
+
+// 3. Body parsers with defensive size caps
+app.use(express.json({ limit: '16kb' }));
+app.use(express.urlencoded({ extended: true, limit: '16kb' }));
+
+// 4. Cookie parser for httpOnly refresh tokens
+app.use(cookieParser());
+
+// 5. Health Check Liveness Probe (M0 Row 0.13)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// 6. Mount Domain Modules
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/users', userRoutes);
+
+// 7. Global Centralized Error Handler (M0 Row 0.4)
+app.use(errorHandler);
+
+export default app;

@@ -1,0 +1,45 @@
+# HRM System — 5-Phase Master Execution Plan
+
+### Phase 1: Core HR & Payroll (12 modules · 148 features)
+- M0 Foundation (BUILD-GUIDE Section 3 · 14 features)
+- M1 Authentication (BUILD-GUIDE Section 4 · 14 features)
+- M26 Roles & Permissions (BUILD-GUIDE Section 5 · 17 features)
+- M2 Company Settings (BUILD-GUIDE Section 6 · 11 features)
+- M4 Departments, Designations, Shifts, Org Chart (BUILD-GUIDE Section 7 · 7 features)
+- M3 Employee Management (BUILD-GUIDE Section 8 · 17 features)
+- M8 Notifications & Announcements (BUILD-GUIDE Section 9 · 8 features)
+- M5 Attendance & Shifts (BUILD-GUIDE Section 10 · 15 features)
+- M6 Leave & Holidays (BUILD-GUIDE Section 11 · 15 features)
+- M9 Payroll (+ Pakistan Compliance) (BUILD-GUIDE Section 12 · 17 features)
+- M7 Dashboard & Reports (BUILD-GUIDE Section 13 · 8 features)
+- X1 Security, Audit & Quality (BUILD-GUIDE Section 14 · 10 features)
+
+### Phase 2: Smart Operations (9 modules · 67 features)
+- M10 Loans & Advances (BUILD-GUIDE Section 15 · 6 features)
+- M11 Expense Claims (BUILD-GUIDE Section 16 · 5 features)
+- M14 GPS / Geo-fencing (BUILD-GUIDE Section 17 · 8 features)
+- M13 QR Code Attendance (BUILD-GUIDE Section 18 · 6 features)
+- M12 Face Recognition Attendance (BUILD-GUIDE Section 19 · 9 features)
+- M23 Asset Management (BUILD-GUIDE Section 20 · 6 features)
+- M18 Onboarding & Offboarding (BUILD-GUIDE Section 21 · 11 features)
+- M19 Performance & Appraisal (BUILD-GUIDE Section 22 · 9 features)
+- M22 Projects & Timesheets (BUILD-GUIDE Section 23 · 7 features)
+
+### Phase 3: AI Features (3 modules · 27 features)
+- M15 Recruitment & AI Screening (BUILD-GUIDE Section 24 · 13 features)
+- M16 HR Chatbot (BUILD-GUIDE Section 25 · 9 features)
+- M17 Attrition Prediction (BUILD-GUIDE Section 26 · 5 features)
+
+### Phase 4: Engagement & Polish (5 modules · 31 features)
+- M20 Rewards, Celebrations & Surveys (BUILD-GUIDE Section 27 · 5 features)
+- M21 Anonymous Feedback & Grievance (BUILD-GUIDE Section 28 · 6 features)
+- M24 Internal Chat (BUILD-GUIDE Section 29 · 7 features)
+- M25 Training & Learning (BUILD-GUIDE Section 30 · 7 features)
+- X2 Urdu Localization, PWA, Theme & Polish (BUILD-GUIDE Section 31 · 6 features)
+
+### Phase 5: Release, Deployment & Handover (TECH-SPEC Section 12)
+- Staging Deployment (Atlas staging, GitHub Actions CI on develop)
+- Production Deployment (VPS Docker Compose, Let's Encrypt HTTPS, Redis, Mongo Atlas)
+- Client Handover (Admin/User Guides, Swagger at /api/docs, Backup/Restore runbooks)
+
+Total Vertical Slices: 273 features across the system.

@@ -1,0 +1,6 @@
+﻿adapter = "copilot"
+maxIterations = 20
+plansDir = ".plans"
+debug = false
+tui = true
+yolo = false
