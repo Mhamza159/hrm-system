@@ -13,6 +13,7 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar.jsx';
 import { Topbar } from './Topbar.jsx';
 import { useIdleTimer } from '../../hooks/useIdleTimer.js';
+import { AbilityProvider } from '../../lib/ability.js';
 
 export function AppLayout() {
   // Activate automatic 30-minute inactivity auto-logout (Slice 1.11)
@@ -21,25 +22,27 @@ export function AppLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC] dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 overflow-hidden font-sans antialiased transition-colors">
-      {/* 1. Responsive Left Sidebar Drawer */}
-      <Sidebar
-        isOpen={mobileMenuOpen}
-        onClose={() => setMobileMenuOpen(false)}
-      />
+    <AbilityProvider>
+      <div className="flex h-screen bg-[#F8FAFC] dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 overflow-hidden font-sans antialiased transition-colors">
+        {/* 1. Responsive Left Sidebar Drawer */}
+        <Sidebar
+          isOpen={mobileMenuOpen}
+          onClose={() => setMobileMenuOpen(false)}
+        />
 
-      {/* 2. Main Fluid Viewport Container */}
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        {/* Topbar Header */}
-        <Topbar onToggleMenu={() => setMobileMenuOpen((prev) => !prev)} />
+        {/* 2. Main Fluid Viewport Container */}
+        <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+          {/* Topbar Header */}
+          <Topbar onToggleMenu={() => setMobileMenuOpen((prev) => !prev)} />
 
-        {/* Scrollable Active Route Viewport */}
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8 bg-[#F8FAFC] dark:bg-[#0A110D]">
-          <div className="max-w-[1600px] mx-auto space-y-6">
-            <Outlet />
-          </div>
-        </main>
+          {/* Scrollable Active Route Viewport */}
+          <main className="flex-1 overflow-y-auto p-6 lg:p-8 bg-[#F8FAFC] dark:bg-[#0A110D]">
+            <div className="max-w-[1600px] mx-auto space-y-6">
+              <Outlet />
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </AbilityProvider>
   );
 }

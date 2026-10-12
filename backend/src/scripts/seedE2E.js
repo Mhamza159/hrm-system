@@ -46,6 +46,7 @@ const seedE2E = async () => {
         isActive: true,
         mustChangePassword: false
       },
+      
       {
         email: 'manager@company.pk',
         password: 'ManagerPass123!',

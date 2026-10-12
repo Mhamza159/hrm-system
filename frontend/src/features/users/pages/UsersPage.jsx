@@ -14,17 +14,23 @@
  */
 
 import React, { useState } from 'react';
-import { Shield, UserCheck, UserX, AlertCircle, RefreshCw, KeyRound } from 'lucide-react';
+import { Shield, UserCheck, UserX, AlertCircle, RefreshCw, KeyRound, UserCog, Eye, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { DataTable } from '../../../components/common/DataTable.jsx';
 import { StatusBadge } from '../../../components/common/StatusBadge.jsx';
 import { ConfirmDialog } from '../../../components/common/ConfirmDialog.jsx';
+import { Can } from '../../../components/common/Can.jsx';
+import { EffectivePermissionsModal } from '../../roles/components/EffectivePermissionsModal.jsx';
 import {
   useGetUsersQuery,
   useUpdateUserStatusMutation,
   useAdminResetPasswordMutation
 } from '../../auth/authApi.js';
+import {
+  useGetRolesQuery,
+  useAssignUserRolesMutation
+} from '../../roles/rolesApi.js';
 import { useAuth } from '../../../hooks/useAuth.js';
 
 export default function UsersPage() {
@@ -47,6 +53,70 @@ export default function UsersPage() {
   // 6. State for emergency password reset confirmation modal dialog (Slice 1.14)
   const [resetUser, setResetUser] = useState(null);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+
+  // 7. Role assignment modal state (Slice 26.11 & 26.12)
+  const { data: allRolesResponse } = useGetRolesQuery({ limit: 100 });
+  const allRoles = allRolesResponse?.data || [];
+  const [assignUserRoles, { isLoading: isAssigningRoles }] = useAssignUserRolesMutation();
+  const [rolesModalUser, setRolesModalUser] = useState(null);
+  const [selectedRoleIds, setSelectedRoleIds] = useState([]);
+  const [inspectorUser, setInspectorUser] = useState(null);
+
+  // Privilege escalation check (Slice 26.12-FE)
+  const isRoleDisabled = (roleItem) => {
+    if (isSuperAdmin) return false;
+    if (roleItem.name === 'Super Admin') return true;
+
+    const currentUserActions = new Set();
+    for (const r of currentUser?.roles || []) {
+      for (const p of r?.permissions || []) {
+        currentUserActions.add(p.action);
+      }
+    }
+
+    for (const p of roleItem.permissions || []) {
+      if (p.action !== 'manage' && !currentUserActions.has(p.action)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const handleOpenRolesModal = (rowUser) => {
+    setRolesModalUser(rowUser);
+    const existingIds = (rowUser.roles || []).map((r) =>
+      typeof r === 'string' ? r : r._id
+    );
+    setSelectedRoleIds(existingIds);
+  };
+
+  const handleToggleRoleSelection = (roleId) => {
+    setSelectedRoleIds((prev) =>
+      prev.includes(roleId)
+        ? prev.filter((id) => id !== roleId)
+        : [...prev, roleId]
+    );
+  };
+
+  const handleSaveUserRoles = async (e) => {
+    e.preventDefault();
+    if (!rolesModalUser) return;
+    if (selectedRoleIds.length === 0) {
+      toast.error('User must have at least one assigned role.');
+      return;
+    }
+    try {
+      await assignUserRoles({
+        userId: rolesModalUser._id,
+        roleIds: selectedRoleIds
+      }).unwrap();
+      toast.success(`Roles updated successfully for ${rolesModalUser.email}`);
+      setRolesModalUser(null);
+      refetch();
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to update user roles.');
+    }
+  };
 
   // Extract users list from standardized ApiResponse envelope
   const users = usersResponse?.data || [];
@@ -207,6 +277,36 @@ export default function UsersPage() {
 
         return (
           <div className="flex items-center justify-end gap-2">
+            <Can I="role.view">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setInspectorUser(row);
+                }}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#15241C] shadow-xs transition-all cursor-pointer"
+                title="Inspect effective compiled permissions"
+              >
+                <Eye className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                <span>Access</span>
+              </button>
+            </Can>
+
+            <Can I="role.assign">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenRolesModal(row);
+                }}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] text-slate-700 dark:text-slate-300 hover:text-[#00C471] hover:border-[#00C471]/40 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 shadow-xs transition-all cursor-pointer"
+                title="Assign / update user roles"
+              >
+                <UserCog className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                <span>Roles</span>
+              </button>
+            </Can>
+
             <button
               type="button"
               disabled={isResetting}
@@ -309,6 +409,108 @@ export default function UsersPage() {
           setIsResetConfirmOpen(false);
           setResetUser(null);
         }}
+      />
+
+      {/* Role Assignment Modal (Slice 26.11 & 26.12) */}
+      {rolesModalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="w-full max-w-lg bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-[#1A3125]">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-emerald-50 text-[#00C471] border border-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60">
+                  <UserCog className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Assign Roles to User
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {rolesModalUser.email}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveUserRoles} className="space-y-4 pt-1">
+              <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                {allRoles.map((roleItem) => {
+                  const isChecked = selectedRoleIds.includes(roleItem._id);
+                  const disabled = isRoleDisabled(roleItem);
+
+                  return (
+                    <div
+                      key={roleItem._id}
+                      onClick={() => !disabled && handleToggleRoleSelection(roleItem._id)}
+                      className={`p-3 rounded-xl border text-xs flex items-center justify-between gap-3 transition-all ${
+                        disabled
+                          ? 'opacity-40 cursor-not-allowed bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800'
+                          : isChecked
+                          ? 'border-[#00C471]/50 bg-emerald-50/20 dark:bg-emerald-950/20 cursor-pointer'
+                          : 'border-slate-200 dark:border-[#1A3125] hover:bg-slate-50/60 dark:hover:bg-[#14261D] cursor-pointer'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          disabled={disabled}
+                          onChange={() => {}}
+                          className="h-4 w-4 rounded border-slate-300 text-[#00C471] focus:ring-[#00C471]"
+                        />
+                        <div>
+                          <span className="font-semibold text-slate-900 dark:text-white block">
+                            {roleItem.name}
+                          </span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                            {roleItem.description || `${roleItem.permissions?.length || 0} permissions`}
+                          </span>
+                        </div>
+                      </div>
+
+                      {disabled && (
+                        <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-900">
+                          Restricted
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-[#1A3125]">
+                <button
+                  type="button"
+                  onClick={() => setRolesModalUser(null)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-[#14261D] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAssigningRoles}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#00C471] hover:bg-[#00B065] text-white text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
+                >
+                  {isAssigningRoles ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Update Roles</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Effective Permissions Inspector Modal (Slice 26.15) */}
+      <EffectivePermissionsModal
+        isOpen={Boolean(inspectorUser)}
+        onClose={() => setInspectorUser(null)}
+        userId={inspectorUser?._id}
+        userEmail={inspectorUser?.email}
       />
     </div>
   );

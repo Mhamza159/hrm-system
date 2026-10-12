@@ -41,11 +41,19 @@ const roleSchema = new mongoose.Schema(
         fields: [{ type: String }],
         limit: { type: Number }
       }
-    ]
+    ],
+
+    // Soft delete indicator
+    isDeleted: {
+      type: Boolean,
+      default: false
+    }
   },
   {
     timestamps: true
   }
 );
+
+roleSchema.index({ isSystem: 1, isDeleted: 1 });
 
 export const Role = mongoose.models.Role || mongoose.model('Role', roleSchema);

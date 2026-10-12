@@ -33,12 +33,14 @@ import {
 import { toast } from 'sonner';
 
 import { useAuth } from '../../hooks/useAuth.js';
+import { usePermission } from '../../hooks/usePermission.js';
 import { logout } from '../../features/auth/authSlice.js';
 import { useLogoutMutation } from '../../features/auth/authApi.js';
 import { cn } from '../../lib/utils.js';
 
 export function Sidebar({ isOpen = false, onClose }) {
   const { user, isHR, isSuperAdmin } = useAuth();
+  const { can } = usePermission();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [logoutApi] = useLogoutMutation();
@@ -67,7 +69,8 @@ export function Sidebar({ isOpen = false, onClose }) {
 
   // Admin section items
   const adminNavItems = [
-    { name: 'User Access', path: '/users', icon: Shield, hrOnly: true },
+    { name: 'Roles & Permissions', path: '/roles', icon: Shield, permission: 'role.view' },
+    { name: 'User Access', path: '/users', icon: Users, hrOnly: true },
     { name: 'Settings', path: '/settings', icon: Settings, superAdminOnly: true }
   ];
 
@@ -164,14 +167,15 @@ export function Sidebar({ isOpen = false, onClose }) {
         })}
 
         {/* ADMIN Section Heading */}
-        {(isHR || isSuperAdmin) && (
+        {(isHR || isSuperAdmin || can('role.view')) && (
           <div className="pt-4">
             <div className="text-[11px] font-semibold text-emerald-400/60 uppercase tracking-widest px-3.5 mb-2">
               Admin
             </div>
             {adminNavItems.map((item) => {
-              if (item.hrOnly && !isHR) return null;
-              if (item.superAdminOnly && !isSuperAdmin) return null;
+              if (item.permission && !can(item.permission)) return null;
+              if (item.hrOnly && !isHR && !can('user.manage')) return null;
+              if (item.superAdminOnly && !isSuperAdmin && !can('settings.manage')) return null;
 
               const Icon = item.icon;
 

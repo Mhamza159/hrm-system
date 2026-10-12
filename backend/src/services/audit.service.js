@@ -37,3 +37,39 @@ export class AuditService {
     }
   }
 }
+
+/**
+ * Functional audit logger helper for module operations
+ */
+export const recordAuditLog = async ({
+  userId,
+  actor = null,
+  action,
+  entity,
+  entityId,
+  before = null,
+  after = null,
+  ip = null,
+  userAgent = null,
+  details = {}
+}) => {
+  const actorEmail = actor?.email || 'system';
+  const actorRole = actor?.roles?.[0]?.name || actor?.roles?.[0] || 'SYSTEM';
+
+  return await AuditService.log({
+    actorId: userId || actor?._id || null,
+    actorEmail,
+    actorRole,
+    action,
+    module: entity?.toLowerCase() || 'system',
+    targetId: entityId || null,
+    targetModel: entity || null,
+    ipAddress: ip,
+    userAgent,
+    details: {
+      before,
+      after,
+      ...details
+    }
+  });
+};

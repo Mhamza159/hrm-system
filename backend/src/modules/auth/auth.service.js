@@ -19,6 +19,7 @@ import bcrypt from 'bcrypt';
 import mongoose from 'mongoose';
 import { User } from '../../models/user.model.js';
 import { LoginHistory } from '../../models/loginHistory.model.js';
+import { Delegation } from '../../models/delegation.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { env } from '../../config/env.js';
 import { emailService } from '../../services/email.service.js';
@@ -940,6 +941,72 @@ export class AuthService {
     return {
       message: 'Temporary password generated and dispatched to employee email successfully.',
       tempPassword // Exposed for test assertions if needed in test environment
+    };
+  }
+
+  /**
+   * Retrieve active user profile with additive union of roles and permissions (Slice 1.6 & 26.11)
+   * @param {string} userId - User ObjectId
+   * @returns {Promise<Object>} Sanitized user profile and merged effective permissions
+   */
+  static async getMe(userId) {
+    const user = await User.findOne({ _id: userId, isDeleted: false })
+      .select('-passwordHash -refreshTokenHash -resetOtpHash')
+      .populate('roles')
+      .lean();
+
+    if (!user) {
+      throw new ApiError(404, 'User profile not found.');
+    }
+
+    // Compute additive union of all permission rules across all assigned roles (Slice 26.11)
+    const permissionsMap = new Map();
+    for (const role of user.roles || []) {
+      for (const perm of role.permissions || []) {
+        const existing = permissionsMap.get(perm.action);
+        if (!existing) {
+          permissionsMap.set(perm.action, { ...perm });
+        } else {
+          // Scope hierarchy priority: 'all' > 'department' > 'team' > 'own'
+          const hierarchy = { own: 1, team: 2, department: 3, all: 4 };
+          if ((hierarchy[perm.scope] || 0) > (hierarchy[existing.scope] || 0)) {
+            existing.scope = perm.scope;
+          }
+        }
+      }
+    }
+
+    // Dynamic Approvals Delegation Injection (Slice 26.14)
+    const now = new Date();
+    const activeDelegations = await Delegation.find({
+      toUserId: userId,
+      status: 'active',
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    }).lean();
+
+    for (const del of activeDelegations) {
+      for (const perm of del.permissions || []) {
+        const existing = permissionsMap.get(perm.action);
+        if (!existing) {
+          permissionsMap.set(perm.action, {
+            ...perm,
+            isDelegated: true,
+            delegatedFrom: del.fromUserId
+          });
+        } else {
+          const hierarchy = { own: 1, team: 2, department: 3, all: 4 };
+          if ((hierarchy[perm.scope] || 0) > (hierarchy[existing.scope] || 0)) {
+            existing.scope = perm.scope;
+          }
+        }
+      }
+    }
+
+    return {
+      ...user,
+      activeDelegations,
+      effectivePermissions: Array.from(permissionsMap.values())
     };
   }
 }

@@ -3,9 +3,9 @@
 ## Project Overview
 - **Project:** HRM System (Human Resource Management System)
 - **Client Profile:** Single software house, Pakistan (10–30 staff today, 50–80 projected in 2 years)
-- **Active Branch:** `feature/02-auth`
+- **Active Branch:** `feature/03-roles-permissions`
 - **Active Phase:** Phase 1: Core HR & Payroll (Launch Scope P1)
-- **Current Active Module:** **M1 Authentication & Access Control** (`docs/BUILD-GUIDE.md` Section 4 · Rows 1.1 to 1.14)
+- **Current Active Module:** **M26 Roles & Permissions (RBAC & CASL)** (`docs/BUILD-GUIDE.md` Section 5 · Rows 26.1 to 26.17)
 
 ---
 
@@ -60,7 +60,36 @@
 
 ---
 
-## Next Steps: Module M26 Roles & Permissions (RBAC & CASL)
-1. Merge `feature/02-auth` into `main` (Module M1 100% complete and verified).
-2. Scaffold `feature/03-roles-permissions` branch.
-3. Implement Permission Catalogue, CASL Ability definitions, custom role CRUD, and visual permissions matrix screen (`M26`).
+## Module M26 Progress Summary (17 / 17 Slices Implemented & Passing)
+
+### Phase 1: Core RBAC & CASL Infrastructure (Priority P1) — 100% Complete
+- [x] **Slice 26.1 (BE+FE+TEST):** Complete Permission Catalogue (`permissions.js`, `GET /permissions`, `permissions.catalogue.test.js`)
+- [x] **Slice 26.2 (BE+TEST):** Core Roles Model & 4-Role Idempotent Seed (`role.model.js`, `roles.seed.js`, `roles.seed.test.js`)
+- [x] **Slice 26.3 (BE+TEST):** CASL `checkPermission` Middleware (`checkPermission.js`, `checkPermission.test.js` 4/4 PASS)
+- [x] **Slice 26.4 (BE+TEST):** Data Scope Filtering Engine (`scopeFilter.js`, `scopeFilter.test.js` 6/6 PASS)
+- [x] **Slice 26.5 (BE+TEST):** Field-Level Masking Engine (`fieldFilter.js`, `fieldFilter.test.js` 4/4 PASS)
+- [x] **Slice 26.6 (FE):** Frontend CASL Integration & Navigation Guards (`ability.js`, `Can.jsx`, `usePermission.js`, `Sidebar.jsx`)
+- [x] **Slice 26.7 (BE+FE+TEST):** Custom Role Management CRUD (`role.service.js`, `RolesListPage.jsx`, `RoleFormPage.jsx`, `roles.crud.test.js` 8/8 PASS)
+- [x] **Slice 26.8 (BE+FE+TEST):** Interactive Visual Permission Matrix Screen (`PermissionMatrix.jsx`, accordions, actions, scopes, limits)
+- [x] **Slice 26.11 (BE+FE+TEST):** Multi-Role Assignment to Users (`assignUserRoles`, `UsersPage.jsx` modal, `roles.assign.test.js`)
+- [x] **Slice 26.12 (BE+FE+TEST):** Privilege Escalation Guard & Boundary Check (`roles.assign.test.js` rejects HR granting Super Admin)
+- [x] **Slice 26.13 (BE+FE+TEST):** Immutable System Roles Protection (Guards block delete/rename of Super Admin/HR/Dept/Employee)
+- [x] **Slice 26.16 (BE+TEST):** Role & Permission Change Audit Logging (`audit.service.js` integration in all role mutations)
+
+### Phase 2: Advanced Governance, Delegation & Transparency (Priority P2) — 100% Complete
+- [x] **Slice 26.9 (BE+FE+TEST):** Granular Approval Limits per Permission (`approvalLimit.js`, `roles.limits_and_clone.test.js`)
+- [x] **Slice 26.10 (BE+FE+TEST):** Role Cloning Engine (`cloneRole`, clone modal in `RolesListPage.jsx`, `roles.limits_and_clone.test.js`)
+- [x] **Slice 26.14 (BE+FE+TEST):** Approvals Delegation System (`delegation.model.js`, `DelegationPage.jsx`, `delegations.test.js` 4/4 PASS)
+- [x] **Slice 26.15 (BE+FE+TEST):** Effective Permissions Inspector (`EffectivePermissionsModal.jsx`, `effective_permissions.test.js` 2/2 PASS)
+- [x] **Slice 26.17 (FE+TEST):** Employee Self-Service "My Access" Tab (`MyAccessTab.jsx` read-only capabilities overview)
+
+### Phase 3: Multi-Role End-to-End Verification (`E2E-M26`) — 100% Complete
+- [x] **E2E-M26 Verification:** `backend/tests/m26.roles.e2e.test.js` (11 / 11 tests PASS across Super Admin, HR Manager, Department Manager, and Employee flows)
+
+---
+
+## Test & Build Verification Baseline
+- **Vitest Backend Test Suite:** **All 23 test files passing**
+- **Vite Production Build:** Transformed 1672 modules, 0 errors.
+- **Tasks File:** Fully synchronized at `.specify/specs/03-roles-permissions/tasks.md` (all slices marked `[x]`).
+

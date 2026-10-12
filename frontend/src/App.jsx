@@ -10,6 +10,9 @@ import ChangePasswordPage from './features/auth/pages/ChangePasswordPage.jsx';
 import LoginHistoryPage from './features/auth/pages/LoginHistoryPage.jsx';
 import UsersPage from './features/users/pages/UsersPage.jsx';
 import DashboardPage from './features/dashboard/DashboardPage.jsx';
+import RolesListPage from './features/roles/pages/RolesListPage.jsx';
+import RoleFormPage from './features/roles/pages/RoleFormPage.jsx';
+import DelegationPage from './features/roles/pages/DelegationPage.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
 import { useRefreshTokenMutation } from './features/auth/authApi.js';
@@ -80,6 +83,38 @@ export default function App() {
             element={
               <ProtectedRoute requiredRole="HR Manager">
                 <UsersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="roles"
+            element={
+              <ProtectedRoute requiredRole={['Super Admin', 'HR Manager']}>
+                <RolesListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="roles/new"
+            element={
+              <ProtectedRoute requiredRole={['Super Admin', 'HR Manager']}>
+                <RoleFormPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="roles/:id"
+            element={
+              <ProtectedRoute requiredRole={['Super Admin', 'HR Manager']}>
+                <RoleFormPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="delegations"
+            element={
+              <ProtectedRoute>
+                <DelegationPage />
               </ProtectedRoute>
             }
           />

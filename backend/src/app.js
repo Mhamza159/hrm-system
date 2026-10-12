@@ -22,6 +22,11 @@ import { env } from './config/env.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import userRoutes from './modules/users/user.routes.js';
+import roleRoutes from './modules/roles/role.routes.js';
+import delegationRoutes from './modules/roles/delegation.routes.js';
+import { authenticate } from './middlewares/authenticate.js';
+import { checkPermission } from './middlewares/checkPermission.js';
+import * as roleController from './modules/roles/role.controller.js';
 
 const app = express();
 
@@ -53,6 +58,9 @@ app.get('/health', (req, res) => {
 // 6. Mount Domain Modules
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/roles', roleRoutes);
+app.use('/api/v1/delegations', delegationRoutes);
+app.get('/api/v1/permissions', authenticate, checkPermission('role.view'), roleController.getPermissions);
 
 // 7. Global Centralized Error Handler (M0 Row 0.4)
 app.use(errorHandler);

@@ -40,3 +40,9 @@ export class ApiResponse {
     this.meta = meta;
   }
 }
+
+/**
+ * Functional factory helper for creating ApiResponse instances
+ */
+export const apiResponse = (statusCode, data, message = 'Success', meta = null) =>
+  new ApiResponse(statusCode, data, message, meta);

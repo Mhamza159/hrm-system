@@ -12,6 +12,9 @@ import { authenticate } from '../../middlewares/authenticate.js';
 import { checkPermission } from '../../middlewares/checkPermission.js';
 import { validate } from '../../middlewares/validate.js';
 import { updateUserStatusSchema } from '../auth/auth.validation.js';
+import { assignRolesSchema } from '../roles/role.validation.js';
+import * as roleController from '../roles/role.controller.js';
+import { AuthService } from '../auth/auth.service.js';
 
 import { User } from '../../models/user.model.js';
 import { ApiResponse } from '../../utils/apiResponse.js';
@@ -66,4 +69,35 @@ router.post(
   AuthController.adminResetPassword
 );
 
+/**
+ * @route   PATCH /api/v1/users/:id/roles
+ * @desc    Assign multiple roles to user (Slice 26.11 & 26.12)
+ * @access  Protected (Requires 'role.assign' permission)
+ */
+router.patch(
+  '/:id/roles',
+  authenticate,
+  validate(assignRolesSchema),
+  checkPermission('role.assign'),
+  roleController.assignUserRoles
+);
+
+/**
+ * @route   GET /api/v1/users/:id/effective-permissions
+ * @desc    Inspect effective merged permissions for a user (Slice 26.15)
+ * @access  Protected (Requires 'role.view' permission)
+ */
+router.get(
+  '/:id/effective-permissions',
+  authenticate,
+  checkPermission('role.view'),
+  asyncHandler(async (req, res) => {
+    const data = await AuthService.getMe(req.params.id);
+    return res.status(200).json(
+      new ApiResponse(200, data, 'Effective permissions retrieved successfully.')
+    );
+  })
+);
+
 export default router;
+
