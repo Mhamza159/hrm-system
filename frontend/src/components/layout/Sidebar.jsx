@@ -28,6 +28,7 @@ import {
   History,
   LogOut,
   FolderKanban,
+  BookOpen,
   X
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -63,6 +64,7 @@ export function Sidebar({ isOpen = false, onClose }) {
     { name: 'Attendance', path: '/attendance', icon: Clock },
     { name: 'Leaves', path: '/leaves', icon: Calendar },
     { name: 'Payroll', path: '/payroll', icon: BadgeDollarSign, hrOnly: true },
+    { name: 'Company Policies', path: '/policies', icon: BookOpen },
     { name: 'Notifications', path: '/notifications', icon: Bell, badge: 3 },
     { name: 'Login History', path: '/login-history', icon: History }
   ];
@@ -71,7 +73,7 @@ export function Sidebar({ isOpen = false, onClose }) {
   const adminNavItems = [
     { name: 'Roles & Permissions', path: '/roles', icon: Shield, permission: 'role.view' },
     { name: 'User Access', path: '/users', icon: Users, hrOnly: true },
-    { name: 'Settings', path: '/settings', icon: Settings, superAdminOnly: true }
+    { name: 'Settings', path: '/settings', icon: Settings, permission: 'settings.manage' }
   ];
 
   const userRole = typeof user?.roles?.[0] === 'object'

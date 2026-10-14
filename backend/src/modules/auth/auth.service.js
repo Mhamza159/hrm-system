@@ -357,44 +357,89 @@ export class AuthService {
       throw new ApiError(401, 'Unauthorized request. User identity not found.');
     }
 
-    // 2. Build base query excluding secret hash credentials
+    // 2. Fetch user profile excluding secret hash credentials
     let query = User.findOne({ _id: userId, isDeleted: false })
       .select('-passwordHash -refreshTokenHash -resetOtpHash');
 
-    // 3. Defensively populate roles if Role model is registered in Mongoose
     if (mongoose.models.Role) {
       query = query.populate('roles');
     }
-
-    // 4. Defensively populate employee profile if Employee model is registered
     if (mongoose.models.Employee) {
       query = query.populate('employeeId');
     }
 
-    // 5. Execute query and verify user exists and is active
-    const user = await query;
+    const user = await query.lean();
     if (!user || !user.isActive) {
       throw new ApiError(401, 'User account not found or deactivated. Session invalid.');
     }
 
-    // 6. Effective CASL permissions array (expanded in Module M26)
-    const permissions = [];
+    // 3. Compute additive union of all permission rules across all assigned roles (Slice 26.11)
+    const permissionsMap = new Map();
+    for (const role of user.roles || []) {
+      for (const perm of role.permissions || []) {
+        const existing = permissionsMap.get(perm.action);
+        if (!existing) {
+          permissionsMap.set(perm.action, { ...perm });
+        } else {
+          // Scope hierarchy priority: 'all' > 'department' > 'team' > 'own'
+          const hierarchy = { own: 1, team: 2, department: 3, all: 4 };
+          if ((hierarchy[perm.scope] || 0) > (hierarchy[existing.scope] || 0)) {
+            existing.scope = perm.scope;
+          }
+        }
+      }
+    }
 
-    // 7. Return sanitized user profile and effective permissions bundle
+    // 4. Dynamic Approvals Delegation Injection (Slice 26.14)
+    const now = new Date();
+    const activeDelegations = await Delegation.find({
+      toUserId: userId,
+      status: 'active',
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    }).lean();
+
+    for (const del of activeDelegations) {
+      for (const perm of del.permissions || []) {
+        const existing = permissionsMap.get(perm.action);
+        if (!existing) {
+          permissionsMap.set(perm.action, {
+            ...perm,
+            isDelegated: true,
+            delegatedFrom: del.fromUserId
+          });
+        } else {
+          const hierarchy = { own: 1, team: 2, department: 3, all: 4 };
+          if ((hierarchy[perm.scope] || 0) > (hierarchy[existing.scope] || 0)) {
+            existing.scope = perm.scope;
+          }
+        }
+      }
+    }
+
+    const effectivePermissions = Array.from(permissionsMap.values());
+    const sanitizedUser = {
+      id: user._id.toString(),
+      _id: user._id,
+      email: user.email,
+      roles: user.roles || [],
+      employeeId: user.employeeId || null,
+      mustChangePassword: user.mustChangePassword,
+      isActive: user.isActive,
+      twoFactorEnabled: user.twoFactorEnabled,
+      lastLoginAt: user.lastLoginAt
+    };
+
+    // 5. Return envelope compatible with both M1 (Slice 1.6: data.user, data.permissions) and M26 (data.effectivePermissions)
     return {
-      user: {
-        id: user._id,
-        email: user.email,
-        roles: user.roles || [],
-        employeeId: user.employeeId || null,
-        mustChangePassword: user.mustChangePassword,
-        isActive: user.isActive,
-        twoFactorEnabled: user.twoFactorEnabled,
-        lastLoginAt: user.lastLoginAt
-      },
-      permissions
+      ...sanitizedUser,
+      user: sanitizedUser,
+      permissions: effectivePermissions,
+      effectivePermissions,
+      activeDelegations
     };
   }
+
 
   /**
    * Request password recovery OTP via email (Slice 1.7).
@@ -943,73 +988,8 @@ export class AuthService {
       tempPassword // Exposed for test assertions if needed in test environment
     };
   }
-
-  /**
-   * Retrieve active user profile with additive union of roles and permissions (Slice 1.6 & 26.11)
-   * @param {string} userId - User ObjectId
-   * @returns {Promise<Object>} Sanitized user profile and merged effective permissions
-   */
-  static async getMe(userId) {
-    const user = await User.findOne({ _id: userId, isDeleted: false })
-      .select('-passwordHash -refreshTokenHash -resetOtpHash')
-      .populate('roles')
-      .lean();
-
-    if (!user) {
-      throw new ApiError(404, 'User profile not found.');
-    }
-
-    // Compute additive union of all permission rules across all assigned roles (Slice 26.11)
-    const permissionsMap = new Map();
-    for (const role of user.roles || []) {
-      for (const perm of role.permissions || []) {
-        const existing = permissionsMap.get(perm.action);
-        if (!existing) {
-          permissionsMap.set(perm.action, { ...perm });
-        } else {
-          // Scope hierarchy priority: 'all' > 'department' > 'team' > 'own'
-          const hierarchy = { own: 1, team: 2, department: 3, all: 4 };
-          if ((hierarchy[perm.scope] || 0) > (hierarchy[existing.scope] || 0)) {
-            existing.scope = perm.scope;
-          }
-        }
-      }
-    }
-
-    // Dynamic Approvals Delegation Injection (Slice 26.14)
-    const now = new Date();
-    const activeDelegations = await Delegation.find({
-      toUserId: userId,
-      status: 'active',
-      startDate: { $lte: now },
-      endDate: { $gte: now }
-    }).lean();
-
-    for (const del of activeDelegations) {
-      for (const perm of del.permissions || []) {
-        const existing = permissionsMap.get(perm.action);
-        if (!existing) {
-          permissionsMap.set(perm.action, {
-            ...perm,
-            isDelegated: true,
-            delegatedFrom: del.fromUserId
-          });
-        } else {
-          const hierarchy = { own: 1, team: 2, department: 3, all: 4 };
-          if ((hierarchy[perm.scope] || 0) > (hierarchy[existing.scope] || 0)) {
-            existing.scope = perm.scope;
-          }
-        }
-      }
-    }
-
-    return {
-      ...user,
-      activeDelegations,
-      effectivePermissions: Array.from(permissionsMap.values())
-    };
-  }
 }
+
 
 
 

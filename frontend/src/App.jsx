@@ -13,6 +13,8 @@ import DashboardPage from './features/dashboard/DashboardPage.jsx';
 import RolesListPage from './features/roles/pages/RolesListPage.jsx';
 import RoleFormPage from './features/roles/pages/RoleFormPage.jsx';
 import DelegationPage from './features/roles/pages/DelegationPage.jsx';
+import SettingsPage from './features/settings/pages/SettingsPage.jsx';
+import PoliciesPage from './features/settings/pages/PoliciesPage.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
 import { useRefreshTokenMutation } from './features/auth/authApi.js';
@@ -115,6 +117,22 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <DelegationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="settings"
+            element={
+              <ProtectedRoute requiredRole={['Super Admin', 'HR Manager']}>
+                <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="policies"
+            element={
+              <ProtectedRoute>
+                <PoliciesPage />
               </ProtectedRoute>
             }
           />

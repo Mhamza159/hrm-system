@@ -3,9 +3,10 @@
 ## Project Overview
 - **Project:** HRM System (Human Resource Management System)
 - **Client Profile:** Single software house, Pakistan (10–30 staff today, 50–80 projected in 2 years)
-- **Active Branch:** `feature/03-roles-permissions`
+- **Active Branch:** `feature/04-company-settings`
 - **Active Phase:** Phase 1: Core HR & Payroll (Launch Scope P1)
-- **Current Active Module:** **M26 Roles & Permissions (RBAC & CASL)** (`docs/BUILD-GUIDE.md` Section 5 · Rows 26.1 to 26.17)
+- **Current Active Module:** **M2 Company Settings** (`docs/BUILD-GUIDE.md` Section 6 · Rows 2.1 to 2.11) — **100% COMPLETE & VERIFIED**
+- **Next Queued Module:** **M4 Departments, Designations, Shifts & Org Chart** (`docs/BUILD-GUIDE.md` Section 7 · Rows 4.1 to 4.7)
 
 ---
 
@@ -88,8 +89,30 @@
 
 ---
 
+## Module M2 Progress Summary (11 / 11 Slices Implemented & Passing)
+
+### Phase 1: Core Company Settings & Statutory Foundation (Priority P1) — 100% Complete
+- [x] **Slice 2.1 (BE+FE+TEST):** Settings Key-Value Model, In-Memory Caching & RBAC Boundary (`setting.model.js`, `setting.service.js`, `SettingsPage.jsx`, `settings.api.test.js`)
+- [x] **Slice 2.2 (BE+FE+TEST):** Company Profile & Official Logo Upload (`CompanyForm.jsx`, Multer logo endpoint, `Topbar.jsx` live branding, `settings.api.test.js`)
+- [x] **Slice 2.3 (BE+FE+TEST):** Working Days & Standard Office Hours (`WorkingHoursForm.jsx`, `workingDays`/`officeHours` keys, `settings.api.test.js`)
+- [x] **Slice 2.4 (BE+FE+TEST):** Late Arrival Rules & Penalty Deductions (`AttendanceRulesForm.jsx`, `lateRules` key, grace minutes bounds, `settings.api.test.js`)
+- [x] **Slice 2.5 (BE+FE+TEST):** Leave Policy Definitions (`LeavePolicyForm.jsx`, `leavePolicy` key, fiscal cycle & approval chain, `settings.api.test.js`)
+- [x] **Slice 2.6 (BE+FE+TEST):** Payroll Cycle & Pay Day Scheduling (`PayrollSettingsForm.jsx`, `payrollCycle` key, disbursement cutoff, `settings.api.test.js`)
+- [x] **Slice 2.7 (BE+FE+TEST):** Pakistan Statutory Compliance Settings (`TaxSlabsForm.jsx`, FBR progressive tax brackets in paisa, EOBI/PESSI/PF, `settings.api.test.js`)
+
+### Phase 2: Advanced Spatial, Templates & Disaster Recovery (Priority P2) — 100% Complete
+- [x] **Slice 2.8 (BE+FE+TEST):** Office Geo-Fence Coordinates & Radius Editor (`GeoFenceMapEditor.jsx`, Leaflet map, `geoFences` key, `settings.api.test.js`)
+- [x] **Slice 2.9 (BE+FE+TEST):** Email & WhatsApp Notification Template Builder (`TemplatesForm.jsx`, `templates` key, placeholder tags, `settings.api.test.js`)
+- [x] **Slice 2.10 (BE+FE+TEST):** Automated Database Backup Job & Manual Trigger (`backup.job.js`, `BackupTab.jsx`, Super Admin only trigger, `settings.api.test.js`)
+- [x] **Slice 2.11 (BE+FE+TEST):** Public Employee Policies Reader Page (`PoliciesPage.jsx`, `/api/v1/settings/public-policies`, accessible to all 4 roles, `settings.api.test.js`)
+
+### Phase 3: Multi-Role End-to-End Verification (`E2E-M2`) — 100% Complete
+- [x] **E2E-M2 Verification:** `backend/tests/m2.settings.e2e.test.js` (12 / 12 tests PASS across Super Admin, HR Manager, Department Manager, and Employee flows)
+
+---
+
 ## Test & Build Verification Baseline
-- **Vitest Backend Test Suite:** **All 23 test files passing**
-- **Vite Production Build:** Transformed 1672 modules, 0 errors.
-- **Tasks File:** Fully synchronized at `.specify/specs/03-roles-permissions/tasks.md` (all slices marked `[x]`).
+- **Vitest Backend Test Suite:** **All 26 test files passing (138 / 138 tests green)**
+- **Vite Production Build:** Transformed 1688 modules, 0 errors.
+- **Tasks File:** Fully synchronized at `.specify/specs/04-company-settings/tasks.md` (all slices marked `[x]`).
 

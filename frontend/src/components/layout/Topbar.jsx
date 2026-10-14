@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { useAuth } from '../../hooks/useAuth.js';
 import { logout } from '../../features/auth/authSlice.js';
 import { useLogoutMutation } from '../../features/auth/authApi.js';
+import { useGetPublicPoliciesQuery } from '../../features/settings/settingsApi.js';
 
 export function Topbar({ onToggleMenu }) {
   const { user } = useAuth();
@@ -26,6 +27,10 @@ export function Topbar({ onToggleMenu }) {
   const [logoutApi] = useLogoutMutation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
+
+  const { data: policiesRes } = useGetPublicPoliciesQuery(undefined, { skip: !user });
+  const companyLogo = policiesRes?.data?.company?.logoUrl;
+  const companyName = policiesRes?.data?.company?.name;
 
   const toggleTheme = () => {
     const nextDark = !isDark;
@@ -85,6 +90,12 @@ export function Topbar({ onToggleMenu }) {
             </kbd>
           </div>
         </div>
+
+        {companyLogo && (
+          <div className="hidden xl:flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
+            <img src={companyLogo} alt={companyName || 'Company'} className="h-7 max-w-[120px] object-contain rounded" />
+          </div>
+        )}
       </div>
 
       {/* 2. Utility Actions & Profile Capsule (Right) */}

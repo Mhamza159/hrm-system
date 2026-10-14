@@ -15,6 +15,7 @@
  */
 
 import express from 'express';
+import path from 'path';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
@@ -24,6 +25,7 @@ import authRoutes from './modules/auth/auth.routes.js';
 import userRoutes from './modules/users/user.routes.js';
 import roleRoutes from './modules/roles/role.routes.js';
 import delegationRoutes from './modules/roles/delegation.routes.js';
+import settingRoutes from './modules/settings/setting.routes.js';
 import { authenticate } from './middlewares/authenticate.js';
 import { checkPermission } from './middlewares/checkPermission.js';
 import * as roleController from './modules/roles/role.controller.js';
@@ -31,7 +33,7 @@ import * as roleController from './modules/roles/role.controller.js';
 const app = express();
 
 // 1. Security Headers via Helmet
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
 // 2. Cross-Origin Resource Sharing (CORS) with strict client whitelisting & cookie forwarding
 app.use(
@@ -50,6 +52,9 @@ app.use(express.urlencoded({ extended: true, limit: '16kb' }));
 // 4. Cookie parser for httpOnly refresh tokens
 app.use(cookieParser());
 
+// Static file serving for uploads (logos, documents)
+app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
+
 // 5. Health Check Liveness Probe (M0 Row 0.13)
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -60,6 +65,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/roles', roleRoutes);
 app.use('/api/v1/delegations', delegationRoutes);
+app.use('/api/v1/settings', settingRoutes);
 app.get('/api/v1/permissions', authenticate, checkPermission('role.view'), roleController.getPermissions);
 
 // 7. Global Centralized Error Handler (M0 Row 0.4)
