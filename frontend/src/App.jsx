@@ -15,6 +15,11 @@ import RoleFormPage from './features/roles/pages/RoleFormPage.jsx';
 import DelegationPage from './features/roles/pages/DelegationPage.jsx';
 import SettingsPage from './features/settings/pages/SettingsPage.jsx';
 import PoliciesPage from './features/settings/pages/PoliciesPage.jsx';
+import DepartmentsPage from './features/departments/pages/DepartmentsPage.jsx';
+import DesignationsPage from './features/departments/pages/DesignationsPage.jsx';
+import ShiftsPage from './features/departments/pages/ShiftsPage.jsx';
+import { OrgChartPage } from './features/departments/pages/OrgChartPage.jsx';
+import { MyTeamPage } from './features/departments/pages/MyTeamPage.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
 import { useRefreshTokenMutation } from './features/auth/authApi.js';
@@ -133,6 +138,46 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <PoliciesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="departments"
+            element={
+              <ProtectedRoute>
+                <DepartmentsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="designations"
+            element={
+              <ProtectedRoute>
+                <DesignationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="shifts"
+            element={
+              <ProtectedRoute>
+                <ShiftsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="org-chart"
+            element={
+              <ProtectedRoute>
+                <OrgChartPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="teams/my"
+            element={
+              <ProtectedRoute>
+                <MyTeamPage />
               </ProtectedRoute>
             }
           />

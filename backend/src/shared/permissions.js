@@ -270,6 +270,28 @@ export const PERMISSIONS_CATALOGUE = [
     ]
   },
   {
+    module: 'organization',
+    label: 'Department, Designation & Org Chart',
+    subject: 'Organization',
+    description: 'Organizational hierarchy, departments, job titles, shift rosters, and reporting lines.',
+    actions: [
+      {
+        action: 'org.view',
+        label: 'View Organization & Team Structure',
+        description: 'Access company departments, designations, shifts, org chart, and team views.',
+        allowedScopes: ['own', 'team', 'department', 'all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'org.manage',
+        label: 'Manage Organization Structures',
+        description: 'Create, modify, and delete departments, designations, shifts, and assign heads.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      }
+    ]
+  },
+  {
     module: 'reports',
     label: 'Executive Reports & Analytics',
     subject: 'Report',
@@ -292,6 +314,7 @@ export const PERMISSIONS_CATALOGUE = [
     ]
   }
 ];
+
 
 /**
  * Helper to retrieve flattened list of all valid action identifiers

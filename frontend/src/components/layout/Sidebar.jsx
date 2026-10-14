@@ -29,6 +29,10 @@ import {
   LogOut,
   FolderKanban,
   BookOpen,
+  Building2,
+  Award,
+  Network,
+  UserCheck,
   X
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -60,6 +64,8 @@ export function Sidebar({ isOpen = false, onClose }) {
   // Main navigation items
   const mainNavItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+    { name: 'Org Chart', path: '/org-chart', icon: Network },
+    { name: 'My Team', path: '/teams/my', icon: UserCheck },
     { name: 'Employees', path: '/employees', icon: Users },
     { name: 'Attendance', path: '/attendance', icon: Clock },
     { name: 'Leaves', path: '/leaves', icon: Calendar },
@@ -71,6 +77,9 @@ export function Sidebar({ isOpen = false, onClose }) {
 
   // Admin section items
   const adminNavItems = [
+    { name: 'Departments', path: '/departments', icon: Building2, permission: 'org.view' },
+    { name: 'Designations', path: '/designations', icon: Award, permission: 'org.view' },
+    { name: 'Work Shifts', path: '/shifts', icon: Clock, permission: 'org.view' },
     { name: 'Roles & Permissions', path: '/roles', icon: Shield, permission: 'role.view' },
     { name: 'User Access', path: '/users', icon: Users, hrOnly: true },
     { name: 'Settings', path: '/settings', icon: Settings, permission: 'settings.manage' }

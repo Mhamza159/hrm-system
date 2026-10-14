@@ -26,9 +26,13 @@ import userRoutes from './modules/users/user.routes.js';
 import roleRoutes from './modules/roles/role.routes.js';
 import delegationRoutes from './modules/roles/delegation.routes.js';
 import settingRoutes from './modules/settings/setting.routes.js';
+import departmentRoutes from './modules/departments/department.routes.js';
+import designationRoutes from './modules/departments/designation.routes.js';
+import shiftRoutes from './modules/departments/shift.routes.js';
 import { authenticate } from './middlewares/authenticate.js';
 import { checkPermission } from './middlewares/checkPermission.js';
 import * as roleController from './modules/roles/role.controller.js';
+import * as departmentController from './modules/departments/department.controller.js';
 
 const app = express();
 
@@ -66,7 +70,12 @@ app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/roles', roleRoutes);
 app.use('/api/v1/delegations', delegationRoutes);
 app.use('/api/v1/settings', settingRoutes);
+app.use('/api/v1/departments', departmentRoutes);
+app.use('/api/v1/designations', designationRoutes);
+app.use('/api/v1/shifts', shiftRoutes);
 app.get('/api/v1/permissions', authenticate, checkPermission('role.view'), roleController.getPermissions);
+app.get('/api/v1/org-chart', authenticate, checkPermission('org.view'), departmentController.getOrgChart);
+app.get('/api/v1/teams/my', authenticate, checkPermission('org.view'), departmentController.getMyTeam);
 
 // 7. Global Centralized Error Handler (M0 Row 0.4)
 app.use(errorHandler);

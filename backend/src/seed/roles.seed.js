@@ -55,6 +55,8 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'payroll.export', subject: 'Payroll', scope: 'all' },
       { action: 'settings.view', subject: 'Setting', scope: 'all' },
       { action: 'settings.manage', subject: 'Setting', scope: 'all' },
+      { action: 'org.view', subject: 'Organization', scope: 'all' },
+      { action: 'org.manage', subject: 'Organization', scope: 'all' },
       { action: 'report.view', subject: 'Report', scope: 'all' },
       { action: 'report.export', subject: 'Report', scope: 'all' }
     ]
@@ -77,6 +79,7 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'leave.approve', subject: 'Leave', scope: 'team', limit: 3 },
       { action: 'payroll.view', subject: 'Payroll', scope: 'own' },
       { action: 'settings.view', subject: 'Setting', scope: 'all' },
+      { action: 'org.view', subject: 'Organization', scope: 'all' },
       { action: 'report.view', subject: 'Report', scope: 'team' },
       { action: 'report.export', subject: 'Report', scope: 'team' }
     ]
@@ -94,10 +97,12 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'leave.view', subject: 'Leave', scope: 'own' },
       { action: 'payroll.view', subject: 'Payroll', scope: 'own' },
       { action: 'settings.view', subject: 'Setting', scope: 'all' },
+      { action: 'org.view', subject: 'Organization', scope: 'all' },
       { action: 'report.view', subject: 'Report', scope: 'own' }
     ]
   }
 ];
+
 
 /**
  * Seed or update core roles and initial Super Admin user
