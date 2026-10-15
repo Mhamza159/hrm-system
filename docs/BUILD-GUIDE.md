@@ -156,23 +156,23 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 3.1 | Employee model + encryption | `employee.model.js`, `utils/crypto.js` (CNIC, bank AES encrypt) | — | DB mein CNIC encrypted | ☐ |
-| 3.2 | Employee add + user account | `POST /employees` (employee.create): employee + user + welcome email | `EmployeeFormPage.jsx` (steps: Personal, Contact & Emergency, Job, Bank, Documents) | Naye employee ko email | ☐ |
-| 3.3 | CNIC validation + expiry | Zod: 13 digits; cnicExpiry field | Masked input `xxxxx-xxxxxxx-x` | Ghalat CNIC reject | ☐ |
-| 3.4 | Employee list, search, filters | `GET /employees` (scoped; filter department, status, designation) | `EmployeeListPage.jsx` (DataTable) | Manager ko sirf team | ☐ |
-| 3.5 | Profile view | `GET /employees/:id` (fieldFilter) | `EmployeeProfilePage.jsx` (tabs: Overview, Documents, Attendance, Leaves, Payslips, History, Assets) | Tabs mein sahi data | ☐ |
-| 3.6 | Edit | `PATCH /employees/:id` (employee.edit) | Same form edit mode | Audit log mein tabdeeli | ☐ |
-| 3.7 | Status (active, notice, resigned, terminated) | `PATCH /employees/:id/status` | Status dropdown + reason | Terminated ka login band | ☐ |
-| 3.8 | Archive (soft delete) | `DELETE /employees/:id` → isDeleted | Archive button + confirm | List se hate, DB mein rahe | ☐ |
-| 3.9 | Document vault | `POST/DELETE /employees/:id/documents` (type: CNIC, degree, contract, NDA) | `DocumentList.jsx` + upload | Private link expire ho | ☐ |
-| 3.10 | Job history (promotion, transfer) | `employeeHistory.model.js`, `POST /employees/:id/history` | History tab timeline | Promotion darj ho | ☐ |
-| 3.11 | Salary history | salaryStructures se (M9) | History tab mein salary changes | Sirf permission walon ko | ☐ |
-| 3.12 | Skills aur tech stack | employee.skills[] | Tags input | Skill se search ho | ☐ |
-| 3.13 | Excel bulk import | `POST /employees/import` (ExcelJS, row-wise errors) | `EmployeeImportPage.jsx` (template download, preview, errors) | 50 rows import, ghalat rows ki report | ☐ |
-| 3.14 | Excel export | `GET /employees/export` (report.export) | Export button | File khule | ☐ |
-| 3.15 | My Profile | `GET /employees/me` | `MyProfilePage.jsx` | Employee apni profile dekhe | ☐ |
-| 3.16 | Profile edit request (sensitive fields) | `profileChangeRequest.model.js`, `POST /employees/me/change-request`, `PATCH /change-requests/:id/decide` | My Profile "Request change", `ChangeRequestsPage.jsx` (HR) | Approve par hi tabdeeli | ☐ |
-| 3.17 | Probation end alert | `jobs/probation.job.js` | Notification | 7 din pehle HR ko alert | ☐ |
+| 3.1 | Employee model + encryption | `employee.model.js`, `utils/crypto.js` (CNIC, bank AES encrypt) | — | DB mein CNIC encrypted | ☑ |
+| 3.2 | Employee add + user account | `POST /employees` (employee.create): employee + user + welcome email | `EmployeeFormPage.jsx` (steps: Personal, Contact & Emergency, Job, Bank, Documents) | Naye employee ko email | ☑ |
+| 3.3 | CNIC validation + expiry | Zod: 13 digits; cnicExpiry field | Masked input `xxxxx-xxxxxxx-x` | Ghalat CNIC reject | ☑ |
+| 3.4 | Employee list, search, filters | `GET /employees` (scoped; filter department, status, designation) | `EmployeeListPage.jsx` (DataTable) | Manager ko sirf team | ☑ |
+| 3.5 | Profile view | `GET /employees/:id` (fieldFilter) | `EmployeeProfilePage.jsx` (tabs: Overview, Documents, Attendance, Leaves, Payslips, History, Assets) | Tabs mein sahi data | ☑ |
+| 3.6 | Edit | `PATCH /employees/:id` (employee.edit) | Same form edit mode | Audit log mein tabdeeli | ☑ |
+| 3.7 | Status (active, notice, resigned, terminated) | `PATCH /employees/:id/status` | Status dropdown + reason | Terminated ka login band | ☑ |
+| 3.8 | Archive (soft delete) | `DELETE /employees/:id` → isDeleted | Archive button + confirm | List se hate, DB mein rahe | ☑ |
+| 3.9 | Document vault | `POST/DELETE /employees/:id/documents` (type: CNIC, degree, contract, NDA) | `DocumentList.jsx` + upload | Private link expire ho | ☑ |
+| 3.10 | Job history (promotion, transfer) | `employeeHistory.model.js`, `POST /employees/:id/history` | History tab timeline | Promotion darj ho | ☑ |
+| 3.11 | Salary history | salaryStructures se (M9) | History tab mein salary changes | Sirf permission walon ko | ☑ |
+| 3.12 | Skills aur tech stack | employee.skills[] | Tags input | Skill se search ho | ☑ |
+| 3.13 | Excel bulk import | `POST /employees/import` (ExcelJS, row-wise errors) | `EmployeeImportPage.jsx` (template download, preview, errors) | 50 rows import, ghalat rows ki report | ☑ |
+| 3.14 | Excel export | `GET /employees/export` (report.export) | Export button | File khule | ☑ |
+| 3.15 | My Profile | `GET /employees/me` | `MyProfilePage.jsx` | Employee apni profile dekhe | ☑ |
+| 3.16 | Profile edit request (sensitive fields) | `profileChangeRequest.model.js`, `POST /employees/me/change-request`, `PATCH /change-requests/:id/decide` | My Profile "Request change", `ChangeRequestsPage.jsx` (HR) | Approve par hi tabdeeli | ☑ |
+| 3.17 | Probation end alert | `jobs/probation.job.js` | Notification | 7 din pehle HR ko alert | ☑ |
 
 ## 9. M8 — Notifications & Announcements
 
