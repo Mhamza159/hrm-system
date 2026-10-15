@@ -315,8 +315,7 @@ export const assignUserRoles = async (userId, roleIds, actor, ip) => {
   }
 
   const beforeRoles = [...(targetUser.roles || [])];
-  targetUser.roles = roleIds;
-  await targetUser.save();
+  await User.findByIdAndUpdate(userId, { $set: { roles: roleIds } });
 
   // 26.16: Audit logging
   await recordAuditLog({

@@ -37,7 +37,13 @@ export const errorHandler = (err, req, res, next) => {
     // Wrap in standard ApiError with HTTP 400 Bad Request
     error = new ApiError(400, 'Validation failed', errorMessages);
   } 
-  // 2. Check if the error is an unexpected runtime error (e.g. Mongoose, SyntaxError, ReferenceError)
+  // 2. Check if the error is a MongoDB unique constraint violation (code 11000)
+  else if (err.code === 11000 || (err.name === 'MongoServerError' && err.code === 11000)) {
+    const fields = Object.keys(err.keyValue || {});
+    const fieldName = fields.length > 0 ? fields.join(', ') : 'field';
+    error = new ApiError(409, `Duplicate entry: A record with this ${fieldName} already exists.`);
+  }
+  // 3. Check if the error is an unexpected runtime error (e.g. Mongoose, SyntaxError, ReferenceError)
   else if (!(error instanceof ApiError)) {
     const statusCode = error.statusCode || 500;
     const message = error.message || 'Internal Server Error';

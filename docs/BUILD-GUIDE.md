@@ -104,23 +104,23 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 26.1 | Permission catalogue | `shared/permissions.js` (har module ke actions), `GET /permissions` | — | List mein tamam modules | ☐ |
-| 26.2 | Role model + seed | `role.model.js`, `seed/roles.seed.js` (Super Admin, HR Manager, Department Manager, Employee + admin user) | — | `npm run seed` se 4 roles | ☐ |
-| 26.3 | checkPermission middleware | `middlewares/checkPermission.js` (CASL) | — | Bina permission 403 | ☐ |
-| 26.4 | Data scope (own/team/department/all) | `utils/scopeFilter.js` har list query mein | — | Manager ko sirf team ka data | ☐ |
-| 26.5 | Field-level permission | `utils/fieldFilter.js` (salary, CNIC, bank chhupana) | Chhupe fields ki jagah "—" | Manager ko salary na dikhe | ☐ |
-| 26.6 | UI mein permission | `/auth/me` permissions bhejta hai | `lib/ability.js`, `Can.jsx`, `usePermission.js`, Sidebar filter | Employee ko admin menus na dikhein | ☐ |
-| 26.7 | Roles list + banana/edit/delete | CRUD `/roles` (role.manage) | `RolesListPage.jsx`, `RoleFormPage.jsx` | Naya role save ho | ☐ |
-| 26.8 | Permission matrix screen | role.permissions[] save | `PermissionMatrix.jsx` (module × action checkbox + scope dropdown) | Tick/untick sahi save ho | ☐ |
-| 26.9 | Approval limits | permission mein `limit` (jaise leave din, expense raqam) | Matrix mein limit input | Had se upar approval reject | ☐ |
-| 26.10 | Role clone | `POST /roles/:id/clone` | "Copy" button | Copy mein same permissions | ☐ |
-| 26.11 | User ko aik ya zyada roles | `PATCH /users/:id/roles` (role.assign) | `UsersPage.jsx` multi-select | Do roles ki permissions jud jayein | ☐ |
-| 26.12 | HR sirf apni permissions de sake | service check: grant ⊆ apni permissions | Na milne wale roles disabled | HR Super Admin role na de sake | ☐ |
-| 26.13 | Super Admin role mehfooz | isSystem role delete/kam nahi | Delete button disabled | API se bhi delete na ho | ☐ |
-| 26.14 | Approvals delegation | `delegation.model.js`, `POST /delegations` (from, to, start, end) | `DelegationPage.jsx` | Muddat mein doosra manager approve kare | ☐ |
-| 26.15 | View as user | `GET /users/:id/effective-permissions` | "View permissions" dialog | Sahi mili-juli list | ☐ |
-| 26.16 | Permission change audit | har role/user-role tabdeeli audit log mein | (X1 audit screen) | Log mein purani/nayi value | ☐ |
-| 26.17 | Employee apne roles dekhe | `/auth/me` | My Profile → "My Access" tab | Employee ko apne roles nazar aayein | ☐ |
+| 26.1 | Permission catalogue | `shared/permissions.js` (har module ke actions), `GET /permissions` | — | List mein tamam modules | ☑ |
+| 26.2 | Role model + seed | `role.model.js`, `seed/roles.seed.js` (Super Admin, HR Manager, Department Manager, Employee + admin user) | — | `npm run seed` se 4 roles | ☑ |
+| 26.3 | checkPermission middleware | `middlewares/checkPermission.js` (CASL) | — | Bina permission 403 | ☑ |
+| 26.4 | Data scope (own/team/department/all) | `utils/scopeFilter.js` har list query mein | — | Manager ko sirf team ka data | ☑ |
+| 26.5 | Field-level permission | `utils/fieldFilter.js` (salary, CNIC, bank chhupana) | Chhupe fields ki jagah "—" | Manager ko salary na dikhe | ☑ |
+| 26.6 | UI mein permission | `/auth/me` permissions bhejta hai | `lib/ability.js`, `Can.jsx`, `usePermission.js`, Sidebar filter | Employee ko admin menus na dikhein | ☑ |
+| 26.7 | Roles list + banana/edit/delete | CRUD `/roles` (role.manage) | `RolesListPage.jsx`, `RoleFormPage.jsx` | Naya role save ho | ☑ |
+| 26.8 | Permission matrix screen | role.permissions[] save | `PermissionMatrix.jsx` (module × action checkbox + scope dropdown) | Tick/untick sahi save ho | ☑ |
+| 26.9 | Approval limits | permission mein `limit` (jaise leave din, expense raqam) | Matrix mein limit input | Had se upar approval reject | ☑ |
+| 26.10 | Role clone | `POST /roles/:id/clone` | "Copy" button | Copy mein same permissions | ☑ |
+| 26.11 | User ko aik ya zyada roles | `PATCH /users/:id/roles` (role.assign) | `UsersPage.jsx` multi-select | Do roles ki permissions jud jayein | ☑ |
+| 26.12 | HR sirf apni permissions de sake | service check: grant ⊆ apni permissions | Na milne wale roles disabled | HR Super Admin role na de sake | ☑ |
+| 26.13 | Super Admin role mehfooz | isSystem role delete/kam nahi | Delete button disabled | API se bhi delete na ho | ☑ |
+| 26.14 | Approvals delegation | `delegation.model.js`, `POST /delegations` (from, to, start, end) | `DelegationPage.jsx` | Muddat mein doosra manager approve kare | ☑ |
+| 26.15 | View as user | `GET /users/:id/effective-permissions` | "View permissions" dialog | Sahi mili-juli list | ☑ |
+| 26.16 | Permission change audit | har role/user-role tabdeeli audit log mein | (X1 audit screen) | Log mein purani/nayi value | ☑ |
+| 26.17 | Employee apne roles dekhe | `/auth/me` | My Profile → "My Access" tab | Employee ko apne roles nazar aayein | ☑ |
 
 **Mukammal tab:** custom role "Finance Officer" bana kar sirf payroll view do; us user se test karo ke baqi sab band hai.
 
