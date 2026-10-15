@@ -18,6 +18,7 @@ pnpm-debug.log*
 # Tooling caches & artifacts
 graphify-out/
 .playwright-mcp/
+/*.png
 
 # OS files
 .DS_Store

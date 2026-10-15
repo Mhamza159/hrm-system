@@ -23,6 +23,21 @@ import {
 
 const router = Router();
 
+// Rate limiter: Max 50 login attempts per 15 minutes per IP (Brute-force protection)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'test' ? 1000 : 50,
+  message: {
+    success: false,
+    statusCode: 429,
+    data: null,
+    message: 'Too many login attempts from this IP. Please try again after 15 minutes.',
+    meta: null
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 // Rate limiter: Max 10 password recovery requests per 15 minutes per IP (Slice 1.7)
 const forgotPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -43,7 +58,7 @@ const forgotPasswordLimiter = rateLimit({
  * @desc    Authenticates user, sets httpOnly refreshToken cookie, and returns accessToken
  * @access  Public
  */
-router.post('/login', validate(loginSchema), AuthController.login);
+router.post('/login', loginLimiter, validate(loginSchema), AuthController.login);
 
 /**
  * @route   POST /api/v1/auth/refresh

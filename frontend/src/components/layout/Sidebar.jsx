@@ -33,6 +33,8 @@ import {
   Award,
   Network,
   UserCheck,
+  User,
+  FileCheck,
   X
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -64,6 +66,7 @@ export function Sidebar({ isOpen = false, onClose }) {
   // Main navigation items
   const mainNavItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+    { name: 'My Profile', path: '/me', icon: User },
     { name: 'Org Chart', path: '/org-chart', icon: Network },
     { name: 'My Team', path: '/teams/my', icon: UserCheck },
     { name: 'Employees', path: '/employees', icon: Users },
@@ -81,6 +84,7 @@ export function Sidebar({ isOpen = false, onClose }) {
     { name: 'Designations', path: '/designations', icon: Award, permission: 'org.view' },
     { name: 'Work Shifts', path: '/shifts', icon: Clock, permission: 'org.view' },
     { name: 'Roles & Permissions', path: '/roles', icon: Shield, permission: 'role.view' },
+    { name: 'Change Requests', path: '/change-requests', icon: FileCheck, hrOnly: true },
     { name: 'User Access', path: '/users', icon: Users, hrOnly: true },
     { name: 'Settings', path: '/settings', icon: Settings, permission: 'settings.manage' }
   ];

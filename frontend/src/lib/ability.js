@@ -54,12 +54,14 @@ export const buildAbilityFromRules = (permissions = [], user = null) => {
   return build();
 };
 
+const EMPTY_PERMISSIONS = Object.freeze([]);
+
 /**
  * React Context Provider for CASL ability
  */
 export const AbilityProvider = ({ children, initialAbility = null }) => {
   const user = useSelector((state) => state.auth?.user);
-  const permissions = useSelector((state) => state.auth?.permissions || []);
+  const permissions = useSelector((state) => state.auth?.permissions) || EMPTY_PERMISSIONS;
 
   const ability = useMemo(() => {
     if (initialAbility) return initialAbility;

@@ -83,20 +83,20 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 1.1 | User model | `user.model.js` (email, passwordHash, roles[], employeeId, isActive, failedAttempts, lockUntil, twoFactorEnabled, refreshTokenHash, mustChangePassword) | — | Compass mein collection | ☐ |
-| 1.2 | Login (JWT access + refresh) | `POST /auth/login`: bcrypt, access token 15 min, refresh 7 din httpOnly cookie | `LoginPage.jsx` | Sahi/ghalat password dono | ☐ |
-| 1.3 | Account lock (5 ghalat koshishein) | failedAttempts++, 5 par lockUntil = 15 min | Login par "account locked" message | 5 ghalat koshishon ke baad lock | ☐ |
-| 1.4 | Auto refresh token | `POST /auth/refresh` (token rotation) | `baseApi.js`: 401 par refresh aur retry | Access token expire ke baad bhi kaam chale | ☐ |
-| 1.5 | Logout | `POST /auth/logout` (cookie aur hash saaf) | Topbar user menu → Logout | Logout ke baad pichla page na khule | ☐ |
-| 1.6 | Current user | `GET /auth/me` (user + permissions) | `authSlice.js`, `useAuth.js`, `ProtectedRoute.jsx` | Bina login har page /login par jaye | ☐ |
-| 1.7 | Forgot password (email OTP) | `POST /auth/forgot-password` (OTP email, 10 min) | `ForgotPasswordPage.jsx` | Email mein OTP aaye | ☐ |
-| 1.8 | Reset password | `POST /auth/reset-password` | `ResetPasswordPage.jsx` | Purana OTP dobara na chale | ☐ |
-| 1.9 | Change password + pehle login par lazmi | `PATCH /auth/change-password`, mustChangePassword | `ChangePasswordPage.jsx`, force redirect | Naya user pehle password badle | ☐ |
-| 1.10 | Two-factor authentication | `POST /auth/2fa/enable`, `POST /auth/verify-otp` | `OtpPage.jsx`, profile mein 2FA toggle | 2FA on user OTP ke baghair na ghuse | ☐ |
-| 1.11 | Auto logout (inactivity) | — | `useIdleTimer` hook (jaise 30 min) | Khali chhorne par logout | ☐ |
-| 1.12 | Login history (device, IP) | `loginHistory.model.js`, `GET /auth/login-history` (own / auth.history) | `LoginHistoryPage.jsx` | Har login darj ho | ☐ |
-| 1.13 | Account activate/deactivate | `PATCH /users/:id/status` (user.manage) | Users page par toggle | Deactivated user login na kar sake | ☐ |
-| 1.14 | HR: password reset karna | `POST /users/:id/reset-password` (user.manage) | Users page par "Reset Password" | Employee ko naya temp password email | ☐ |
+| 1.1 | User model | `user.model.js` (email, passwordHash, roles[], employeeId, isActive, failedAttempts, lockUntil, twoFactorEnabled, refreshTokenHash, mustChangePassword) | — | Compass mein collection | ☑ |
+| 1.2 | Login (JWT access + refresh) | `POST /auth/login`: bcrypt, access token 15 min, refresh 7 din httpOnly cookie | `LoginPage.jsx` | Sahi/ghalat password dono | ☑ |
+| 1.3 | Account lock (5 ghalat koshishein) | failedAttempts++, 5 par lockUntil = 15 min | Login par "account locked" message | 5 ghalat koshishon ke baad lock | ☑ |
+| 1.4 | Auto refresh token | `POST /auth/refresh` (token rotation) | `baseApi.js`: 401 par refresh aur retry | Access token expire ke baad bhi kaam chale | ☑ |
+| 1.5 | Logout | `POST /auth/logout` (cookie aur hash saaf) | Topbar user menu → Logout | Logout ke baad pichla page na khule | ☑ |
+| 1.6 | Current user | `GET /auth/me` (user + permissions) | `authSlice.js`, `useAuth.js`, `ProtectedRoute.jsx` | Bina login har page /login par jaye | ☑ |
+| 1.7 | Forgot password (email OTP) | `POST /auth/forgot-password` (OTP email, 10 min) | `ForgotPasswordPage.jsx` | Email mein OTP aaye | ☑ |
+| 1.8 | Reset password | `POST /auth/reset-password` | `ResetPasswordPage.jsx` | Purana OTP dobara na chale | ☑ |
+| 1.9 | Change password + pehle login par lazmi | `PATCH /auth/change-password`, mustChangePassword | `ChangePasswordPage.jsx`, force redirect | Naya user pehle password badle | ☑ |
+| 1.10 | Two-factor authentication | `POST /auth/2fa/enable`, `POST /auth/verify-otp` | `OtpPage.jsx`, profile mein 2FA toggle | 2FA on user OTP ke baghair na ghuse | ☑ |
+| 1.11 | Auto logout (inactivity) | — | `useIdleTimer` hook (jaise 30 min) | Khali chhorne par logout | ☑ |
+| 1.12 | Login history (device, IP) | `loginHistory.model.js`, `GET /auth/login-history` (own / auth.history) | `LoginHistoryPage.jsx` | Har login darj ho | ☑ |
+| 1.13 | Account activate/deactivate | `PATCH /users/:id/status` (user.manage) | Users page par toggle | Deactivated user login na kar sake | ☑ |
+| 1.14 | HR: password reset karna | `POST /users/:id/reset-password` (user.manage) | Users page par "Reset Password" | Employee ko naya temp password email | ☑ |
 
 **Mukammal tab:** 14 rows ☑; Super Admin aur Employee dono se login test.
 

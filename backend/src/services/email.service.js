@@ -113,6 +113,31 @@ class EmailService {
     `;
     return this.sendMail({ to, subject, html });
   }
+
+  /**
+   * Dispatch employee welcome onboarding email with login credentials (M3 Slice 3.2)
+   * @param {string} to - Employee email
+   * @param {string} name - Employee full name
+   * @param {string} tempPassword - Generated initial temporary password
+   * @returns {Promise<Object>}
+   */
+  async sendWelcomeOnboardingEmail(to, name, tempPassword) {
+    const subject = 'Welcome to the Team — Your HRM Portal Login Credentials';
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <h2 style="color: #00C471; margin-top: 0;">Welcome to the Company, ${name}!</h2>
+        <p style="color: #334155; font-size: 14px;">Your employee profile and HRM self-service account have been set up successfully.</p>
+        <div style="background-color: #f8fafc; border: 1px solid #eaecf0; padding: 16px; border-radius: 6px; margin: 20px 0;">
+          <p style="margin: 0 0 8px 0; font-size: 13px; color: #64748b;"><strong>Portal URL:</strong> <a href="${env.CLIENT_URL}" style="color: #00C471;">${env.CLIENT_URL}</a></p>
+          <p style="margin: 0 0 8px 0; font-size: 13px; color: #64748b;"><strong>Username:</strong> ${to}</p>
+          <p style="margin: 0; font-size: 13px; color: #64748b;"><strong>Temporary Password:</strong> <code style="font-weight: 600; color: #0f172a;">${tempPassword}</code></p>
+        </div>
+        <p style="color: #b45309; font-size: 13px;">For security, you will be prompted to change your password immediately upon your first sign in.</p>
+      </div>
+    `;
+    return this.sendMail({ to, subject, html });
+  }
 }
 
 export const emailService = new EmailService();
+

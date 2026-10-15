@@ -20,6 +20,12 @@ import DesignationsPage from './features/departments/pages/DesignationsPage.jsx'
 import ShiftsPage from './features/departments/pages/ShiftsPage.jsx';
 import { OrgChartPage } from './features/departments/pages/OrgChartPage.jsx';
 import { MyTeamPage } from './features/departments/pages/MyTeamPage.jsx';
+import EmployeeFormPage from './features/employees/pages/EmployeeFormPage.jsx';
+import EmployeeListPage from './features/employees/pages/EmployeeListPage.jsx';
+import EmployeeProfilePage from './features/employees/pages/EmployeeProfilePage.jsx';
+import EmployeeImportPage from './features/employees/pages/EmployeeImportPage.jsx';
+import MyProfilePage from './features/employees/pages/MyProfilePage.jsx';
+import ChangeRequestsPage from './features/employees/pages/ChangeRequestsPage.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
 import { useRefreshTokenMutation } from './features/auth/authApi.js';
@@ -178,6 +184,62 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <MyTeamPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="employees"
+            element={
+              <ProtectedRoute>
+                <EmployeeListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="employees/new"
+            element={
+              <ProtectedRoute requiredRole={['Super Admin', 'HR Manager']}>
+                <EmployeeFormPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="employees/import"
+            element={
+              <ProtectedRoute requiredRole={['Super Admin', 'HR Manager']}>
+                <EmployeeImportPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="employees/:id/edit"
+            element={
+              <ProtectedRoute requiredRole={['Super Admin', 'HR Manager']}>
+                <EmployeeFormPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="employees/:id"
+            element={
+              <ProtectedRoute>
+                <EmployeeProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="me"
+            element={
+              <ProtectedRoute>
+                <MyProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="change-requests"
+            element={
+              <ProtectedRoute requiredRole={['Super Admin', 'HR Manager']}>
+                <ChangeRequestsPage />
               </ProtectedRoute>
             }
           />

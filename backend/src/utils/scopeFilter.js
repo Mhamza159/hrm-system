@@ -70,3 +70,5 @@ export const buildScopeQuery = (user, scope = 'own', options = {}) => {
   // Default fallback: strict defensive own scope
   return { [employeeField]: actorEmployeeId };
 };
+
+export const scopeFilter = buildScopeQuery;

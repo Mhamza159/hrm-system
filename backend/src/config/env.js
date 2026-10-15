@@ -26,6 +26,9 @@ export const env = {
     'dev_refresh_secret_hrm_system_2026_super_secure_key_67890',
   JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
   JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+  ENCRYPTION_KEY:
+    process.env.ENCRYPTION_KEY ||
+    '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
   SMTP_HOST: process.env.SMTP_HOST || 'localhost',
   SMTP_PORT: parseInt(process.env.SMTP_PORT || '587', 10),
   SMTP_USER: process.env.SMTP_USER || '',
