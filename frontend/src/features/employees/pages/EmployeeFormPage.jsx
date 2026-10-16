@@ -13,7 +13,7 @@
  * - Masking: Automatic Pakistani CNIC formatting (XXXXX-XXXXXXX-X) with NADRA format validation.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -126,6 +126,31 @@ export default function EmployeeFormPage() {
       createAccount: true
     }
   });
+
+  // Watch Department & Designation for reactive dependent filtering
+  const selectedDepartmentId = watch('departmentId');
+  const selectedDesignationId = watch('designationId');
+
+  // Filter designations strictly matching the selected department
+  const filteredDesignations = useMemo(() => {
+    if (!selectedDepartmentId) return [];
+    return designations.filter((desig) => {
+      const deptId = desig.departmentId?._id || desig.departmentId;
+      return deptId === selectedDepartmentId;
+    });
+  }, [designations, selectedDepartmentId]);
+
+  // Reset designation if selected department changes and current designation does not belong to it
+  useEffect(() => {
+    if (!selectedDepartmentId) {
+      if (selectedDesignationId) setValue('designationId', '');
+    } else if (selectedDesignationId && designations.length > 0) {
+      const exists = filteredDesignations.some((d) => d._id === selectedDesignationId);
+      if (!exists) {
+        setValue('designationId', '');
+      }
+    }
+  }, [selectedDepartmentId, filteredDesignations, selectedDesignationId, designations.length, setValue]);
 
   // Auto-populate system-generated employee code in create mode
   useEffect(() => {
@@ -547,15 +572,27 @@ export default function EmployeeFormPage() {
                 </label>
                 <select
                   {...register('designationId')}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                  disabled={!selectedDepartmentId}
+                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                 >
-                  <option value="">-- Select Designation --</option>
-                  {designations.map((desig) => (
+                  <option value="">
+                    {!selectedDepartmentId
+                      ? '-- Select Department First --'
+                      : filteredDesignations.length === 0
+                        ? '-- No Designations Found for Department --'
+                        : '-- Select Designation --'}
+                  </option>
+                  {filteredDesignations.map((desig) => (
                     <option key={desig._id} value={desig._id}>
                       {desig.title} [{desig.grade}]
                     </option>
                   ))}
                 </select>
+                {!selectedDepartmentId && (
+                  <p className="text-[11px] text-amber-600 font-medium mt-1">
+                    ⚠️ Select a Department first to load matching designations.
+                  </p>
+                )}
               </div>
 
               <div>

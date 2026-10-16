@@ -7,7 +7,7 @@
  * - Chronological vertical timeline for promotions, transfers, and designation updates.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import {
   TrendingUp,
@@ -48,6 +48,14 @@ export function ProfileHistoryTab({ employeeId, canManage = false }) {
   const history = historyData?.data || [];
   const departments = deptData?.data || [];
   const designations = desigData?.data || [];
+
+  const filteredDesignations = useMemo(() => {
+    if (!newDepartmentId) return designations;
+    return designations.filter((d) => {
+      const deptId = d.departmentId?._id || d.departmentId;
+      return deptId === newDepartmentId;
+    });
+  }, [designations, newDepartmentId]);
 
   const handleRecordSubmit = async (e) => {
     e.preventDefault();
@@ -176,6 +184,32 @@ export function ProfileHistoryTab({ employeeId, canManage = false }) {
               </div>
 
               <div>
+                <label className="block font-semibold text-slate-700 mb-1">New Department</label>
+                <select
+                  value={newDepartmentId}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNewDepartmentId(val);
+                    if (val && newDesignationId) {
+                      const match = designations.find((d) => d._id === newDesignationId);
+                      const matchDeptId = match?.departmentId?._id || match?.departmentId;
+                      if (matchDeptId !== val) {
+                        setNewDesignationId('');
+                      }
+                    }
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30"
+                >
+                  <option value="">-- Keep Current / None --</option>
+                  {departments.map((d) => (
+                    <option key={d._id} value={d._id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="block font-semibold text-slate-700 mb-1">New Designation</label>
                 <select
                   value={newDesignationId}
@@ -183,25 +217,9 @@ export function ProfileHistoryTab({ employeeId, canManage = false }) {
                   className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30"
                 >
                   <option value="">-- Keep Current / None --</option>
-                  {designations.map((d) => (
+                  {filteredDesignations.map((d) => (
                     <option key={d._id} value={d._id}>
                       {d.title} [{d.grade}]
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">New Department</label>
-                <select
-                  value={newDepartmentId}
-                  onChange={(e) => setNewDepartmentId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30"
-                >
-                  <option value="">-- Keep Current / None --</option>
-                  {departments.map((d) => (
-                    <option key={d._id} value={d._id}>
-                      {d.name}
                     </option>
                   ))}
                 </select>
