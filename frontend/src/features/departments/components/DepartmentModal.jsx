@@ -65,9 +65,12 @@ export function DepartmentModal({
   if (!isOpen) return null;
 
   // Filter out the current department from available parent options to avoid immediate self-reference
-  const availableParents = allDepartments.filter(
-    (d) => !department || (d._id !== department._id && d.id !== department._id)
-  );
+  const currentDeptId = (department?._id || department?.id)?.toString();
+  const availableParents = allDepartments.filter((d) => {
+    if (!currentDeptId) return true;
+    const parentId = (d._id || d.id)?.toString();
+    return parentId !== currentDeptId;
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();

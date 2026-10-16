@@ -18,6 +18,16 @@ import { ApiError } from '../../utils/ApiError.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 
 /**
+ * Escape regular expression special characters to protect MongoDB $regex against ReDoS & syntax injections
+ * @param {string} str
+ * @returns {string} Safe escaped string
+ */
+export const escapeRegex = (str) => {
+  if (typeof str !== 'string') return '';
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+/**
  * Check if setting targetParentId as parent of deptId would introduce a circular hierarchy.
  * @param {string} deptId 
  * @param {string} targetParentId 
@@ -55,12 +65,14 @@ const detectCircularParent = async (deptId, targetParentId) => {
 export const getAllDepartments = async ({ search = '', parentId, isActive, page, limit } = {}) => {
   const query = { isDeleted: false };
 
-  if (search && search.trim()) {
-    const term = search.trim();
-    query.$or = [
-      { name: { $regex: term, $options: 'i' } },
-      { code: { $regex: term, $options: 'i' } }
-    ];
+  if (search && typeof search === 'string' && search.trim()) {
+    const term = escapeRegex(search.trim());
+    if (term) {
+      query.$or = [
+        { name: { $regex: term, $options: 'i' } },
+        { code: { $regex: term, $options: 'i' } }
+      ];
+    }
   }
 
   if (parentId !== undefined) {
@@ -395,12 +407,14 @@ export const getAllDesignations = async ({ departmentId, grade, isActive, page, 
   if (isActive !== undefined) {
     query.isActive = isActive === 'true' || isActive === true;
   }
-  if (search && search.trim()) {
-    const term = search.trim();
-    query.$or = [
-      { title: { $regex: term, $options: 'i' } },
-      { code: { $regex: term, $options: 'i' } }
-    ];
+  if (search && typeof search === 'string' && search.trim()) {
+    const term = escapeRegex(search.trim());
+    if (term) {
+      query.$or = [
+        { title: { $regex: term, $options: 'i' } },
+        { code: { $regex: term, $options: 'i' } }
+      ];
+    }
   }
 
   let dbQuery = Designation.find(query)
@@ -642,12 +656,14 @@ export const getAllShifts = async ({ type, isActive, isCrossMidnight, page, limi
   if (type) query.type = type;
   if (isActive !== undefined) query.isActive = isActive === 'true' || isActive === true;
   if (isCrossMidnight !== undefined) query.isCrossMidnight = isCrossMidnight === 'true' || isCrossMidnight === true;
-  if (search && search.trim()) {
-    const term = search.trim();
-    query.$or = [
-      { name: { $regex: term, $options: 'i' } },
-      { code: { $regex: term, $options: 'i' } }
-    ];
+  if (search && typeof search === 'string' && search.trim()) {
+    const term = escapeRegex(search.trim());
+    if (term) {
+      query.$or = [
+        { name: { $regex: term, $options: 'i' } },
+        { code: { $regex: term, $options: 'i' } }
+      ];
+    }
   }
 
   let dbQuery = Shift.find(query).sort({ type: 1, startTime: 1 });

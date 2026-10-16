@@ -90,18 +90,18 @@ export function DataTable({
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-slate-200 dark:border-[#1A3125] bg-slate-50/70 dark:bg-[#0E1A14] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
-                {columns.map((col) => (
+                {columns.map((col, cIdx) => (
                   <th
-                    key={col.key || col.label}
+                    key={col.key || col.accessor ? `${col.key || col.accessor}-${cIdx}` : `${col.label || col.header || 'col'}-${cIdx}`}
                     className={cn(
                       'py-3.5 px-4 select-none',
                       col.sortable && 'cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors',
                       col.className
                     )}
-                    onClick={() => col.sortable && handleSort(col.key)}
+                    onClick={() => col.sortable && handleSort(col.key || col.accessor)}
                   >
                     <div className="inline-flex items-center gap-1.5">
-                      <span>{col.label}</span>
+                      <span>{col.label || col.header}</span>
                       {col.sortable && (
                         <ArrowUpDown className="w-3 h-3 text-slate-400" />
                       )}
@@ -139,17 +139,21 @@ export function DataTable({
                       onRowClick && 'cursor-pointer'
                     )}
                   >
-                    {columns.map((col) => (
-                      <td
-                        key={col.key || col.label}
-                        className={cn(
-                          'py-3 px-4 tabular-nums',
-                          col.className
-                        )}
-                      >
-                        {col.render ? col.render(row) : row[col.key]}
-                      </td>
-                    ))}
+                    {columns.map((col, cIdx) => {
+                      const cellRenderer = col.render || col.cell;
+                      const fieldKey = col.key || col.accessor;
+                      return (
+                        <td
+                          key={`${fieldKey || col.label || col.header || 'cell'}-${cIdx}`}
+                          className={cn(
+                            'py-3 px-4 tabular-nums',
+                            col.className
+                          )}
+                        >
+                          {cellRenderer ? cellRenderer(row) : row[fieldKey]}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))
               )}

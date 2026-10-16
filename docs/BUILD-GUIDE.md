@@ -144,13 +144,13 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 4.1 | Departments | `department.model.js`, CRUD `/departments` (org.manage) | `DepartmentsPage.jsx` + dialog | Employees wala department delete na ho | ☐ |
-| 4.2 | Department head / manager | department.headId | Form mein employee select | Head sahi dikhe | ☐ |
-| 4.3 | Designations + grades | `designation.model.js`, CRUD `/designations` | `DesignationsPage.jsx` | Grade dropdown | ☐ |
-| 4.4 | Shifts (fixed, flexible, night) | `shift.model.js`, CRUD `/shifts` | `ShiftsPage.jsx` | Night shift raat 12 ke paar sahi | ☐ |
-| 4.5 | Org chart | `GET /org-chart` (managerId se tree) | `OrgChartPage.jsx` (tree, zoom) | Reporting lines sahi | ☐ |
-| 4.6 | Manager ki team view | `GET /teams/my` | `MyTeamPage.jsx` | Manager ko apni team | ☐ |
-| 4.7 | Employee apni reporting line dekhe | org-chart mein highlight | Org chart par "Me" | Employee ko apni line nazar aaye | ☐ |
+| 4.1 | Departments | `department.model.js`, CRUD `/departments` (org.manage) | `DepartmentsPage.jsx` + dialog | Employees wala department delete na ho | ☑ |
+| 4.2 | Department head / manager | department.headId | Form mein employee select | Head sahi dikhe | ☑ |
+| 4.3 | Designations + grades | `designation.model.js`, CRUD `/designations` | `DesignationsPage.jsx` | Grade dropdown | ☑ |
+| 4.4 | Shifts (fixed, flexible, night) | `shift.model.js`, CRUD `/shifts` | `ShiftsPage.jsx` | Night shift raat 12 ke paar sahi | ☑ |
+| 4.5 | Org chart | `GET /org-chart` (managerId se tree) | `OrgChartPage.jsx` (tree, zoom) | Reporting lines sahi | ☑ |
+| 4.6 | Manager ki team view | `GET /teams/my` | `MyTeamPage.jsx` | Manager ko apni team | ☑ |
+| 4.7 | Employee apni reporting line dekhe | org-chart mein highlight | Org chart par "Me" | Employee ko apni line nazar aaye | ☑ |
 
 ## 8. M3 — Employee Management
 
