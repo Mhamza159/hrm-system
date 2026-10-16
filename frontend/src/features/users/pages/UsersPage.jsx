@@ -84,18 +84,14 @@ export default function UsersPage() {
 
   const handleOpenRolesModal = (rowUser) => {
     setRolesModalUser(rowUser);
-    const existingIds = (rowUser.roles || []).map((r) =>
-      typeof r === 'string' ? r : r._id
-    );
-    setSelectedRoleIds(existingIds);
+    const primaryRole = rowUser.roles?.[0];
+    const primaryRoleId = typeof primaryRole === 'string' ? primaryRole : primaryRole?._id;
+    setSelectedRoleIds(primaryRoleId ? [primaryRoleId] : []);
   };
 
-  const handleToggleRoleSelection = (roleId) => {
-    setSelectedRoleIds((prev) =>
-      prev.includes(roleId)
-        ? prev.filter((id) => id !== roleId)
-        : [...prev, roleId]
-    );
+  const handleSelectRole = (roleId) => {
+    // Single-role model: selecting a role replaces any prior role with only [roleId]
+    setSelectedRoleIds([roleId]);
   };
 
   const handleSaveUserRoles = async (e) => {
@@ -422,10 +418,10 @@ export default function UsersPage() {
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    Assign Roles to User
+                    Assign Role to User
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {rolesModalUser.email}
+                    Select the single active role for <span className="font-medium text-slate-700 dark:text-slate-200">{rolesModalUser.email}</span>
                   </p>
                 </div>
               </div>
@@ -440,27 +436,35 @@ export default function UsersPage() {
                   return (
                     <div
                       key={roleItem._id}
-                      onClick={() => !disabled && handleToggleRoleSelection(roleItem._id)}
-                      className={`p-3 rounded-xl border text-xs flex items-center justify-between gap-3 transition-all ${
+                      onClick={() => !disabled && handleSelectRole(roleItem._id)}
+                      className={`p-3.5 rounded-xl border text-xs flex items-center justify-between gap-3 transition-all ${
                         disabled
                           ? 'opacity-40 cursor-not-allowed bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800'
                           : isChecked
-                          ? 'border-[#00C471]/50 bg-emerald-50/20 dark:bg-emerald-950/20 cursor-pointer'
+                          ? 'border-[#00C471] bg-emerald-50/40 dark:bg-emerald-950/30 shadow-xs ring-1 ring-[#00C471]/30 cursor-pointer'
                           : 'border-slate-200 dark:border-[#1A3125] hover:bg-slate-50/60 dark:hover:bg-[#14261D] cursor-pointer'
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <input
-                          type="checkbox"
+                          type="radio"
+                          name="userRoleSelection"
                           checked={isChecked}
                           disabled={disabled}
-                          onChange={() => {}}
-                          className="h-4 w-4 rounded border-slate-300 text-[#00C471] focus:ring-[#00C471]"
+                          onChange={() => handleSelectRole(roleItem._id)}
+                          className="h-4 w-4 border-slate-300 text-[#00C471] focus:ring-[#00C471] accent-[#00C471] cursor-pointer"
                         />
                         <div>
-                          <span className="font-semibold text-slate-900 dark:text-white block">
-                            {roleItem.name}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-slate-900 dark:text-white block">
+                              {roleItem.name}
+                            </span>
+                            {isChecked && (
+                              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100/60 dark:bg-emerald-950 dark:text-emerald-400 px-1.5 py-0.2 rounded">
+                                Selected
+                              </span>
+                            )}
+                          </div>
                           <span className="text-[11px] text-slate-500 dark:text-slate-400">
                             {roleItem.description || `${roleItem.permissions?.length || 0} permissions`}
                           </span>
@@ -496,7 +500,7 @@ export default function UsersPage() {
                       <span>Saving...</span>
                     </>
                   ) : (
-                    <span>Update Roles</span>
+                    <span>Assign Role</span>
                   )}
                 </button>
               </div>
