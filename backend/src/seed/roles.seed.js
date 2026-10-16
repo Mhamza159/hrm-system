@@ -11,6 +11,7 @@
 import mongoose from 'mongoose';
 import { Role } from '../models/role.model.js';
 import { User } from '../models/user.model.js';
+import { Employee } from '../models/employee.model.js';
 import { env } from '../config/env.js';
 import '../config/db.js';
 
@@ -151,6 +152,28 @@ export const seedRolesAndAdmin = async () => {
       await existingAdmin.save();
     }
     console.log(`ℹ️ Super Admin account verified: ${existingAdmin.email}`);
+  }
+
+  // 3. Ensure Super Admin has an active Employee record for organizational reporting & Org Chart
+  const adminDoc = existingAdmin || (await User.findOne({ email: adminEmail }));
+  if (adminDoc) {
+    const existingAdminEmp = await Employee.findOne({ email: adminEmail });
+    if (!existingAdminEmp) {
+      await Employee.create({
+        employeeCode: 'EMP-000',
+        userId: adminDoc._id,
+        name: 'Super Admin',
+        email: adminEmail,
+        status: 'Active',
+        employmentType: 'Permanent',
+        joiningDate: new Date('2023-01-01'),
+        isDeleted: false
+      });
+      console.log(`✅ Super Admin Employee record created: EMP-000`);
+    } else if (!existingAdminEmp.userId) {
+      existingAdminEmp.userId = adminDoc._id;
+      await existingAdminEmp.save();
+    }
   }
 
   console.log('🎉 [SEED] Core roles & Super Admin bootstrapping complete.');

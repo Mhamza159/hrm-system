@@ -269,7 +269,8 @@ export const getEmployees = async (
       { path: 'departmentId', select: 'name code' },
       { path: 'designationId', select: 'title code grade' },
       { path: 'shiftId', select: 'name code startTime endTime type' },
-      { path: 'managerId', select: 'name employeeCode email' }
+      { path: 'managerId', select: 'name employeeCode email' },
+      { path: 'userId', select: 'email isActive roles', populate: { path: 'roles', select: 'name' } }
     ],
     sort: { createdAt: -1 }
   });

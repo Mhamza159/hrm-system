@@ -152,6 +152,53 @@ export default function EmployeeFormPage() {
     }
   }, [selectedDepartmentId, filteredDesignations, selectedDesignationId, designations.length, setValue]);
 
+  // Filter Direct Reporting Managers:
+  // 1. Exclude the employee currently being edited (prevents self-reporting circular loop)
+  // 2. Only include High Staff (Senior, Lead, Executive grades, management roles, or Executive Admin)
+  const currentEditingId = isEditMode ? (employeeData?.data?._id || id) : null;
+
+  const eligibleManagers = useMemo(() => {
+    return managers.filter((mgr) => {
+      // Rule 1: Exclude currently edited employee
+      if (currentEditingId && String(mgr._id) === String(currentEditingId)) {
+        return false;
+      }
+      if (isEditMode && employeeData?.data?.employeeCode && mgr.employeeCode === employeeData.data.employeeCode) {
+        return false;
+      }
+
+      // Rule 2: High Staff Eligibility:
+      // a) Super Admin / Top Executive by email or code
+      if (mgr.email === 'admin@hrm.company.pk' || mgr.employeeCode === 'EMP-000') {
+        return true;
+      }
+
+      // b) Designation Grade: Executive, Lead, Senior
+      const grade = mgr.designationId?.grade;
+      if (['Executive', 'Lead', 'Senior'].includes(grade)) {
+        return true;
+      }
+
+      // c) Management Roles: Super Admin, HR Manager, Department Manager
+      const userRoles = mgr.userId?.roles || [];
+      const hasManagerRole = userRoles.some((r) => {
+        const roleName = typeof r === 'string' ? r : r.name;
+        return ['Super Admin', 'HR Manager', 'Department Manager'].includes(roleName);
+      });
+      if (hasManagerRole) {
+        return true;
+      }
+
+      // d) Manager / Director / Head in job title
+      const title = (mgr.designationId?.title || '').toLowerCase();
+      if (/director|manager|head|lead|chief|executive|officer|admin/i.test(title)) {
+        return true;
+      }
+
+      return false;
+    });
+  }, [managers, currentEditingId, isEditMode, employeeData]);
+
   // Auto-populate system-generated employee code in create mode
   useEffect(() => {
     if (!isEditMode && nextCodeData?.data?.nextCode) {
@@ -621,12 +668,15 @@ export default function EmployeeFormPage() {
                   className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
                 >
                   <option value="">-- Select Reporting Manager --</option>
-                  {managers.map((mgr) => (
+                  {eligibleManagers.map((mgr) => (
                     <option key={mgr._id} value={mgr._id}>
-                      {mgr.name} ({mgr.employeeCode})
+                      {mgr.name} ({mgr.employeeCode}){mgr.designationId?.title ? ` • ${mgr.designationId.title}` : ''}
                     </option>
                   ))}
                 </select>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Only senior managers, department leads, and executive admins are eligible.
+                </p>
               </div>
 
               <div>
