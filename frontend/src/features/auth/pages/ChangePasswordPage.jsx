@@ -10,11 +10,11 @@
  *   and locks navigation to dashboard until completed.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { ShieldAlert, Key, ArrowRight, Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -47,6 +47,7 @@ const changePasswordValidationSchema = z
 
 export default function ChangePasswordPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const { user } = useAuth();
   const [changePassword, { isLoading }] = useChangePasswordMutation();
@@ -55,19 +56,27 @@ export default function ChangePasswordPage() {
   const [showNew, setShowNew] = useState(false);
 
   const isMandatory = Boolean(user?.mustChangePassword);
+  const tempPassword = location.state?.tempPassword || location.state?.currentPassword || '';
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors }
   } = useForm({
     resolver: zodResolver(changePasswordValidationSchema),
     defaultValues: {
-      currentPassword: '',
+      currentPassword: tempPassword,
       newPassword: '',
       confirmPassword: ''
     }
   });
+
+  useEffect(() => {
+    if (tempPassword) {
+      setValue('currentPassword', tempPassword);
+    }
+  }, [tempPassword, setValue]);
 
   const onSubmit = async (data) => {
     try {
@@ -126,9 +135,17 @@ export default function ChangePasswordPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* Current Password Field */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                Current Password
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Current Password
+                </label>
+                {tempPassword && (
+                  <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                    Auto-filled with temporary password
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <input
                   type={showCurrent ? 'text' : 'password'}

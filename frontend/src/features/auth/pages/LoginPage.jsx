@@ -101,7 +101,9 @@ export default function LoginPage() {
 
       // 4. Enforce mandatory password change on initial login (Slice 1.9)
       if (response.data.user.mustChangePassword) {
-        navigate('/change-password');
+        navigate('/change-password', {
+          state: { tempPassword: data.password }
+        });
       } else {
         // 5. Navigate to protected dashboard root
         navigate('/');
