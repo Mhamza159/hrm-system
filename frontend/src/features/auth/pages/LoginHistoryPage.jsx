@@ -22,11 +22,16 @@ export default function LoginHistoryPage() {
   const [page, setPage] = useState(1);
   const limit = 25;
 
-  // Query login history audit log
-  const { data: historyResponse, isLoading, isFetching, refetch } = useGetLoginHistoryQuery({
-    page,
-    limit
-  });
+  // Query login history audit log (always fresh on mount)
+  const { data: historyResponse, isLoading, isFetching, refetch } = useGetLoginHistoryQuery(
+    {
+      page,
+      limit
+    },
+    {
+      refetchOnMountOrArgChange: true
+    }
+  );
 
   const docs = historyResponse?.data?.docs || [];
   const total = historyResponse?.data?.total || 0;

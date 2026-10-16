@@ -22,7 +22,33 @@ export const authApi = baseApi.injectEndpoints({
         url: '/auth/login',
         method: 'POST',
         body: credentials
-      })
+      }),
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(baseApi.util.resetApiState());
+        } catch {
+          // ignore error on failed login
+        }
+      },
+      invalidatesTags: [
+        'User',
+        'Users',
+        'Auth',
+        'Roles',
+        'Permissions',
+        'Employee',
+        'Attendance',
+        'Leave',
+        'Payroll',
+        'Settings',
+        'Policies',
+        'Departments',
+        'Designations',
+        'Shifts',
+        'OrgChart',
+        'Team'
+      ]
     }),
 
     // POST /api/v1/auth/refresh
@@ -38,7 +64,16 @@ export const authApi = baseApi.injectEndpoints({
       query: () => ({
         url: '/auth/logout',
         method: 'POST'
-      })
+      }),
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+        } catch {
+          // ignore
+        } finally {
+          dispatch(baseApi.util.resetApiState());
+        }
+      }
     }),
 
     // GET /api/v1/auth/me
