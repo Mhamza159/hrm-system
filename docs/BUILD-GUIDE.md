@@ -128,17 +128,17 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 2.1 | Settings model | `setting.model.js` (key, value), `GET/PATCH /settings/:key` (settings.manage), cache | `SettingsPage.jsx` (tabs) | Save ke baad reload par wahi value | ☐ |
-| 2.2 | Company profile aur logo | key `company` (naam, address, NTN, logo url) | `CompanyForm.jsx` + logo upload | Logo payslip/topbar mein aaye | ☐ |
-| 2.3 | Kaam ke din aur office timings | key `workingDays`, `officeHours` | `WorkingHoursForm.jsx` | Attendance in se chale | ☐ |
-| 2.4 | Late rules (grace, katoti) | key `lateRules` (grace min, kitne late = half day, katoti) | `AttendanceRulesForm.jsx` | Late hisaab badle | ☐ |
-| 2.5 | Leave policy | key `leavePolicy` (approval chain, carry forward, encashment) | `LeavePolicyForm.jsx` | M6 isi ko parhe | ☐ |
-| 2.6 | Payroll cycle aur pay date | key `payrollCycle` | `PayrollSettingsForm.jsx` | M9 isi mahine ko le | ☐ |
-| 2.7 | Tax, EOBI, PESSI, PF settings | keys `taxSlabs` (tax year wise), `eobi`, `pessi`, `providentFund` | `TaxSlabsForm.jsx` (rows add/remove) | Naya slab payroll mein lage | ☐ |
-| 2.8 | Office location aur geo-fence radius | key `geoFences` (lat, lng, radius) | `GeoFenceMapEditor.jsx` (Leaflet map) | Map par circle | ☐ |
-| 2.9 | Email/WhatsApp templates | key `templates` (welcome, leave, payslip...) | `TemplatesForm.jsx` ({{name}} placeholders) | Test email mein template | ☐ |
-| 2.10 | Data backup | `jobs/backup.job.js` (rozana mongodump, 30 din), `POST /settings/backup-now` | Backup tab: aakhri backup ka waqt + "Backup Now" | Backup file bane | ☐ |
-| 2.11 | Policies dekhna (sab) | `GET /settings/public-policies` | `PoliciesPage.jsx` (sirf parhna) | Employee policy parh sake | ☐ |
+| 2.1 | Settings model | `setting.model.js` (key, value), `GET/PATCH /settings/:key` (settings.manage), cache | `SettingsPage.jsx` (tabs) | Save ke baad reload par wahi value | ☑ |
+| 2.2 | Company profile aur logo | key `company` (naam, address, NTN, logo url) | `CompanyForm.jsx` + logo upload | Logo payslip/topbar mein aaye | ☑ |
+| 2.3 | Kaam ke din aur office timings | key `workingDays`, `officeHours` | `WorkingHoursForm.jsx` | Attendance in se chale | ☑ |
+| 2.4 | Late rules (grace, katoti) | key `lateRules` (grace min, kitne late = half day, katoti) | `AttendanceRulesForm.jsx` | Late hisaab badle | ☑ |
+| 2.5 | Leave policy | key `leavePolicy` (approval chain, carry forward, encashment) | `LeavePolicyForm.jsx` | M6 isi ko parhe | ☑ |
+| 2.6 | Payroll cycle aur pay date | key `payrollCycle` | `PayrollSettingsForm.jsx` | M9 isi mahine ko le | ☑ |
+| 2.7 | Tax, EOBI, PESSI, PF settings | keys `taxSlabs` (tax year wise), `eobi`, `pessi`, `providentFund` | `TaxSlabsForm.jsx` (rows add/remove) | Naya slab payroll mein lage | ☑ |
+| 2.8 | Office location aur geo-fence radius | key `geoFences` (lat, lng, radius) | `GeoFenceMapEditor.jsx` (Leaflet map) | Map par circle | ☑ |
+| 2.9 | Email/WhatsApp templates | key `templates` (welcome, leave, payslip...) | `TemplatesForm.jsx` ({{name}} placeholders) | Test email mein template | ☑ |
+| 2.10 | Data backup | `jobs/backup.job.js` (rozana mongodump, 30 din), `POST /settings/backup-now` | Backup tab: aakhri backup ka waqt + "Backup Now" | Backup file bane | ☑ |
+| 2.11 | Policies dekhna (sab) | `GET /settings/public-policies` | `PoliciesPage.jsx` (sirf parhna) | Employee policy parh sake | ☑ |
 
 ## 7. M4 — Departments, Designations, Shifts & Org Chart
 

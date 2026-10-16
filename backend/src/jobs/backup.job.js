@@ -34,16 +34,16 @@ export const executeBackup = async () => {
   const filename = `backup-hrm-${timestamp}.json`;
   const filePath = path.join(BACKUP_DIR, filename);
 
-  // Collect data across all registered Mongoose models
-  const collectionsData = {};
+  // Collect data across all registered Mongoose models concurrently
   const modelNames = mongoose.modelNames();
-
-  for (const name of modelNames) {
-    const Model = mongoose.model(name);
-    // Exclude huge transient or sensitive binary buffers if needed
-    const docs = await Model.find({}).lean();
-    collectionsData[name] = docs;
-  }
+  const entries = await Promise.all(
+    modelNames.map(async (name) => {
+      const Model = mongoose.model(name);
+      const docs = await Model.find({}).lean();
+      return [name, docs];
+    })
+  );
+  const collectionsData = Object.fromEntries(entries);
 
   const payload = {
     createdAt: new Date().toISOString(),

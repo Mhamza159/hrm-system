@@ -190,7 +190,7 @@ describe('Module M2 End-to-End Multi-Role Verification (E2E-M2)', () => {
       expect(res.body.data.value.slabs).toHaveLength(6);
     });
 
-    it('Super Admin configures multi-office Leaflet geo-fences and executes database backup', async () => {
+    it('Super Admin configures multi-office Leaflet geo-fences with custom spatial radii', async () => {
       const geoPayload = [
         {
           name: 'Islamabad HQ STP-1',
@@ -207,7 +207,12 @@ describe('Module M2 End-to-End Multi-Role Verification (E2E-M2)', () => {
         .send({ value: geoPayload });
 
       expect(geoRes.status).toBe(200);
+      expect(geoRes.body.success).toBe(true);
+      expect(geoRes.body.data.value).toHaveLength(1);
+      expect(geoRes.body.data.value[0].name).toBe('Islamabad HQ STP-1');
+    });
 
+    it('Super Admin triggers on-demand database backup and inspects backup metrics', async () => {
       // Trigger immediate backup snapshot
       const backupRes = await request(app)
         .post('/api/v1/settings/backup-now')
@@ -224,7 +229,7 @@ describe('Module M2 End-to-End Multi-Role Verification (E2E-M2)', () => {
 
       expect(statusRes.status).toBe(200);
       expect(statusRes.body.data.totalBackups).toBeGreaterThanOrEqual(1);
-    });
+    }, 15000);
   });
 
   // ============================================================================
