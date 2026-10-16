@@ -102,6 +102,14 @@ router.post(
   employeeController.submitChangeRequest
 );
 
+// Next Available Employee Code (Must come before /:id parameter matching)
+router.get(
+  '/next-code',
+  authenticate,
+  checkPermission('employee.create'),
+  employeeController.getNextEmployeeCode
+);
+
 // Bulk Import & Directory Export (Must come before /:id parameter matching)
 router.get(
   '/export',

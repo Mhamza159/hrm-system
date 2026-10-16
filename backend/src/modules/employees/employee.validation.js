@@ -22,11 +22,13 @@ const objectIdSchema = z
 export const createEmployeeSchema = z.object({
   body: z.object({
     employeeCode: z
-      .string({ required_error: 'Employee code is required' })
+      .string()
       .min(2, 'Employee code must be at least 2 characters')
       .max(20, 'Employee code cannot exceed 20 characters')
       .trim()
-      .toUpperCase(),
+      .toUpperCase()
+      .optional()
+      .nullable(),
     name: z
       .string({ required_error: 'Full name is required' })
       .min(2, 'Name must be at least 2 characters')

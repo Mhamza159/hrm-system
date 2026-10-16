@@ -44,6 +44,11 @@ export const employeesApi = baseApi.injectEndpoints({
       invalidatesTags: [{ type: 'Employee', id: 'LIST' }, 'Users']
     }),
 
+    getNextEmployeeCode: builder.query({
+      query: () => '/employees/next-code',
+      providesTags: [{ type: 'Employee', id: 'NEXT_CODE' }]
+    }),
+
     updateEmployee: builder.mutation({
       query: ({ id, ...body }) => ({
         url: `/employees/${id}`,
@@ -177,6 +182,7 @@ export const {
   useGetEmployeesQuery,
   useGetEmployeeByIdQuery,
   useGetMyProfileQuery,
+  useGetNextEmployeeCodeQuery,
   useCreateEmployeeMutation,
   useUpdateEmployeeMutation,
   useUpdateEmployeeStatusMutation,

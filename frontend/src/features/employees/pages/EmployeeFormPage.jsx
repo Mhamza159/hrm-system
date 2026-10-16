@@ -34,7 +34,8 @@ import {
   useCreateEmployeeMutation,
   useUpdateEmployeeMutation,
   useGetEmployeeByIdQuery,
-  useGetEmployeesQuery
+  useGetEmployeesQuery,
+  useGetNextEmployeeCodeQuery
 } from '../employeesApi.js';
 import {
   useGetDepartmentsQuery,
@@ -67,6 +68,9 @@ export default function EmployeeFormPage() {
   const { data: desigData } = useGetDesignationsQuery({ limit: 100 });
   const { data: shiftData } = useGetShiftsQuery({ limit: 100 });
   const { data: staffData } = useGetEmployeesQuery({ limit: 100 });
+  const { data: nextCodeData } = useGetNextEmployeeCodeQuery(undefined, {
+    skip: isEditMode
+  });
 
   const [createEmployee, { isLoading: isCreating }] = useCreateEmployeeMutation();
   const [updateEmployee, { isLoading: isUpdating }] = useUpdateEmployeeMutation();
@@ -122,6 +126,13 @@ export default function EmployeeFormPage() {
       createAccount: true
     }
   });
+
+  // Auto-populate system-generated employee code in create mode
+  useEffect(() => {
+    if (!isEditMode && nextCodeData?.data?.nextCode) {
+      setValue('employeeCode', nextCodeData.data.nextCode);
+    }
+  }, [isEditMode, nextCodeData, setValue]);
 
   // Populate data in edit mode
   useEffect(() => {
@@ -288,22 +299,26 @@ export default function EmployeeFormPage() {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Employee Code <span className="text-red-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Employee Code <span className="text-red-500">*</span>
+                  </label>
+                  <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                    Auto-Generated System ID
+                  </span>
+                </div>
                 <input
                   type="text"
-                  placeholder="e.g. EMP-101"
-                  disabled={isEditMode}
-                  {...register('employeeCode', { required: 'Employee Code is required' })}
-                  className={cn(
-                    'w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] uppercase',
-                    isEditMode && 'bg-slate-100 cursor-not-allowed text-slate-500'
-                  )}
+                  placeholder="Auto-generating..."
+                  readOnly
+                  disabled
+                  {...register('employeeCode')}
+                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-200 bg-slate-100 cursor-not-allowed font-mono font-semibold text-slate-700 uppercase select-none"
                 />
-                {errors.employeeCode && (
-                  <p className="text-xs text-red-500 mt-1">{errors.employeeCode.message}</p>
-                )}
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Unique sequential identifier generated automatically by HRM system.
+                </p>
               </div>
 
               <div>

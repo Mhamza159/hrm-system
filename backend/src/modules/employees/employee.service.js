@@ -56,16 +56,56 @@ const decryptEmployeeFields = (employeeDoc) => {
 };
 
 /**
+ * Automatically compute the next sequential, conflict-free Employee Code (e.g. EMP-0001, EMP-0002)
+ * @returns {Promise<string>}
+ */
+export const generateNextEmployeeCode = async () => {
+  const employees = await Employee.find(
+    { employeeCode: { $regex: /^EMP-\d+$/i } },
+    'employeeCode'
+  ).lean();
+
+  let maxNum = 0;
+  for (const emp of employees) {
+    if (emp.employeeCode) {
+      const match = emp.employeeCode.match(/^EMP-(\d+)$/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
+    }
+  }
+
+  let candidateNum = maxNum + 1;
+  let candidateCode = `EMP-${String(candidateNum).padStart(4, '0')}`;
+
+  // Fallback verification loop to strictly guarantee no duplicate code
+  while (await Employee.exists({ employeeCode: candidateCode })) {
+    candidateNum += 1;
+    candidateCode = `EMP-${String(candidateNum).padStart(4, '0')}`;
+  }
+
+  return candidateCode;
+};
+
+/**
  * Create a new employee with optional user account provisioning
  * @param {Object} payload 
  * @param {Object} actor 
  * @returns {Promise<Object>}
  */
 export const createEmployee = async (payload, actor) => {
-  // 1. Check uniqueness of employeeCode
-  const existingCode = await Employee.findOne({ employeeCode: payload.employeeCode });
-  if (existingCode) {
-    throw new ApiError(400, `Employee code '${payload.employeeCode}' is already registered`);
+  // 1. Resolve & guarantee unique employeeCode
+  if (!payload.employeeCode || !String(payload.employeeCode).trim()) {
+    payload.employeeCode = await generateNextEmployeeCode();
+  } else {
+    payload.employeeCode = String(payload.employeeCode).trim().toUpperCase();
+    const existingCode = await Employee.findOne({ employeeCode: payload.employeeCode });
+    if (existingCode) {
+      throw new ApiError(400, `Employee code '${payload.employeeCode}' is already registered`);
+    }
   }
 
   // 2. Check uniqueness of email if provided
@@ -122,7 +162,17 @@ export const createEmployee = async (payload, actor) => {
   }
 
   // 5. Persist Employee in MongoDB
-  const employee = await Employee.create(employeeData);
+  let employee;
+  try {
+    employee = await Employee.create(employeeData);
+  } catch (err) {
+    if (err.code === 11000 && err.keyPattern?.employeeCode) {
+      employeeData.employeeCode = await generateNextEmployeeCode();
+      employee = await Employee.create(employeeData);
+    } else {
+      throw err;
+    }
+  }
 
   // Link employeeId back onto User record
   if (provisionedUserId) {
@@ -189,9 +239,10 @@ export const getEmployees = async (
     ];
   }
 
-  // 2. Apply explicit search term
+  // 2. Apply explicit search term with regex sanitization (ReDoS defense)
   if (search && search.trim()) {
-    const searchRegex = new RegExp(search.trim(), 'i');
+    const escaped = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const searchRegex = new RegExp(escaped, 'i');
     conditions.$and = conditions.$and || [];
     conditions.$and.push({
       $or: [

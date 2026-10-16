@@ -20,6 +20,13 @@ export const createEmployee = asyncHandler(async (req, res) => {
     .json(apiResponse(201, result, 'Employee onboarded successfully'));
 });
 
+export const getNextEmployeeCode = asyncHandler(async (req, res) => {
+  const nextCode = await employeeService.generateNextEmployeeCode();
+  return res
+    .status(200)
+    .json(apiResponse(200, { nextCode }, 'Next employee code retrieved successfully'));
+});
+
 export const getEmployees = asyncHandler(async (req, res) => {
   const result = await employeeService.getEmployees(
     req.query,
