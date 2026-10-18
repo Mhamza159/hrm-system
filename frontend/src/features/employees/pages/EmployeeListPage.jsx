@@ -8,7 +8,7 @@
  * - Permissions: Guarded by CASL <Can> for Add, Edit, Delete, and Export.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
@@ -51,7 +51,7 @@ export default function EmployeeListPage() {
   // Archive modal state
   const [deleteId, setDeleteId] = useState(null);
 
-  const { token } = useAuth();
+  const { token, isSuperAdmin } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
 
   // Queries
@@ -67,7 +67,13 @@ export default function EmployeeListPage() {
   const [deleteEmployee, { isLoading: isDeleting }] = useDeleteEmployeeMutation();
 
   const departments = deptData?.data || [];
-  const employees = empData?.data?.items || [];
+  const rawEmployees = empData?.data?.items || [];
+  const employees = useMemo(() => {
+    if (isSuperAdmin) return rawEmployees;
+    return rawEmployees.filter(
+      (emp) => emp.employeeCode !== 'EMP-000' && emp.email !== 'admin@hrm.company.pk'
+    );
+  }, [rawEmployees, isSuperAdmin]);
   const total = empData?.data?.total || 0;
   const totalPages = empData?.data?.totalPages || 1;
 
@@ -199,40 +205,49 @@ export default function EmployeeListPage() {
     {
       key: 'actions',
       header: 'Actions',
-      render: (row) => (
-        <div className="flex items-center gap-1.5 justify-end">
-          <button
-            type="button"
-            onClick={() => navigate(`/employees/${row._id}`)}
-            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
-            title="View Full Profile"
-          >
-            <Eye className="w-4 h-4" />
-          </button>
+      render: (row) => {
+        const isRowSuperAdmin = row.employeeCode === 'EMP-000' || row.email === 'admin@hrm.company.pk';
+        if (isRowSuperAdmin && !isSuperAdmin) {
+          return null;
+        }
 
-          <Can I="employee.edit" a="Employee">
+        return (
+          <div className="flex items-center gap-1.5 justify-end">
             <button
               type="button"
-              onClick={() => navigate(`/employees/${row._id}/edit`)}
-              className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors cursor-pointer"
-              title="Edit Profile"
+              onClick={() => navigate(`/employees/${row._id}`)}
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+              title="View Full Profile"
             >
-              <Edit className="w-4 h-4" />
+              <Eye className="w-4 h-4" />
             </button>
-          </Can>
 
-          <Can I="employee.delete" a="Employee">
-            <button
-              type="button"
-              onClick={() => setDeleteId(row._id)}
-              className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-              title="Archive Employee"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </Can>
-        </div>
-      )
+            <Can I="employee.edit" a="Employee">
+              <button
+                type="button"
+                onClick={() => navigate(`/employees/${row._id}/edit`)}
+                className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors cursor-pointer"
+                title="Edit Profile"
+              >
+                <Edit className="w-4 h-4" />
+              </button>
+            </Can>
+
+            <Can I="employee.delete" a="Employee">
+              {!isRowSuperAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setDeleteId(row._id)}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                  title="Archive Employee"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </Can>
+          </div>
+        );
+      }
     }
   ];
 
@@ -240,8 +255,8 @@ export default function EmployeeListPage() {
     <div className="space-y-6">
       <PageHeader
         title="Employee Directory"
-        subtitle="Manage personnel profiles, organizational assignments, and workforce records."
-        action={
+        description="Manage personnel profiles, organizational assignments, and workforce records."
+        actions={
           <div className="flex items-center gap-2">
             <Can I="report.export" a="Report">
               <button
@@ -326,6 +341,7 @@ export default function EmployeeListPage() {
         emptyMessage="No employees found matching the specified filters."
         pagination={{
           page,
+          limit,
           totalPages,
           totalDocs: total,
           onPageChange: (newPage) => setPage(newPage),

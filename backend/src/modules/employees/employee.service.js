@@ -210,12 +210,23 @@ export const createEmployee = async (payload, actor) => {
  * @returns {Promise<Object>}
  */
 export const getEmployees = async (
-  { page = 1, limit = 10, search, departmentId, designationId, status, employmentType, skill },
+  { page = 1, limit = 10, search, departmentId, designationId, status, employmentType, skill, forReporting = false },
   actor,
   permissionScope = 'all'
 ) => {
   // 1. Resolve horizontal data scope query conditions
   const conditions = { isDeleted: false };
+
+  // Exclude Super Admin executive profile from general directory and dashboards
+  // Allow inclusion ONLY when specifically querying for reporting manager selection or if actor is Super Admin
+  const isActorSuperAdmin = actor?.roles?.some((r) => {
+    const roleName = typeof r === 'string' ? r : r.name;
+    return roleName === 'Super Admin';
+  });
+  if (!isActorSuperAdmin && String(forReporting) !== 'true') {
+    conditions.email = { $ne: 'admin@hrm.company.pk' };
+    conditions.employeeCode = { $ne: 'EMP-000' };
+  }
 
   if (permissionScope === 'own') {
     conditions.$or = [
@@ -322,6 +333,24 @@ export const getEmployeeById = async (id, actor, permissionScope = 'all') => {
     throw new ApiError(404, 'Employee record not found');
   }
 
+  // Super Admin Profile Protection: No other user can access or view Super Admin's employee profile
+  const isTargetSuperAdmin =
+    employee.email === 'admin@hrm.company.pk' ||
+    employee.employeeCode === 'EMP-000';
+
+  if (isTargetSuperAdmin) {
+    const isActorSuperAdmin = actor?.roles?.some((r) => {
+      const roleName = typeof r === 'string' ? r : r.name;
+      return roleName === 'Super Admin';
+    });
+    const isOwn =
+      String(employee.userId?._id || employee.userId) === String(actor?._id) ||
+      String(employee._id) === String(actor?.employeeId);
+    if (!isActorSuperAdmin && !isOwn) {
+      throw new ApiError(403, 'Forbidden: Super Admin profile is protected and cannot be accessed.');
+    }
+  }
+
   // Enforce horizontal access boundary
   const isOwn =
     String(employee.userId?._id || employee.userId) === String(actor._id) ||
@@ -406,6 +435,22 @@ export const updateEmployee = async (id, payload, actor) => {
     throw new ApiError(404, 'Employee record not found');
   }
 
+  // Super Admin Profile Protection: No other user can modify Super Admin's employee profile
+  const isTargetSuperAdmin =
+    employee.email === 'admin@hrm.company.pk' ||
+    employee.employeeCode === 'EMP-000';
+
+  if (isTargetSuperAdmin) {
+    const isActorSuperAdmin = actor?.roles?.some((r) => {
+      const roleName = typeof r === 'string' ? r : r.name;
+      return roleName === 'Super Admin';
+    });
+    const isOwn = String(employee.userId) === String(actor?._id);
+    if (!isActorSuperAdmin && !isOwn) {
+      throw new ApiError(403, 'Forbidden: Super Admin profile cannot be modified by other users.');
+    }
+  }
+
   const beforeSnapshot = employee.toObject();
 
   // If email updated, verify uniqueness
@@ -464,6 +509,10 @@ export const updateEmployeeStatus = async (id, { status, reason }, actor) => {
     throw new ApiError(404, 'Employee record not found');
   }
 
+  if (employee.email === 'admin@hrm.company.pk' || employee.employeeCode === 'EMP-000') {
+    throw new ApiError(403, 'Forbidden: Super Admin status lifecycle cannot be modified.');
+  }
+
   const beforeStatus = employee.status;
   employee.status = status;
   employee.statusReason = reason;
@@ -502,6 +551,10 @@ export const deleteEmployee = async (id, actor) => {
   const employee = await Employee.findOne({ _id: id, isDeleted: false });
   if (!employee) {
     throw new ApiError(404, 'Employee record not found');
+  }
+
+  if (employee.email === 'admin@hrm.company.pk' || employee.employeeCode === 'EMP-000') {
+    throw new ApiError(403, 'Forbidden: Super Admin profile cannot be deleted or archived.');
   }
 
   employee.isDeleted = true;
@@ -1079,6 +1132,15 @@ export const exportEmployeesToExcel = async (queryFilters = {}, actor) => {
   const conditions = { isDeleted: false };
   if (queryFilters.departmentId) conditions.departmentId = queryFilters.departmentId;
   if (queryFilters.status) conditions.status = queryFilters.status;
+
+  const isActorSuperAdmin = actor?.roles?.some((r) => {
+    const roleName = typeof r === 'string' ? r : r.name;
+    return roleName === 'Super Admin';
+  });
+  if (!isActorSuperAdmin) {
+    conditions.email = { $ne: 'admin@hrm.company.pk' };
+    conditions.employeeCode = { $ne: 'EMP-000' };
+  }
 
   const employees = await Employee.find(conditions)
     .populate('departmentId', 'name code')

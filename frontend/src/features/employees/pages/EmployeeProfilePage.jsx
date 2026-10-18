@@ -63,7 +63,11 @@ export default function EmployeeProfilePage() {
     String(employee?.userId?._id || employee?.userId) === String(user?._id) ||
     String(employee?._id) === String(user?.employeeId);
 
-  const canManage = isSuperAdmin || isHR;
+  const isTargetSuperAdmin =
+    employee?.email === 'admin@hrm.company.pk' ||
+    employee?.employeeCode === 'EMP-000';
+
+  const canManage = (isSuperAdmin || isHR) && (!isTargetSuperAdmin || isSuperAdmin);
   const canViewFinancials = canManage || isOwn;
 
   const handleArchive = async () => {

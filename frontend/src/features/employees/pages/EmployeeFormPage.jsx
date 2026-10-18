@@ -61,13 +61,24 @@ export default function EmployeeFormPage() {
   const [currentStep, setCurrentStep] = useState(1);
 
   // API hooks
-  const { data: employeeData, isLoading: isLoadingEmployee } = useGetEmployeeByIdQuery(id, {
+  const {
+    data: employeeData,
+    isLoading: isLoadingEmployee,
+    error: employeeError
+  } = useGetEmployeeByIdQuery(id, {
     skip: !isEditMode
   });
+
+  useEffect(() => {
+    if (employeeError) {
+      toast.error(employeeError?.data?.message || 'Access restricted to this profile');
+      navigate('/employees');
+    }
+  }, [employeeError, navigate]);
   const { data: deptData } = useGetDepartmentsQuery({ limit: 100 });
   const { data: desigData } = useGetDesignationsQuery({ limit: 100 });
   const { data: shiftData } = useGetShiftsQuery({ limit: 100 });
-  const { data: staffData } = useGetEmployeesQuery({ limit: 100 });
+  const { data: staffData } = useGetEmployeesQuery({ limit: 100, forReporting: true });
   const { data: nextCodeData } = useGetNextEmployeeCodeQuery(undefined, {
     skip: isEditMode
   });
