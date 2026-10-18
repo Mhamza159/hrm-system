@@ -217,13 +217,9 @@ export const getEmployees = async (
   // 1. Resolve horizontal data scope query conditions
   const conditions = { isDeleted: false };
 
-  // Exclude Super Admin executive profile from general directory and dashboards
-  // Allow inclusion ONLY when specifically querying for reporting manager selection or if actor is Super Admin
-  const isActorSuperAdmin = actor?.roles?.some((r) => {
-    const roleName = typeof r === 'string' ? r : r.name;
-    return roleName === 'Super Admin';
-  });
-  if (!isActorSuperAdmin && String(forReporting) !== 'true') {
+  // Exclude Super Admin from general workforce directory and dashboards
+  // Allow inclusion ONLY when specifically querying for reporting manager selection
+  if (String(forReporting) !== 'true') {
     conditions.email = { $ne: 'admin@hrm.company.pk' };
     conditions.employeeCode = { $ne: 'EMP-000' };
   }
@@ -1133,14 +1129,9 @@ export const exportEmployeesToExcel = async (queryFilters = {}, actor) => {
   if (queryFilters.departmentId) conditions.departmentId = queryFilters.departmentId;
   if (queryFilters.status) conditions.status = queryFilters.status;
 
-  const isActorSuperAdmin = actor?.roles?.some((r) => {
-    const roleName = typeof r === 'string' ? r : r.name;
-    return roleName === 'Super Admin';
-  });
-  if (!isActorSuperAdmin) {
-    conditions.email = { $ne: 'admin@hrm.company.pk' };
-    conditions.employeeCode = { $ne: 'EMP-000' };
-  }
+  // Super Admin is a system administrator, not an employee: exclude from workforce export
+  conditions.email = { $ne: 'admin@hrm.company.pk' };
+  conditions.employeeCode = { $ne: 'EMP-000' };
 
   const employees = await Employee.find(conditions)
     .populate('departmentId', 'name code')

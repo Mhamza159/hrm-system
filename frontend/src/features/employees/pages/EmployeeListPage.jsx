@@ -69,11 +69,10 @@ export default function EmployeeListPage() {
   const departments = deptData?.data || [];
   const rawEmployees = empData?.data?.items || [];
   const employees = useMemo(() => {
-    if (isSuperAdmin) return rawEmployees;
     return rawEmployees.filter(
       (emp) => emp.employeeCode !== 'EMP-000' && emp.email !== 'admin@hrm.company.pk'
     );
-  }, [rawEmployees, isSuperAdmin]);
+  }, [rawEmployees]);
   const total = empData?.data?.total || 0;
   const totalPages = empData?.data?.totalPages || 1;
 
