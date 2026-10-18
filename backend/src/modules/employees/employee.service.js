@@ -18,6 +18,7 @@ import { User } from '../../models/user.model.js';
 import { Role } from '../../models/role.model.js';
 import { Department } from '../../models/department.model.js';
 import { Designation } from '../../models/designation.model.js';
+import { Shift } from '../../models/shift.model.js';
 import { EmployeeHistory } from '../../models/employeeHistory.model.js';
 import { ProfileChangeRequest } from '../../models/profileChangeRequest.model.js';
 import { encrypt, decrypt } from '../../utils/crypto.js';

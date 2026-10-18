@@ -157,9 +157,9 @@ export const seedRolesAndAdmin = async () => {
   // 3. Ensure Super Admin has an active Employee record for organizational reporting & Org Chart
   const adminDoc = existingAdmin || (await User.findOne({ email: adminEmail }));
   if (adminDoc) {
-    const existingAdminEmp = await Employee.findOne({ email: adminEmail });
-    if (!existingAdminEmp) {
-      await Employee.create({
+    let adminEmpDoc = await Employee.findOne({ email: adminEmail });
+    if (!adminEmpDoc) {
+      adminEmpDoc = await Employee.create({
         employeeCode: 'EMP-000',
         userId: adminDoc._id,
         name: 'Super Admin',
@@ -170,9 +170,14 @@ export const seedRolesAndAdmin = async () => {
         isDeleted: false
       });
       console.log(`✅ Super Admin Employee record created: EMP-000`);
-    } else if (!existingAdminEmp.userId) {
-      existingAdminEmp.userId = adminDoc._id;
-      await existingAdminEmp.save();
+    } else if (!adminEmpDoc.userId) {
+      adminEmpDoc.userId = adminDoc._id;
+      await adminEmpDoc.save();
+    }
+
+    if (String(adminDoc.employeeId) !== String(adminEmpDoc._id)) {
+      adminDoc.employeeId = adminEmpDoc._id;
+      await adminDoc.save();
     }
   }
 
