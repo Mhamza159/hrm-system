@@ -13,8 +13,10 @@ import {
   useCreateShiftMutation,
   useDeleteShiftMutation
 } from '../attendanceApi.js';
+import { usePermission } from '../../../hooks/usePermission.js';
 
 export const ShiftManagementPage = () => {
+  const { can } = usePermission();
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
@@ -95,13 +97,15 @@ export const ShiftManagementPage = () => {
           </div>
         </div>
 
-        <button
-          onClick={() => setCreateModalOpen(true)}
-          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Create Shift</span>
-        </button>
+        {can('org.manage') && (
+          <button
+            onClick={() => setCreateModalOpen(true)}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create Shift</span>
+          </button>
+        )}
       </div>
 
       {/* Shifts Grid */}
@@ -134,14 +138,16 @@ export const ShiftManagementPage = () => {
                     </span>
                   </div>
 
-                  <button
-                    onClick={() => handleDelete(shift._id)}
-                    disabled={isDeleting}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-                    title="Delete shift"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {can('org.manage') && (
+                    <button
+                      onClick={() => handleDelete(shift._id)}
+                      disabled={isDeleting}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                      title="Delete shift"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2 text-xs">

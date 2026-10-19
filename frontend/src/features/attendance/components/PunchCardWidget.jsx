@@ -25,8 +25,10 @@ import {
   useEndBreakMutation
 } from '../attendanceApi.js';
 import { AttendanceStatusBadge } from './AttendanceStatusBadge.jsx';
+import { usePermission } from '../../../hooks/usePermission.js';
 
 export const PunchCardWidget = ({ onActionSuccess }) => {
+  const { can } = usePermission();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [breakModalOpen, setBreakModalOpen] = useState(false);
   const [selectedBreakType, setSelectedBreakType] = useState('meal');
@@ -187,7 +189,11 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
 
         {/* Right: Primary Action Buttons */}
         <div className="flex items-center gap-3">
-          {!isClockedIn ? (
+          {!can('attendance.mark') ? (
+            <div className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-500 font-medium text-xs">
+              Punch Actions Disabled
+            </div>
+          ) : !isClockedIn ? (
             <button
               onClick={handleCheckIn}
               disabled={isCheckingIn || isLoading}

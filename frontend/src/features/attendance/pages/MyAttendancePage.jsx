@@ -23,8 +23,10 @@ import { PunchCardWidget } from '../components/PunchCardWidget.jsx';
 import { AttendanceStatusBadge } from '../components/AttendanceStatusBadge.jsx';
 import { RequestCorrectionModal } from '../components/RequestCorrectionModal.jsx';
 import { ApplyWFHModal } from '../components/ApplyWFHModal.jsx';
+import { usePermission } from '../../../hooks/usePermission.js';
 
 export const MyAttendancePage = () => {
+  const { can } = usePermission();
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState(
     `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`
@@ -119,25 +121,29 @@ export const MyAttendancePage = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setWfhModalOpen(true)}
-            disabled={isMonthLocked}
-            className="px-4 py-2 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
-          >
-            <Laptop className="w-4 h-4" />
-            <span>Apply WFH</span>
-          </button>
-          <button
-            onClick={() => {
-              setSelectedDateForCorrection(new Date().toISOString().split('T')[0]);
-              setCorrectionModalOpen(true);
-            }}
-            disabled={isMonthLocked}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold flex items-center gap-1.5 shadow-sm transition-colors disabled:opacity-50"
-          >
-            <FileEdit className="w-4 h-4" />
-            <span>Request Missed Punch</span>
-          </button>
+          {can('attendance.wfh') && (
+            <button
+              onClick={() => setWfhModalOpen(true)}
+              disabled={isMonthLocked}
+              className="px-4 py-2 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+            >
+              <Laptop className="w-4 h-4" />
+              <span>Apply WFH</span>
+            </button>
+          )}
+          {can('attendance.correction') && (
+            <button
+              onClick={() => {
+                setSelectedDateForCorrection(new Date().toISOString().split('T')[0]);
+                setCorrectionModalOpen(true);
+              }}
+              disabled={isMonthLocked}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold flex items-center gap-1.5 shadow-sm transition-colors disabled:opacity-50"
+            >
+              <FileEdit className="w-4 h-4" />
+              <span>Request Missed Punch</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -204,12 +210,12 @@ export const MyAttendancePage = () => {
             <div
               key={item.dateStr}
               onClick={() => {
-                if (!isMonthLocked) {
+                if (!isMonthLocked && can('attendance.correction')) {
                   setSelectedDateForCorrection(item.dateStr);
                   setCorrectionModalOpen(true);
                 }
               }}
-              className={`p-3.5 rounded-2xl border transition-all cursor-pointer hover:shadow-md ${
+              className={`p-3.5 rounded-2xl border transition-all ${!isMonthLocked && can('attendance.correction') ? 'cursor-pointer hover:shadow-md' : 'cursor-default'} ${
                 rec?.status === 'present'
                   ? 'border-emerald-200 bg-emerald-50/30 dark:border-emerald-900/40 dark:bg-emerald-950/20'
                   : rec?.status === 'late'

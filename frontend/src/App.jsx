@@ -296,7 +296,7 @@ export default function App() {
           <Route
             path="attendance/team"
             element={
-              <ProtectedRoute requiredPermission="attendance.view">
+              <ProtectedRoute requiredPermission="attendance.approve">
                 <TeamAttendancePage />
               </ProtectedRoute>
             }

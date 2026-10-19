@@ -13,8 +13,10 @@ import {
   useLockMonthMutation,
   useUnlockMonthMutation
 } from '../attendanceApi.js';
+import { usePermission } from '../../../hooks/usePermission.js';
 
 export const AttendanceLockPage = () => {
+  const { can } = usePermission();
   const [selectedMonth, setSelectedMonth] = useState(
     new Date().toISOString().slice(0, 7)
   );
@@ -41,6 +43,20 @@ export const AttendanceLockPage = () => {
       setActionError(err.data?.message || err.message || 'Operation failed');
     }
   };
+
+  if (!can('attendance.lock')) {
+    return (
+      <div className="max-w-2xl p-6 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-2xl text-center space-y-3">
+        <div className="w-12 h-12 mx-auto rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+          <Lock className="w-6 h-6" />
+        </div>
+        <h2 className="text-lg font-bold text-slate-900 dark:text-white">Access Restricted</h2>
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          You do not have permission to freeze or unlock attendance months. This action is restricted to HR Managers and Super Admins.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl space-y-6">

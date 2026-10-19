@@ -77,7 +77,7 @@ export function Sidebar({ isOpen = false, onClose }) {
     { name: 'My Team', path: '/teams/my', icon: UserCheck, permission: 'org.view' },
     { name: 'Employees', path: '/employees', icon: Users, permission: 'employee.view' },
     { name: 'My Attendance', path: '/attendance/my', icon: Clock, permission: 'attendance.view' },
-    { name: 'Team Attendance', path: '/attendance/team', icon: UserCheck, permission: 'attendance.view' },
+    { name: 'Team Attendance', path: '/attendance/team', icon: UserCheck, permission: 'attendance.approve' },
     { name: 'Leaves', path: '/leaves', icon: Calendar, permission: 'leave.view' },
     { name: 'Payroll', path: '/payroll', icon: BadgeDollarSign, permission: 'payroll.view' },
     { name: 'Company Policies', path: '/policies', icon: BookOpen, permission: 'settings.view' },

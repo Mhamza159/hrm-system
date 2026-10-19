@@ -357,6 +357,15 @@ export const getMyAttendance = async ({ user, employeeId: explicitEmpId, month, 
   };
 };
 
+const isFullAdminOrHR = (user) => {
+  if (!user) return false;
+  const roles = Array.isArray(user.roles) ? user.roles : user.role ? [user.role] : [];
+  return roles.some((r) => {
+    const name = typeof r === 'string' ? r : r.name;
+    return name === 'Super Admin' || name === 'HR Manager';
+  });
+};
+
 /**
  * 5.10: Team Live Attendance Grid
  */
@@ -368,7 +377,7 @@ export const getTeamAttendance = async ({ user, date, departmentId, status, page
 
   if (departmentId) {
     empFilter.departmentId = new mongoose.Types.ObjectId(departmentId);
-  } else if (user.role?.name === 'Department Manager') {
+  } else if (!isFullAdminOrHR(user)) {
     // Limit to manager's own department or team
     const managerEmp = await Employee.findOne({ userId: user._id, isDeleted: false }, 'departmentId').lean();
     if (managerEmp?.departmentId) {
@@ -572,7 +581,16 @@ export const getMyWFHRequests = async (user) => {
 };
 
 export const getTeamWFHRequests = async (user) => {
-  return WFHRequest.find({ status: 'pending' })
+  let filter = { status: 'pending' };
+  if (!isFullAdminOrHR(user)) {
+    const managerEmp = await Employee.findOne({ userId: user._id, isDeleted: false }, 'departmentId').lean();
+    if (managerEmp?.departmentId) {
+      const deptEmployees = await Employee.find({ departmentId: managerEmp.departmentId, isDeleted: false }).distinct('_id');
+      filter.employeeId = { $in: deptEmployees };
+    }
+  }
+
+  return WFHRequest.find(filter)
     .populate('employeeId', 'firstName lastName employeeCode departmentId')
     .sort({ date: -1 })
     .lean();
@@ -624,7 +642,16 @@ export const getMyCorrections = async (user) => {
 };
 
 export const getTeamCorrections = async (user) => {
-  return AttendanceCorrection.find({ status: 'pending' })
+  let filter = { status: 'pending' };
+  if (!isFullAdminOrHR(user)) {
+    const managerEmp = await Employee.findOne({ userId: user._id, isDeleted: false }, 'departmentId').lean();
+    if (managerEmp?.departmentId) {
+      const deptEmployees = await Employee.find({ departmentId: managerEmp.departmentId, isDeleted: false }).distinct('_id');
+      filter.employeeId = { $in: deptEmployees };
+    }
+  }
+
+  return AttendanceCorrection.find(filter)
     .populate('employeeId', 'firstName lastName employeeCode departmentId')
     .sort({ date: -1 })
     .lean();
@@ -698,7 +725,7 @@ export const decideCorrection = async ({ correctionId, user, decision, decisionN
 /**
  * 5.15: ExcelJS Attendance Export
  */
-export const generateAttendanceExcel = async ({ startDate, endDate, month, departmentId, status }) => {
+export const generateAttendanceExcel = async ({ startDate, endDate, month, departmentId, status, user }) => {
   let filter = {};
 
   if (month) {
@@ -716,6 +743,17 @@ export const generateAttendanceExcel = async ({ startDate, endDate, month, depar
 
   if (status) {
     filter.status = status;
+  }
+
+  if (user && !isFullAdminOrHR(user)) {
+    const managerEmp = await Employee.findOne({ userId: user._id, isDeleted: false }, 'departmentId').lean();
+    if (managerEmp?.departmentId) {
+      const deptEmployees = await Employee.find({ departmentId: managerEmp.departmentId, isDeleted: false }).distinct('_id');
+      filter.employeeId = { $in: deptEmployees };
+    }
+  } else if (departmentId) {
+    const deptEmployees = await Employee.find({ departmentId, isDeleted: false }).distinct('_id');
+    filter.employeeId = { $in: deptEmployees };
   }
 
   const attendances = await Attendance.find(filter)

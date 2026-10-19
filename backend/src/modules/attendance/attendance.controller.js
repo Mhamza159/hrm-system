@@ -169,7 +169,10 @@ export const decideCorrection = asyncHandler(async (req, res) => {
 });
 
 export const exportAttendance = asyncHandler(async (req, res) => {
-  const buffer = await attendanceService.generateAttendanceExcel(req.query);
+  const buffer = await attendanceService.generateAttendanceExcel({
+    ...req.query,
+    user: req.user
+  });
   const filename = `Attendance_Report_${req.query.month || new Date().toISOString().split('T')[0]}.xlsx`;
 
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

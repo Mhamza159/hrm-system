@@ -30,8 +30,10 @@ import { AttendanceStatusBadge } from '../components/AttendanceStatusBadge.jsx';
 import { EditAttendanceModal } from '../components/EditAttendanceModal.jsx';
 import { ExportAttendanceModal } from '../components/ExportAttendanceModal.jsx';
 import { getSocket } from '../../notifications/hooks/useSocket.js';
+import { usePermission } from '../../../hooks/usePermission.js';
 
 export const TeamAttendancePage = () => {
+  const { can } = usePermission();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'wfh' | 'corrections'
   const [statusFilter, setStatusFilter] = useState('all');
@@ -128,13 +130,15 @@ export const TeamAttendancePage = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setExportModalOpen(true)}
-            className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-colors"
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Export Timesheets</span>
-          </button>
+          {can('attendance.export') && (
+            <button
+              onClick={() => setExportModalOpen(true)}
+              className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm font-semibold flex items-center gap-1.5 transition-colors"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Export Timesheets</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -151,38 +155,42 @@ export const TeamAttendancePage = () => {
           >
             Team Presence Grid
           </button>
-          <button
-            onClick={() => setActiveTab('wfh')}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 ${
-              activeTab === 'wfh'
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <Laptop className="w-4 h-4" />
-            <span>WFH Requests</span>
-            {wfhRequests.length > 0 && (
-              <span className="px-1.5 py-0.2 bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200 rounded-full text-xs">
-                {wfhRequests.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('corrections')}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 ${
-              activeTab === 'corrections'
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <Clock className="w-4 h-4" />
-            <span>Punch Corrections</span>
-            {corrections.length > 0 && (
-              <span className="px-1.5 py-0.2 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200 rounded-full text-xs">
-                {corrections.length}
-              </span>
-            )}
-          </button>
+          {can('attendance.approve') && (
+            <>
+              <button
+                onClick={() => setActiveTab('wfh')}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 ${
+                  activeTab === 'wfh'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <Laptop className="w-4 h-4" />
+                <span>WFH Requests</span>
+                {wfhRequests.length > 0 && (
+                  <span className="px-1.5 py-0.2 bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200 rounded-full text-xs">
+                    {wfhRequests.length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('corrections')}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 ${
+                  activeTab === 'corrections'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <Clock className="w-4 h-4" />
+                <span>Punch Corrections</span>
+                {corrections.length > 0 && (
+                  <span className="px-1.5 py-0.2 bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-200 rounded-full text-xs">
+                    {corrections.length}
+                  </span>
+                )}
+              </button>
+            </>
+          )}
         </div>
 
         {activeTab === 'all' && (
@@ -303,18 +311,20 @@ export const TeamAttendancePage = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
-                      <button
-                        onClick={() => {
-                          setSelectedAttendanceForEdit(att);
-                          setEditModalOpen(true);
-                        }}
-                        className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                        <span>Edit Punch</span>
-                      </button>
-                    </div>
+                    {can('attendance.edit') && (
+                      <div className="flex items-center justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <button
+                          onClick={() => {
+                            setSelectedAttendanceForEdit(att);
+                            setEditModalOpen(true);
+                          }}
+                          className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                          <span>Edit Punch</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
