@@ -14,7 +14,8 @@ import {
   MapPin,
   Mail,
   Database,
-  RefreshCw
+  RefreshCw,
+  Bell
 } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { CompanyForm } from '../components/CompanyForm.jsx';
@@ -26,6 +27,7 @@ import { TaxSlabsForm } from '../components/TaxSlabsForm.jsx';
 import { GeoFenceMapEditor } from '../components/GeoFenceMapEditor.jsx';
 import { TemplatesForm } from '../components/TemplatesForm.jsx';
 import { BackupTab } from '../components/BackupTab.jsx';
+import { NotificationSettingsForm } from '../components/NotificationSettingsForm.jsx';
 import { useGetSettingsQuery } from '../settingsApi.js';
 
 const TABS = [
@@ -37,6 +39,7 @@ const TABS = [
   { id: 'taxSlabs', label: 'Statutory & Tax', icon: Scale },
   { id: 'geoFences', label: 'Geo-Fence Map', icon: MapPin },
   { id: 'templates', label: 'Templates', icon: Mail },
+  { id: 'notifications', label: 'Notifications & Alerts', icon: Bell },
   { id: 'backup', label: 'Data Backup', icon: Database }
 ];
 
@@ -133,6 +136,13 @@ export default function SettingsPage() {
 
           {activeTab === 'templates' && (
             <TemplatesForm initialData={settings.templates} onSaved={refetch} />
+          )}
+
+          {activeTab === 'notifications' && (
+            <NotificationSettingsForm
+              initialData={settings.notifications}
+              onSaved={refetch}
+            />
           )}
 
           {activeTab === 'backup' && <BackupTab />}

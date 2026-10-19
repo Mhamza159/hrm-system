@@ -23,6 +23,8 @@ import { useGetPublicPoliciesQuery } from '../../features/settings/settingsApi.j
 import { TwoFactorModal } from '../../features/auth/components/TwoFactorModal.jsx';
 import { RoleBadge } from '../common/RoleBadge.jsx';
 import { getUserDisplayName } from '../../lib/formatters.js';
+import { NotificationBell } from '../../features/notifications/components/NotificationBell.jsx';
+import { BellRing } from 'lucide-react';
 
 export function Topbar({ onToggleMenu }) {
   const { user } = useAuth();
@@ -103,17 +105,8 @@ export function Topbar({ onToggleMenu }) {
 
       {/* 2. Utility Actions & Profile Capsule (Right) */}
       <div className="flex items-center gap-3 md:gap-4">
-        {/* Notification Bell with Red Badge (3) */}
-        <button
-          type="button"
-          title="Notifications"
-          className="relative p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
-        >
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-[#111D17]">
-            3
-          </span>
-        </button>
+        {/* Real-time Notification Bell with Live Drawer */}
+        <NotificationBell />
 
         {/* Theme Dark/Light Mode Moon Toggle */}
         <button
@@ -218,6 +211,18 @@ export function Topbar({ onToggleMenu }) {
                     }`}
                     title={user?.twoFactorEnabled ? '2FA Enabled' : '2FA Disabled'}
                   />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    navigate('/settings/notifications');
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors cursor-pointer text-left"
+                >
+                  <BellRing className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Notification Settings</span>
                 </button>
 
                 {can('login.history') && (

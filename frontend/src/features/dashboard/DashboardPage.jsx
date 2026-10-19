@@ -23,6 +23,7 @@ import { StatCard } from '../../components/common/StatCard.jsx';
 import { Card } from '../../components/common/Card.jsx';
 import { StatusBadge } from '../../components/common/StatusBadge.jsx';
 import { RoleBadge } from '../../components/common/RoleBadge.jsx';
+import { PinnedNoticeBoard } from '../announcements/components/PinnedNoticeBoard.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
 import { getUserDisplayName } from '../../lib/formatters.js';
 
@@ -87,6 +88,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Pinned Executive Notice Board (Slice 8.7) */}
+      <PinnedNoticeBoard />
 
       {/* 2. Row 1: 4 Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">

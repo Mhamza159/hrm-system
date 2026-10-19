@@ -8,6 +8,7 @@
  * - Performance: High-throughput in-memory caching for attendance and payroll read paths.
  */
 
+import mongoose from 'mongoose';
 import { Setting } from '../../models/setting.model.js';
 import { SETTING_SCHEMAS } from './setting.validation.js';
 import { recordAuditLog } from '../../services/audit.service.js';
@@ -108,6 +109,24 @@ export const DEFAULT_SETTINGS = {
     whatsappAlert: {
       body: 'HRM Alert: Dear {{name}}, your request has been updated.'
     }
+  },
+  notifications: {
+    channels: {
+      inApp: true,
+      email: true,
+      whatsapp: true
+    },
+    announcements: {
+      inApp: true,
+      email: true,
+      whatsapp: true
+    },
+    categories: {
+      attendance: { inApp: true, email: true, whatsapp: true },
+      leave: { inApp: true, email: true, whatsapp: true },
+      payroll: { inApp: true, email: true, whatsapp: true },
+      announcement: { inApp: true, email: true, whatsapp: true }
+    }
   }
 };
 
@@ -134,6 +153,11 @@ export class SettingService {
 
     if (cached && now - cached.timestamp < CACHE_TTL_MS) {
       return cached.value;
+    }
+
+    // Fast-path default resolution if MongoDB connection is not open (e.g. unit tests or disconnected fallback)
+    if (mongoose.connection?.readyState !== 1) {
+      return DEFAULT_SETTINGS[key] || null;
     }
 
     let doc = await Setting.findOne({ key });

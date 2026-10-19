@@ -312,6 +312,63 @@ export const PERMISSIONS_CATALOGUE = [
         defaultScope: 'team'
       }
     ]
+  },
+  {
+    module: 'notifications',
+    label: 'Notifications & Announcements',
+    subject: 'Notification',
+    description: 'Real-time alert delivery, user channel preferences, and company/department announcements.',
+    actions: [
+      {
+        action: 'notification.view',
+        label: 'View Notifications & Preferences',
+        description: 'View in-app notification alerts and update channel preferences.',
+        allowedScopes: ['own'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'notification.manage',
+        label: 'Manage Notification Broadcasts',
+        description: 'Dispatch organization-wide alerts and operational bulletins.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'announcement.view',
+        label: 'View Announcements',
+        description: 'Read company and department announcements.',
+        allowedScopes: ['own', 'department', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'announcement.create',
+        label: 'Create Announcements',
+        description: 'Publish announcements targeted to department or company.',
+        allowedScopes: ['department', 'all'],
+        defaultScope: 'department'
+      },
+      {
+        action: 'announcement.edit',
+        label: 'Edit Announcements',
+        description: 'Modify existing announcement content and target audience.',
+        allowedScopes: ['department', 'all'],
+        defaultScope: 'department'
+      },
+      {
+        action: 'announcement.delete',
+        label: 'Delete Announcements',
+        description: 'Delete or archive announcements from notice boards.',
+        allowedScopes: ['department', 'all'],
+        defaultScope: 'department'
+      },
+      {
+        action: 'announcement.pin',
+        label: 'Pin Announcements',
+        description: 'Pin high-priority announcements to the top of notice boards.',
+        allowedScopes: ['department', 'all'],
+        defaultScope: 'department'
+      }
+    ]
   }
 ];
 

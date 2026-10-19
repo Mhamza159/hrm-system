@@ -26,6 +26,9 @@ import EmployeeProfilePage from './features/employees/pages/EmployeeProfilePage.
 import EmployeeImportPage from './features/employees/pages/EmployeeImportPage.jsx';
 import MyProfilePage from './features/employees/pages/MyProfilePage.jsx';
 import ChangeRequestsPage from './features/employees/pages/ChangeRequestsPage.jsx';
+import { NotificationsPage } from './features/notifications/pages/NotificationsPage.jsx';
+import { NotificationSettingsPage } from './features/notifications/pages/NotificationSettingsPage.jsx';
+import { AnnouncementsPage } from './features/announcements/pages/AnnouncementsPage.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
 import { useRefreshTokenMutation } from './features/auth/authApi.js';
@@ -248,6 +251,30 @@ export default function App() {
             element={
               <ProtectedRoute requiredPermission="login.history">
                 <LoginHistoryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="notifications"
+            element={
+              <ProtectedRoute requiredPermission="notification.view">
+                <NotificationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="settings/notifications"
+            element={
+              <ProtectedRoute requiredPermission="notification.view">
+                <NotificationSettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="announcements"
+            element={
+              <ProtectedRoute requiredPermission="announcement.view">
+                <AnnouncementsPage />
               </ProtectedRoute>
             }
           />

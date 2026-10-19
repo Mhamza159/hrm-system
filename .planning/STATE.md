@@ -3,10 +3,10 @@
 ## Project Overview
 - **Project:** HRM System (Human Resource Management System)
 - **Client Profile:** Single software house, Pakistan (10–30 staff today, 50–80 projected in 2 years)
-- **Active Branch:** `feature/06-employees`
+- **Active Branch:** `feature/07-notifications`
 - **Active Phase:** Phase 1: Core HR & Payroll (Launch Scope P1) — 6 of 12 Modules Complete (50%)
-- **Last Completed Module:** **M4 Departments, Designations, Shifts & Org Chart** (`docs/BUILD-GUIDE.md` Section 7 · Rows 4.1 to 4.7) — **100% COMPLETE & VERIFIED**
-- **Next Queued Module:** **M8 Notifications & Announcements** (`docs/BUILD-GUIDE.md` Section 9 · Rows 8.1 to 8.8)
+- **Last Completed Module:** **M3 Employee Management** (`docs/BUILD-GUIDE.md` Section 8 · Rows 3.1 to 3.17) — **100% COMPLETE & VERIFIED**
+- **Active Module:** **M8 Notifications & Announcements** (`docs/BUILD-GUIDE.md` Section 9 · Rows 8.1 to 8.8)
 
 ---
 
@@ -115,4 +115,9 @@
 - **Vitest Backend Test Suite:** **All 26 test files passing (138 / 138 tests green)**
 - **Vite Production Build:** Transformed 1688 modules, 0 errors.
 - **Tasks File:** Fully synchronized at `.specify/specs/04-company-settings/tasks.md` (all slices marked `[x]`).
+
+---
+
+## Quick Tasks Log
+- [x] **quick/20261019-notification-settings-tab:** Admin Notification & Announcement Delivery Method Selection (In-App Only, Email Only, WhatsApp Only, Mixed Omnichannel). Mounted tab in `SettingsPage.jsx`, wired `NotificationSettingsForm.jsx`, validated in `setting.validation.js`, enforced in `notify.service.js`. Verified via 16/16 tests (`admin-notification-settings.test.js`, `whatsapp-notifications.test.js`) and Vite build.
 

@@ -9,18 +9,26 @@
  * 3. Gracefully handles startup failure with structured logging.
  */
 
+import http from 'node:http';
 import app from './app.js';
 import { connectDB } from './config/db.js';
 import { env } from './config/env.js';
+import { initSocketIO } from './services/socket.service.js';
 
 const startServer = async () => {
   try {
     // 1. Connect to MongoDB
     await connectDB();
 
-    // 2. Start HTTP Listener
-    app.listen(env.PORT, () => {
-      console.log(`🚀 HRM Server running on port ${env.PORT} in ${env.NODE_ENV} mode`);
+    // 2. Wrap Express with standard Node HTTP Server
+    const httpServer = http.createServer(app);
+
+    // 3. Initialize Real-Time Socket.io Hub on the HTTP Server
+    initSocketIO(httpServer);
+
+    // 4. Start HTTP & WebSocket Listener
+    httpServer.listen(env.PORT, () => {
+      console.log(`🚀 HRM Server & Socket.io running on port ${env.PORT} in ${env.NODE_ENV} mode`);
     });
   } catch (error) {
     console.error('Failed to start server:', error.message);

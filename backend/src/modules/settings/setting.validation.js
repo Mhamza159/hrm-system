@@ -113,6 +113,26 @@ export const templateItemSchema = z.object({
 
 export const templatesSchema = z.record(templateItemSchema);
 
+// Admin System Notifications & Channel Configuration Schema
+export const notificationsSettingSchema = z.object({
+  channels: z.object({
+    inApp: z.boolean().default(true),
+    email: z.boolean().default(true),
+    whatsapp: z.boolean().default(false)
+  }).default({ inApp: true, email: true, whatsapp: false }),
+  announcements: z.object({
+    inApp: z.boolean().default(true),
+    email: z.boolean().default(true),
+    whatsapp: z.boolean().default(false)
+  }).default({ inApp: true, email: true, whatsapp: false }),
+  categories: z.object({
+    attendance: z.object({ inApp: z.boolean(), email: z.boolean(), whatsapp: z.boolean() }).optional(),
+    leave: z.object({ inApp: z.boolean(), email: z.boolean(), whatsapp: z.boolean() }).optional(),
+    payroll: z.object({ inApp: z.boolean(), email: z.boolean(), whatsapp: z.boolean() }).optional(),
+    announcement: z.object({ inApp: z.boolean(), email: z.boolean(), whatsapp: z.boolean() }).optional()
+  }).optional()
+});
+
 // Map of key to Zod validator schema
 export const SETTING_SCHEMAS = {
   company: companyProfileSchema,
@@ -126,7 +146,8 @@ export const SETTING_SCHEMAS = {
   pessi: pessiSchema,
   providentFund: providentFundSchema,
   geoFences: geoFencesSchema,
-  templates: templatesSchema
+  templates: templatesSchema,
+  notifications: notificationsSettingSchema
 };
 
 /**

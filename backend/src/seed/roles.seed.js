@@ -59,7 +59,14 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'org.view', subject: 'Organization', scope: 'all' },
       { action: 'org.manage', subject: 'Organization', scope: 'all' },
       { action: 'report.view', subject: 'Report', scope: 'all' },
-      { action: 'report.export', subject: 'Report', scope: 'all' }
+      { action: 'report.export', subject: 'Report', scope: 'all' },
+      { action: 'notification.view', subject: 'Notification', scope: 'own' },
+      { action: 'notification.manage', subject: 'Notification', scope: 'all' },
+      { action: 'announcement.view', subject: 'Announcement', scope: 'all' },
+      { action: 'announcement.create', subject: 'Announcement', scope: 'all' },
+      { action: 'announcement.edit', subject: 'Announcement', scope: 'all' },
+      { action: 'announcement.delete', subject: 'Announcement', scope: 'all' },
+      { action: 'announcement.pin', subject: 'Announcement', scope: 'all' }
     ]
   },
   {
@@ -82,7 +89,12 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'settings.view', subject: 'Setting', scope: 'all' },
       { action: 'org.view', subject: 'Organization', scope: 'all' },
       { action: 'report.view', subject: 'Report', scope: 'team' },
-      { action: 'report.export', subject: 'Report', scope: 'team' }
+      { action: 'report.export', subject: 'Report', scope: 'team' },
+      { action: 'notification.view', subject: 'Notification', scope: 'own' },
+      { action: 'announcement.view', subject: 'Announcement', scope: 'department' },
+      { action: 'announcement.create', subject: 'Announcement', scope: 'department' },
+      { action: 'announcement.edit', subject: 'Announcement', scope: 'department' },
+      { action: 'announcement.pin', subject: 'Announcement', scope: 'department' }
     ]
   },
   {
@@ -98,6 +110,8 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'leave.view', subject: 'Leave', scope: 'own' },
       { action: 'payroll.view', subject: 'Payroll', scope: 'own' },
       { action: 'settings.view', subject: 'Setting', scope: 'all' },
+      { action: 'notification.view', subject: 'Notification', scope: 'own' },
+      { action: 'announcement.view', subject: 'Announcement', scope: 'own' },
       { action: 'org.view', subject: 'Organization', scope: 'all' },
       { action: 'report.view', subject: 'Report', scope: 'own' }
     ]

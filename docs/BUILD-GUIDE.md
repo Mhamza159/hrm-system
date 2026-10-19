@@ -178,14 +178,14 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 8.1 | Notify service | `services/notify.service.js` (save + Socket.io + email/WhatsApp job) | — | Aik call se teeno channels | ☐ |
-| 8.2 | In-app bell | `GET /notifications`, `PATCH /:id/read`, `PATCH /read-all` | `NotificationBell.jsx` (unread ginti, dropdown), `NotificationsPage.jsx` | Live aaye, click par page khule | ☐ |
-| 8.3 | Email notifications | email job + templates (2.9) | — | Leave approve par email | ☐ |
-| 8.4 | WhatsApp notifications | `services/whatsapp.service.js` (Cloud API) | — | Test number par message | ☐ |
-| 8.5 | Notification preferences | user.notificationPrefs | `NotificationSettingsPage.jsx` (har type ke liye app/email/WhatsApp) | Band channel par na aaye | ☐ |
-| 8.6 | Announcements (company/department) | `announcement.model.js`, CRUD `/announcements` (announce.company / announce.team) | `AnnouncementsPage.jsx`, `AnnouncementForm.jsx` | Sirf chuna hua audience dekhe | ☐ |
-| 8.7 | Notice board + pin | announcement.pinned | Dashboard par pinned cards | Pinned upar | ☐ |
-| 8.8 | Read receipts | `PATCH /announcements/:id/read`, readBy[] | "Seen by 23/40" | Ginti sahi | ☐ |
+| 8.1 | Notify service | `services/notify.service.js` (save + Socket.io + email/WhatsApp job) | — | Aik call se teeno channels | ☑ |
+| 8.2 | In-app bell | `GET /notifications`, `PATCH /:id/read`, `PATCH /read-all` | `NotificationBell.jsx` (unread ginti, dropdown), `NotificationsPage.jsx` | Live aaye, click par page khule | ☑ |
+| 8.3 | Email notifications | email job + templates (2.9) | — | Leave approve par email | ☑ |
+| 8.4 | WhatsApp notifications | `services/whatsapp.service.js` (Cloud API) | — | Test number par message | ☑ |
+| 8.5 | Notification preferences | user.notificationPrefs | `NotificationSettingsPage.jsx` (har type ke liye app/email/WhatsApp) | Band channel par na aaye | ☑ |
+| 8.6 | Announcements (company/department) | `announcement.model.js`, CRUD `/announcements` (announce.company / announce.team) | `AnnouncementsPage.jsx`, `AnnouncementForm.jsx` | Sirf chuna hua audience dekhe | ☑ |
+| 8.7 | Notice board + pin | announcement.pinned | Dashboard par pinned cards | Pinned upar | ☑ |
+| 8.8 | Read receipts | `PATCH /announcements/:id/read`, readBy[] | "Seen by 23/40" | Ginti sahi | ☑ |
 
 ## 10. M5 — Attendance & Shifts
 

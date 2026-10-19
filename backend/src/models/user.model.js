@@ -131,6 +131,17 @@ const userSchema = new mongoose.Schema(
     isDeleted: {
       type: Boolean,
       default: false
+    },
+
+    // Granular Notification Preferences across channels (Module M8 / Slice 8.5)
+    notificationPrefs: {
+      type: mongoose.Schema.Types.Mixed,
+      default: () => ({
+        attendance: { inApp: true, email: true, whatsapp: false },
+        leave: { inApp: true, email: true, whatsapp: false },
+        payroll: { inApp: true, email: true, whatsapp: false },
+        announcement: { inApp: true, email: true, whatsapp: false }
+      })
     }
   },
   {

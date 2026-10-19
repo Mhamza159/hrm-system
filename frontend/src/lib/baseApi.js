@@ -145,7 +145,9 @@ export const baseApi = createApi({
     'Designations',
     'Shifts',
     'OrgChart',
-    'Team'
+    'Team',
+    'Notification',
+    'Announcement'
   ],
   endpoints: () => ({})
 });

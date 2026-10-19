@@ -35,6 +35,7 @@ import {
   UserCheck,
   User,
   FileCheck,
+  Megaphone,
   X
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -79,6 +80,7 @@ export function Sidebar({ isOpen = false, onClose }) {
     { name: 'Leaves', path: '/leaves', icon: Calendar, permission: 'leave.view' },
     { name: 'Payroll', path: '/payroll', icon: BadgeDollarSign, permission: 'payroll.view' },
     { name: 'Company Policies', path: '/policies', icon: BookOpen, permission: 'settings.view' },
+    { name: 'Announcements', path: '/announcements', icon: Megaphone, permission: 'announcement.view' },
     { name: 'Notifications', path: '/notifications', icon: Bell, badge: 3 },
     { name: 'Login History', path: '/login-history', icon: History, permission: 'login.history' }
   ];
