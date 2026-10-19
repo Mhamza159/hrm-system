@@ -3,10 +3,10 @@
 ## Project Overview
 - **Project:** HRM System (Human Resource Management System)
 - **Client Profile:** Single software house, Pakistan (10–30 staff today, 50–80 projected in 2 years)
-- **Active Branch:** `feature/08-attendance`
-- **Active Phase:** Phase 1: Core HR & Payroll (Launch Scope P1) — 7 of 12 Modules Complete (58%)
-- **Last Completed Module:** **M8 Notifications & Announcements** (`docs/BUILD-GUIDE.md` Section 9 · Rows 8.1 to 8.8) — **100% COMPLETE & VERIFIED**
-- **Active Module:** **M5 Attendance & Shifts** (`docs/BUILD-GUIDE.md` Section 10 · Rows 5.1 to 5.15)
+- **Active Branch:** `feature/09-leave`
+- **Active Phase:** Phase 1: Core HR & Payroll (Launch Scope P1) — 8 of 12 Modules Complete (67%)
+- **Last Completed Module:** **M5 Attendance & Shifts** (`docs/BUILD-GUIDE.md` Section 10 · Rows 5.1 to 5.15) — **100% COMPLETE & VERIFIED**
+- **Active Module:** **M6 Leave & Holidays** (`docs/BUILD-GUIDE.md` Section 11 · Rows 6.1 to 6.15)
 
 ---
 
