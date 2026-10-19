@@ -8,6 +8,7 @@
  */
 
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { authenticate } from '../../middlewares/authenticate.js';
 import { checkPermission } from '../../middlewares/checkPermission.js';
 import { validate } from '../../middlewares/validate.js';
@@ -34,11 +35,37 @@ const router = Router();
 // Universal requirement: All routes require authenticated user session
 router.use(authenticate);
 
+// Defense-in-depth: Rate limiters for state-mutating punch operations and self-service requests
+const punchLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // max 30 punch operations per minute per IP
+  message: {
+    success: false,
+    statusCode: 429,
+    message: 'Too many punch requests in a short period. Please slow down.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+export const requestsLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30, // max 30 submissions per 15 minutes per IP
+  message: {
+    success: false,
+    statusCode: 429,
+    message: 'Too many requests submitted. Please try again after 15 minutes.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 /**
  * 5.3 & 5.4: Daily Clock-In and Clock-Out
  */
 router.post(
   '/check-in',
+  punchLimiter,
   checkPermission('attendance.mark', 'own'),
   validate(checkInSchema),
   attendanceController.checkIn
@@ -46,6 +73,7 @@ router.post(
 
 router.post(
   '/check-out',
+  punchLimiter,
   checkPermission('attendance.mark', 'own'),
   validate(checkOutSchema),
   attendanceController.checkOut
@@ -56,6 +84,7 @@ router.post(
  */
 router.post(
   '/break-start',
+  punchLimiter,
   checkPermission('attendance.mark', 'own'),
   validate(breakStartSchema),
   attendanceController.startBreak
@@ -63,6 +92,7 @@ router.post(
 
 router.post(
   '/break-end',
+  punchLimiter,
   checkPermission('attendance.mark', 'own'),
   validate(breakEndSchema),
   attendanceController.endBreak
@@ -116,6 +146,7 @@ router.get(
  */
 router.post(
   '/wfh',
+  requestsLimiter,
   checkPermission('attendance.wfh', 'own'),
   validate(wfhRequestSchema),
   attendanceController.applyWFH
@@ -145,6 +176,7 @@ router.patch(
  */
 router.post(
   '/corrections',
+  requestsLimiter,
   checkPermission('attendance.correction', 'own'),
   validate(correctionRequestSchema),
   attendanceController.applyCorrection

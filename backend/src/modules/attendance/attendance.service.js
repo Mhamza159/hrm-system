@@ -99,8 +99,8 @@ export const resolveEmployeeId = async (user) => {
 /**
  * 5.3: Web Clock-In
  */
-export const checkIn = async ({ user, employeeId: explicitEmpId, source = 'web', location, ipAddress, userAgent }) => {
-  const employeeId = explicitEmpId || (await resolveEmployeeId(user));
+export const checkIn = async ({ user, source = 'web', location, ipAddress, userAgent }) => {
+  const employeeId = await resolveEmployeeId(user);
   const todayUtc = normalizeToUtcMidnight(new Date());
 
   await assertMonthNotLocked(todayUtc);
@@ -171,8 +171,8 @@ export const checkIn = async ({ user, employeeId: explicitEmpId, source = 'web',
 /**
  * 5.4: Web Clock-Out
  */
-export const checkOut = async ({ user, employeeId: explicitEmpId, location }) => {
-  const employeeId = explicitEmpId || (await resolveEmployeeId(user));
+export const checkOut = async ({ user, location }) => {
+  const employeeId = await resolveEmployeeId(user);
   const todayUtc = normalizeToUtcMidnight(new Date());
 
   await assertMonthNotLocked(todayUtc);
@@ -232,8 +232,8 @@ export const checkOut = async ({ user, employeeId: explicitEmpId, location }) =>
 /**
  * 5.5: Start Break
  */
-export const startBreak = async ({ user, employeeId: explicitEmpId, type = 'meal' }) => {
-  const employeeId = explicitEmpId || (await resolveEmployeeId(user));
+export const startBreak = async ({ user, type = 'meal' }) => {
+  const employeeId = await resolveEmployeeId(user);
   const todayUtc = normalizeToUtcMidnight(new Date());
 
   await assertMonthNotLocked(todayUtc);
@@ -266,8 +266,8 @@ export const startBreak = async ({ user, employeeId: explicitEmpId, type = 'meal
 /**
  * 5.5: End Break
  */
-export const endBreak = async ({ user, employeeId: explicitEmpId }) => {
-  const employeeId = explicitEmpId || (await resolveEmployeeId(user));
+export const endBreak = async ({ user }) => {
+  const employeeId = await resolveEmployeeId(user);
   const todayUtc = normalizeToUtcMidnight(new Date());
 
   await assertMonthNotLocked(todayUtc);
@@ -295,8 +295,8 @@ export const endBreak = async ({ user, employeeId: explicitEmpId }) => {
 /**
  * 5.9: Monthly Attendance Calendar for Employee
  */
-export const getMyAttendance = async ({ user, employeeId: explicitEmpId, month, date }) => {
-  const employeeId = explicitEmpId || (await resolveEmployeeId(user));
+export const getMyAttendance = async ({ user, month, date }) => {
+  const employeeId = await resolveEmployeeId(user);
 
   let filter = { employeeId: new mongoose.Types.ObjectId(employeeId) };
 

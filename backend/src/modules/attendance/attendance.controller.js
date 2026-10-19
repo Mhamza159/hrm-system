@@ -15,7 +15,6 @@ import { runAutoAbsentSweep } from './jobs/autoAbsent.job.js';
 export const checkIn = asyncHandler(async (req, res) => {
   const result = await attendanceService.checkIn({
     user: req.user,
-    employeeId: req.body.employeeId,
     source: req.body.source,
     location: req.body.location,
     ipAddress: req.ip,
@@ -27,7 +26,6 @@ export const checkIn = asyncHandler(async (req, res) => {
 export const checkOut = asyncHandler(async (req, res) => {
   const result = await attendanceService.checkOut({
     user: req.user,
-    employeeId: req.body.employeeId,
     location: req.body.location
   });
   return res.status(200).json(apiResponse(200, result, 'Clock-out successful'));
@@ -36,7 +34,6 @@ export const checkOut = asyncHandler(async (req, res) => {
 export const startBreak = asyncHandler(async (req, res) => {
   const result = await attendanceService.startBreak({
     user: req.user,
-    employeeId: req.body.employeeId,
     type: req.body.type
   });
   return res.status(200).json(apiResponse(200, result, 'Break started'));
@@ -44,8 +41,7 @@ export const startBreak = asyncHandler(async (req, res) => {
 
 export const endBreak = asyncHandler(async (req, res) => {
   const result = await attendanceService.endBreak({
-    user: req.user,
-    employeeId: req.body.employeeId
+    user: req.user
   });
   return res.status(200).json(apiResponse(200, result, 'Break ended'));
 });
@@ -53,7 +49,6 @@ export const endBreak = asyncHandler(async (req, res) => {
 export const getMyAttendance = asyncHandler(async (req, res) => {
   const result = await attendanceService.getMyAttendance({
     user: req.user,
-    employeeId: req.query.employeeId,
     month: req.query.month,
     date: req.query.date
   });

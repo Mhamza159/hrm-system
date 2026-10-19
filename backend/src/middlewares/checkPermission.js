@@ -119,8 +119,23 @@ export const checkPermission = (requiredPermission, subject = 'all') => {
     }
 
     // 4. Attach ability and resolved horizontal data scope to request context
+    const effectiveScope = getEffectiveScopeForAction(req.user, requiredPermission);
     req.ability = ability;
-    req.permissionScope = getEffectiveScopeForAction(req.user, requiredPermission);
+    req.permissionScope = effectiveScope;
+
+    // 5. Enforce horizontal scope hierarchy if subject parameter is a scope specifier
+    const scopePriority = { all: 4, department: 3, team: 2, own: 1 };
+    const isManageAll = ability.can('manage', 'all');
+    if (!isManageAll && scopePriority[subject] !== undefined) {
+      const requiredPriority = scopePriority[subject];
+      const userPriority = scopePriority[effectiveScope] || 1;
+      if (userPriority < requiredPriority) {
+        throw new ApiError(
+          403,
+          `Forbidden: Action '${requiredPermission}' requires '${subject}' scope, but your permission scope is limited to '${effectiveScope}'.`
+        );
+      }
+    }
 
     next();
   });
