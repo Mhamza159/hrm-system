@@ -156,6 +156,22 @@ describe('Two-Factor Authentication (Slice 1.10-TEST)', () => {
     expect(refreshCookie).toContain('HttpOnly');
   });
 
+  it('should bypass 2FA and issue session immediately when rememberMe is true', async () => {
+    // Attempt login with rememberMe: true while 2FA is active
+    const loginRes = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: testEmail, password: testPassword, rememberMe: true });
+
+    expect(loginRes.status).toBe(200);
+    expect(loginRes.body.success).toBe(true);
+    expect(loginRes.body.data.twoFactorRequired).toBe(false);
+    expect(loginRes.body.data.accessToken).toBeDefined();
+    expect(loginRes.body.data.user.email).toBe(testEmail);
+
+    const cookies = loginRes.headers['set-cookie'];
+    expect(cookies).toBeDefined();
+  });
+
   it('should allow user to disable 2FA with password confirmation', async () => {
     // Disable 2FA
     const disableRes = await request(app)

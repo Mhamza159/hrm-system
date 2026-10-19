@@ -48,6 +48,7 @@ describe('Login History Tracking (Slice 1.12-TEST)', () => {
       name: 'Employee',
       description: 'Standard Employee',
       permissions: [
+        { action: 'login.history', subject: 'User', scope: 'own' },
         { action: 'read', subject: 'attendance' }
       ]
     });
@@ -136,4 +137,37 @@ describe('Login History Tracking (Slice 1.12-TEST)', () => {
     expect(emails).toContain(adminEmail);
     expect(emails).toContain(employeeEmail);
   });
+
+  it('should return 403 Forbidden if user lacks login.history permission', async () => {
+    // Create role without login.history
+    const restrictedRole = await Role.create({
+      name: 'Restricted Employee',
+      description: 'Employee without login history permission',
+      permissions: [
+        { action: 'read', subject: 'attendance' }
+      ]
+    });
+
+    const restrictedEmail = 'restricted@company.pk';
+    const restrictedHash = await User.hashPassword(testPassword);
+    await User.create({
+      email: restrictedEmail,
+      passwordHash: restrictedHash,
+      roles: [restrictedRole._id],
+      isActive: true
+    });
+
+    const loginRes = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: restrictedEmail, password: testPassword });
+    const restrictedToken = loginRes.body.data.accessToken;
+
+    const res = await request(app)
+      .get('/api/v1/auth/login-history')
+      .set('Authorization', `Bearer ${restrictedToken}`);
+
+    expect(res.status).toBe(403);
+    expect(res.body.success).toBe(false);
+  });
 });
+

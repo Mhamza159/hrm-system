@@ -3,10 +3,10 @@
 ## Project Overview
 - **Project:** HRM System (Human Resource Management System)
 - **Client Profile:** Single software house, Pakistan (10–30 staff today, 50–80 projected in 2 years)
-- **Active Branch:** `feature/04-company-settings`
-- **Active Phase:** Phase 1: Core HR & Payroll (Launch Scope P1)
-- **Current Active Module:** **M2 Company Settings** (`docs/BUILD-GUIDE.md` Section 6 · Rows 2.1 to 2.11) — **100% COMPLETE & VERIFIED**
-- **Next Queued Module:** **M4 Departments, Designations, Shifts & Org Chart** (`docs/BUILD-GUIDE.md` Section 7 · Rows 4.1 to 4.7)
+- **Active Branch:** `feature/06-employees`
+- **Active Phase:** Phase 1: Core HR & Payroll (Launch Scope P1) — 6 of 12 Modules Complete (50%)
+- **Last Completed Module:** **M4 Departments, Designations, Shifts & Org Chart** (`docs/BUILD-GUIDE.md` Section 7 · Rows 4.1 to 4.7) — **100% COMPLETE & VERIFIED**
+- **Next Queued Module:** **M8 Notifications & Announcements** (`docs/BUILD-GUIDE.md` Section 9 · Rows 8.1 to 8.8)
 
 ---
 

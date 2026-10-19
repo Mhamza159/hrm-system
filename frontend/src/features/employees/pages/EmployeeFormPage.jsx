@@ -42,6 +42,7 @@ import {
   useGetDesignationsQuery,
   useGetShiftsQuery
 } from '../../departments/departmentsApi.js';
+import { useGetRolesQuery } from '../../roles/rolesApi.js';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { Card } from '../../../components/common/Card.jsx';
 import { cn } from '../../../lib/utils.js';
@@ -69,6 +70,22 @@ export default function EmployeeFormPage() {
     skip: !isEditMode
   });
 
+  const isSuperAdminProfile =
+    isEditMode &&
+    (employeeData?.data?.employeeCode === 'EMP-000' ||
+      employeeData?.data?.email === 'mhamzaofficial159@gmail.com' ||
+      employeeData?.data?.email === 'admin@hrm.company.pk');
+
+  const steps = isSuperAdminProfile
+    ? [
+        { id: 1, title: 'Personal Details', icon: User },
+        { id: 2, title: 'Contact & Emergency', icon: Phone },
+        { id: 3, title: 'Corporate Banking', icon: CreditCard }
+      ]
+    : STEPS;
+
+  const totalSteps = steps.length;
+
   useEffect(() => {
     if (employeeError) {
       toast.error(employeeError?.data?.message || 'Access restricted to this profile');
@@ -79,6 +96,7 @@ export default function EmployeeFormPage() {
   const { data: desigData } = useGetDesignationsQuery({ limit: 100 });
   const { data: shiftData } = useGetShiftsQuery({ limit: 100 });
   const { data: staffData } = useGetEmployeesQuery({ limit: 100, forReporting: true });
+  const { data: rolesData } = useGetRolesQuery({ limit: 100 });
   const { data: nextCodeData } = useGetNextEmployeeCodeQuery(undefined, {
     skip: isEditMode
   });
@@ -90,6 +108,10 @@ export default function EmployeeFormPage() {
   const designations = desigData?.data || [];
   const shifts = shiftData?.data || [];
   const managers = staffData?.data?.items || [];
+  const roles = useMemo(() => {
+    const list = rolesData?.data?.roles || rolesData?.data || [];
+    return list.filter((r) => r.name !== 'Super Admin');
+  }, [rolesData]);
 
   const {
     register,
@@ -134,9 +156,20 @@ export default function EmployeeFormPage() {
         iban: ''
       },
       skills: '',
-      createAccount: true
+      createAccount: true,
+      roleId: ''
     }
   });
+
+  // Default roleId to 'Employee' role if not set
+  useEffect(() => {
+    if (!watch('roleId') && roles.length > 0) {
+      const defaultRole = roles.find((r) => r.name === 'Employee') || roles[0];
+      if (defaultRole) {
+        setValue('roleId', defaultRole._id);
+      }
+    }
+  }, [roles, watch, setValue]);
 
   // Watch Department & Designation for reactive dependent filtering
   const selectedDepartmentId = watch('departmentId');
@@ -180,7 +213,11 @@ export default function EmployeeFormPage() {
 
       // Rule 2: High Staff Eligibility:
       // a) Super Admin / Top Executive by email or code
-      if (mgr.email === 'admin@hrm.company.pk' || mgr.employeeCode === 'EMP-000') {
+      if (
+        mgr.email === 'admin@hrm.company.pk' ||
+        mgr.email === 'mhamzaofficial159@gmail.com' ||
+        mgr.employeeCode === 'EMP-000'
+      ) {
         return true;
       }
 
@@ -251,6 +288,11 @@ export default function EmployeeFormPage() {
       setValue('bankDetails.iban', emp.bankDetails?.iban || '');
       setValue('skills', Array.isArray(emp.skills) ? emp.skills.join(', ') : '');
       setValue('createAccount', false);
+      if (emp.userId?.roles?.[0]) {
+        const uRole = emp.userId.roles[0];
+        const roleIdVal = typeof uRole === 'object' ? uRole._id : uRole;
+        setValue('roleId', roleIdVal);
+      }
     }
   }, [isEditMode, employeeData, setValue]);
 
@@ -291,12 +333,26 @@ export default function EmployeeFormPage() {
         departmentId: formData.departmentId || null,
         designationId: formData.designationId || null,
         shiftId: formData.shiftId || null,
-        managerId: formData.managerId || null
+        managerId: formData.managerId || null,
+        roleId: formData.roleId || null
       };
 
       if (isEditMode) {
         delete payload.createAccount;
         delete payload.employeeCode;
+
+        if (isSuperAdminProfile) {
+          delete payload.managerId;
+          delete payload.shiftId;
+          delete payload.departmentId;
+          delete payload.designationId;
+          delete payload.probationEndDate;
+          await updateEmployee({ id, ...payload }).unwrap();
+          toast.success('Executive profile updated successfully');
+          navigate('/me');
+          return;
+        }
+
         await updateEmployee({ id, ...payload }).unwrap();
         toast.success('Employee profile updated successfully');
         navigate(`/employees/${id}`);
@@ -314,7 +370,7 @@ export default function EmployeeFormPage() {
     }
   };
 
-  const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, 5));
+  const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
 
   if (isEditMode && isLoadingEmployee) {
@@ -327,18 +383,50 @@ export default function EmployeeFormPage() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
+      <button
+        type="button"
+        onClick={() => {
+          if (isSuperAdminProfile) {
+            navigate('/me');
+          } else {
+            navigate(isEditMode ? `/employees/${id}` : '/employees');
+          }
+        }}
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+      >
+        <ArrowLeft className="w-4 h-4" />{' '}
+        {isSuperAdminProfile
+          ? 'Back to My Profile'
+          : isEditMode
+          ? 'Back to Profile'
+          : 'Back to Employee Directory'}
+      </button>
+
       <PageHeader
-        title={isEditMode ? 'Edit Employee Profile' : 'Onboard New Employee'}
+        title={
+          isSuperAdminProfile
+            ? 'Edit Executive Profile — Platform Owner'
+            : isEditMode
+            ? 'Edit Employee Profile'
+            : 'Onboard New Employee'
+        }
         subtitle={
-          isEditMode
+          isSuperAdminProfile
+            ? 'Update your primary personal credentials, residential coordinates, and corporate banking details.'
+            : isEditMode
             ? 'Update personal, organizational and financial details.'
             : 'Register complete personnel credentials and provision self-service portal account.'
         }
       />
 
       {/* Step Indicator Navigation */}
-      <div className="grid grid-cols-5 gap-2 bg-white p-3 rounded-xl border border-slate-200">
-        {STEPS.map((step) => {
+      <div
+        className={cn(
+          'grid gap-2 bg-white p-3 rounded-xl border border-slate-200',
+          isSuperAdminProfile ? 'grid-cols-3' : 'grid-cols-5'
+        )}
+      >
+        {steps.map((step) => {
           const Icon = step.icon;
           const isActive = currentStep === step.id;
           const isDone = currentStep > step.id;
@@ -378,7 +466,9 @@ export default function EmployeeFormPage() {
         {currentStep === 1 && (
           <Card className="p-6 space-y-5">
             <h3 className="text-base font-semibold text-slate-900 border-b pb-3">
-              Step 1: Personal Information & NADRA Verification
+              {isSuperAdminProfile
+                ? 'Step 1: Executive Personal Credentials'
+                : 'Step 1: Personal Information & NADRA Verification'}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -600,8 +690,8 @@ export default function EmployeeFormPage() {
           </Card>
         )}
 
-        {/* STEP 3: Job Assignment */}
-        {currentStep === 3 && (
+        {/* STEP 3: Job Assignment (Standard Employees Only) */}
+        {!isSuperAdminProfile && currentStep === 3 && (
           <Card className="p-6 space-y-5">
             <h3 className="text-base font-semibold text-slate-900 border-b pb-3">
               Step 3: Organization & Job Structure
@@ -759,11 +849,13 @@ export default function EmployeeFormPage() {
           </Card>
         )}
 
-        {/* STEP 4: Bank & Financials */}
-        {currentStep === 4 && (
+        {/* Bank & Financials (Step 3 for Super Admin, Step 4 for Standard Employee) */}
+        {((isSuperAdminProfile && currentStep === 3) || (!isSuperAdminProfile && currentStep === 4)) && (
           <Card className="p-6 space-y-5">
             <h3 className="text-base font-semibold text-slate-900 border-b pb-3">
-              Step 4: Bank Account & Payroll Disbursement Details
+              {isSuperAdminProfile
+                ? 'Step 3: Corporate Banking & Disbursement Details'
+                : 'Step 4: Bank Account & Payroll Disbursement Details'}
             </h3>
             <p className="text-xs text-slate-500">
               Banking IBAN is encrypted at rest using AES-256-GCM. Unmasked access is restricted strictly to HR and Payroll administrators.
@@ -820,48 +912,101 @@ export default function EmployeeFormPage() {
           </Card>
         )}
 
-        {/* STEP 5: Account Provisioning & Review */}
-        {currentStep === 5 && (
+        {/* STEP 5: Account Provisioning & Review (Standard Employees Only) */}
+        {!isSuperAdminProfile && currentStep === 5 && (
           <Card className="p-6 space-y-6">
             <h3 className="text-base font-semibold text-slate-900 border-b pb-3">
               Step 5: Account Provisioning & Submission
             </h3>
 
             {!isEditMode && (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
-                <input
-                  type="checkbox"
-                  id="createAccountCheckbox"
-                  {...register('createAccount')}
-                  className="mt-1 w-4 h-4 text-[#00C471] rounded border-slate-300 focus:ring-[#00C471]"
-                />
-                <label htmlFor="createAccountCheckbox" className="text-xs text-slate-700 cursor-pointer">
-                  <span className="font-semibold block text-slate-900 mb-0.5">
-                    Provision Employee Self-Service Account
-                  </span>
-                  Automatically create a login user account in the system with the Employee role and dispatch a secure temporary password to their official email.
+              <div className="bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/50 rounded-xl p-4 space-y-4">
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="createAccountCheckbox"
+                    {...register('createAccount')}
+                    className="mt-1 w-4 h-4 text-[#00C471] rounded border-slate-300 focus:ring-[#00C471]"
+                  />
+                  <label htmlFor="createAccountCheckbox" className="text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
+                    <span className="font-semibold block text-slate-900 dark:text-white mb-0.5">
+                      Provision System Login User Account
+                    </span>
+                    Automatically create a login user account in the system and dispatch initial credentials to their official email.
+                  </label>
+                </div>
+
+                {watch('createAccount') && (
+                  <div className="pt-3 border-t border-emerald-200/80 dark:border-emerald-800/40 space-y-2">
+                    <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-[#00C471]" />
+                      <span>System Access Role</span>
+                      <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      {...register('roleId')}
+                      className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-[#0B1510] focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] text-slate-800 dark:text-slate-100 font-semibold cursor-pointer"
+                    >
+                      {roles.map((role) => (
+                        <option key={role._id} value={role._id}>
+                          {role.name} {role.isSystem ? '· (System Core)' : '· (Custom Role)'}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Select the system software permissions role for this employee (e.g. <strong>HR Manager</strong> for company-wide HR management, <strong>Department Manager</strong> for team approvals, or <strong>Employee</strong> for self-service). Super Admin is restricted for executive security.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {isEditMode && employeeData?.data?.userId && (
+              <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2">
+                <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-[#00C471]" />
+                  <span>Assigned System Access Role</span>
                 </label>
+                <select
+                  {...register('roleId')}
+                  className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#0B1510] focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] text-slate-800 dark:text-slate-100 font-semibold cursor-pointer"
+                >
+                  {roles.map((role) => (
+                    <option key={role._id} value={role._id}>
+                      {role.name} {role.isSystem ? '· (System Core)' : '· (Custom Role)'}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Modifying this role updates the software access and permissions of this employee's linked portal account.
+                </p>
               </div>
             )}
 
             <div className="space-y-3">
-              <h4 className="text-xs font-bold uppercase text-slate-500">Summary Review</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+              <h4 className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Summary Review</h4>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
                 <div>
                   <span className="text-slate-400 block">Name:</span>
-                  <span className="font-semibold text-slate-800">{watch('name') || '—'}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">{watch('name') || '—'}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block">Employee Code:</span>
-                  <span className="font-semibold text-slate-800 font-mono">{watch('employeeCode') || '—'}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100 font-mono">{watch('employeeCode') || '—'}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block">Email:</span>
-                  <span className="font-semibold text-slate-800">{watch('email') || '—'}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">{watch('email') || '—'}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block">CNIC:</span>
-                  <span className="font-semibold text-slate-800 font-mono">{watch('cnic') || '—'}</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100 font-mono">{watch('cnic') || '—'}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block">System Role:</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                    {roles.find((r) => r._id === watch('roleId'))?.name || 'Employee'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -882,7 +1027,7 @@ export default function EmployeeFormPage() {
             <ArrowLeft className="w-4 h-4" /> Previous
           </button>
 
-          {currentStep < 5 ? (
+          {currentStep < totalSteps ? (
             <button
               type="button"
               onClick={nextStep}
@@ -902,7 +1047,12 @@ export default function EmployeeFormPage() {
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="w-4 h-4" /> {isEditMode ? 'Update Profile' : 'Complete Onboarding'}
+                  <CheckCircle2 className="w-4 h-4" />{' '}
+                  {isSuperAdminProfile
+                    ? 'Save Executive Profile'
+                    : isEditMode
+                    ? 'Update Profile'
+                    : 'Complete Onboarding'}
                 </>
               )}
             </button>

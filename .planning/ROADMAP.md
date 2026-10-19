@@ -8,17 +8,17 @@ Governed strictly by [`docs/BUILD-GUIDE.md`](file:///c:/Users/hamih/OneDrive/Des
 **Goal:** Establish baseline infrastructure, authentication, granular RBAC, company settings, workforce management, attendance, leave, automated payroll engine with Pakistan FBR/EOBI compliance, and executive dashboards.
 **Scope:** 12 Modules / Steps · 148 Vertical Slice Features
 
-- [ ] **1. M0 Foundation** · *BUILD-GUIDE Section 3* · **14 Features (0.1 to 0.14)**
+- [x] **1. M0 Foundation** · *BUILD-GUIDE Section 3* · **14 Features (0.1 to 0.14)**
   - Express server, MongoDB & Redis connections, env loader, standard `{ success, data, message, meta }` response, `ApiError` & error handler, Zod middleware, Multer/Cloudinary uploads, pagination helper, audit log service, email/PDF/Excel services, BullMQ queues, Socket.io, React+Vite AppLayout with sidebar/topbar, Swagger docs (`/api/docs`), and security headers (Helmet, CORS, rate-limit, mongo-sanitize).
-- [ ] **2. M1 Authentication & Security** · *BUILD-GUIDE Section 4* · **14 Features (1.1 to 1.14)**
+- [x] **2. M1 Authentication & Security** · *BUILD-GUIDE Section 4* · **14 Features (1.1 to 1.14)**
   - User model, JWT access (15m) + 7-day httpOnly refresh token, account lockout (5 failed attempts), token rotation, logout, `GET /auth/me`, forgot/reset password email OTP, force password change on first login, 2FA OTP, inactivity auto-logout, login history with device/IP, account activation toggle, HR-triggered password reset.
 - [x] **3. M26 Roles & Permissions (RBAC)** · *BUILD-GUIDE Section 5* · **17 Features (26.1 to 26.17)**
   - Permission catalogue, 4 default roles seed (Super Admin, HR Manager, Department Manager, Employee), `checkPermission` CASL middleware, data scope filter (`own`/`team`/`department`/`all`), field-level masking (salary, CNIC, bank), UI `Can` component and sidebar filter, custom role CRUD, visual permission matrix screen, approval limits, role cloning, multi-role assignment, delegation of approval authority, effective permissions inspector, permission audit logging, employee "My Access" tab.
 - [x] **4. M2 Company Settings** · *BUILD-GUIDE Section 6* · **11 Features (2.1 to 2.11)**
   - Settings key-value model, company profile & logo upload, working days & office hours, late-arrival rules & penalty deductions, leave policy definitions, payroll cycle dates, FBR salaried tax slab table editor, EOBI/PESSI/PF settings, single office geo-fence coordinates (Leaflet map editor), email/WhatsApp template builder, database backup job & manual trigger, public policies page.
-- [ ] **5. M4 Departments, Designations, Shifts & Org Chart** · *BUILD-GUIDE Section 7* · **7 Features (4.1 to 4.7)**
+- [x] **5. M4 Departments, Designations, Shifts & Org Chart** · *BUILD-GUIDE Section 7* · **7 Features (4.1 to 4.7)**
   - Department CRUD with employee deletion protection, department head assignment, designations with grade tiers, shift definitions (fixed, flexible, night), interactive tree Org Chart, manager team view, employee reporting line view.
-- [ ] **6. M3 Employee Management** · *BUILD-GUIDE Section 8* · **17 Features (3.1 to 3.17)**
+- [x] **6. M3 Employee Management** · *BUILD-GUIDE Section 8* · **17 Features (3.1 to 3.17)**
   - Employee model with encrypted CNIC & bank data, employee onboarding + user account creation + welcome email, 13-digit masked CNIC validation & expiry alerts, scoped employee list with filters, multi-tab employee profile, edit profile, status transition (active, notice, resigned, terminated), soft-delete archive, document vault with private expiring links, job history timeline, salary history, skills tags, Excel bulk import with row-level validation, Excel export, "My Profile" page, employee profile change requests with HR approval, probation end notification cron.
 - [ ] **7. M8 Notifications & Announcements** · *BUILD-GUIDE Section 9* · **8 Features (8.1 to 8.8)**
   - Multi-channel notify service (Socket.io + Email + WhatsApp), in-app notification bell with unread badge & drawer, automated transactional email alerts, optional WhatsApp notification integration, notification preferences panel, company & department announcements, pinned announcement cards on dashboard, read receipts tracking.

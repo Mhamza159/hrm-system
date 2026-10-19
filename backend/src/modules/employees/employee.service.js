@@ -27,6 +27,7 @@ import { paginate } from '../../utils/paginate.js';
 import { scopeFilter } from '../../utils/scopeFilter.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { emailService } from '../../services/email.service.js';
+import { uploadBufferToCloudinary, deleteFromCloudinary, isCloudinaryConfigured } from '../../config/cloudinary.js';
 
 /**
  * Decrypt sensitive fields (CNIC and IBAN) on an employee object
@@ -139,9 +140,22 @@ export const createEmployee = async (payload, actor) => {
       throw new ApiError(400, `User account with email '${payload.email}' already exists`);
     }
 
-    // Locate standard 'Employee' role
-    const employeeRole = await Role.findOne({ name: 'Employee' });
-    const roleIds = employeeRole ? [employeeRole._id] : [];
+    // Resolve assigned role (preventing Super Admin from standard employee creation)
+    let assignedRoleIds = [];
+    if (payload.roleId) {
+      const selectedRole = await Role.findOne({ _id: payload.roleId, isDeleted: false });
+      if (selectedRole) {
+        if (selectedRole.name === 'Super Admin') {
+          throw new ApiError(403, 'Super Admin role cannot be assigned during employee creation.');
+        }
+        assignedRoleIds = [selectedRole._id];
+      }
+    }
+
+    if (!assignedRoleIds.length) {
+      const defaultRole = await Role.findOne({ name: 'Employee', isDeleted: false });
+      assignedRoleIds = defaultRole ? [defaultRole._id] : [];
+    }
 
     // Generate secure 10-character temporary password
     tempPassword = `Tmp@${crypto.randomBytes(4).toString('hex')}1`;
@@ -150,7 +164,7 @@ export const createEmployee = async (payload, actor) => {
     const newUser = await User.create({
       email: payload.email,
       passwordHash,
-      roles: roleIds,
+      roles: assignedRoleIds,
       isActive: true,
       mustChangePassword: true
     });
@@ -221,7 +235,7 @@ export const getEmployees = async (
   // Exclude Super Admin from general workforce directory and dashboards
   // Allow inclusion ONLY when specifically querying for reporting manager selection
   if (String(forReporting) !== 'true') {
-    conditions.email = { $ne: 'admin@hrm.company.pk' };
+    conditions.email = { $nin: ['mhamzaofficial159@gmail.com', 'admin@hrm.company.pk'] };
     conditions.employeeCode = { $ne: 'EMP-000' };
   }
 
@@ -323,7 +337,7 @@ export const getEmployeeById = async (id, actor, permissionScope = 'all') => {
     { path: 'designationId', select: 'title code grade description' },
     { path: 'shiftId', select: 'name code startTime endTime graceMinutes type' },
     { path: 'managerId', select: 'name employeeCode email phone' },
-    { path: 'userId', select: 'email isActive lastLoginAt roles' }
+    { path: 'userId', select: 'email isActive lastLoginAt roles twoFactorEnabled avatar' }
   ]);
 
   if (!employee) {
@@ -332,6 +346,7 @@ export const getEmployeeById = async (id, actor, permissionScope = 'all') => {
 
   // Super Admin Profile Protection: No other user can access or view Super Admin's employee profile
   const isTargetSuperAdmin =
+    employee.email === 'mhamzaofficial159@gmail.com' ||
     employee.email === 'admin@hrm.company.pk' ||
     employee.employeeCode === 'EMP-000';
 
@@ -409,7 +424,7 @@ export const getMyProfile = async (userId) => {
     { path: 'designationId', select: 'title code grade' },
     { path: 'shiftId', select: 'name code startTime endTime graceMinutes type' },
     { path: 'managerId', select: 'name employeeCode email phone' },
-    { path: 'userId', select: 'email isActive lastLoginAt' }
+    { path: 'userId', select: 'email isActive lastLoginAt twoFactorEnabled avatar' }
   ]);
 
   if (!employee) {
@@ -434,6 +449,7 @@ export const updateEmployee = async (id, payload, actor) => {
 
   // Super Admin Profile Protection: No other user can modify Super Admin's employee profile
   const isTargetSuperAdmin =
+    employee.email === 'mhamzaofficial159@gmail.com' ||
     employee.email === 'admin@hrm.company.pk' ||
     employee.employeeCode === 'EMP-000';
 
@@ -481,6 +497,14 @@ export const updateEmployee = async (id, payload, actor) => {
   Object.assign(employee, updates);
   await employee.save();
 
+  // If roleId provided and employee has a linked user account, update user roles
+  if (payload.roleId && employee.userId) {
+    const selectedRole = await Role.findOne({ _id: payload.roleId, isDeleted: false });
+    if (selectedRole && selectedRole.name !== 'Super Admin') {
+      await User.findByIdAndUpdate(employee.userId, { roles: [selectedRole._id] });
+    }
+  }
+
   await recordAuditLog({
     actor,
     action: 'employee.edit',
@@ -506,7 +530,11 @@ export const updateEmployeeStatus = async (id, { status, reason }, actor) => {
     throw new ApiError(404, 'Employee record not found');
   }
 
-  if (employee.email === 'admin@hrm.company.pk' || employee.employeeCode === 'EMP-000') {
+  if (
+    employee.email === 'mhamzaofficial159@gmail.com' ||
+    employee.email === 'admin@hrm.company.pk' ||
+    employee.employeeCode === 'EMP-000'
+  ) {
     throw new ApiError(403, 'Forbidden: Super Admin status lifecycle cannot be modified.');
   }
 
@@ -550,7 +578,11 @@ export const deleteEmployee = async (id, actor) => {
     throw new ApiError(404, 'Employee record not found');
   }
 
-  if (employee.email === 'admin@hrm.company.pk' || employee.employeeCode === 'EMP-000') {
+  if (
+    employee.email === 'mhamzaofficial159@gmail.com' ||
+    employee.email === 'admin@hrm.company.pk' ||
+    employee.employeeCode === 'EMP-000'
+  ) {
     throw new ApiError(403, 'Forbidden: Super Admin profile cannot be deleted or archived.');
   }
 
@@ -594,10 +626,41 @@ export const uploadDocument = async (employeeId, { type, title }, file, actor) =
     throw new ApiError(404, 'Employee record not found');
   }
 
+  let fileUrl;
+  let publicId = null;
+
+  if (isCloudinaryConfigured() && file.buffer) {
+    const cloudRes = await uploadBufferToCloudinary(file.buffer, {
+      folder: 'hrm/documents',
+      resource_type: 'auto'
+    });
+    fileUrl = cloudRes.secure_url;
+    publicId = cloudRes.public_id;
+  } else {
+    // Local fallback when Cloudinary credentials are not configured or file was stored on disk
+    if (file.filename) {
+      fileUrl = `/uploads/documents/${file.filename}`;
+    } else {
+      const documentsDir = path.resolve(process.cwd(), 'uploads/documents');
+      if (!fs.existsSync(documentsDir)) {
+        fs.mkdirSync(documentsDir, { recursive: true });
+      }
+      const ext = path.extname(file.originalname);
+      const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+      const filename = `doc-${uniqueSuffix}${ext}`;
+      const filePath = path.join(documentsDir, filename);
+      if (file.buffer) {
+        fs.writeFileSync(filePath, file.buffer);
+      }
+      fileUrl = `/uploads/documents/${filename}`;
+    }
+  }
+
   const documentEntry = {
     type,
     title,
-    fileUrl: `/uploads/documents/${file.filename}`,
+    fileUrl,
+    publicId,
     fileName: file.originalname,
     fileSize: file.size,
     mimeType: file.mimetype,
@@ -637,7 +700,9 @@ export const deleteDocument = async (employeeId, docId, actor) => {
     throw new ApiError(404, 'Document not found in employee vault');
   }
 
-  if (doc.fileUrl) {
+  if (doc.publicId) {
+    await deleteFromCloudinary(doc.publicId, doc.mimeType?.startsWith('image/') ? 'image' : 'raw');
+  } else if (doc.fileUrl) {
     const filePath = path.resolve(process.cwd(), doc.fileUrl.replace(/^\//, ''));
     if (fs.existsSync(filePath)) {
       try {
@@ -660,6 +725,113 @@ export const deleteDocument = async (employeeId, docId, actor) => {
   });
 
   return { message: 'Document removed from vault' };
+};
+
+/**
+ * Upload and update employee profile avatar
+ * @param {string} employeeId - 'me' or specific employee ObjectId
+ * @param {Object} file - Uploaded image file buffer
+ * @param {Object} actor - Authenticated user initiating upload
+ * @returns {Promise<Object>}
+ */
+export const uploadAvatar = async (employeeId, file, actor) => {
+  if (!file) {
+    throw new ApiError(400, 'Profile image file attachment is required');
+  }
+
+  // Strict image format validation (MIME + Extension)
+  const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  const allowedExts = ['.jpg', '.jpeg', '.png', '.webp'];
+  const ext = path.extname(file.originalname || '').toLowerCase();
+
+  if (!file.mimetype || !allowedMimes.includes(file.mimetype) || !allowedExts.includes(ext)) {
+    throw new ApiError(400, 'Invalid file format. Only JPEG, PNG, and WEBP image files are allowed.');
+  }
+
+  // Deep inspection via binary magic bytes signature
+  if (file.buffer && file.buffer.length >= 4) {
+    const isJpeg = file.buffer[0] === 0xff && file.buffer[1] === 0xd8 && file.buffer[2] === 0xff;
+    const isPng =
+      file.buffer[0] === 0x89 &&
+      file.buffer[1] === 0x50 &&
+      file.buffer[2] === 0x4e &&
+      file.buffer[3] === 0x47;
+    const isWebp =
+      file.buffer.length >= 12 &&
+      file.buffer.toString('utf8', 0, 4) === 'RIFF' &&
+      file.buffer.toString('utf8', 8, 12) === 'WEBP';
+
+    if (!isJpeg && !isPng && !isWebp) {
+      throw new ApiError(400, 'Fake or corrupted image file detected. File signature does not match image format.');
+    }
+  }
+
+  let employee;
+  if (employeeId === 'me' || !employeeId) {
+    const user = await User.findById(actor._id);
+    const queryOr = [{ userId: actor._id }];
+    if (user?.employeeId) {
+      queryOr.push({ _id: user.employeeId });
+    }
+    employee = await Employee.findOne({ $or: queryOr, isDeleted: false });
+  } else {
+    employee = await Employee.findOne({ _id: employeeId, isDeleted: false });
+  }
+
+  if (!employee) {
+    throw new ApiError(404, 'Employee record not found');
+  }
+
+  let avatarUrl;
+
+  if (isCloudinaryConfigured() && file.buffer) {
+    const cloudRes = await uploadBufferToCloudinary(file.buffer, {
+      folder: 'hrm/avatars',
+      resource_type: 'image',
+      transformation: [
+        { width: 400, height: 400, crop: 'fill', gravity: 'face' }
+      ]
+    });
+    avatarUrl = cloudRes.secure_url;
+  } else {
+    // Local fallback
+    const avatarsDir = path.resolve(process.cwd(), 'uploads', 'avatars');
+    if (!fs.existsSync(avatarsDir)) {
+      fs.mkdirSync(avatarsDir, { recursive: true });
+    }
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+    const uniqueName = `avatar-${employee._id}-${Date.now()}${ext}`;
+    const filePath = path.join(avatarsDir, uniqueName);
+    if (file.buffer) {
+      fs.writeFileSync(filePath, file.buffer);
+    }
+    avatarUrl = `/uploads/avatars/${file.filename || uniqueName}`;
+  }
+
+  // Update employee model
+  employee.avatar = avatarUrl;
+  await employee.save();
+
+  // Also synchronize user model
+  if (employee.userId) {
+    await User.findByIdAndUpdate(employee.userId, { avatar: avatarUrl });
+  }
+  if (actor?._id) {
+    await User.findByIdAndUpdate(actor._id, { avatar: avatarUrl });
+  }
+
+  await recordAuditLog({
+    actor,
+    action: 'employee.avatar_upload',
+    entity: 'Employee',
+    entityId: employee._id,
+    details: { avatarUrl }
+  });
+
+  return {
+    employee: decryptEmployeeFields(employee),
+    avatarUrl
+  };
 };
 
 /**
@@ -1131,7 +1303,7 @@ export const exportEmployeesToExcel = async (queryFilters = {}, actor) => {
   if (queryFilters.status) conditions.status = queryFilters.status;
 
   // Super Admin is a system administrator, not an employee: exclude from workforce export
-  conditions.email = { $ne: 'admin@hrm.company.pk' };
+  conditions.email = { $nin: ['mhamzaofficial159@gmail.com', 'admin@hrm.company.pk'] };
   conditions.employeeCode = { $ne: 'EMP-000' };
 
   const employees = await Employee.find(conditions)

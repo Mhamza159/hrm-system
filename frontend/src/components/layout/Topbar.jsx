@@ -12,21 +12,27 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { LogOut, Bell, Search, Moon, Sun, ChevronDown, Menu } from 'lucide-react';
+import { LogOut, Bell, Search, Moon, Sun, ChevronDown, Menu, User, KeyRound, ShieldCheck, History } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useAuth } from '../../hooks/useAuth.js';
+import { usePermission } from '../../hooks/usePermission.js';
 import { logout } from '../../features/auth/authSlice.js';
 import { useLogoutMutation } from '../../features/auth/authApi.js';
 import { useGetPublicPoliciesQuery } from '../../features/settings/settingsApi.js';
+import { TwoFactorModal } from '../../features/auth/components/TwoFactorModal.jsx';
+import { RoleBadge } from '../common/RoleBadge.jsx';
+import { getUserDisplayName } from '../../lib/formatters.js';
 
 export function Topbar({ onToggleMenu }) {
   const { user } = useAuth();
+  const { can } = usePermission();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [logoutApi] = useLogoutMutation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
+  const [is2faModalOpen, setIs2faModalOpen] = useState(false);
 
   const { data: policiesRes } = useGetPublicPoliciesQuery(undefined, { skip: !user });
   const companyLogo = policiesRes?.data?.company?.logoUrl;
@@ -53,11 +59,8 @@ export function Topbar({ onToggleMenu }) {
     navigate('/login');
   };
 
-  const userRole = typeof user?.roles?.[0] === 'object'
-    ? user?.roles?.[0]?.name || 'Employee'
-    : user?.roles?.[0] || 'Employee';
-
-  const userDisplayName = user?.email?.split('@')[0] || 'User';
+  const primaryRole = user?.roles?.[0] || 'Employee';
+  const userDisplayName = getUserDisplayName(user);
 
   return (
     <header className="h-[72px] bg-white dark:bg-[#111D17] border-b border-[#EAECF0] dark:border-[#1A3125] px-4 lg:px-8 flex items-center justify-between shrink-0 select-none transition-colors">
@@ -132,18 +135,23 @@ export function Topbar({ onToggleMenu }) {
             onClick={() => setDropdownOpen(!dropdownOpen)}
             className="flex items-center gap-3 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition-colors cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-xs font-bold text-emerald-700 dark:text-emerald-300">
-              {user?.email?.charAt(0).toUpperCase() || 'U'}
-            </div>
+            {user?.avatar ? (
+              <img
+                src={user.avatar}
+                alt="Avatar"
+                className="w-8 h-8 rounded-full object-cover border border-emerald-500/40 shadow-xs shrink-0"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                {userDisplayName.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="text-left hidden sm:block">
               <span className="text-xs font-bold text-slate-900 dark:text-white block leading-tight">
                 {userDisplayName}
               </span>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                  {userRole}
-                </span>
+              <div className="mt-1">
+                <RoleBadge role={primaryRole} />
               </div>
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
@@ -152,14 +160,82 @@ export function Topbar({ onToggleMenu }) {
           {/* Elevated Floating Popover Menu */}
           {dropdownOpen && (
             <div
-              className="absolute right-0 mt-2 w-52 rounded-2xl bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] shadow-xl py-1.5 z-50 animate-in fade-in"
+              className="absolute right-0 mt-2 w-56 rounded-2xl bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] shadow-xl py-1.5 z-50 animate-in fade-in"
               onMouseLeave={() => setDropdownOpen(false)}
             >
-              <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-[#1A3125]">
-                <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user?.email}</p>
-                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium capitalize">{userRole}</p>
+              <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-[#1A3125] space-y-1">
+                <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                  {userDisplayName}
+                </p>
+                <p className="text-[11px] text-slate-400 truncate">
+                  {user?.email}
+                </p>
+                <div className="pt-0.5">
+                  <RoleBadge role={primaryRole} />
+                </div>
               </div>
-              <div className="p-1">
+
+              <div className="p-1 space-y-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    navigate('/me');
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors cursor-pointer text-left"
+                >
+                  <User className="w-3.5 h-3.5 text-slate-400" />
+                  <span>My Profile</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    navigate('/change-password');
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors cursor-pointer text-left"
+                >
+                  <KeyRound className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Change Password</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDropdownOpen(false);
+                    setIs2faModalOpen(true);
+                  }}
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors cursor-pointer text-left"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Two-Factor Auth (2FA)</span>
+                  </span>
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      user?.twoFactorEnabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'
+                    }`}
+                    title={user?.twoFactorEnabled ? '2FA Enabled' : '2FA Disabled'}
+                  />
+                </button>
+
+                {can('login.history') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      navigate('/login-history');
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl transition-colors cursor-pointer text-left"
+                  >
+                    <History className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Login History</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="border-t border-slate-100 dark:border-[#1A3125] p-1 mt-1">
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -183,6 +259,13 @@ export function Topbar({ onToggleMenu }) {
           <LogOut className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Two-Factor Authentication Modal */}
+      <TwoFactorModal
+        isOpen={is2faModalOpen}
+        onClose={() => setIs2faModalOpen(false)}
+        user={user}
+      />
     </header>
   );
 }

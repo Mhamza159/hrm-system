@@ -325,4 +325,84 @@ describe('Module M4 — Org Chart & Reporting Line API Integration Suite (Slice 
     // Clean up loop records
     await Employee.deleteMany({ employeeCode: { $in: ['LOOP-A', 'LOOP-B'] } });
   });
+
+  it('4.5-SCOPE: Department Manager with department scope receives ONLY their department nodes', async () => {
+    const res = await request(app)
+      .get('/api/v1/org-chart')
+      .set('Authorization', `Bearer ${managerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+
+    const { tree, totalNodes } = res.body.data;
+    // Technology department has 3 employees: Zainab, Hamza, Bilal. CEO (Tariq in Executive) must NOT be present
+    expect(totalNodes).toBe(3);
+    expect(tree.length).toBe(1);
+
+    const deptRoot = tree[0];
+    expect(deptRoot.name).toBe('Zainab Ahmed');
+    expect(deptRoot.department).toBe('Technology');
+
+    // Verify CEO Tariq Malik is NOT in tree
+    const allNamesInTree = [];
+    const collectNames = (nodes) => {
+      nodes.forEach((n) => {
+        allNamesInTree.push(n.name);
+        if (n.children?.length) collectNames(n.children);
+      });
+    };
+    collectNames(tree);
+
+    expect(allNamesInTree).toContain('Zainab Ahmed');
+    expect(allNamesInTree).toContain('Hamza Khan');
+    expect(allNamesInTree).toContain('Bilal Farooq');
+    expect(allNamesInTree).not.toContain('Tariq Malik');
+  });
+
+  it('4.5-SCOPE: Manager with team scope receives ONLY their subordinate team rooted at manager', async () => {
+    // Create team-scoped role
+    const teamRole = await Role.create({
+      name: 'Team Lead Manager',
+      description: 'Scoped to team only',
+      isSystem: false,
+      permissions: [{ action: 'org.view', subject: 'Organization', scope: 'team' }]
+    });
+
+    const teamUser = await User.create({
+      email: 'teamlead@company.pk',
+      passwordHash: 'dummy_hash',
+      roles: [teamRole._id],
+      isActive: true
+    });
+
+    // Assign teamUser to mgrEmp (Hamza Khan)
+    mgrEmp.userId = teamUser._id;
+    await mgrEmp.save();
+
+    const teamToken = jwt.sign({ userId: teamUser._id }, env.JWT_ACCESS_SECRET, { expiresIn: '15m' });
+
+    const res = await request(app)
+      .get('/api/v1/org-chart')
+      .set('Authorization', `Bearer ${teamToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+
+    const { tree, totalNodes } = res.body.data;
+    // Hamza's team has 2 employees: Hamza Khan and his direct report Bilal Farooq
+    expect(totalNodes).toBe(2);
+    expect(tree.length).toBe(1);
+
+    const teamRoot = tree[0];
+    expect(teamRoot.name).toBe('Hamza Khan');
+    expect(teamRoot.isMe).toBe(true);
+    expect(teamRoot.children.length).toBe(1);
+    expect(teamRoot.children[0].name).toBe('Bilal Farooq');
+
+    // Clean up
+    mgrEmp.userId = managerUser._id;
+    await mgrEmp.save();
+    await User.findByIdAndDelete(teamUser._id);
+    await Role.findByIdAndDelete(teamRole._id);
+  });
 });

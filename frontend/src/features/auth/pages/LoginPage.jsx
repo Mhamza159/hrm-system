@@ -37,7 +37,8 @@ const loginValidationSchema = z.object({
     .email('Please enter a valid email address'),
   password: z
     .string()
-    .min(1, 'Password is required')
+    .min(1, 'Password is required'),
+  rememberMe: z.boolean().optional()
 });
 
 export default function LoginPage() {
@@ -55,6 +56,10 @@ export default function LoginPage() {
   // 5. Local state storing account lockout error message (HTTP 423)
   const [lockoutError, setLockoutError] = useState(null);
 
+  // Retrieve remembered credentials / preference
+  const savedEmail = localStorage.getItem('hrm_saved_email') || '';
+  const savedRemember = localStorage.getItem('hrm_remember_me') === 'true';
+
   // 6. Initialize React Hook Form wired with Zod resolver for zero-boilerplate validation
   const {
     register,
@@ -63,8 +68,9 @@ export default function LoginPage() {
   } = useForm({
     resolver: zodResolver(loginValidationSchema),
     defaultValues: {
-      email: '',
-      password: ''
+      email: savedEmail,
+      password: '',
+      rememberMe: savedRemember
     }
   });
 
@@ -75,6 +81,15 @@ export default function LoginPage() {
   const onSubmit = async (data) => {
     // Clear previous lockout banner before new attempt
     setLockoutError(null);
+
+    // Save or clear remember-me preference and email
+    if (data.rememberMe) {
+      localStorage.setItem('hrm_remember_me', 'true');
+      localStorage.setItem('hrm_saved_email', data.email);
+    } else {
+      localStorage.removeItem('hrm_remember_me');
+      localStorage.removeItem('hrm_saved_email');
+    }
 
     try {
       // 1. Dispatch POST /api/v1/auth/login via RTK Query
@@ -235,6 +250,22 @@ export default function LoginPage() {
               {errors.password && (
                 <p className="text-xs text-rose-500 mt-1">{errors.password.message}</p>
               )}
+            </div>
+
+            {/* Remember Me Option */}
+            <div className="flex items-center justify-between pt-0.5">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+                <input
+                  type="checkbox"
+                  id="rememberMe"
+                  disabled={Boolean(lockoutError) || isLoading}
+                  className="w-4 h-4 rounded border-slate-300 dark:border-[#1A3125] text-[#00C471] focus:ring-[#00C471]/30 accent-[#00C471] cursor-pointer transition-all"
+                  {...register('rememberMe')}
+                />
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors">
+                  Remember me on this device
+                </span>
+              </label>
             </div>
 
             {/* Submit Action Button */}

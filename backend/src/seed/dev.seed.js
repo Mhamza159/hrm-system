@@ -22,7 +22,7 @@ export const seedDevUsers = async () => {
 
   const usersToSeed = [
     {
-      email: 'admin@hrm.company.pk',
+      email: process.env.ADMIN_EMAIL || 'mhamzaofficial159@gmail.com',
       password: 'Admin12345!',
       roles: [roles['Super Admin']._id],
       isActive: true,

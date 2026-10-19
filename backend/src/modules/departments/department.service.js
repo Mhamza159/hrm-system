@@ -877,13 +877,15 @@ export const deleteShift = async (id, actor) => {
 };
 
 /**
- * 4.5 & 4.7: Retrieve hierarchical organizational chart with DAG cycle prevention and reporting chain
+ * 4.5 & 4.7: Retrieve hierarchical organizational chart with DAG cycle prevention, reporting chain, and role-based data scoping
  * @param {string} requestingUserId 
+ * @param {string} [permissionScope='all'] - 'all' | 'department' | 'team' | 'own'
+ * @param {Object} [actor=null] - Authenticated user context
  * @returns {Object} { tree, reportingChain, totalNodes }
  */
-export const getOrgChart = async (requestingUserId) => {
+export const getOrgChart = async (requestingUserId, permissionScope = 'all', actor = null) => {
   const employees = await Employee.find({ isDeleted: false })
-    .select('name employeeCode email phone departmentId designationId managerId userId status')
+    .select('name employeeCode email phone departmentId designationId managerId userId status avatar')
     .populate('departmentId', 'name code')
     .populate('designationId', 'title grade')
     .lean();
@@ -898,18 +900,52 @@ export const getOrgChart = async (requestingUserId) => {
 
   // Find requesting user's employee record to build vertical reportingChain
   let userEmployeeId = null;
-  const userEmp = employees.find(
+  let userEmp = employees.find(
     (e) => e.userId?.toString() === requestingUserId?.toString()
   );
+  if (!userEmp && actor?.employeeId) {
+    userEmp = employees.find(
+      (e) => e._id?.toString() === actor.employeeId?.toString()
+    );
+  }
   if (userEmp) {
     userEmployeeId = userEmp._id.toString();
   }
 
-  // 1. Build lookup maps
+  // If user is restricted to team or department but has no employee profile, return empty
+  if ((permissionScope === 'team' || permissionScope === 'department') && !userEmp) {
+    return {
+      tree: [],
+      reportingChain: [],
+      totalNodes: 0
+    };
+  }
+
+  // Filter employees according to permissionScope:
+  // - 'department': only employees belonging to the requesting user's department
+  // - 'team', 'own', 'all': handled via tree rooting and traversal below
+  let scopedEmployees = employees;
+  let userDeptId = null;
+  if (permissionScope === 'department' && userEmp) {
+    userDeptId = userEmp.departmentId?._id?.toString() || userEmp.departmentId?.toString();
+    if (!userDeptId) {
+      return {
+        tree: [],
+        reportingChain: [],
+        totalNodes: 0
+      };
+    }
+    scopedEmployees = employees.filter((emp) => {
+      const empDeptId = emp.departmentId?._id?.toString() || emp.departmentId?.toString();
+      return empDeptId === userDeptId;
+    });
+  }
+
+  // 1. Build lookup maps for scoped employees
   const employeeMap = new Map();
   const childrenMap = new Map();
 
-  for (const emp of employees) {
+  for (const emp of scopedEmployees) {
     const id = emp._id.toString();
     employeeMap.set(id, {
       id,
@@ -917,6 +953,7 @@ export const getOrgChart = async (requestingUserId) => {
       employeeCode: emp.employeeCode,
       email: emp.email || '',
       phone: emp.phone || '',
+      avatar: emp.avatar || '',
       department: emp.departmentId?.name || 'General',
       departmentCode: emp.departmentId?.code || '',
       designation: emp.designationId?.title || 'Team Member',
@@ -924,7 +961,7 @@ export const getOrgChart = async (requestingUserId) => {
       status: emp.status || 'Active',
       userId: emp.userId ? emp.userId.toString() : null,
       managerId: emp.managerId ? emp.managerId.toString() : null,
-      isMe: emp.userId ? emp.userId.toString() === requestingUserId?.toString() : false
+      isMe: emp.userId ? emp.userId.toString() === requestingUserId?.toString() : (userEmployeeId ? id === userEmployeeId : false)
     });
 
     const mId = emp.managerId ? emp.managerId.toString() : 'ROOT';
@@ -934,15 +971,41 @@ export const getOrgChart = async (requestingUserId) => {
     childrenMap.get(mId).push(id);
   }
 
-  // 2. Identify Root nodes: managerId is null or managerId not in active employees
-  const rootIds = [];
+  // 2. Resolve manager name and designation for all nodes
   for (const [id, node] of employeeMap.entries()) {
-    if (!node.managerId || !employeeMap.has(node.managerId)) {
-      rootIds.push(id);
+    if (node.managerId && employeeMap.has(node.managerId)) {
+      const mgr = employeeMap.get(node.managerId);
+      node.managerName = mgr.name;
+      node.managerDesignation = mgr.designation;
+    } else {
+      node.managerName = null;
+      node.managerDesignation = null;
     }
   }
 
-  // 3. Recursive tree builder with DAG cycle prevention
+  // 3. Identify Root nodes based on scope
+  const rootIds = [];
+  if (permissionScope === 'team' && userEmployeeId && employeeMap.has(userEmployeeId)) {
+    // For team scope: Manager is the sole root of their team tree
+    rootIds.push(userEmployeeId);
+  } else if (permissionScope === 'department') {
+    // For department scope: Roots are nodes whose manager is either not in this department,
+    // or is null, or not in active department employees
+    for (const [id, node] of employeeMap.entries()) {
+      if (!node.managerId || !employeeMap.has(node.managerId)) {
+        rootIds.push(id);
+      }
+    }
+  } else {
+    // For 'all' and 'own': Global roots (managerId is null or not in active employees)
+    for (const [id, node] of employeeMap.entries()) {
+      if (!node.managerId || !employeeMap.has(node.managerId)) {
+        rootIds.push(id);
+      }
+    }
+  }
+
+  // 4. Recursive tree builder with DAG cycle prevention
   const buildSubtree = (nodeId, visitedPath = new Set()) => {
     if (visitedPath.has(nodeId)) {
       // Cycle detected: prune branch to prevent stack overflow
@@ -976,22 +1039,37 @@ export const getOrgChart = async (requestingUserId) => {
     .map((rootId) => buildSubtree(rootId, new Set()))
     .filter(Boolean);
 
-  // 4. Compute reportingChain (Slice 4.7): ancestral path upwards from user to root
+  // 5. Compute reportingChain (Slice 4.7): ancestral path upwards from user to root
   const reportingChain = [];
-  if (userEmployeeId) {
+  if (userEmployeeId && employeeMap.has(userEmployeeId)) {
     let curr = employeeMap.get(userEmployeeId);
     const chainVisited = new Set();
     while (curr && !chainVisited.has(curr.id)) {
       reportingChain.unshift(curr.id);
       chainVisited.add(curr.id);
-      curr = curr.managerId ? employeeMap.get(curr.managerId) : null;
+      curr = curr.managerId && employeeMap.has(curr.managerId)
+        ? employeeMap.get(curr.managerId)
+        : null;
     }
   }
+
+  // 6. Calculate totalNodes for the rendered hierarchy
+  const countNodes = (nodes) => {
+    let count = 0;
+    for (const n of nodes) {
+      count += 1;
+      if (n.children?.length) {
+        count += countNodes(n.children);
+      }
+    }
+    return count;
+  };
+  const totalNodes = countNodes(tree);
 
   return {
     tree,
     reportingChain,
-    totalNodes: employees.length
+    totalNodes
   };
 };
 
@@ -1014,7 +1092,7 @@ export const getMyTeam = async (managerUserId) => {
       managerId: managerEmployee._id,
       isDeleted: false
     })
-      .select('name employeeCode email phone joiningDate status departmentId designationId shiftId')
+      .select('name employeeCode email phone joiningDate status departmentId designationId shiftId avatar')
       .populate('departmentId', 'name code')
       .populate('designationId', 'title grade')
       .populate('shiftId', 'name startTime endTime type isCrossMidnight')
@@ -1027,6 +1105,7 @@ export const getMyTeam = async (managerUserId) => {
       ? {
           name: managerEmployee.name,
           employeeCode: managerEmployee.employeeCode,
+          avatar: managerEmployee.avatar || '',
           department: managerEmployee.departmentId?.name || '',
           designation: managerEmployee.designationId?.title || ''
         }
@@ -1037,6 +1116,7 @@ export const getMyTeam = async (managerUserId) => {
       employeeCode: emp.employeeCode,
       email: emp.email || '',
       phone: emp.phone || '',
+      avatar: emp.avatar || '',
       joiningDate: emp.joiningDate,
       status: emp.status,
       department: emp.departmentId?.name || '',

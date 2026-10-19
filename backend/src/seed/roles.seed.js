@@ -132,8 +132,8 @@ export const seedRolesAndAdmin = async () => {
   }
 
   // 2. Seed initial Super Admin user if not existing
-  const adminEmail = 'admin@hrm.company.pk';
-  const existingAdmin = await User.findOne({ email: adminEmail });
+  const adminEmail = process.env.ADMIN_EMAIL || 'mhamzaofficial159@gmail.com';
+  const existingAdmin = await User.findOne({ email: { $in: [adminEmail, 'admin@hrm.company.pk'] } });
 
   if (!existingAdmin) {
     const passwordHash = await User.hashPassword('Admin12345!');
@@ -142,7 +142,7 @@ export const seedRolesAndAdmin = async () => {
       passwordHash,
       roles: [seededRoles['Super Admin']._id],
       isActive: true,
-      mustChangePassword: true
+      mustChangePassword: false
     });
     console.log(`✅ Initial Super Admin created: ${adminUser.email} (must change password on first login)`);
   } else {

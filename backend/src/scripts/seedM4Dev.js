@@ -21,7 +21,7 @@ export const seedM4 = async () => {
   // 1. Ensure core users exist
   await seedDevUsers();
 
-  const adminUser = await User.findOne({ email: 'admin@hrm.company.pk' });
+  const adminUser = await User.findOne({ email: { $in: ['mhamzaofficial159@gmail.com', 'admin@hrm.company.pk'] } });
   const hrUser = await User.findOne({ email: 'hr@hrm.company.pk' });
   const managerUser = await User.findOne({ email: 'manager@hrm.company.pk' });
   const employeeUser = await User.findOne({ email: 'employee@hrm.company.pk' });

@@ -216,3 +216,18 @@ export const triggerProbationCheck = asyncHandler(async (req, res) => {
     .status(200)
     .json(apiResponse(200, result, 'Probation expiry check executed successfully'));
 });
+
+export const uploadMyAvatar = asyncHandler(async (req, res) => {
+  const result = await employeeService.uploadAvatar('me', req.file, req.user);
+  return res
+    .status(200)
+    .json(apiResponse(200, result, 'Profile photo updated successfully'));
+});
+
+export const uploadEmployeeAvatar = asyncHandler(async (req, res) => {
+  const result = await employeeService.uploadAvatar(req.params.id, req.file, req.user);
+  return res
+    .status(200)
+    .json(apiResponse(200, result, 'Employee profile photo updated successfully'));
+});
+

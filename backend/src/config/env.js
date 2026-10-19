@@ -33,5 +33,8 @@ export const env = {
   SMTP_PORT: parseInt(process.env.SMTP_PORT || '587', 10),
   SMTP_USER: process.env.SMTP_USER || '',
   SMTP_PASS: process.env.SMTP_PASS || '',
-  SMTP_FROM: process.env.SMTP_FROM || 'no-reply@hrm-company.pk'
+  SMTP_FROM: process.env.SMTP_FROM || 'no-reply@hrm-company.pk',
+  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || '',
+  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || '',
+  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || ''
 };

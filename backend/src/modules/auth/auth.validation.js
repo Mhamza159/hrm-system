@@ -26,7 +26,10 @@ export const loginSchema = z.object({
     // Password: mandatory, must not be an empty string
     password: z
       .string({ required_error: 'Password is required' })
-      .min(1, 'Password cannot be empty')
+      .min(1, 'Password cannot be empty'),
+
+    // Remember Me: optional boolean flag to bypass repeated 2FA on trusted logins
+    rememberMe: z.boolean().optional()
   })
 });
 

@@ -3,7 +3,8 @@
  * @description Application Entrypoint & HTTP Server Bootstrapper.
  * 
  * EXECUTION FLOW:
- * 1. Establishes robust connection to MongoDB database cluster.
+ * 1. Loads environment configuration and SMTP services.
+ * 2. Establishes robust connection to MongoDB database cluster.
  * 2. Binds Express application to configured PORT.
  * 3. Gracefully handles startup failure with structured logging.
  */

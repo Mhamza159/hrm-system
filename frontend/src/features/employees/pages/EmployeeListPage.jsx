@@ -22,13 +22,15 @@ import {
   Building2,
   Shield,
   Briefcase,
-  UploadCloud
+  UploadCloud,
+  KeyRound
 } from 'lucide-react';
 
 import {
   useGetEmployeesQuery,
   useDeleteEmployeeMutation
 } from '../employeesApi.js';
+import { useAdminResetPasswordMutation } from '../../auth/authApi.js';
 import { useGetDepartmentsQuery } from '../../departments/departmentsApi.js';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
@@ -50,6 +52,7 @@ export default function EmployeeListPage() {
 
   // Archive modal state
   const [deleteId, setDeleteId] = useState(null);
+  const [resetTargetEmployee, setResetTargetEmployee] = useState(null);
 
   const { token, isSuperAdmin } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
@@ -65,12 +68,16 @@ export default function EmployeeListPage() {
   });
 
   const [deleteEmployee, { isLoading: isDeleting }] = useDeleteEmployeeMutation();
+  const [adminResetPassword, { isLoading: isResettingPassword }] = useAdminResetPasswordMutation();
 
   const departments = deptData?.data || [];
   const rawEmployees = empData?.data?.items || [];
   const employees = useMemo(() => {
     return rawEmployees.filter(
-      (emp) => emp.employeeCode !== 'EMP-000' && emp.email !== 'admin@hrm.company.pk'
+      (emp) =>
+        emp.employeeCode !== 'EMP-000' &&
+        emp.email !== 'admin@hrm.company.pk' &&
+        emp.email !== 'mhamzaofficial159@gmail.com'
     );
   }, [rawEmployees]);
   const total = empData?.data?.total || 0;
@@ -123,6 +130,34 @@ export default function EmployeeListPage() {
     }
   };
 
+  const handleListAdminReset = async () => {
+    if (!resetTargetEmployee) return;
+    const targetUserId =
+      resetTargetEmployee.userId?._id ||
+      (typeof resetTargetEmployee.userId === 'string'
+        ? resetTargetEmployee.userId
+        : null);
+
+    if (!targetUserId) {
+      toast.error('No linked user account found for this employee.');
+      setResetTargetEmployee(null);
+      return;
+    }
+
+    try {
+      const response = await adminResetPassword(targetUserId).unwrap();
+      toast.success(
+        response?.message || 'Temporary password generated and emailed to employee successfully.'
+      );
+    } catch (err) {
+      toast.error(
+        err?.data?.message || err?.error || 'Failed to trigger emergency password reset.'
+      );
+    } finally {
+      setResetTargetEmployee(null);
+    }
+  };
+
   const columns = [
     {
       key: 'employeeCode',
@@ -148,9 +183,17 @@ export default function EmployeeListPage() {
 
         return (
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center shrink-0 border border-emerald-200">
-              {initials}
-            </div>
+            {row.avatar ? (
+              <img
+                src={row.avatar}
+                alt={row.name}
+                className="w-8 h-8 rounded-full object-cover shrink-0 border border-emerald-200 shadow-xs"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center shrink-0 border border-emerald-200">
+                {initials}
+              </div>
+            )}
             <div>
               <span className="block text-xs font-semibold text-slate-900 leading-tight">
                 {row.name}
@@ -205,7 +248,10 @@ export default function EmployeeListPage() {
       key: 'actions',
       header: 'Actions',
       render: (row) => {
-        const isRowSuperAdmin = row.employeeCode === 'EMP-000' || row.email === 'admin@hrm.company.pk';
+        const isRowSuperAdmin =
+          row.employeeCode === 'EMP-000' ||
+          row.email === 'admin@hrm.company.pk' ||
+          row.email === 'mhamzaofficial159@gmail.com';
         if (isRowSuperAdmin && !isSuperAdmin) {
           return null;
         }
@@ -230,6 +276,19 @@ export default function EmployeeListPage() {
               >
                 <Edit className="w-4 h-4" />
               </button>
+            </Can>
+
+            <Can I="user.manage" a="User">
+              {row.userId && !isRowSuperAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setResetTargetEmployee(row)}
+                  className="p-1.5 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                  title="Reset Employee Password"
+                >
+                  <KeyRound className="w-4 h-4" />
+                </button>
+              )}
             </Can>
 
             <Can I="employee.delete" a="Employee">
@@ -358,6 +417,18 @@ export default function EmployeeListPage() {
         isLoading={isDeleting}
         onConfirm={handleArchive}
         onClose={() => setDeleteId(null)}
+      />
+
+      {/* Confirmation Dialog for Emergency Password Reset */}
+      <ConfirmDialog
+        isOpen={Boolean(resetTargetEmployee)}
+        title="Emergency Password Reset"
+        message={`Are you sure you want to trigger an emergency password reset for ${resetTargetEmployee?.name} (${resetTargetEmployee?.email})? A secure temporary password will be automatically generated and emailed to them, requiring a password change upon next login.`}
+        confirmText="Generate & Email Temp Password"
+        confirmVariant="primary"
+        isLoading={isResettingPassword}
+        onConfirm={handleListAdminReset}
+        onClose={() => setResetTargetEmployee(null)}
       />
     </div>
   );

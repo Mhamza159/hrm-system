@@ -11,6 +11,7 @@
 
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { apiResponse } from '../../utils/apiResponse.js';
+import { getEffectiveScopeForAction } from '../../middlewares/checkPermission.js';
 import * as departmentService from './department.service.js';
 
 /**
@@ -268,7 +269,23 @@ export const deleteShift = asyncHandler(async (req, res) => {
  * 4.5 & 4.7: Retrieve hierarchical organizational chart with reporting chain
  */
 export const getOrgChart = asyncHandler(async (req, res) => {
-  const chartData = await departmentService.getOrgChart(req.user?._id);
+  let scope = req.permissionScope;
+  if (!scope || scope === 'all') {
+    const isSuperAdmin = req.user?.roles?.some(
+      (r) => r === 'Super Admin' || r?.name === 'Super Admin' || r?.name === 'HR Manager'
+    );
+    if (!isSuperAdmin) {
+      const orgScope = getEffectiveScopeForAction(req.user, 'org.view');
+      const empScope = getEffectiveScopeForAction(req.user, 'employee.view');
+      if (orgScope === 'team' || orgScope === 'department') {
+        scope = orgScope;
+      } else if (empScope === 'team' || empScope === 'department') {
+        scope = empScope;
+      }
+    }
+  }
+
+  const chartData = await departmentService.getOrgChart(req.user?._id, scope, req.user);
   return res.status(200).json(
     apiResponse(200, chartData, 'Organizational hierarchy retrieved successfully.')
   );

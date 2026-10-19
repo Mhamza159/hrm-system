@@ -6,7 +6,9 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
 
-export function PageHeader({ title, description, actions = null }) {
+export function PageHeader({ title, description, subtitle, actions = null, action = null }) {
+  const displayDesc = description || subtitle;
+  const displayActions = actions || action;
   const [timeStr, setTimeStr] = useState('');
   const [dateStr, setDateStr] = useState('');
 
@@ -41,9 +43,9 @@ export function PageHeader({ title, description, actions = null }) {
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
           {title}
         </h1>
-        {description && (
+        {displayDesc && (
           <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            {description}
+            {displayDesc}
           </p>
         )}
       </div>
@@ -62,7 +64,7 @@ export function PageHeader({ title, description, actions = null }) {
           </div>
         </div>
 
-        {actions && <div className="flex items-center gap-2">{actions}</div>}
+        {displayActions && <div className="flex items-center gap-2">{displayActions}</div>}
       </div>
     </div>
   );

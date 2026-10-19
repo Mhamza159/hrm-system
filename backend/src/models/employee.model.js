@@ -43,6 +43,9 @@ const documentSchema = new mongoose.Schema(
     uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
+    },
+    publicId: {
+      type: String
     }
   },
   { _id: true }
@@ -67,6 +70,10 @@ const employeeSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Employee name is required'],
       trim: true
+    },
+    avatar: {
+      type: String,
+      default: ''
     },
     email: {
       type: String,

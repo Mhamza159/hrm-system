@@ -94,7 +94,7 @@ export default function App() {
           <Route
             path="users"
             element={
-              <ProtectedRoute requiredRole="HR Manager">
+              <ProtectedRoute requiredPermission="user.manage">
                 <UsersPage />
               </ProtectedRoute>
             }
@@ -102,7 +102,7 @@ export default function App() {
           <Route
             path="roles"
             element={
-              <ProtectedRoute requiredRole={['Super Admin', 'HR Manager']}>
+              <ProtectedRoute requiredPermission="role.view">
                 <RolesListPage />
               </ProtectedRoute>
             }
@@ -110,7 +110,7 @@ export default function App() {
           <Route
             path="roles/new"
             element={
-              <ProtectedRoute requiredRole={['Super Admin', 'HR Manager']}>
+              <ProtectedRoute requiredPermission="role.manage">
                 <RoleFormPage />
               </ProtectedRoute>
             }
@@ -118,7 +118,7 @@ export default function App() {
           <Route
             path="roles/:id"
             element={
-              <ProtectedRoute requiredRole={['Super Admin', 'HR Manager']}>
+              <ProtectedRoute requiredPermission="role.view">
                 <RoleFormPage />
               </ProtectedRoute>
             }
@@ -126,7 +126,7 @@ export default function App() {
           <Route
             path="delegations"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredPermission="delegation.view">
                 <DelegationPage />
               </ProtectedRoute>
             }
@@ -134,7 +134,7 @@ export default function App() {
           <Route
             path="settings"
             element={
-              <ProtectedRoute requiredRole={['Super Admin', 'HR Manager']}>
+              <ProtectedRoute requiredPermission="settings.manage">
                 <SettingsPage />
               </ProtectedRoute>
             }
@@ -142,7 +142,7 @@ export default function App() {
           <Route
             path="policies"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredPermission="settings.view">
                 <PoliciesPage />
               </ProtectedRoute>
             }
@@ -150,7 +150,7 @@ export default function App() {
           <Route
             path="departments"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredPermission="org.view">
                 <DepartmentsPage />
               </ProtectedRoute>
             }
@@ -158,7 +158,7 @@ export default function App() {
           <Route
             path="designations"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredPermission="org.view">
                 <DesignationsPage />
               </ProtectedRoute>
             }
@@ -166,7 +166,7 @@ export default function App() {
           <Route
             path="shifts"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredPermission="org.view">
                 <ShiftsPage />
               </ProtectedRoute>
             }
@@ -174,7 +174,7 @@ export default function App() {
           <Route
             path="org-chart"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredPermission="org.view">
                 <OrgChartPage />
               </ProtectedRoute>
             }
@@ -182,7 +182,7 @@ export default function App() {
           <Route
             path="teams/my"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredPermission="org.view">
                 <MyTeamPage />
               </ProtectedRoute>
             }
@@ -190,7 +190,7 @@ export default function App() {
           <Route
             path="employees"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredPermission="employee.view">
                 <EmployeeListPage />
               </ProtectedRoute>
             }
@@ -198,7 +198,7 @@ export default function App() {
           <Route
             path="employees/new"
             element={
-              <ProtectedRoute requiredRole={['Super Admin', 'HR Manager']}>
+              <ProtectedRoute requiredPermission="employee.create">
                 <EmployeeFormPage />
               </ProtectedRoute>
             }
@@ -206,7 +206,7 @@ export default function App() {
           <Route
             path="employees/import"
             element={
-              <ProtectedRoute requiredRole={['Super Admin', 'HR Manager']}>
+              <ProtectedRoute requiredPermission="employee.create">
                 <EmployeeImportPage />
               </ProtectedRoute>
             }
@@ -214,7 +214,7 @@ export default function App() {
           <Route
             path="employees/:id/edit"
             element={
-              <ProtectedRoute requiredRole={['Super Admin', 'HR Manager']}>
+              <ProtectedRoute requiredPermission="employee.edit">
                 <EmployeeFormPage />
               </ProtectedRoute>
             }
@@ -222,7 +222,7 @@ export default function App() {
           <Route
             path="employees/:id"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredPermission="employee.view">
                 <EmployeeProfilePage />
               </ProtectedRoute>
             }
@@ -238,12 +238,19 @@ export default function App() {
           <Route
             path="change-requests"
             element={
-              <ProtectedRoute requiredRole={['Super Admin', 'HR Manager']}>
+              <ProtectedRoute requiredPermission="employee.edit">
                 <ChangeRequestsPage />
               </ProtectedRoute>
             }
           />
-          <Route path="login-history" element={<LoginHistoryPage />} />
+          <Route
+            path="login-history"
+            element={
+              <ProtectedRoute requiredPermission="login.history">
+                <LoginHistoryPage />
+              </ProtectedRoute>
+            }
+          />
         </Route>
 
         {/* Fallback */}

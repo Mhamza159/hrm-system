@@ -64,16 +64,24 @@ export const TeamMemberCard = ({ member }) => {
 
         {/* Member Profile info */}
         <div className="flex items-start gap-3.5 mt-2">
-          <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm bg-gradient-to-br from-slate-700 to-slate-800 text-slate-200 border border-slate-700 shrink-0 shadow-inner group-hover:border-emerald-500/40 transition-colors">
-            {member.name
-              ? member.name
-                  .split(' ')
-                  .map((n) => n[0])
-                  .join('')
-                  .substring(0, 2)
-                  .toUpperCase()
-              : 'TM'}
-          </div>
+          {member.avatar ? (
+            <img
+              src={member.avatar}
+              alt={member.name}
+              className="w-12 h-12 rounded-full object-cover border border-slate-700 shrink-0 shadow-inner group-hover:border-emerald-500/50 transition-colors"
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm bg-gradient-to-br from-slate-700 to-slate-800 text-slate-200 border border-slate-700 shrink-0 shadow-inner group-hover:border-emerald-500/40 transition-colors">
+              {member.name
+                ? member.name
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .substring(0, 2)
+                    .toUpperCase()
+                : 'TM'}
+            </div>
+          )}
 
           <div className="min-w-0 flex-1">
             <h4 className="text-sm font-semibold text-slate-100 truncate group-hover:text-emerald-400 transition-colors">

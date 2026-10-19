@@ -43,6 +43,8 @@ import { useAuth } from '../../hooks/useAuth.js';
 import { usePermission } from '../../hooks/usePermission.js';
 import { logout } from '../../features/auth/authSlice.js';
 import { useLogoutMutation } from '../../features/auth/authApi.js';
+import { RoleBadge } from '../common/RoleBadge.jsx';
+import { getUserDisplayName } from '../../lib/formatters.js';
 import { cn } from '../../lib/utils.js';
 
 export function Sidebar({ isOpen = false, onClose }) {
@@ -51,6 +53,9 @@ export function Sidebar({ isOpen = false, onClose }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [logoutApi] = useLogoutMutation();
+
+  const userName = getUserDisplayName(user);
+  const primaryRole = user?.roles?.[0] || 'Employee';
 
   const handleLogout = async () => {
     try {
@@ -67,15 +72,15 @@ export function Sidebar({ isOpen = false, onClose }) {
   const mainNavItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
     { name: 'My Profile', path: '/me', icon: User },
-    { name: 'Org Chart', path: '/org-chart', icon: Network },
-    { name: 'My Team', path: '/teams/my', icon: UserCheck },
-    { name: 'Employees', path: '/employees', icon: Users },
-    { name: 'Attendance', path: '/attendance', icon: Clock },
-    { name: 'Leaves', path: '/leaves', icon: Calendar },
-    { name: 'Payroll', path: '/payroll', icon: BadgeDollarSign, hrOnly: true },
-    { name: 'Company Policies', path: '/policies', icon: BookOpen },
+    { name: 'Org Chart', path: '/org-chart', icon: Network, permission: 'org.view' },
+    { name: 'My Team', path: '/teams/my', icon: UserCheck, permission: 'org.view' },
+    { name: 'Employees', path: '/employees', icon: Users, permission: 'employee.view' },
+    { name: 'Attendance', path: '/attendance', icon: Clock, permission: 'attendance.view' },
+    { name: 'Leaves', path: '/leaves', icon: Calendar, permission: 'leave.view' },
+    { name: 'Payroll', path: '/payroll', icon: BadgeDollarSign, permission: 'payroll.view' },
+    { name: 'Company Policies', path: '/policies', icon: BookOpen, permission: 'settings.view' },
     { name: 'Notifications', path: '/notifications', icon: Bell, badge: 3 },
-    { name: 'Login History', path: '/login-history', icon: History }
+    { name: 'Login History', path: '/login-history', icon: History, permission: 'login.history' }
   ];
 
   // Admin section items
@@ -84,8 +89,8 @@ export function Sidebar({ isOpen = false, onClose }) {
     { name: 'Designations', path: '/designations', icon: Award, permission: 'org.view' },
     { name: 'Work Shifts', path: '/shifts', icon: Clock, permission: 'org.view' },
     { name: 'Roles & Permissions', path: '/roles', icon: Shield, permission: 'role.view' },
-    { name: 'Change Requests', path: '/change-requests', icon: FileCheck, hrOnly: true },
-    { name: 'User Access', path: '/users', icon: Users, hrOnly: true },
+    { name: 'Change Requests', path: '/change-requests', icon: FileCheck, permission: 'employee.edit' },
+    { name: 'User Access', path: '/users', icon: Users, permission: 'user.manage' },
     { name: 'Settings', path: '/settings', icon: Settings, permission: 'settings.manage' }
   ];
 
@@ -140,7 +145,8 @@ export function Sidebar({ isOpen = false, onClose }) {
       {/* Navigation Link List */}
       <nav className="flex-1 py-5 px-3.5 space-y-1.5 overflow-y-auto">
         {mainNavItems.map((item) => {
-          if (item.hrOnly && !isHR) return null;
+          if (item.permission && !can(item.permission)) return null;
+          if (item.hrOnly && !isHR && !can('user.manage')) return null;
           if (item.superAdminOnly && !isSuperAdmin) return null;
 
           const Icon = item.icon;
@@ -182,7 +188,7 @@ export function Sidebar({ isOpen = false, onClose }) {
         })}
 
         {/* ADMIN Section Heading */}
-        {(isHR || isSuperAdmin || can('role.view')) && (
+        {(can('role.view') || can('user.manage') || can('settings.manage') || can('employee.edit') || isSuperAdmin) && (
           <div className="pt-4">
             <div className="text-[11px] font-semibold text-emerald-400/60 uppercase tracking-widest px-3.5 mb-2">
               Admin
@@ -223,16 +229,24 @@ export function Sidebar({ isOpen = false, onClose }) {
       {/* Bottom User Card (Matching docs/ui-reference.png) */}
       <div className="p-3.5 border-t border-[#0B261D]">
         <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05] flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-emerald-500/20 border border-[#00C471]/40 flex items-center justify-center text-xs font-bold text-emerald-300 shrink-0">
-            {user?.email?.charAt(0).toUpperCase() || 'U'}
-          </div>
+          {user?.avatar ? (
+            <img
+              src={user.avatar}
+              alt={userName}
+              className="w-10 h-10 rounded-full object-cover border border-[#00C471]/50 shadow-xs shrink-0"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-[#00C471]/40 flex items-center justify-center text-xs font-bold text-emerald-300 shrink-0">
+              {userName.charAt(0).toUpperCase()}
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-white truncate leading-tight">
-              {user?.email?.split('@')[0] || 'User'}
+              {userName}
             </p>
-            <p className="text-[11px] text-[#00C471] font-medium truncate mt-0.5">
-              {userRole}
-            </p>
+            <div className="mt-1">
+              <RoleBadge role={primaryRole} />
+            </div>
           </div>
           <button
             type="button"

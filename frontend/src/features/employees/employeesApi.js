@@ -127,6 +127,18 @@ export const employeesApi = baseApi.injectEndpoints({
       ]
     }),
 
+    uploadAvatar: builder.mutation({
+      query: ({ id, formData }) => ({
+        url: id ? `/employees/${id}/avatar` : '/employees/me/avatar',
+        method: 'PATCH',
+        body: formData
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Employee', id: id || 'ME' },
+        { type: 'Employee', id: 'LIST' }
+      ]
+    }),
+
     recordJobHistory: builder.mutation({
       query: ({ id, ...body }) => ({
         url: `/employees/${id}/history`,
@@ -191,6 +203,7 @@ export const {
   useDeleteDocumentMutation,
   useImportEmployeesMutation,
   useUpdateSkillsMutation,
+  useUploadAvatarMutation,
   useRecordJobHistoryMutation,
   useGetJobHistoryQuery,
   useGetSalaryHistoryQuery,

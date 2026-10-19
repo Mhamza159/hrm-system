@@ -19,33 +19,18 @@ import * as settingController from './setting.controller.js';
 
 const router = express.Router();
 
-// Configure local uploads destination directory
-const LOGO_UPLOAD_DIR = path.resolve(process.cwd(), 'uploads', 'logos');
-if (!fs.existsSync(LOGO_UPLOAD_DIR)) {
-  fs.mkdirSync(LOGO_UPLOAD_DIR, { recursive: true });
-}
-
-// Multer storage for company logo assets (Slice 2.2)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, LOGO_UPLOAD_DIR);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const uniqueName = `company-logo-${Date.now()}${ext}`;
-    cb(null, uniqueName);
-  }
-});
-
 const logoUpload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 2 * 1024 * 1024 }, // 2 MB maximum
   fileFilter: (req, file, cb) => {
-    const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/svg+xml'];
-    if (allowed.includes(file.mimetype)) {
+    const allowedMimes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/svg+xml'];
+    const allowedExts = ['.png', '.jpg', '.jpeg', '.webp', '.svg'];
+    const ext = path.extname(file.originalname).toLowerCase();
+
+    if (allowedMimes.includes(file.mimetype) && allowedExts.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new ApiError(400, 'Invalid logo format. Only PNG, JPEG, WEBP, and SVG are supported.'));
+      cb(new ApiError(400, 'Invalid logo format. Only PNG, JPEG, WEBP, and SVG image files are supported (Max 2MB).'));
     }
   }
 });

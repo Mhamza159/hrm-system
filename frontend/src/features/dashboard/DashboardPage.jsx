@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   FolderKanban,
   CheckSquare,
@@ -13,25 +14,79 @@ import {
   AlertCircle,
   MoreVertical,
   ArrowUpRight,
-  User
+  User,
+  ShieldCheck,
+  Sparkles
 } from 'lucide-react';
 import { PageHeader } from '../../components/common/PageHeader.jsx';
 import { StatCard } from '../../components/common/StatCard.jsx';
 import { Card } from '../../components/common/Card.jsx';
 import { StatusBadge } from '../../components/common/StatusBadge.jsx';
+import { RoleBadge } from '../../components/common/RoleBadge.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
+import { getUserDisplayName } from '../../lib/formatters.js';
 
 export default function DashboardPage() {
-  const { user } = useAuth();
-  const userName = user?.name || user?.email?.split('@')[0] || 'Member';
+  const navigate = useNavigate();
+  const { user, isSuperAdmin } = useAuth();
+  const userName = getUserDisplayName(user);
+  const primaryRole = user?.roles?.[0] || 'Employee';
 
   return (
     <div className="space-y-6">
       {/* 1. Header with greeting and live time pill */}
       <PageHeader
-        title={`Good Afternoon, ${userName} 👋`}
+        title={`Welcome back, ${userName} 👋`}
         description="Here's what is happening across your workspace today."
       />
+
+      {/* 2. User Profile Hero Card (Avatar, Username, & Role Badge) */}
+      <div className="p-5 sm:p-6 rounded-2xl bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] shadow-xs flex flex-col sm:flex-row items-center sm:items-start md:items-center justify-between gap-5 relative overflow-hidden">
+        <div className="absolute -top-12 -right-12 w-48 h-48 bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left z-10">
+          {/* Avatar with Status Dot */}
+          <div className="relative shrink-0">
+            {user?.avatar ? (
+              <img
+                src={user.avatar}
+                alt={userName}
+                className="w-16 h-16 rounded-2xl object-cover border-2 border-[#00C471]/40 shadow-sm"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border-2 border-[#00C471]/40 flex items-center justify-center text-xl font-bold text-emerald-600 dark:text-emerald-400 shadow-sm">
+                {userName.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <span
+              className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#00C471] border-2 border-white dark:border-[#111D17] shadow-xs"
+              title="Active Now"
+            />
+          </div>
+
+          {/* User Name & Role Badge directly below/beside avatar */}
+          <div className="space-y-1.5 flex flex-col items-center sm:items-start">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
+              {userName}
+            </h2>
+            <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
+              <RoleBadge role={primaryRole} size="md" />
+              <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
+                {user?.email}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Workspace Status Indicator */}
+        <div className="flex items-center gap-2 z-10">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300">
+            <span className="w-2 h-2 rounded-full bg-[#00C471] animate-pulse" />
+            <span>Workspace Active</span>
+          </span>
+        </div>
+      </div>
+
 
       {/* 2. Row 1: 4 Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">

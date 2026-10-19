@@ -78,3 +78,21 @@ export const formatDate = (dateStr) => {
     year: 'numeric'
   });
 };
+
+/**
+ * Resolve display username from user session object
+ * @param {Object} user 
+ * @returns {string}
+ */
+export const getUserDisplayName = (user) => {
+  if (user?.name && user.name.trim()) return user.name;
+  if (user?.employeeId?.name && user.employeeId.name.trim()) return user.employeeId.name;
+  if (user?.email === 'mhamzaofficial159@gmail.com') return 'Muhammad Hamza';
+  if (user?.email === 'admin@hrm.company.pk') return 'Super Admin';
+  if (user?.email) {
+    const raw = user.email.split('@')[0];
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  }
+  return 'Member';
+};
+

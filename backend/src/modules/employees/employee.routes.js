@@ -28,25 +28,8 @@ import {
 
 const router = express.Router();
 
-// Ensure uploads/documents folder exists
-const documentsDir = path.resolve(process.cwd(), 'uploads/documents');
-if (!fs.existsSync(documentsDir)) {
-  fs.mkdirSync(documentsDir, { recursive: true });
-}
-
-const docStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, documentsDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `doc-${uniqueSuffix}${ext}`);
-  }
-});
-
 const uploadDoc = multer({
-  storage: docStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
     const allowedMimes = [
@@ -87,8 +70,30 @@ const uploadMemory = multer({
   }
 });
 
+const avatarUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 3 * 1024 * 1024 }, // 3MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const allowedExts = ['.jpg', '.jpeg', '.png', '.webp'];
+    const ext = path.extname(file.originalname).toLowerCase();
+
+    if (allowedMimes.includes(file.mimetype) && allowedExts.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new ApiError(400, 'Invalid file format. Only JPEG, PNG, and WEBP image files are allowed (Max 3MB).'));
+    }
+  }
+});
+
 // Self-Service Routes (Must come before /:id parameter matching)
 router.get('/me', authenticate, employeeController.getMyProfile);
+router.patch(
+  '/me/avatar',
+  authenticate,
+  avatarUpload.single('avatar'),
+  employeeController.uploadMyAvatar
+);
 router.patch(
   '/me/skills',
   authenticate,
@@ -193,7 +198,14 @@ router.delete(
   employeeController.deleteDocument
 );
 
-// Skills Management
+// Skills & Avatar Management
+router.patch(
+  '/:id/avatar',
+  authenticate,
+  checkPermission('employee.edit'),
+  avatarUpload.single('avatar'),
+  employeeController.uploadEmployeeAvatar
+);
 router.patch(
   '/:id/skills',
   authenticate,

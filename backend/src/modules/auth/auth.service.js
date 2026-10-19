@@ -44,10 +44,11 @@ export class AuthService {
    * @param {string} credentials.password - Plaintext password
    * @param {string} [credentials.ipAddress] - Client IP address for security logging
    * @param {string} [credentials.userAgent] - Client device user agent string
+   * @param {boolean} [credentials.rememberMe] - Flag to bypass repeated 2FA challenges
    * @returns {Promise<{ twoFactorRequired: boolean, user: Object, accessToken?: string, refreshToken?: string, tempToken?: string }>}
    * @throws {ApiError} 401 on invalid credentials, 403 if deactivated, 423 if locked
    */
-  static async login({ email, password, ipAddress, userAgent }) {
+  static async login({ email, password, ipAddress, userAgent, rememberMe = false }) {
     // 1. Sanitize and lowercase email for canonical database matching
     const normalizedEmail = email.toLowerCase().trim();
 
@@ -143,7 +144,8 @@ export class AuthService {
     user.lastLoginAt = new Date();
 
     // 9. Two-Factor Authentication (2FA) Check (Slice 1.10):
-    if (user.twoFactorEnabled) {
+    // If rememberMe is checked, user explicitly trusts this device/session to bypass repeated 2FA challenges
+    if (user.twoFactorEnabled && !rememberMe) {
       const otp = crypto.randomInt(100000, 1000000).toString();
       user.twoFactorOtpHash = await bcrypt.hash(otp, 10);
       user.twoFactorOtpExpires = new Date(Date.now() + 10 * 60 * 1000);
@@ -208,16 +210,27 @@ export class AuthService {
 
     // Ensure roles are populated for client authorization and UI guards
     await user.populate('roles');
+    if (user.employeeId) {
+      await user.populate('employeeId');
+    }
+
+    const resolvedName =
+      user.employeeId?.name ||
+      (user.email === 'mhamzaofficial159@gmail.com' ? 'Muhammad Hamza' : user.email.split('@')[0]);
 
     // 13. Return authentication bundle to Controller
     return {
       twoFactorRequired: false,
       user: {
         id: user._id,
+        _id: user._id,
         email: user.email,
+        name: resolvedName,
         roles: user.roles,
         mustChangePassword: user.mustChangePassword,
-        employeeId: user.employeeId
+        employeeId: user.employeeId,
+        twoFactorEnabled: Boolean(user.twoFactorEnabled),
+        avatar: user.avatar || user.employeeId?.avatar || ''
       },
       accessToken,
       refreshToken
@@ -298,16 +311,27 @@ export class AuthService {
     user.refreshTokenHash = await bcrypt.hash(newRefreshToken, 10);
     await user.save();
     await user.populate('roles');
+    if (user.employeeId) {
+      await user.populate('employeeId');
+    }
+
+    const resolvedName =
+      user.employeeId?.name ||
+      (user.email === 'mhamzaofficial159@gmail.com' ? 'Muhammad Hamza' : user.email.split('@')[0]);
 
     return {
       accessToken: newAccessToken,
       refreshToken: newRefreshToken,
       user: {
         id: user._id,
+        _id: user._id,
         email: user.email,
+        name: resolvedName,
         roles: user.roles,
         mustChangePassword: user.mustChangePassword,
-        employeeId: user.employeeId
+        employeeId: user.employeeId,
+        twoFactorEnabled: Boolean(user.twoFactorEnabled),
+        avatar: user.avatar || user.employeeId?.avatar || ''
       }
     };
   }
@@ -418,15 +442,21 @@ export class AuthService {
     }
 
     const effectivePermissions = Array.from(permissionsMap.values());
+    const resolvedName =
+      user.employeeId?.name ||
+      (user.email === 'mhamzaofficial159@gmail.com' ? 'Muhammad Hamza' : user.email.split('@')[0]);
+
     const sanitizedUser = {
       id: user._id.toString(),
       _id: user._id,
       email: user.email,
+      name: resolvedName,
       roles: user.roles || [],
       employeeId: user.employeeId || null,
       mustChangePassword: user.mustChangePassword,
       isActive: user.isActive,
       twoFactorEnabled: user.twoFactorEnabled,
+      avatar: user.avatar || user.employeeId?.avatar || '',
       lastLoginAt: user.lastLoginAt
     };
 
@@ -744,13 +774,26 @@ export class AuthService {
       failureReason: null
     });
 
+    await user.populate('roles');
+    if (user.employeeId) {
+      await user.populate('employeeId');
+    }
+
+    const resolvedName =
+      user.employeeId?.name ||
+      (user.email === 'mhamzaofficial159@gmail.com' ? 'Muhammad Hamza' : user.email.split('@')[0]);
+
     return {
       user: {
         id: user._id,
+        _id: user._id,
         email: user.email,
+        name: resolvedName,
         roles: user.roles,
         mustChangePassword: user.mustChangePassword,
-        employeeId: user.employeeId
+        employeeId: user.employeeId,
+        twoFactorEnabled: Boolean(user.twoFactorEnabled),
+        avatar: user.avatar || user.employeeId?.avatar || ''
       },
       accessToken,
       refreshToken
@@ -892,14 +935,16 @@ export class AuthService {
    * @param {string} [params.filterEmail] - Filter by specific email (admin only)
    * @returns {Promise<{ docs: Array, total: number, page: number, limit: number, totalPages: number }>}
    */
-  static async getLoginHistory({ userId, userRoles = [], page = 1, limit = 20, filterEmail = null }) {
-    const isPrivileged = userRoles.some((r) => {
-      const roleName = typeof r === 'string' ? r : r.name;
-      return roleName === 'Super Admin' || roleName === 'HR Manager';
+  static async getLoginHistory({ userId, userRoles = [], permissionScope = 'own', page = 1, limit = 20, filterEmail = null }) {
+    const isSuperAdmin = userRoles.some((r) => {
+      const roleName = typeof r === 'string' ? r : r?.name;
+      return roleName === 'Super Admin';
     });
 
+    const canViewAll = isSuperAdmin || permissionScope === 'all';
+
     const filter = {};
-    if (!isPrivileged) {
+    if (!canViewAll) {
       // Scoped strictly to caller's own records
       filter.userId = userId;
     } else if (filterEmail) {

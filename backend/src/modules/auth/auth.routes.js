@@ -11,6 +11,7 @@ import rateLimit from 'express-rate-limit';
 import { AuthController } from './auth.controller.js';
 import { validate } from '../../middlewares/validate.js';
 import { authenticate } from '../../middlewares/authenticate.js';
+import { checkPermission } from '../../middlewares/checkPermission.js';
 import {
   loginSchema,
   forgotPasswordSchema,
@@ -170,6 +171,7 @@ router.post(
 router.get(
   '/login-history',
   authenticate,
+  checkPermission('login.history'),
   AuthController.getLoginHistory
 );
 

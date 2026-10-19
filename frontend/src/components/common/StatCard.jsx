@@ -8,12 +8,16 @@ import { cn } from '../../lib/utils.js';
 
 export function StatCard({
   label,
+  title,
   value,
   caption,
+  description,
   icon: Icon,
   variant = 'emerald', // 'emerald' | 'blue' | 'purple' | 'rose'
   className = ''
 }) {
+  const displayLabel = label || title;
+  const displayCaption = caption || description;
   const variantStyles = {
     emerald: {
       tile: 'bg-emerald-50 dark:bg-emerald-950/50 text-[#00C471] border-emerald-100 dark:border-emerald-800/40',
@@ -73,15 +77,15 @@ export function StatCard({
 
       <div className="mt-4">
         <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-          {label}
+          {displayLabel}
         </p>
         <div className="flex items-baseline gap-2 mt-1">
           <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">
             {value}
           </span>
-          {caption && (
+          {displayCaption && (
             <span className={cn('text-xs font-semibold', v.caption)}>
-              {caption}
+              {displayCaption}
             </span>
           )}
         </div>

@@ -16,9 +16,12 @@ import { DataTable } from '../../../components/common/DataTable.jsx';
 import { StatusBadge } from '../../../components/common/StatusBadge.jsx';
 import { useGetLoginHistoryQuery } from '../authApi.js';
 import { useAuth } from '../../../hooks/useAuth.js';
+import { usePermission } from '../../../hooks/usePermission.js';
 
 export default function LoginHistoryPage() {
   const { isHR, isSuperAdmin } = useAuth();
+  const { can } = usePermission();
+  const canViewAll = isSuperAdmin || isHR || can('login.history', 'all');
   const [page, setPage] = useState(1);
   const limit = 25;
 
@@ -156,7 +159,7 @@ export default function LoginHistoryPage() {
       <PageHeader
         title="Authentication Audit Log"
         description={
-          isHR || isSuperAdmin
+          canViewAll
             ? 'Company-wide authentication logs, lockout occurrences, and security challenge records'
             : 'Personal account login records and security activity trail'
         }

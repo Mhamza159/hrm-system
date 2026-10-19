@@ -9,9 +9,9 @@
 6. **M3 Employee Management (Section 8 · Rows 3.1 - 3.17):** Employee model with AES-256-GCM encrypted CNIC & bank data, employee onboarding wizard, 13-digit masked CNIC validation, scoped employee list, multi-tab employee profile, job history timeline, salary history, skills tags, Excel bulk import with row-level validation, document vault with private expiring links, probation end alerts.
 
 ## Verification Baseline
-- **Vitest Backend Suite:** 40 test files, 282 tests — 100% PASS (Zero regressions).
-- **Frontend Vite Production Build:** Clean exit in 10.78s (Zero build errors).
-- **Latest Commit:** `973ac84` (`feat(roles): Roles & Permissions (RBAC) complete`).
+- **Vitest Backend Suite:** All security & integration tests passing.
+- **Frontend Vite Production Build:** Clean exit, zero errors.
+- **Latest Commit:** `7136447` (`feat(departments): Departments, Designations, Shifts & Org Chart complete`).
 
 ## Remaining Modules in Phase 1 (6 / 12)
 1. **M8 Notifications & Announcements (Section 9 · Rows 8.1 - 8.8):** 8 features

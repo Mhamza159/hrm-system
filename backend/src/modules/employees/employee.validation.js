@@ -91,7 +91,8 @@ export const createEmployeeSchema = z.object({
       .optional()
       .nullable(),
     skills: z.array(z.string().trim()).optional().default([]),
-    createAccount: z.boolean().optional().default(false)
+    createAccount: z.boolean().optional().default(false),
+    roleId: objectIdSchema
   })
 });
 
@@ -148,7 +149,8 @@ export const updateEmployeeSchema = z.object({
       })
       .optional()
       .nullable(),
-    skills: z.array(z.string().trim()).optional()
+    skills: z.array(z.string().trim()).optional(),
+    roleId: objectIdSchema
   })
 });
 

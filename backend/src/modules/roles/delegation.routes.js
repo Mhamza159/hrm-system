@@ -6,6 +6,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { authenticate } from '../../middlewares/authenticate.js';
+import { checkPermission } from '../../middlewares/checkPermission.js';
 import { validate } from '../../middlewares/validate.js';
 import * as delegationController from './delegation.controller.js';
 

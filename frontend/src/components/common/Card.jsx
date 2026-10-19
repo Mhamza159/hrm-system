@@ -12,7 +12,7 @@ export function Card({
   subtitle,
   badge,
   action,
-  actionText = 'View All',
+  actionText,
   actionHref,
   children,
   className = ''

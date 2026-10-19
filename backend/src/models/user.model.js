@@ -49,6 +49,12 @@ const userSchema = new mongoose.Schema(
       default: null
     },
 
+    // Profile photo / avatar CDN URL
+    avatar: {
+      type: String,
+      default: ''
+    },
+
     // Account status: if false, user is blocked from logging in or refreshing tokens
     isActive: {
       type: Boolean,

@@ -8,11 +8,14 @@
  * - Architecture: Every successful response uses standard apiResponse({ statusCode, success, data, message, meta })
  */
 
+import fs from 'node:fs';
+import path from 'node:path';
 import { SettingService } from './setting.service.js';
 import { executeBackup, getBackupStatus as getBackupMetrics } from '../../jobs/backup.job.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { apiResponse } from '../../utils/apiResponse.js';
 import { ApiError } from '../../utils/ApiError.js';
+import { uploadBufferToCloudinary, isCloudinaryConfigured } from '../../config/cloudinary.js';
 
 /**
  * Retrieve all system settings in a consolidated dictionary
@@ -71,8 +74,32 @@ export const uploadCompanyLogo = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Logo file is required');
   }
 
-  // Construct accessible relative logo URL
-  const logoUrl = `/uploads/logos/${req.file.filename}`;
+  let logoUrl;
+
+  if (isCloudinaryConfigured() && req.file.buffer) {
+    const cloudRes = await uploadBufferToCloudinary(req.file.buffer, {
+      folder: 'hrm/logos',
+      resource_type: 'image'
+    });
+    logoUrl = cloudRes.secure_url;
+  } else {
+    // Local fallback when Cloudinary credentials are not configured or file was stored on disk
+    if (req.file.filename) {
+      logoUrl = `/uploads/logos/${req.file.filename}`;
+    } else {
+      const logoDir = path.resolve(process.cwd(), 'uploads', 'logos');
+      if (!fs.existsSync(logoDir)) {
+        fs.mkdirSync(logoDir, { recursive: true });
+      }
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      const uniqueName = `company-logo-${Date.now()}${ext}`;
+      const filePath = path.join(logoDir, uniqueName);
+      if (req.file.buffer) {
+        fs.writeFileSync(filePath, req.file.buffer);
+      }
+      logoUrl = `/uploads/logos/${uniqueName}`;
+    }
+  }
 
   // Read existing company setting and merge logoUrl
   const existingCompany = (await SettingService.getSetting('company')) || {};

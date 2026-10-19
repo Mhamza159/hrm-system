@@ -24,7 +24,7 @@ export class AuthController {
    */
   static login = asyncHandler(async (req, res) => {
     // 1. Extract validated credentials from request body
-    const { email, password } = req.body;
+    const { email, password, rememberMe } = req.body;
 
     // 2. Extract client IP address (supporting reverse proxy forwarding)
     const ipAddress = req.ip || req.socket?.remoteAddress;
@@ -37,7 +37,8 @@ export class AuthController {
       email,
       password,
       ipAddress,
-      userAgent
+      userAgent,
+      rememberMe: Boolean(rememberMe)
     });
 
     // 5. Check if Two-Factor Authentication (2FA) is required (Slice 1.10)
@@ -61,12 +62,16 @@ export class AuthController {
     // - secure: Enforces HTTPS transmission in production
     // - sameSite: 'strict' blocks Cross-Site Request Forgery (CSRF)
     const isProduction = env.NODE_ENV === 'production';
+    const cookieMaxAge = rememberMe
+      ? 30 * 24 * 60 * 60 * 1000 // 30 days if remember me is requested
+      : 7 * 24 * 60 * 60 * 1000; // 7 days standard
+
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: isProduction ? 'strict' : 'lax',
       path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
+      maxAge: cookieMaxAge
     });
 
     // 7. Send standard 200 OK response with user profile and short-lived in-memory accessToken
@@ -74,6 +79,7 @@ export class AuthController {
       new ApiResponse(
         200,
         {
+          twoFactorRequired: false,
           user: result.user,
           accessToken: result.accessToken
         },
@@ -321,7 +327,8 @@ export class AuthController {
     const { page, limit, email } = req.query;
     const result = await AuthService.getLoginHistory({
       userId: req.userId,
-      userRoles: req.user.roles,
+      userRoles: req.user?.roles,
+      permissionScope: req.permissionScope,
       page,
       limit,
       filterEmail: email

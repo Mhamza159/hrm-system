@@ -33,20 +33,25 @@ export const buildAbilityFromRules = (permissions = [], user = null) => {
     return build();
   }
 
-  // Iterate over assigned permissions
-  if (Array.isArray(permissions)) {
-    for (const rule of permissions) {
-      if (!rule) continue;
+  // Compile all permission rules from passed permissions and populated user.roles
+  const rules = [...(Array.isArray(permissions) ? permissions : [])];
+  for (const role of roles) {
+    if (typeof role === 'object' && Array.isArray(role?.permissions)) {
+      rules.push(...role.permissions);
+    }
+  }
 
-      if (rule.action === 'manage' && (rule.subject === 'all' || !rule.subject)) {
-        can('manage', 'all');
-      } else {
-        const subject = rule.subject || 'all';
-        const fields = rule.fields?.length ? rule.fields : undefined;
-        can(rule.action, subject, fields);
-        if (subject !== 'all') {
-          can(rule.action, 'all', fields);
-        }
+  for (const rule of rules) {
+    if (!rule) continue;
+
+    if (rule.action === 'manage' && (rule.subject === 'all' || !rule.subject)) {
+      can('manage', 'all');
+    } else {
+      const subject = rule.subject || 'all';
+      const fields = rule.fields?.length ? rule.fields : undefined;
+      can(rule.action, subject, fields);
+      if (subject !== 'all') {
+        can(rule.action, 'all', fields);
       }
     }
   }

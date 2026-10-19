@@ -14,16 +14,19 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
+import { usePermission } from '../hooks/usePermission.js';
 
 /**
  * Route protection wrapper
  * 
  * @param {Object} props
  * @param {React.ReactNode} props.children - Target protected route view
- * @param {string} [props.requiredRole] - Required user role
+ * @param {string|string[]} [props.requiredRole] - Required user role (legacy fallback)
+ * @param {string} [props.requiredPermission] - Required CASL permission action (e.g. 'login.history', 'org.view')
  */
-export function ProtectedRoute({ children, requiredRole = null }) {
+export function ProtectedRoute({ children, requiredRole = null, requiredPermission = null }) {
   const { user, isAuthenticated, isInitialized, hasRole, isSuperAdmin } = useAuth();
+  const { can } = usePermission();
   const location = useLocation();
 
   // 1. Initial session hydration check (prevents premature redirect flicker)
@@ -45,7 +48,15 @@ export function ProtectedRoute({ children, requiredRole = null }) {
     return <Navigate to="/change-password" replace />;
   }
 
-  // 4. Granular role requirement check (Super Admin always has administrative pass)
+  // 4. Dynamic CASL permission check (Super Admin always has administrative pass)
+  if (requiredPermission) {
+    const isPermitted = isSuperAdmin || can(requiredPermission);
+    if (!isPermitted) {
+      return <Navigate to="/" replace />;
+    }
+  }
+
+  // 5. Granular role requirement check (Super Admin always has administrative pass)
   if (requiredRole) {
     const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
     const isAuthorized = isSuperAdmin || roles.some((role) => hasRole(role));
