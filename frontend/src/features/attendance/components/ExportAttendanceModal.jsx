@@ -7,12 +7,14 @@
  */
 
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import { X, FileSpreadsheet, Download, AlertCircle } from 'lucide-react';
 
 export const ExportAttendanceModal = ({ isOpen, onClose }) => {
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [isExporting, setIsExporting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const accessToken = useSelector((state) => state.auth?.accessToken);
 
   if (!isOpen) return null;
 
@@ -24,6 +26,7 @@ export const ExportAttendanceModal = ({ isOpen, onClose }) => {
     try {
       const response = await fetch(`/api/v1/reports/attendance?month=${month}`, {
         method: 'GET',
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
         credentials: 'include'
       });
 
