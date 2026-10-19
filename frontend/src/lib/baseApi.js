@@ -147,7 +147,10 @@ export const baseApi = createApi({
     'OrgChart',
     'Team',
     'Notification',
-    'Announcement'
+    'Announcement',
+    'WFH',
+    'Correction',
+    'AttendanceLock'
   ],
   endpoints: () => ({})
 });

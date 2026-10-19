@@ -14,6 +14,7 @@ import app from './app.js';
 import { connectDB } from './config/db.js';
 import { env } from './config/env.js';
 import { initSocketIO } from './services/socket.service.js';
+import { initAutoAbsentJob } from './modules/attendance/jobs/autoAbsent.job.js';
 
 const startServer = async () => {
   try {
@@ -26,7 +27,10 @@ const startServer = async () => {
     // 3. Initialize Real-Time Socket.io Hub on the HTTP Server
     initSocketIO(httpServer);
 
-    // 4. Start HTTP & WebSocket Listener
+    // 4. Initialize Scheduled Cron Jobs
+    initAutoAbsentJob();
+
+    // 5. Start HTTP & WebSocket Listener
     httpServer.listen(env.PORT, () => {
       console.log(`🚀 HRM Server & Socket.io running on port ${env.PORT} in ${env.NODE_ENV} mode`);
     });

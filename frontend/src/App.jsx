@@ -29,6 +29,9 @@ import ChangeRequestsPage from './features/employees/pages/ChangeRequestsPage.js
 import { NotificationsPage } from './features/notifications/pages/NotificationsPage.jsx';
 import { NotificationSettingsPage } from './features/notifications/pages/NotificationSettingsPage.jsx';
 import { AnnouncementsPage } from './features/announcements/pages/AnnouncementsPage.jsx';
+import { MyAttendancePage } from './features/attendance/pages/MyAttendancePage.jsx';
+import { TeamAttendancePage } from './features/attendance/pages/TeamAttendancePage.jsx';
+import { AttendanceLockPage } from './features/attendance/pages/AttendanceLockPage.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
 import { useRefreshTokenMutation } from './features/auth/authApi.js';
@@ -275,6 +278,34 @@ export default function App() {
             element={
               <ProtectedRoute requiredPermission="announcement.view">
                 <AnnouncementsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="attendance"
+            element={<Navigate to="/attendance/my" replace />}
+          />
+          <Route
+            path="attendance/my"
+            element={
+              <ProtectedRoute requiredPermission="attendance.view">
+                <MyAttendancePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="attendance/team"
+            element={
+              <ProtectedRoute requiredPermission="attendance.view">
+                <TeamAttendancePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="attendance/lock"
+            element={
+              <ProtectedRoute requiredPermission="attendance.lock">
+                <AttendanceLockPage />
               </ProtectedRoute>
             }
           />

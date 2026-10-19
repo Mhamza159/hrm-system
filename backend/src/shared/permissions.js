@@ -152,6 +152,13 @@ export const PERMISSIONS_CATALOGUE = [
         defaultScope: 'own'
       },
       {
+        action: 'attendance.edit',
+        label: 'Manual Attendance Override',
+        description: 'Edit punch times and daily status with mandatory audit reason.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
         action: 'attendance.approve',
         label: 'Approve Punch Corrections & WFH',
         description: 'Review and decide missed-punch correction requests and remote work requests.',
@@ -164,6 +171,27 @@ export const PERMISSIONS_CATALOGUE = [
         description: 'Lock monthly attendance records prior to payroll generation.',
         allowedScopes: ['all'],
         defaultScope: 'all'
+      },
+      {
+        action: 'attendance.wfh',
+        label: 'Apply for Work From Home',
+        description: 'Submit remote work requests for scheduled dates.',
+        allowedScopes: ['own'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'attendance.correction',
+        label: 'Request Missed Punch Correction',
+        description: 'Submit correction requests for forgotten clock-in/out.',
+        allowedScopes: ['own'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'attendance.export',
+        label: 'Export Attendance Reports',
+        description: 'Download attendance spreadsheets and monthly timesheets.',
+        allowedScopes: ['team', 'department', 'all'],
+        defaultScope: 'team'
       }
     ]
   },

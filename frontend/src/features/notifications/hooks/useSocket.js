@@ -84,6 +84,11 @@ export const useSocket = () => {
         }
       });
 
+      // Real-time attendance punch handler
+      sharedSocket.on('attendance:punch', () => {
+        dispatch(baseApi.util.invalidateTags(['Attendance']));
+      });
+
       sharedSocket.on('connect_error', (err) => {
         // If credentials expired or unauthorized, stop retrying with dead token
         // Will reconnect automatically once Redux rotates and provides a fresh accessToken
@@ -109,3 +114,5 @@ export const useSocket = () => {
 
   return socketRef.current;
 };
+
+export const getSocket = () => sharedSocket;

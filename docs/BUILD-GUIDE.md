@@ -191,21 +191,21 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 5.1 | Attendance model | `attendance.model.js` (unique employeeId + date) | — | Aik din ki do entries na banein | ☐ |
-| 5.2 | Shift assign | employee.shiftId, `PATCH /employees/:id/shift` | Employee form / bulk assign | Sahi shift timings | ☐ |
-| 5.3 | Web check-in | `POST /attendance/check-in` (attendance.mark) | `MyAttendancePage.jsx` + `CheckInButton.jsx` | Waqt aur method save | ☐ |
-| 5.4 | Check-out | `POST /attendance/check-out` | Same button "Check Out" | Kul ghante | ☐ |
-| 5.5 | Break tracking | `POST /attendance/break-start`, `/break-end` | Break button | Break minutes katein | ☐ |
-| 5.6 | Late / early leave / half day | service: shift + lateRules (2.4) | Status badges | 20 min late = Late | ☐ |
-| 5.7 | Overtime | check-out par shift se zyada minutes | Calendar mein OT | OT ghante sahi | ☐ |
-| 5.8 | Work-from-home request | `wfhRequest.model.js`, `POST /attendance/wfh`, `PATCH /wfh/:id/decide` | WFH request form + manager approval list | Approved din WFH check-in | ☐ |
-| 5.9 | Mahana calendar | `GET /attendance?employeeId=&month=` | `AttendanceCalendar.jsx` (rang: present, late, absent, leave, holiday) | Mahina sahi | ☐ |
-| 5.10 | Team attendance | scoped list | `TeamAttendancePage.jsx` (aaj kaun aaya) | Manager ko team | ☐ |
-| 5.11 | HR: sab dekhna/edit | `PATCH /attendance/:id` (attendance.edit) + reason | `AttendanceAdminPage.jsx` | Edit audit log mein | ☐ |
-| 5.12 | Correction request | `attendanceCorrection.model.js`, `POST /attendance/corrections`, `PATCH /:id/decide` | `CorrectionForm.jsx`, `CorrectionsPage.jsx` | Approve par record badle | ☐ |
-| 5.13 | Auto-absent | `jobs/autoAbsent.job.js` (raat ko; leave/holiday ho to woh) | — | Bina check-in = Absent | ☐ |
-| 5.14 | Month lock | `POST /attendance/lock` (attendance.lock) | Lock button + confirm | Lock ke baad edit band | ☐ |
-| 5.15 | Attendance report | `GET /reports/attendance` | Reports page (M7) | Excel sahi | ☐ |
+| 5.1 | Attendance model | `attendance.model.js` (unique employeeId + date) | — | Aik din ki do entries na banein | ☑ |
+| 5.2 | Shift assign | employee.shiftId, `PATCH /employees/:id/shift` | Employee form / bulk assign | Sahi shift timings | ☑ |
+| 5.3 | Web check-in | `POST /attendance/check-in` (attendance.mark) | `MyAttendancePage.jsx` + `CheckInButton.jsx` | Waqt aur method save | ☑ |
+| 5.4 | Check-out | `POST /attendance/check-out` | Same button "Check Out" | Kul ghante | ☑ |
+| 5.5 | Break tracking | `POST /attendance/break-start`, `/break-end` | Break button | Break minutes katein | ☑ |
+| 5.6 | Late / early leave / half day | service: shift + lateRules (2.4) | Status badges | 20 min late = Late | ☑ |
+| 5.7 | Overtime | check-out par shift se zyada minutes | Calendar mein OT | OT ghante sahi | ☑ |
+| 5.8 | Work-from-home request | `wfhRequest.model.js`, `POST /attendance/wfh`, `PATCH /wfh/:id/decide` | WFH request form + manager approval list | Approved din WFH check-in | ☑ |
+| 5.9 | Mahana calendar | `GET /attendance?employeeId=&month=` | `AttendanceCalendar.jsx` (rang: present, late, absent, leave, holiday) | Mahina sahi | ☑ |
+| 5.10 | Team attendance | scoped list | `TeamAttendancePage.jsx` (aaj kaun aaya) | Manager ko team | ☑ |
+| 5.11 | HR: sab dekhna/edit | `PATCH /attendance/:id` (attendance.edit) + reason | `AttendanceAdminPage.jsx` | Edit audit log mein | ☑ |
+| 5.12 | Correction request | `attendanceCorrection.model.js`, `POST /attendance/corrections`, `PATCH /:id/decide` | `CorrectionForm.jsx`, `CorrectionsPage.jsx` | Approve par record badle | ☑ |
+| 5.13 | Auto-absent | `jobs/autoAbsent.job.js` (raat ko; leave/holiday ho to woh) | — | Bina check-in = Absent | ☑ |
+| 5.14 | Month lock | `POST /attendance/lock` (attendance.lock) | Lock button + confirm | Lock ke baad edit band | ☑ |
+| 5.15 | Attendance report | `GET /reports/attendance` | Reports page (M7) | Excel sahi | ☑ |
 
 ## 11. M6 — Leave & Holidays
 
