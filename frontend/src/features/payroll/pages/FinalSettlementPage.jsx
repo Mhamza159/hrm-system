@@ -227,7 +227,7 @@ export function FinalSettlementPage() {
               </button>
               <button
                 disabled={page >= meta.totalPages}
-                onClick={() => setPage((p) => p + 1))}
+                onClick={() => setPage((p) => p + 1)}
                 className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg disabled:opacity-40"
               >
                 Next
