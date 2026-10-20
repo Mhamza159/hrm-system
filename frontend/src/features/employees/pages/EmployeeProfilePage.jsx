@@ -46,6 +46,7 @@ import { ProfileDocumentsTab } from '../components/ProfileDocumentsTab.jsx';
 import { ProfileHistoryTab } from '../components/ProfileHistoryTab.jsx';
 import { ProfileSalaryTab } from '../components/ProfileSalaryTab.jsx';
 import { StatusChangeModal } from '../components/StatusChangeModal.jsx';
+import { LeaveBalanceCards } from '../../leaves/components/LeaveBalanceCards.jsx';
 import { cn } from '../../../lib/utils.js';
 
 export default function EmployeeProfilePage() {
@@ -324,6 +325,7 @@ export default function EmployeeProfilePage() {
         <div className="flex items-center gap-1 border-t border-slate-100 mt-6 pt-2 overflow-x-auto">
           {[
             { id: 'overview', label: 'Overview', icon: User },
+            { id: 'leaves', label: 'Leaves & Quota', icon: Calendar },
             { id: 'documents', label: 'Document Vault', icon: FileText, count: employee.documents?.length || 0 },
             { id: 'history', label: 'Career History', icon: TrendingUp },
             ...(canManage
@@ -371,6 +373,12 @@ export default function EmployeeProfilePage() {
             isOwn={isOwn}
             canViewFinancials={canViewFinancials}
           />
+        )}
+
+        {activeTab === 'leaves' && (
+          <div className="space-y-4">
+            <LeaveBalanceCards employeeId={id} />
+          </div>
         )}
 
         {activeTab === 'documents' && (

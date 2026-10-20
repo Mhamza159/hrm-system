@@ -32,6 +32,12 @@ import { AnnouncementsPage } from './features/announcements/pages/AnnouncementsP
 import { MyAttendancePage } from './features/attendance/pages/MyAttendancePage.jsx';
 import { TeamAttendancePage } from './features/attendance/pages/TeamAttendancePage.jsx';
 import { AttendanceLockPage } from './features/attendance/pages/AttendanceLockPage.jsx';
+import LeaveTypesPage from './features/leaves/pages/LeaveTypesPage.jsx';
+import HolidaysPage from './features/leaves/pages/HolidaysPage.jsx';
+import MyLeavesPage from './features/leaves/pages/MyLeavesPage.jsx';
+import LeaveApprovalsPage from './features/leaves/pages/LeaveApprovalsPage.jsx';
+import TeamLeaveCalendarPage from './features/leaves/pages/TeamLeaveCalendarPage.jsx';
+import EncashmentPage from './features/leaves/pages/EncashmentPage.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
 import { useRefreshTokenMutation } from './features/auth/authApi.js';
@@ -308,6 +314,66 @@ export default function App() {
                 <AttendanceLockPage />
               </ProtectedRoute>
             }
+          />
+          <Route
+            path="leave-types"
+            element={
+              <ProtectedRoute requiredPermission="leave.view">
+                <LeaveTypesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="holidays"
+            element={
+              <ProtectedRoute>
+                <HolidaysPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="leaves"
+            element={<Navigate to="/leaves/my" replace />}
+          />
+          <Route
+            path="leaves/my"
+            element={
+              <ProtectedRoute requiredPermission="leave.view">
+                <MyLeavesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="leaves/approvals"
+            element={
+              <ProtectedRoute requiredPermission="leave.approve">
+                <LeaveApprovalsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="leaves/calendar"
+            element={
+              <ProtectedRoute requiredPermission="leave.view">
+                <TeamLeaveCalendarPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="leave-calendar"
+            element={<Navigate to="/leaves/calendar" replace />}
+          />
+          <Route
+            path="leaves/encashment"
+            element={
+              <ProtectedRoute requiredPermission="leave.view">
+                <EncashmentPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="leave-encashment"
+            element={<Navigate to="/leaves/encashment" replace />}
           />
         </Route>
 

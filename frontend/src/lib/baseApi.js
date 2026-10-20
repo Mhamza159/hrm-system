@@ -138,6 +138,8 @@ export const baseApi = createApi({
     'Employee',
     'Attendance',
     'Leave',
+    'LeaveType',
+    'Holiday',
     'Payroll',
     'Settings',
     'Policies',

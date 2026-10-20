@@ -14,13 +14,15 @@
 import { AbilityBuilder, createMongoAbility } from '@casl/ability';
 import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { Delegation } from '../models/delegation.model.js';
 
 /**
- * Compiles a CASL MongoAbility instance for a user based on their assigned roles.
+ * Compiles a CASL MongoAbility instance for a user based on their assigned roles and active delegations.
  * @param {Object} user - Authenticated user with populated roles
+ * @param {Array} [activeDelegations=[]] - Active delegation records for temporary authority
  * @returns {import('@casl/ability').MongoAbility} Compiled CASL ability instance
  */
-export const buildAbilityForUser = (user) => {
+export const buildAbilityForUser = (user, activeDelegations = []) => {
   const { can, build } = new AbilityBuilder(createMongoAbility);
   const roles = user?.roles || [];
 
@@ -50,6 +52,19 @@ export const buildAbilityForUser = (user) => {
     }
   }
 
+  // 3. Merge active delegations authority (Slice 26.14)
+  for (const del of activeDelegations) {
+    if (Array.isArray(del?.permissions)) {
+      for (const perm of del.permissions) {
+        const subject = perm.subject || 'all';
+        can(perm.action, subject);
+        if (subject !== 'all') {
+          can(perm.action, 'all');
+        }
+      }
+    }
+  }
+
   return build();
 };
 
@@ -58,9 +73,10 @@ export const buildAbilityForUser = (user) => {
  * Priority hierarchy: all (4) > department (3) > team (2) > own (1)
  * @param {Object} user - Authenticated user with roles
  * @param {string} actionName - Permission action string (e.g. 'attendance.view')
+ * @param {Array} [activeDelegations=[]] - Active delegations
  * @returns {string} Effective data scope ('all', 'department', 'team', 'own')
  */
-export const getEffectiveScopeForAction = (user, actionName) => {
+export const getEffectiveScopeForAction = (user, actionName, activeDelegations = []) => {
   const roles = user?.roles || [];
   const scopePriority = { all: 4, department: 3, team: 2, own: 1 };
   let bestScope = null;
@@ -87,6 +103,19 @@ export const getEffectiveScopeForAction = (user, actionName) => {
     }
   }
 
+  // Check active delegations
+  for (const del of activeDelegations) {
+    for (const perm of del?.permissions || []) {
+      if (perm.action === actionName || perm.action === 'manage') {
+        const priority = scopePriority[perm.scope] || 1;
+        if (priority > bestPriority) {
+          bestPriority = priority;
+          bestScope = perm.scope;
+        }
+      }
+    }
+  }
+
   return bestScope || 'all';
 };
 
@@ -102,8 +131,24 @@ export const checkPermission = (requiredPermission, subject = 'all') => {
       throw new ApiError(401, 'Authentication required before permission evaluation.');
     }
 
-    // 2. Build CASL Ability dynamically from user's current roles
-    const ability = buildAbilityForUser(req.user);
+    // Retrieve active delegations if available
+    let activeDelegations = [];
+    if (req.user?._id) {
+      try {
+        const now = new Date();
+        activeDelegations = await Delegation.find({
+          toUserId: req.user._id,
+          status: 'active',
+          startDate: { $lte: now },
+          endDate: { $gte: now }
+        }).lean();
+      } catch (err) {
+        // Fallback gracefully if database or collection not ready
+      }
+    }
+
+    // 2. Build CASL Ability dynamically from user's current roles and delegations
+    const ability = buildAbilityForUser(req.user, activeDelegations);
 
     // 3. Evaluate whether ability permits 'manage all' or specific action
     const isAllowed =
@@ -119,7 +164,7 @@ export const checkPermission = (requiredPermission, subject = 'all') => {
     }
 
     // 4. Attach ability and resolved horizontal data scope to request context
-    const effectiveScope = getEffectiveScopeForAction(req.user, requiredPermission);
+    const effectiveScope = getEffectiveScopeForAction(req.user, requiredPermission, activeDelegations);
     req.ability = ability;
     req.permissionScope = effectiveScope;
 

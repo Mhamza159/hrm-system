@@ -229,6 +229,13 @@ export const PERMISSIONS_CATALOGUE = [
         description: 'Configure yearly quotas, carry-forward rules, and gazetted holiday calendars.',
         allowedScopes: ['all'],
         defaultScope: 'all'
+      },
+      {
+        action: 'leave.encash',
+        label: 'Encash Unutilized Leaves',
+        description: 'Submit and approve encashment requests for unutilized annual leave quotas.',
+        allowedScopes: ['own', 'all'],
+        defaultScope: 'own'
       }
     ]
   },

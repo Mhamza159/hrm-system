@@ -28,6 +28,7 @@ import { scopeFilter } from '../../utils/scopeFilter.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { emailService } from '../../services/email.service.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary, isCloudinaryConfigured } from '../../config/cloudinary.js';
+import { initializeEmployeeLeaveBalances } from '../leaves/leave.service.js';
 
 /**
  * Decrypt sensitive fields (CNIC and IBAN) on an employee object
@@ -203,6 +204,13 @@ export const createEmployee = async (payload, actor) => {
     } catch (mailErr) {
       console.error('Welcome email dispatch failed:', mailErr.message);
     }
+  }
+
+  // 6b. Automatically initialize leave balances for current year (Module M6 Row 6.2)
+  try {
+    await initializeEmployeeLeaveBalances(employee._id);
+  } catch (leaveErr) {
+    console.error('Leave balance initialization failed:', leaveErr.message);
   }
 
   // 7. Audit Log

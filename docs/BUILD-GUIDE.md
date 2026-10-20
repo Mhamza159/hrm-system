@@ -211,21 +211,21 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 6.1 | Leave types | `leaveType.model.js`, CRUD `/leave-types` (annual, casual, sick, maternity, paternity, unpaid, comp-off) | `LeaveTypesPage.jsx` | Types ban jayein | ☐ |
-| 6.2 | Salana quota + carry forward | `leaveBalance.model.js`, `jobs/yearlyLeave.job.js` | — | Naye saal balance + carry | ☐ |
-| 6.3 | Leave apply | `POST /leaves` (balance, takrao, holidays, working days) | `MyLeavesPage.jsx` + `ApplyLeaveForm.jsx` | Zyada din par error | ☐ |
-| 6.4 | Half-day leave | halfDay (first/second half) | Toggle | 0.5 din kate | ☐ |
-| 6.5 | Sick leave attachment | requiresAttachment rule | File upload | Bina file reject | ☐ |
-| 6.6 | Multi-level approval | `buildApprovalChain()` (Manager → HR → Super Admin over limit), delegation (26.14) | `LeaveApprovalsPage.jsx` | Teen level chalein | ☐ |
-| 6.7 | Approve/reject + reason | `PATCH /leaves/:id/decide` | Approve/Reject dialog | Reject reason employee ko | ☐ |
-| 6.8 | Cancel | `PATCH /leaves/:id/cancel` (pending; approved par balance wapas) | Cancel button | Balance wapas | ☐ |
-| 6.9 | Balance | `GET /leaves/balance` | Balance cards | Sahi ginti | ☐ |
-| 6.10 | Team leave calendar | `GET /leaves/calendar` | `TeamLeaveCalendarPage.jsx` (react-big-calendar) | Takrao nazar aaye | ☐ |
-| 6.11 | Holiday calendar | `holiday.model.js`, CRUD `/holidays`, Pakistan holidays seed | `HolidaysPage.jsx` | Eid tareekh edit | ☐ |
-| 6.12 | Attendance se link | final approval par attendance = Leave | Calendar mein Leave | Absent na lage | ☐ |
-| 6.13 | Leave encashment | `POST /leaves/encash` (year end), payroll earning | `EncashmentPage.jsx` (HR) | Payslip mein raqam | ☐ |
-| 6.14 | HR balance override | `PATCH /leave-balances/:id` + reason | Balance edit dialog | Audit log | ☐ |
-| 6.15 | Leave report | `GET /reports/leaves` | Reports page | Excel sahi | ☐ |
+| 6.1 | Leave types | `leaveType.model.js`, CRUD `/leave-types` (annual, casual, sick, maternity, paternity, unpaid, comp-off) | `LeaveTypesPage.jsx` | Types ban jayein | ☑ |
+| 6.2 | Salana quota + carry forward | `leaveBalance.model.js`, `jobs/yearlyLeave.job.js` | — | Naye saal balance + carry | ☑ |
+| 6.3 | Leave apply | `POST /leaves` (balance, takrao, holidays, working days) | `MyLeavesPage.jsx` + `ApplyLeaveForm.jsx` | Zyada din par error | ☑ |
+| 6.4 | Half-day leave | halfDay (first/second half) | Toggle | 0.5 din kate | ☑ |
+| 6.5 | Sick leave attachment | requiresAttachment rule | File upload | Bina file reject | ☑ |
+| 6.6 | Multi-level approval | `buildApprovalChain()` (Manager → HR → Super Admin over limit), delegation (26.14) | `LeaveApprovalsPage.jsx` | Teen level chalein | ☑ |
+| 6.7 | Approve/reject + reason | `PATCH /leaves/:id/decide` | Approve/Reject dialog | Reject reason employee ko | ☑ |
+| 6.8 | Cancel | `PATCH /leaves/:id/cancel` (pending; approved par balance wapas) | Cancel button | Balance wapas | ☑ |
+| 6.9 | Balance | `GET /leaves/balance` | Balance cards | Sahi ginti | ☑ |
+| 6.10 | Team leave calendar | `GET /leaves/calendar` | `TeamLeaveCalendarPage.jsx` (react-big-calendar) | Takrao nazar aaye | ☑ |
+| 6.11 | Holiday calendar | `holiday.model.js`, CRUD `/holidays`, Pakistan holidays seed | `HolidaysPage.jsx` | Eid tareekh edit | ☑ |
+| 6.12 | Attendance se link | final approval par attendance = Leave | Calendar mein Leave | Absent na lage | ☑ |
+| 6.13 | Leave encashment | `POST /leaves/encash` (year end), payroll earning | `EncashmentPage.jsx` (HR) | Payslip mein raqam | ☑ |
+| 6.14 | HR balance override | `PATCH /leave-balances/:id` + reason | Balance edit dialog | Audit log | ☑ |
+| 6.15 | Leave report | `GET /reports/leaves` | Reports page | Excel sahi | ☑ |
 
 ## 12. M9 — Payroll (Pakistan Compliance Samait)
 

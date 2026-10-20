@@ -21,6 +21,7 @@ import {
   Users,
   Clock,
   Calendar,
+  CalendarDays,
   BadgeDollarSign,
   Shield,
   Settings,
@@ -36,6 +37,7 @@ import {
   User,
   FileCheck,
   Megaphone,
+  Coins,
   X
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -79,6 +81,10 @@ export function Sidebar({ isOpen = false, onClose }) {
     { name: 'My Attendance', path: '/attendance/my', icon: Clock, permission: 'attendance.view' },
     { name: 'Team Attendance', path: '/attendance/team', icon: UserCheck, permission: 'attendance.approve' },
     { name: 'Leaves', path: '/leaves', icon: Calendar, permission: 'leave.view' },
+    { name: 'Leave Approvals', path: '/leaves/approvals', icon: UserCheck, permission: 'leave.approve' },
+    { name: 'Leave Calendar', path: '/leaves/calendar', icon: CalendarDays, permission: 'leave.view' },
+    { name: 'Leave Encashment', path: '/leaves/encashment', icon: Coins, permission: 'leave.view' },
+    { name: 'Public Holidays', path: '/holidays', icon: CalendarDays },
     { name: 'Payroll', path: '/payroll', icon: BadgeDollarSign, permission: 'payroll.view' },
     { name: 'Company Policies', path: '/policies', icon: BookOpen, permission: 'settings.view' },
     { name: 'Announcements', path: '/announcements', icon: Megaphone, permission: 'announcement.view' },
@@ -91,6 +97,7 @@ export function Sidebar({ isOpen = false, onClose }) {
     { name: 'Departments', path: '/departments', icon: Building2, permission: 'org.view' },
     { name: 'Designations', path: '/designations', icon: Award, permission: 'org.view' },
     { name: 'Work Shifts', path: '/shifts', icon: Clock, permission: 'org.view' },
+    { name: 'Leave Types', path: '/leave-types', icon: Calendar, permission: 'leave.settings' },
     { name: 'Attendance Lock', path: '/attendance/lock', icon: Shield, permission: 'attendance.lock' },
     { name: 'Roles & Permissions', path: '/roles', icon: Shield, permission: 'role.view' },
     { name: 'Change Requests', path: '/change-requests', icon: FileCheck, permission: 'employee.edit' },
