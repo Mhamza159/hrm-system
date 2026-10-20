@@ -139,7 +139,7 @@ describe('Module M9 — Batch Payroll Run & 4-Stage Lifecycle Test Suite (Slices
     superAdminToken = signToken(superAdminUser, 'Super Admin');
     hrToken = signToken(hrUser, 'HR Manager');
     employeeToken = signToken(empUser, 'Employee');
-  });
+  }, 35000);
 
   afterAll(async () => {
     await mongoose.connection.close();

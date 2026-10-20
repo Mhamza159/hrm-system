@@ -209,3 +209,31 @@ export const getMyPayslips = asyncHandler(async (req, res) => {
     message: 'Self-service payslips retrieved successfully'
   });
 });
+
+/**
+ * 9.10: Download or Stream Branded Payslip PDF
+ * GET /api/v1/payslips/:id/pdf
+ */
+export const getPayslipPdf = asyncHandler(async (req, res) => {
+  const { buffer, filename } = await PayrollService.getPayslipPdf(req.params.id, req.user);
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+  res.setHeader('Content-Length', buffer.length);
+  res.status(200).send(buffer);
+});
+
+/**
+ * 9.12: Export Bank Transfer Advice Sheet (XLSX)
+ * GET /api/v1/payroll/runs/:id/bank-advice
+ */
+export const exportBankAdvice = asyncHandler(async (req, res) => {
+  const bank = req.query.bank || 'standard';
+  const { buffer, filename } = await PayrollService.exportBankAdvice(req.params.id, bank);
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Length', buffer.length);
+  res.status(200).send(buffer);
+});
+

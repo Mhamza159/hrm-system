@@ -533,4 +533,54 @@ export class PayrollService {
       }
     );
   }
+
+  /**
+   * 9.10: Generate Payslip PDF Buffer with Authorization Check
+   */
+  static async getPayslipPdf(slipId, user) {
+    const { Payslip } = await import('../../models/payslip.model.js');
+    const { generatePayslipPdf } = await import('./payslipPdf.service.js');
+
+    const payslip = await Payslip.findById(slipId).populate({
+      path: 'employeeId',
+      populate: [
+        { path: 'departmentId', select: 'name' },
+        { path: 'designationId', select: 'title' }
+      ]
+    });
+
+    if (!payslip) {
+      throw new ApiError(404, 'Payslip not found');
+    }
+
+    // Role/Ownership Authorization:
+    // HR Manager or Super Admin can view any slip. Regular Employee can only view their own slip.
+    const userRoleNames = (user.roles || []).map((r) => (typeof r === 'object' ? r.name : r));
+    const isHrOrAdmin = userRoleNames.some((r) => ['Super Admin', 'HR Manager'].includes(r));
+
+    if (!isHrOrAdmin) {
+      const isOwner =
+        payslip.employeeId?._id?.toString() === user.employeeId?.toString() ||
+        payslip.employeeId?.email === user.email;
+
+      if (!isOwner) {
+        throw new ApiError(403, 'You are not authorized to access this payslip');
+      }
+    }
+
+    const pdfBuffer = await generatePayslipPdf(payslip);
+    const empCode = payslip.employeeId?.employeeId || 'EMP';
+    const filename = `Payslip_${payslip.year}_${payslip.month}_${empCode}.pdf`;
+
+    return { buffer: pdfBuffer, filename };
+  }
+
+  /**
+   * 9.12: Corporate Bank Advice Export
+   */
+  static async exportBankAdvice(runId, bankFormat) {
+    const { generateBankAdviceSheet } = await import('./bankSheet.service.js');
+    return await generateBankAdviceSheet(runId, bankFormat);
+  }
 }
+

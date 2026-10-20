@@ -134,35 +134,35 @@ Tasks are strictly organized into vertical slices by BUILD-GUIDE ID. For every f
 ## Phase 3: Disbursement, Distribution & Self-Service (P1)
 
 ### Slice 9.10: Branded Payslip PDF Generation Engine (BUILD-GUIDE 9.10)
-- [ ] 9.10-BE Implement `generatePayslipPdf` in `backend/src/modules/payroll/payslipPdf.service.js` using PDFKit / pdfmake:
+- [x] 9.10-BE Implement `generatePayslipPdf` in `backend/src/modules/payroll/payslipPdf.service.js` using PDFKit / pdfmake:
   - Includes company logo, header details, employee designation, department, masked CNIC, masked bank IBAN, attendance summary (present, late, OT), itemized earnings and deductions tables, and net pay in PKR words.
-- [ ] 9.10-BE Implement `GET /api/v1/payslips/:id/pdf` returning streaming PDF with `Content-Type: application/pdf` and `Content-Disposition: inline`.
-- [ ] 9.10-FE Create `PayslipPreviewModal.jsx` supporting in-browser PDF preview iframe and download button.
-- [ ] 9.10-TEST Write Vitest test verifying `generatePayslipPdf` produces a valid non-empty PDF buffer containing employee details and financial breakdowns.
+- [x] 9.10-BE Implement `GET /api/v1/payslips/:id/pdf` returning streaming PDF with `Content-Type: application/pdf` and `Content-Disposition: inline`.
+- [x] 9.10-FE Create `PayslipPreviewModal.jsx` supporting in-browser PDF preview iframe and download button.
+- [x] 9.10-TEST Write Vitest test verifying `generatePayslipPdf` produces a valid non-empty PDF buffer containing employee details and financial breakdowns.
 
 ---
 
 ### Slice 9.11: Multi-Channel Payslip Delivery (BUILD-GUIDE 9.11)
-- [ ] 9.11-BE Implement automated delivery trigger upon transitioning run to `paid`:
+- [x] 9.11-BE Implement automated delivery trigger upon transitioning run to `paid`:
   - Dispatches M8 email notification with attached PDF payslip to each employee's registered email address.
   - Emits M8 in-app bell notification and Socket.io event `payroll:payslip_ready`.
-- [ ] 9.11-BE Implement `GET /api/v1/payslips/my` returning paginated list of paid payslips for authenticated user (`payroll.view`, scope `own`).
-- [ ] 9.11-FE Implement `useGetMyPayslipsQuery` and `useDownloadPayslipPdfQuery` in `payrollApi.js`.
-- [ ] 9.11-FE Create `MyPayslipsPage.jsx` for employees showing yearly breakdown, net pay badges, view breakdown button, and one-click PDF download.
-- [ ] 9.11-FE Register `/payroll/my-payslips` route in `frontend/src/App.jsx` accessible to all authenticated employees.
-- [ ] 9.11-TEST Write Vitest test asserting that an employee can query `/payslips/my` and access their own slip, but receives 403 when requesting another employee's slip.
+- [x] 9.11-BE Implement `GET /api/v1/payslips/my` returning paginated list of paid payslips for authenticated user (`payroll.view`, scope `own`).
+- [x] 9.11-FE Implement `useGetMyPayslipsQuery` and `useDownloadPayslipPdfQuery` in `payrollApi.js`.
+- [x] 9.11-FE Create `MyPayslipsPage.jsx` for employees showing yearly breakdown, net pay badges, view breakdown button, and one-click PDF download.
+- [x] 9.11-FE Register `/payroll/my-payslips` route in `frontend/src/App.jsx` accessible to all authenticated employees.
+- [x] 9.11-TEST Write Vitest test asserting that an employee can query `/payslips/my` and access their own slip, but receives 403 when requesting another employee's slip.
 
 ---
 
 ### Slice 9.12: Corporate Bank Transfer Advice Sheet (BUILD-GUIDE 9.12)
-- [ ] 9.12-BE Implement `generateBankAdviceSheet` in `backend/src/modules/payroll/bankSheet.service.js` using ExcelJS streaming workbook:
+- [x] 9.12-BE Implement `generateBankAdviceSheet` in `backend/src/modules/payroll/bankSheet.service.js` using ExcelJS streaming workbook:
   - Supports Meezan Bank format: `[Sr No, Beneficiary Account/IBAN, Beneficiary Name, Amount, Transaction Reference, Remarks]`.
   - Supports HBL corporate format and Standard CSV/XLSX formats.
   - Computes total transfer batch hash and total amount verification row.
-- [ ] 9.12-BE Expose `GET /api/v1/payroll/runs/:id/bank-advice?bank=meezan` protected by `payroll.export`.
-- [ ] 9.12-FE Create `BankAdviceExportModal.jsx` allowing HR to select bank format (Meezan, HBL, Standard) and trigger streaming `.xlsx` file download.
-- [ ] 9.12-FE Add "Export Bank Advice" dropdown button to `PayrollRunDetailPage.jsx`.
-- [ ] 9.12-TEST Write Vitest test verifying the generated ExcelJS workbook has correct column headers and matching net pay sums.
+- [x] 9.12-BE Expose `GET /api/v1/payroll/runs/:id/bank-advice?bank=meezan` protected by `payroll.export`.
+- [x] 9.12-FE Create `BankAdviceExportModal.jsx` allowing HR to select bank format (Meezan, HBL, Standard) and trigger streaming `.xlsx` file download.
+- [x] 9.12-FE Add "Export Bank Advice" dropdown button to `PayrollRunDetailPage.jsx`.
+- [x] 9.12-TEST Write Vitest test verifying the generated ExcelJS workbook has correct column headers and matching net pay sums.
 
 ---
 

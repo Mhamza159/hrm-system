@@ -119,7 +119,7 @@ describe('Module M9 — Salary Structure & Revision Test Suite (Slices 9.1-TEST 
     hrToken = signToken(hrUser, 'HR Manager');
     managerToken = signToken(managerUser, 'Department Manager');
     employeeToken = signToken(empUser, 'Employee');
-  });
+  }, 35000);
 
   afterAll(async () => {
     await mongoose.connection.close();

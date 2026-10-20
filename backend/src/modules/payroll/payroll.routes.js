@@ -73,6 +73,15 @@ router.patch(
   payrollController.markPayrollPaid
 );
 
+// 9.12: Export Bank Advice Sheet (XLSX)
+router.get(
+  '/runs/:id/bank-advice',
+  authenticate,
+  checkPermission('payroll.view'),
+  validate(runIdParamSchema),
+  payrollController.exportBankAdvice
+);
+
 // 9.11: Self-Service Employee Payslips
 router.get(
   '/my-slips',

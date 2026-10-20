@@ -36,6 +36,7 @@ import {
 } from '../payrollApi.js';
 import { PayslipAdjustmentDrawer } from '../components/PayslipAdjustmentDrawer.jsx';
 import { PayslipPreviewModal } from '../components/PayslipPreviewModal.jsx';
+import { BankAdviceExportModal } from '../components/BankAdviceExportModal.jsx';
 import { Can } from '../../../components/common/Can.jsx';
 
 export function PayrollRunDetailPage() {
@@ -45,6 +46,7 @@ export function PayrollRunDetailPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPayslipForAdjustment, setSelectedPayslipForAdjustment] = useState(null);
   const [selectedPayslipForPreview, setSelectedPayslipForPreview] = useState(null);
+  const [isBankAdviceModalOpen, setIsBankAdviceModalOpen] = useState(false);
   const [actionError, setActionError] = useState('');
 
   const { data, isLoading, refetch } = useGetPayrollRunByIdQuery({ id });
@@ -155,6 +157,15 @@ export function PayrollRunDetailPage() {
               {actionError}
             </span>
           )}
+
+          {/* Export Bank Advice Button */}
+          <button
+            onClick={() => setIsBankAdviceModalOpen(true)}
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl shadow-xs transition-colors"
+          >
+            <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            Export Bank Advice
+          </button>
 
           {/* Super Admin Approve Button */}
           {(run.status === 'draft' || run.status === 'review') && (
@@ -410,6 +421,34 @@ export function PayrollRunDetailPage() {
         isOpen={Boolean(selectedPayslipForPreview)}
         onClose={() => setSelectedPayslipForPreview(null)}
         payslip={selectedPayslipForPreview}
+        onDownloadPdf={async (slipId) => {
+          try {
+            const token = localStorage.getItem('accessToken');
+            const res = await fetch(`/api/v1/payslips/${slipId}/pdf`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Failed to download PDF');
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Payslip_${slipId.slice(-6)}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+          } catch (e) {
+            alert(e.message || 'Error downloading PDF');
+          }
+        }}
+      />
+
+      {/* Corporate Bank Advice Sheet Export Modal */}
+      <BankAdviceExportModal
+        isOpen={isBankAdviceModalOpen}
+        onClose={() => setIsBankAdviceModalOpen(false)}
+        runId={id}
+        periodLabel={`${monthName} ${run.year}`}
       />
     </div>
   );

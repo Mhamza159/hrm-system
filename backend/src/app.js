@@ -100,6 +100,7 @@ app.use('/api/v1/leaves', leaveRoutes);
 app.use('/api/v1/salary-structures', salaryStructureRoutes);
 app.use('/api/v1/payroll', payrollRoutes);
 app.get('/api/v1/payslips/my', authenticate, checkPermission('payroll.view', 'own'), payrollController.getMyPayslips);
+app.get('/api/v1/payslips/:id/pdf', authenticate, checkPermission('payroll.view', 'own'), payrollController.getPayslipPdf);
 app.patch('/api/v1/leave-balances/:id', authenticate, checkPermission('leave.settings', 'all'), validate(adjustBalanceSchema), leaveController.adjustLeaveBalance);
 app.get('/api/v1/reports/attendance', authenticate, checkPermission('attendance.export', 'team'), validate(exportAttendanceSchema), attendanceController.exportAttendance);
 app.get('/api/v1/reports/leaves', authenticate, checkPermission('report.export', 'team'), leaveController.exportLeaveReport);

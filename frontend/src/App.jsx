@@ -41,6 +41,7 @@ import EncashmentPage from './features/leaves/pages/EncashmentPage.jsx';
 import { SalaryStructuresPage } from './features/payroll/pages/SalaryStructuresPage.jsx';
 import { PayrollRunsPage } from './features/payroll/pages/PayrollRunsPage.jsx';
 import { PayrollRunDetailPage } from './features/payroll/pages/PayrollRunDetailPage.jsx';
+import { MyPayslipsPage } from './features/payroll/pages/MyPayslipsPage.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
 import { useRefreshTokenMutation } from './features/auth/authApi.js';
@@ -405,6 +406,18 @@ export default function App() {
                 <PayrollRunDetailPage />
               </ProtectedRoute>
             }
+          />
+          <Route
+            path="payroll/my-payslips"
+            element={
+              <ProtectedRoute requiredPermission="payroll.view">
+                <MyPayslipsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="my-payslips"
+            element={<Navigate to="/payroll/my-payslips" replace />}
           />
           <Route
             path="payroll"
