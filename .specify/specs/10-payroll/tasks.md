@@ -26,32 +26,32 @@ Tasks are strictly organized into vertical slices by BUILD-GUIDE ID. For every f
 ## Phase 1: Foundational Compensation & Statutory Calculators (P1)
 
 ### Slice 9.1: Salary Structure Configuration (BUILD-GUIDE 9.1)
-- [ ] 9.1-BE Create `SalaryStructure` model (`backend/src/models/salaryStructure.model.js`) storing base salary, house rent, medical, conveyance, and other allowances in integer paisa (`min: 0`), compound indexes `{ employeeId: 1, effectiveFrom: -1 }` and `{ employeeId: 1, status: 1 }`.
-- [ ] 9.1-BE Implement Zod validation schemas `salaryStructureSchema` in `backend/src/modules/payroll/payroll.validation.js` enforcing integer paisa inputs and non-negative constraints.
-- [ ] 9.1-BE Implement `createSalaryStructure` and `getSalaryStructures` in `backend/src/modules/payroll/payroll.service.js` with audit log recording in `auditLogs`.
-- [ ] 9.1-BE Wire controller and routes for `GET /api/v1/salary-structures` and `POST /api/v1/salary-structures` protected by `authenticate`, `checkPermission('payroll.manage', 'all')`, and `validate(salaryStructureSchema)`.
-- [ ] 9.1-FE Implement RTK Query hooks `useGetSalaryStructuresQuery` and `useCreateSalaryStructureMutation` in `frontend/src/features/payroll/payrollApi.js`.
-- [ ] 9.1-FE Create `SalaryFormModal.jsx` in `frontend/src/features/payroll/components/` with basic pay, allowances inputs, and live gross preview calculation.
-- [ ] 9.1-FE Create `SalaryStructuresPage.jsx` in `frontend/src/features/payroll/pages/` displaying employee salary list, status badges, and Assign Structure button.
-- [ ] 9.1-FE Register `/payroll/salary-structures` route in `frontend/src/App.jsx` wrapped in `<ProtectedRoute requiredPermission="payroll.manage">` and add sidebar navigation item under Payroll.
-- [ ] 9.1-TEST Write Vitest integration test verifying salary structure creation, total gross computation in integer paisa, and duplicate active status rejection.
+- [x] 9.1-BE Create `SalaryStructure` model (`backend/src/models/salaryStructure.model.js`) storing base salary, house rent, medical, conveyance, and other allowances in integer paisa (`min: 0`), compound indexes `{ employeeId: 1, effectiveFrom: -1 }` and `{ employeeId: 1, status: 1 }`.
+- [x] 9.1-BE Implement Zod validation schemas `salaryStructureSchema` in `backend/src/modules/payroll/payroll.validation.js` enforcing integer paisa inputs and non-negative constraints.
+- [x] 9.1-BE Implement `createSalaryStructure` and `getSalaryStructures` in `backend/src/modules/payroll/payroll.service.js` with audit log recording in `auditLogs`.
+- [x] 9.1-BE Wire controller and routes for `GET /api/v1/salary-structures` and `POST /api/v1/salary-structures` protected by `authenticate`, `checkPermission('payroll.manage', 'all')`, and `validate(salaryStructureSchema)`.
+- [x] 9.1-FE Implement RTK Query hooks `useGetSalaryStructuresQuery` and `useCreateSalaryStructureMutation` in `frontend/src/features/payroll/payrollApi.js`.
+- [x] 9.1-FE Create `SalaryFormModal.jsx` in `frontend/src/features/payroll/components/` with basic pay, allowances inputs, and live gross preview calculation.
+- [x] 9.1-FE Create `SalaryStructuresPage.jsx` in `frontend/src/features/payroll/pages/` displaying employee salary list, status badges, and Assign Structure button.
+- [x] 9.1-FE Register `/payroll/salary-structures` route in `frontend/src/App.jsx` wrapped in `<ProtectedRoute requiredPermission="payroll.manage">` and add sidebar navigation item under Payroll.
+- [x] 9.1-TEST Write Vitest integration test verifying salary structure creation, total gross computation in integer paisa, and duplicate active status rejection.
 
 ---
 
 ### Slice 9.2: Salary Increments & Revision History (BUILD-GUIDE 9.2)
-- [ ] 9.2-BE Implement `reviseSalaryStructure` in `backend/src/modules/payroll/payroll.service.js` that archives previous active structure to `superseded`, inserts new structure with `effectiveFrom`, and records mandatory `revisionReason` in `auditLogs`.
-- [ ] 9.2-BE Implement `GET /api/v1/salary-structures/employee/:id` and `PUT /api/v1/salary-structures/employee/:id` in `payroll.controller.js` and `payroll.routes.js` protected by `payroll.manage`.
-- [ ] 9.2-FE Implement `useReviseSalaryStructureMutation` and `useGetEmployeeStructureQuery` in `frontend/src/features/payroll/payrollApi.js`.
-- [ ] 9.2-FE Create `SalaryRevisionModal.jsx` requiring effective date, new allowance breakdown, and mandatory audit justification text.
-- [ ] 9.2-FE Add revision history timeline drawer in `SalaryStructuresPage.jsx` showing past salary adjustments, effective dates, increment deltas, and reviewer names.
-- [ ] 9.2-TEST Write Vitest test asserting that submitting an increment updates the active record, marks old records historical, and stores the audit log reason.
+- [x] 9.2-BE Implement `reviseSalaryStructure` in `backend/src/modules/payroll/payroll.service.js` that archives previous active structure to `superseded`, inserts new structure with `effectiveFrom`, and records mandatory `revisionReason` in `auditLogs`.
+- [x] 9.2-BE Implement `GET /api/v1/salary-structures/employee/:id` and `PUT /api/v1/salary-structures/employee/:id` in `payroll.controller.js` and `payroll.routes.js` protected by `payroll.manage`.
+- [x] 9.2-FE Implement `useReviseSalaryStructureMutation` and `useGetEmployeeStructureQuery` in `frontend/src/features/payroll/payrollApi.js`.
+- [x] 9.2-FE Create `SalaryRevisionModal.jsx` requiring effective date, new allowance breakdown, and mandatory audit justification text.
+- [x] 9.2-FE Add revision history timeline drawer in `SalaryStructuresPage.jsx` showing past salary adjustments, effective dates, increment deltas, and reviewer names.
+- [x] 9.2-TEST Write Vitest test asserting that submitting an increment updates the active record, marks old records historical, and stores the audit log reason.
 
 ---
 
 ### Slice 9.5: Pakistan FBR Progressive Income Tax Calculator (BUILD-GUIDE 9.5)
-- [ ] 9.5-BE Implement `calculateAnnualIncomeTax` in `backend/src/modules/payroll/taxCalculator.js` that annualizes taxable monthly earnings (`Monthly × 12`), matches progressive slab brackets dynamically from M2 `taxSlabs` setting, and divides by 12 (`Math.round(annualTax / 12)`) in integer paisa.
-- [ ] 9.5-BE Add helper to format and inspect progressive tax slab breakdowns for UI consumption and payslip attachment.
-- [ ] 9.5-TEST Write comprehensive Vitest unit test suite `backend/tests/payroll/taxCalculator.test.js` covering FBR salaried slabs:
+- [x] 9.5-BE Implement `calculateAnnualIncomeTax` in `backend/src/modules/payroll/taxCalculator.js` that annualizes taxable monthly earnings (`Monthly × 12`), matches progressive slab brackets dynamically from M2 `taxSlabs` setting, and divides by 12 (`Math.round(annualTax / 12)`) in integer paisa.
+- [x] 9.5-BE Add helper to format and inspect progressive tax slab breakdowns for UI consumption and payslip attachment.
+- [x] 9.5-TEST Write comprehensive Vitest unit test suite `backend/tests/payroll/taxCalculator.test.js` covering FBR salaried slabs:
   - Monthly gross $\le$ PKR 50,000 (PKR 600,000 annual) $\rightarrow$ PKR 0 tax.
   - Monthly gross PKR 100,000 (PKR 1,200,000 annual) $\rightarrow$ 5% on excess of 600k.
   - Monthly gross PKR 250,000, PKR 500,000, and PKR 1,000,000 boundary calculations.
@@ -60,12 +60,12 @@ Tasks are strictly organized into vertical slices by BUILD-GUIDE ID. For every f
 ---
 
 ### Slice 9.6: Statutory EOBI, PESSI, PF & Gratuity Calculator (BUILD-GUIDE 9.6)
-- [ ] 9.6-BE Implement `calculateStatutoryContributions` in `backend/src/modules/payroll/contributionsCalculator.js` loading M2 settings `eobi`, `pessi`, and `providentFund`:
+- [x] 9.6-BE Implement `calculateStatutoryContributions` in `backend/src/modules/payroll/contributionsCalculator.js` loading M2 settings `eobi`, `pessi`, and `providentFund`:
   - EOBI: 1% employee (`37,000 paisa`) + 5% employer (`185,000 paisa`) based on statutory minimum wage PKR 37,000.
   - PESSI: 6% employer contribution up to wage ceiling when enabled.
   - Provident Fund: Equal employee and employer percentage deductions on basic pay when enabled.
-- [ ] 9.6-BE Implement service gratuity formula `(lastDrawnBasicPaisa / 30) * 30 * completedServiceYears` for final exit settlements.
-- [ ] 9.6-TEST Write Vitest unit test suite `backend/tests/payroll/contributions.test.js` validating EOBI statutory rates, PESSI ceiling conditions, and Provident Fund deductions.
+- [x] 9.6-BE Implement service gratuity formula `(lastDrawnBasicPaisa / 30) * 30 * completedServiceYears` for final exit settlements.
+- [x] 9.6-TEST Write Vitest unit test suite `backend/tests/payroll/contributions.test.js` validating EOBI statutory rates, PESSI ceiling conditions, and Provident Fund deductions.
 
 ---
 

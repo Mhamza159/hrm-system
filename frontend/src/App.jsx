@@ -38,6 +38,7 @@ import MyLeavesPage from './features/leaves/pages/MyLeavesPage.jsx';
 import LeaveApprovalsPage from './features/leaves/pages/LeaveApprovalsPage.jsx';
 import TeamLeaveCalendarPage from './features/leaves/pages/TeamLeaveCalendarPage.jsx';
 import EncashmentPage from './features/leaves/pages/EncashmentPage.jsx';
+import { SalaryStructuresPage } from './features/payroll/pages/SalaryStructuresPage.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
 import { useRefreshTokenMutation } from './features/auth/authApi.js';
@@ -374,6 +375,18 @@ export default function App() {
           <Route
             path="leave-encashment"
             element={<Navigate to="/leaves/encashment" replace />}
+          />
+          <Route
+            path="payroll/salary-structures"
+            element={
+              <ProtectedRoute requiredPermission="payroll.manage">
+                <SalaryStructuresPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="salary-structures"
+            element={<Navigate to="/payroll/salary-structures" replace />}
           />
         </Route>
 
