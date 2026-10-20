@@ -71,6 +71,33 @@ export function MyPayslipsPage() {
     }
   };
 
+  const handleDownloadTaxCertificate = async (taxYear) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`/api/v1/payslips/annual-tax-certificate?taxYear=${taxYear}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate annual tax certificate');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Form_IT3_TaxCertificate_${taxYear}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+    } catch (err) {
+      alert(err.message || 'Error downloading tax certificate');
+    }
+  };
+
   // Compute aggregate stats across available payslips
   const totalNetPaisa = payslips.reduce((sum, s) => sum + (s.netPay || 0), 0);
   const totalTaxPaisa = payslips.reduce((sum, s) => sum + (s.incomeTax || 0), 0);
@@ -94,6 +121,27 @@ export function MyPayslipsPage() {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Tax Certificate Form IT-3 Download */}
+        <div className="flex items-center gap-3">
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+            className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            <option value="2026">Tax Year 2026</option>
+            <option value="2025">Tax Year 2025</option>
+            <option value="2024">Tax Year 2024</option>
+          </select>
+
+          <button
+            onClick={() => handleDownloadTaxCertificate(selectedYear)}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
+          >
+            <Download className="w-4 h-4" />
+            <span>Form IT-3 Certificate</span>
+          </button>
         </div>
       </div>
 

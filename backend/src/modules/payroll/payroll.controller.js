@@ -237,3 +237,99 @@ export const exportBankAdvice = asyncHandler(async (req, res) => {
   res.status(200).send(buffer);
 });
 
+/**
+ * 9.13: Process Employee Final Exit Settlement
+ * POST /api/v1/payroll/final-settlement/:id
+ */
+export const processFinalSettlement = asyncHandler(async (req, res) => {
+  const result = await PayrollService.processFinalSettlement(req.params.id, req.body, req.user);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data: result,
+    message: 'Employee final exit settlement processed successfully'
+  });
+});
+
+/**
+ * 9.14: Form IT-3 Annual Tax Withholding Certificate PDF
+ * GET /api/v1/payslips/annual-tax-certificate
+ */
+export const getAnnualTaxCertificatePdf = asyncHandler(async (req, res) => {
+  const employeeId = req.query.employeeId || req.user.employeeId;
+  const taxYear = req.query.taxYear || new Date().getFullYear();
+
+  const { buffer, filename } = await PayrollService.getAnnualTaxCertificatePdf(
+    employeeId,
+    taxYear,
+    req.user
+  );
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+  res.setHeader('Content-Length', buffer.length);
+  res.status(200).send(buffer);
+});
+
+/**
+ * 9.15: Statutory Tax Compliance Report
+ * GET /api/v1/reports/tax-compliance
+ */
+export const getTaxComplianceReport = asyncHandler(async (req, res) => {
+  const data = await PayrollService.getTaxComplianceReport(req.query);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data,
+    message: 'Tax compliance report retrieved successfully'
+  });
+});
+
+/**
+ * 9.15: EOBI Compliance Report
+ * GET /api/v1/reports/eobi-compliance
+ */
+export const getEobiComplianceReport = asyncHandler(async (req, res) => {
+  const data = await PayrollService.getEobiComplianceReport(req.query);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data,
+    message: 'EOBI compliance report retrieved successfully'
+  });
+});
+
+/**
+ * 9.16: Department Manager Team Overtime Guard
+ * GET /api/v1/payroll/team-overtime
+ */
+export const getTeamOvertimeHours = asyncHandler(async (req, res) => {
+  const data = await PayrollService.getTeamOvertimeHours(req.user, req.query);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data,
+    message: 'Team overtime hours retrieved successfully'
+  });
+});
+
+/**
+ * 9.17: Departmental Payroll Cost Analytics
+ * GET /api/v1/reports/payroll-cost
+ */
+export const getDepartmentPayrollCostAnalytics = asyncHandler(async (req, res) => {
+  const data = await PayrollService.getDepartmentPayrollCostAnalytics(req.query);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data,
+    message: 'Departmental payroll cost analytics retrieved successfully'
+  });
+});
+
+

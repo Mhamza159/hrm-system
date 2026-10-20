@@ -82,6 +82,22 @@ router.get(
   payrollController.exportBankAdvice
 );
 
+// 9.13: Process Employee Final Exit Settlement
+router.post(
+  '/final-settlement/:id',
+  authenticate,
+  checkPermission('payroll.manage'),
+  payrollController.processFinalSettlement
+);
+
+// 9.16: Department Manager Team Overtime Guard
+router.get(
+  '/team-overtime',
+  authenticate,
+  checkPermission('attendance.view', 'team'),
+  payrollController.getTeamOvertimeHours
+);
+
 // 9.11: Self-Service Employee Payslips
 router.get(
   '/my-slips',

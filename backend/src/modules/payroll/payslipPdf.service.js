@@ -240,3 +240,162 @@ export async function generatePayslipPdf(payslip) {
     }
   });
 }
+
+/**
+ * 9.14: Generates official FBR Form IT-3 Annual Salary & Tax Withholding Certificate.
+ * @param {Object} employee
+ * @param {number} taxYear - Fiscal Tax Year (e.g. 2026)
+ * @param {Array} payslips - Paid payslips in fiscal year range
+ * @returns {Promise<Buffer>}
+ */
+export async function generateAnnualTaxCertificate(employee, taxYear, payslips = []) {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 40,
+        info: {
+          Title: `Form_IT3_${employee.employeeCode || 'EMP'}_${taxYear}`,
+          Author: 'FBR Tax Engine · HRM Suite',
+          Subject: 'Form IT-3 Annual Salary & Tax Deduction Certificate'
+        }
+      });
+
+      const buffers = [];
+      doc.on('data', (chunk) => buffers.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
+      doc.on('error', (err) => reject(err));
+
+      const empName = employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim();
+      const empCode = employee.employeeCode || employee.employeeId || 'N/A';
+      const desigTitle = employee.designationId?.title || employee.designation?.title || 'Staff';
+      const deptName = employee.departmentId?.name || employee.department?.name || 'General';
+
+      // 1. Header Banner
+      doc.rect(40, 40, 515, 65).fill('#0F172A'); // Slate 900
+      doc.fillColor('#F59E0B') // Amber 500
+        .fontSize(16)
+        .font('Helvetica-Bold')
+        .text('FEDERAL BOARD OF REVENUE (FBR)', 55, 52);
+
+      doc.fillColor('#E2E8F0')
+        .fontSize(9)
+        .font('Helvetica')
+        .text('FORM IT-3 · CERTIFICATE OF COLLECTION OR DEDUCTION OF INCOME TAX', 55, 72);
+
+      doc.fillColor('#94A3B8')
+        .fontSize(7)
+        .font('Helvetica')
+        .text('Under Section 149 read with Section 164 of the Income Tax Ordinance, 2001', 55, 84);
+
+      doc.fillColor('#FFFFFF')
+        .fontSize(12)
+        .font('Helvetica-Bold')
+        .text(`TAX YEAR ${taxYear}`, 380, 52, { align: 'right' });
+
+      doc.fillColor('#CBD5E1')
+        .fontSize(8)
+        .font('Helvetica')
+        .text(`01-Jul-${taxYear - 1} to 30-Jun-${taxYear}`, 380, 72, { align: 'right' });
+
+      let yPos = 120;
+
+      // 2. Employer & Employee Metadata Box
+      doc.rect(40, yPos, 515, 65).fill('#F8FAFC').stroke('#E2E8F0');
+      doc.fillColor('#475569').fontSize(8).font('Helvetica-Bold');
+      doc.text('WITHHOLDING AGENT (EMPLOYER)', 50, yPos + 8);
+      doc.text('TAXPAYER / EMPLOYEE DETAILS', 300, yPos + 8);
+
+      doc.font('Helvetica').fontSize(8).fillColor('#1E293B');
+      // Left (Company)
+      doc.text('Company: HRM Tech Enterprise Ltd', 50, yPos + 22);
+      doc.text('Employer NTN: 9876543-2', 50, yPos + 34);
+      doc.text('Address: Business Avenue, Shahrah-e-Faisal, Karachi', 50, yPos + 46);
+      doc.text('Jurisdiction: RTO-I Karachi', 50, yPos + 58);
+
+      // Right (Employee)
+      doc.text(`Employee Name: ${empName}`, 300, yPos + 22);
+      doc.text(`CNIC: ${employee.cnic || 'N/A'}`, 300, yPos + 34);
+      doc.text(`Designation: ${desigTitle}`, 300, yPos + 46);
+      doc.text(`Employee ID: ${empCode}`, 300, yPos + 58);
+
+      yPos += 80;
+
+      // 3. Monthly Breakdown Table
+      doc.rect(40, yPos, 515, 20).fill('#F1F5F9').stroke('#CBD5E1');
+      doc.fillColor('#334155').font('Helvetica-Bold').fontSize(8);
+      doc.text('Month / Period', 50, yPos + 6);
+      doc.text('Gross Salary (PKR)', 150, yPos + 6, { width: 90, align: 'right' });
+      doc.text('Medical Exemption', 260, yPos + 6, { width: 90, align: 'right' });
+      doc.text('Taxable Salary (PKR)', 360, yPos + 6, { width: 90, align: 'right' });
+      doc.text('Tax Withheld (PKR)', 455, yPos + 6, { width: 90, align: 'right' });
+
+      let totalGross = 0;
+      let totalTaxable = 0;
+      let totalTax = 0;
+      let rowY = yPos + 24;
+
+      doc.font('Helvetica').fontSize(8).fillColor('#1E293B');
+
+      payslips.forEach((slip) => {
+        const grossPkr = (slip.grossPay || 0) / 100;
+        const taxPkr = (slip.incomeTax || 0) / 100;
+        const taxablePkr = grossPkr; // or medical exempt difference
+
+        totalGross += grossPkr;
+        totalTaxable += taxablePkr;
+        totalTax += taxPkr;
+
+        doc.text(`${slip.month}/${slip.year}`, 50, rowY);
+        doc.text(grossPkr.toLocaleString('en-PK'), 150, rowY, { width: 90, align: 'right' });
+        doc.text('0', 260, rowY, { width: 90, align: 'right' });
+        doc.text(taxablePkr.toLocaleString('en-PK'), 360, rowY, { width: 90, align: 'right' });
+        doc.text(taxPkr.toLocaleString('en-PK'), 455, rowY, { width: 90, align: 'right' });
+
+        rowY += 15;
+      });
+
+      const tableBottomY = Math.max(rowY, yPos + 200);
+
+      // Summary Total Row
+      doc.rect(40, tableBottomY, 515, 22).fill('#FEF3C7').stroke('#FDE68A');
+      doc.font('Helvetica-Bold').fontSize(8).fillColor('#92400E');
+      doc.text('ANNUAL TOTALS', 50, tableBottomY + 7);
+      doc.text(totalGross.toLocaleString('en-PK'), 150, tableBottomY + 7, { width: 90, align: 'right' });
+      doc.text('0', 260, tableBottomY + 7, { width: 90, align: 'right' });
+      doc.text(totalTaxable.toLocaleString('en-PK'), 360, tableBottomY + 7, { width: 90, align: 'right' });
+      doc.text(totalTax.toLocaleString('en-PK'), 455, tableBottomY + 7, { width: 90, align: 'right' });
+
+      yPos = tableBottomY + 35;
+
+      // 4. Tax Withheld in Words Banner
+      doc.rect(40, yPos, 515, 36).fill('#F8FAFC').stroke('#E2E8F0');
+      doc.fillColor('#1E293B').font('Helvetica-Bold').fontSize(8);
+      doc.text('TOTAL TAX DEDUCTED IN WORDS:', 50, yPos + 8);
+      doc.font('Helvetica-Oblique').fontSize(8).fillColor('#B45309');
+      doc.text(numberToWords(totalTax), 50, yPos + 20);
+
+      yPos += 50;
+
+      // 5. Statutory Declaration & Signature
+      doc.fillColor('#64748B').font('Helvetica').fontSize(7);
+      doc.text(
+        'Declaration: Certified that the entire amount of income tax withheld as shown in this certificate has been duly deposited ' +
+        'into the Federal Treasury / National Bank of Pakistan under CPR challans pursuant to Rule 44 of the Income Tax Rules, 2002.',
+        40, yPos, { width: 515 }
+      );
+
+      doc.fillColor('#334155').font('Helvetica-Bold').fontSize(8);
+      doc.text('Authorized Signatory (Chief Financial Officer)', 40, yPos + 40);
+      doc.font('Helvetica').fontSize(7).text('HRM Tech Enterprise Ltd · Seal & Signature', 40, yPos + 52);
+
+      doc.text(`Date of Issue: ${new Date().toLocaleDateString('en-PK')}`, 380, yPos + 40, { align: 'right' });
+      doc.text(`CPR Challan Reference: CPR-IT3-${taxYear}-${empCode}`, 380, yPos + 52, { align: 'right' });
+
+      doc.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+

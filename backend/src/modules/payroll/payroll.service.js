@@ -582,5 +582,330 @@ export class PayrollService {
     const { generateBankAdviceSheet } = await import('./bankSheet.service.js');
     return await generateBankAdviceSheet(runId, bankFormat);
   }
+
+  /**
+   * 9.13: Employee Final Exit Settlement Calculation & Clearance
+   */
+  static async processFinalSettlement(employeeId, body, actor) {
+    const employee = await Employee.findById(employeeId);
+    if (!employee) {
+      throw new ApiError(404, 'Employee not found');
+    }
+
+    const { SalaryStructure } = await import('../../models/salaryStructure.model.js');
+    const { calculateGratuityPaisa } = await import('./contributionsCalculator.js');
+
+    const salaryStructure = await SalaryStructure.findOne({
+      employeeId: employee._id,
+      status: 'active'
+    });
+
+    if (!salaryStructure) {
+      throw new ApiError(400, 'Employee does not have an active salary structure assigned');
+    }
+
+    const exitDate = body.exitDate ? new Date(body.exitDate) : new Date();
+    const joiningDate = employee.joiningDate || employee.dateOfJoining || new Date('2023-01-01');
+
+    // Calculate completed service years
+    const diffMs = exitDate - joiningDate;
+    const completedYears = Math.max(0, Math.floor(diffMs / (365.25 * 24 * 60 * 60 * 1000)));
+
+    const basicSalary = salaryStructure.basicSalary || salaryStructure.baseSalary || 0;
+    const payableDays = Math.min(30, Math.max(0, Number(body.payableDays || 0)));
+    const encashableDays = Math.max(0, Number(body.encashableLeaveDays || 0));
+
+    const proRatedSalary = Math.round((basicSalary / 30) * payableDays);
+    const leaveEncashment = Math.round((basicSalary / 30) * encashableDays);
+    const gratuity = calculateGratuityPaisa(basicSalary, completedYears);
+
+    const grossSettlement = proRatedSalary + leaveEncashment + gratuity;
+
+    const loanDeduction = Math.round(Number(body.loanDeductionPaisa || (Number(body.loanDeduction || 0) * 100)));
+    const advanceDeduction = Math.round(Number(body.advanceDeductionPaisa || (Number(body.advanceDeduction || 0) * 100)));
+    const totalDeductions = loanDeduction + advanceDeduction;
+
+    const netSettlement = Math.max(0, grossSettlement - totalDeductions);
+
+    // Update Employee status if requested
+    if (body.updateStatus !== false) {
+      employee.status = body.separationType === 'Terminated' ? 'Terminated' : 'Resigned';
+      employee.statusReason = body.reason || 'Final settlement processed and cleared';
+      await employee.save();
+    }
+
+    const settlementData = {
+      lastBasicSalaryPaisa: basicSalary,
+      gratuityYears: completedYears,
+      payableDays,
+      proRatedSalaryPaisa: proRatedSalary,
+      encashableDays,
+      leaveEncashmentPaisa: leaveEncashment,
+      gratuityPaisa: gratuity,
+      grossSettlementPaisa: grossSettlement,
+      loanDeductionPaisa: loanDeduction,
+      advanceDeductionPaisa: advanceDeduction,
+      totalDeductionsPaisa: totalDeductions,
+      netSettlementPaisa: netSettlement
+    };
+
+    return {
+      employee: {
+        _id: employee._id,
+        name: employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim(),
+        employeeCode: employee.employeeCode || employee.employeeId,
+        joiningDate,
+        exitDate,
+        completedYears,
+        status: employee.status
+      },
+      settlement: settlementData,
+      ...settlementData
+    };
+  }
+
+  /**
+   * 9.14: Form IT-3 Annual Tax Withholding Certificate
+   */
+  static async getAnnualTaxCertificatePdf(employeeId, taxYear, user) {
+    const employee = await Employee.findById(employeeId).populate([
+      { path: 'departmentId', select: 'name' },
+      { path: 'designationId', select: 'title' }
+    ]);
+
+    if (!employee) {
+      throw new ApiError(404, 'Employee not found');
+    }
+
+    // Authorization
+    const userRoleNames = (user.roles || []).map((r) => (typeof r === 'object' ? r.name : r));
+    const isHrOrAdmin = userRoleNames.some((r) => ['Super Admin', 'HR Manager'].includes(r));
+    if (!isHrOrAdmin) {
+      const isOwner = employee._id.toString() === user.employeeId?.toString() || employee.email === user.email;
+      if (!isOwner) {
+        throw new ApiError(403, 'You are not authorized to access this tax certificate');
+      }
+    }
+
+    const { Payslip } = await import('../../models/payslip.model.js');
+    const { generateAnnualTaxCertificate } = await import('./payslipPdf.service.js');
+
+    const year = Number(taxYear) || new Date().getFullYear();
+    // Fiscal Tax Year: July 1 (year - 1) to June 30 (year)
+    const paidSlips = await Payslip.find({
+      employeeId: employee._id,
+      status: 'paid',
+      $or: [
+        { year: year - 1, month: { $gte: 7 } },
+        { year: year, month: { $lte: 6 } }
+      ]
+    }).sort({ year: 1, month: 1 });
+
+    const pdfBuffer = await generateAnnualTaxCertificate(employee, year, paidSlips);
+    const empCode = employee.employeeCode || employee.employeeId || 'EMP';
+    const filename = `Form_IT3_${empCode}_TY${year}.pdf`;
+
+    return { buffer: pdfBuffer, filename };
+  }
+
+  /**
+   * 9.15: Statutory Tax Compliance Report
+   */
+  static async getTaxComplianceReport(query = {}) {
+    const { Payslip } = await import('../../models/payslip.model.js');
+    const taxYear = Number(query.taxYear) || new Date().getFullYear();
+
+    const slips = await Payslip.find({
+      status: 'paid',
+      $or: [
+        { year: taxYear - 1, month: { $gte: 7 } },
+        { year: taxYear, month: { $lte: 6 } }
+      ]
+    });
+
+    let totalTaxWithheld = 0;
+    let totalGross = 0;
+    const monthlyMap = {};
+
+    slips.forEach((s) => {
+      const tax = s.taxWithheld || s.incomeTax || 0;
+      totalTaxWithheld += tax;
+      totalGross += s.grossPay || 0;
+
+      const key = `${s.year}-${String(s.month).padStart(2, '0')}`;
+      if (!monthlyMap[key]) {
+        monthlyMap[key] = { month: s.month, year: s.year, grossPaisa: 0, taxPaisa: 0, slipCount: 0 };
+      }
+      monthlyMap[key].grossPaisa += s.grossPay || 0;
+      monthlyMap[key].taxPaisa += tax;
+      monthlyMap[key].slipCount += 1;
+    });
+
+    return {
+      taxYear,
+      totalTaxWithheldPaisa: totalTaxWithheld,
+      totalGrossPaisa: totalGross,
+      totalSlips: slips.length,
+      monthlyBreakdown: Object.values(monthlyMap).sort((a, b) => a.year - b.year || a.month - b.month)
+    };
+  }
+
+  /**
+   * 9.15: EOBI Compliance Report
+   */
+  static async getEobiComplianceReport(query = {}) {
+    const { Payslip } = await import('../../models/payslip.model.js');
+    const year = Number(query.year) || new Date().getFullYear();
+
+    const slips = await Payslip.find({
+      year,
+      status: 'paid'
+    });
+
+    let totalEmployeeEobi = 0;
+    let totalEmployerEobi = 0;
+    const monthlyMap = {};
+
+    slips.forEach((s) => {
+      const eeEobi = s.eobiEmployee || 0;
+      const erEobi = eeEobi * 5; // 1% EE, 5% ER
+
+      totalEmployeeEobi += eeEobi;
+      totalEmployerEobi += erEobi;
+
+      const mKey = s.month;
+      if (!monthlyMap[mKey]) {
+        monthlyMap[mKey] = { month: s.month, year, employeeEobiPaisa: 0, employerEobiPaisa: 0, count: 0 };
+      }
+      monthlyMap[mKey].employeeEobiPaisa += eeEobi;
+      monthlyMap[mKey].employerEobiPaisa += erEobi;
+      monthlyMap[mKey].count += 1;
+    });
+
+    return {
+      year,
+      totalEmployeeEobiPaisa: totalEmployeeEobi,
+      totalEmployerEobiPaisa: totalEmployerEobi,
+      totalCombinedPaisa: totalEmployeeEobi + totalEmployerEobi,
+      monthlyBreakdown: Object.values(monthlyMap).sort((a, b) => a.month - b.month)
+    };
+  }
+
+  /**
+   * 9.16: Department Manager Team Overtime Guard
+   * Strictly returns overtime hours & attendance metrics. Basic/Gross/Net pay are intentionally omitted to prevent leakage.
+   */
+  static async getTeamOvertimeHours(managerUser, query = {}) {
+    const month = Number(query.month) || new Date().getMonth() + 1;
+    const year = Number(query.year) || new Date().getFullYear();
+
+    const managerEmployee = await Employee.findOne({
+      $or: [{ _id: managerUser.employeeId }, { email: managerUser.email }]
+    });
+
+    let teamEmployees = [];
+    if (managerEmployee) {
+      teamEmployees = await Employee.find({
+        $or: [
+          { managerId: managerEmployee._id },
+          { departmentId: managerEmployee.departmentId }
+        ],
+        status: { $in: ['Active', 'Probation'] }
+      }).select('_id employeeCode name designationId departmentId');
+    }
+
+    const { Payslip } = await import('../../models/payslip.model.js');
+    const empIds = teamEmployees.map((e) => e._id);
+
+    const slips = await Payslip.find({
+      month,
+      year,
+      employeeId: { $in: empIds }
+    }).select('employeeId overtimeHours attendanceSummary status');
+
+    const result = teamEmployees.map((emp) => {
+      const slip = slips.find((s) => s.employeeId.toString() === emp._id.toString());
+      return {
+        employeeId: emp._id,
+        name: emp.name,
+        employeeCode: emp.employeeCode,
+        overtimeHours: slip?.overtimeHours || slip?.attendanceSummary?.overtimeHours || 0,
+        workingDays: slip?.attendanceSummary?.workingDays || 30,
+        presentDays: slip?.attendanceSummary?.presentDays || 0,
+        unpaidLeaves: slip?.attendanceSummary?.unpaidLeaves || 0,
+        slipStatus: slip?.status || 'unprocessed'
+      };
+    });
+
+    return { month, year, count: result.length, team: result };
+  }
+
+  /**
+   * 9.17: Departmental Payroll Cost Analytics
+   */
+  static async getDepartmentPayrollCostAnalytics(query = {}) {
+    const { Payslip } = await import('../../models/payslip.model.js');
+    const year = Number(query.year) || new Date().getFullYear();
+
+    const analytics = await Payslip.aggregate([
+      {
+        $match: {
+          year,
+          status: { $in: ['approved', 'paid'] }
+        }
+      },
+      {
+        $lookup: {
+          from: 'employees',
+          localField: 'employeeId',
+          foreignField: '_id',
+          as: 'employee'
+        }
+      },
+      { $unwind: '$employee' },
+      {
+        $lookup: {
+          from: 'departments',
+          localField: 'employee.departmentId',
+          foreignField: '_id',
+          as: 'department'
+        }
+      },
+      {
+        $unwind: {
+          path: '$department',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $group: {
+          _id: '$department._id',
+          departmentName: { $first: { $ifNull: ['$department.name', 'General'] } },
+          totalGrossPay: { $sum: '$grossPay' },
+          totalNetPay: { $sum: '$netPay' },
+          totalIncomeTax: { $sum: '$incomeTax' },
+          totalEobi: { $sum: '$eobiEmployee' },
+          totalOvertimePay: { $sum: '$overtimePay' },
+          headcount: { $addToSet: '$employeeId' }
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          departmentName: 1,
+          totalGrossPaisa: '$totalGrossPay',
+          totalNetPaisa: '$totalNetPay',
+          totalIncomeTaxPaisa: '$totalIncomeTax',
+          totalEobiPaisa: '$totalEobi',
+          totalOvertimePayPaisa: '$totalOvertimePay',
+          employeeCount: { $size: '$headcount' }
+        }
+      },
+      { $sort: { totalGrossPaisa: -1 } }
+    ]);
+
+    return analytics;
+  }
 }
+
 

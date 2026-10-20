@@ -38,6 +38,7 @@ import {
   FileCheck,
   Megaphone,
   Coins,
+  BarChart3,
   X
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -102,6 +103,8 @@ export function Sidebar({ isOpen = false, onClose }) {
     { name: 'Attendance Lock', path: '/attendance/lock', icon: Shield, permission: 'attendance.lock' },
     { name: 'Salary Structures', path: '/payroll/salary-structures', icon: BadgeDollarSign, permission: 'payroll.manage' },
     { name: 'Payroll Runs', path: '/payroll/runs', icon: BadgeDollarSign, permission: 'payroll.manage' },
+    { name: 'Exit Settlements', path: '/payroll/settlement', icon: Coins, permission: 'payroll.manage' },
+    { name: 'Payroll Reports', path: '/payroll/reports', icon: BarChart3, permission: 'payroll.view' },
     { name: 'Roles & Permissions', path: '/roles', icon: Shield, permission: 'role.view' },
     { name: 'Change Requests', path: '/change-requests', icon: FileCheck, permission: 'employee.edit' },
     { name: 'User Access', path: '/users', icon: Users, permission: 'user.manage' },

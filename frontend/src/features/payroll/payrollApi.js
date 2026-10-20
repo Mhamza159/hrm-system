@@ -128,6 +128,48 @@ export const payrollApi = baseApi.injectEndpoints({
         params
       }),
       providesTags: ['MyPayslips']
+    }),
+
+    // 9.13: Final Settlement
+    processFinalSettlement: builder.mutation({
+      query: ({ employeeId, ...body }) => ({
+        url: `/payroll/final-settlement/${employeeId}`,
+        method: 'POST',
+        body
+      }),
+      invalidatesTags: ['SalaryStructure', 'Employee']
+    }),
+
+    // 9.15: Tax Compliance Report
+    getTaxComplianceReport: builder.query({
+      query: (params) => ({
+        url: '/reports/tax-compliance',
+        params
+      })
+    }),
+
+    // 9.15: EOBI Compliance Report
+    getEobiComplianceReport: builder.query({
+      query: (params) => ({
+        url: '/reports/eobi-compliance',
+        params
+      })
+    }),
+
+    // 9.16: Team Overtime Hours
+    getTeamOvertime: builder.query({
+      query: (params) => ({
+        url: '/payroll/team-overtime',
+        params
+      })
+    }),
+
+    // 9.17: Department Payroll Cost
+    getDepartmentPayrollCost: builder.query({
+      query: (params) => ({
+        url: '/reports/payroll-cost',
+        params
+      })
     })
   })
 });
@@ -143,5 +185,11 @@ export const {
   useAdjustPayslipMutation,
   useApprovePayrollRunMutation,
   useMarkPayrollPaidMutation,
-  useGetMyPayslipsQuery
+  useGetMyPayslipsQuery,
+  useProcessFinalSettlementMutation,
+  useGetTaxComplianceReportQuery,
+  useGetEobiComplianceReportQuery,
+  useGetTeamOvertimeQuery,
+  useGetDepartmentPayrollCostQuery
 } = payrollApi;
+

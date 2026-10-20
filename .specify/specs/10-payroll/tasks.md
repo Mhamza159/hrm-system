@@ -169,48 +169,48 @@ Tasks are strictly organized into vertical slices by BUILD-GUIDE ID. For every f
 ## Phase 4: Exit Settlement, Statutory Certificates & Governance (P2)
 
 ### Slice 9.13: Employee Final Exit Settlement (BUILD-GUIDE 9.13)
-- [ ] 9.13-BE Implement `processFinalSettlement` in `payroll.service.js`:
+- [x] 9.13-BE Implement `processFinalSettlement` in `payroll.service.js`:
   - Computes payable days in exit month, liquidates unutilized annual leaves from M6 `LeaveBalance`, calculates statutory service gratuity, deducts remaining loan balance from M10, and generates final clearance slip.
-- [ ] 9.13-BE Expose `POST /api/v1/payroll/final-settlement/:id` protected by `payroll.manage`.
-- [ ] 9.13-FE Implement `useProcessFinalSettlementMutation` in `payrollApi.js`.
-- [ ] 9.13-FE Create `SettlementGratuityModal.jsx` displaying service duration, gratuity formula, leave encashment balance, and net exit payout.
-- [ ] 9.13-FE Create `FinalSettlementPage.jsx` for HR to search offboarding employees and finalize full & final settlement.
-- [ ] 9.13-FE Register `/payroll/settlement` route in `frontend/src/App.jsx`.
-- [ ] 9.13-TEST Write integration test asserting final settlement correctly calculates gratuity, liquidates leaves, and clears loan obligations.
+- [x] 9.13-BE Expose `POST /api/v1/payroll/final-settlement/:id` protected by `payroll.manage`.
+- [x] 9.13-FE Implement `useProcessFinalSettlementMutation` in `payrollApi.js`.
+- [x] 9.13-FE Create `SettlementGratuityModal.jsx` displaying service duration, gratuity formula, leave encashment balance, and net exit payout.
+- [x] 9.13-FE Create `FinalSettlementPage.jsx` for HR to search offboarding employees and finalize full & final settlement.
+- [x] 9.13-FE Register `/payroll/settlement` route in `frontend/src/App.jsx`.
+- [x] 9.13-TEST Write integration test asserting final settlement correctly calculates gratuity, liquidates leaves, and clears loan obligations.
 
 ---
 
 ### Slice 9.14: Form IT-3 Annual Tax Withholding Certificate (BUILD-GUIDE 9.14)
-- [ ] 9.14-BE Implement `generateAnnualTaxCertificate` in `payslipPdf.service.js`:
+- [x] 9.14-BE Implement `generateAnnualTaxCertificate` in `payslipPdf.service.js`:
   - Aggregates all paid payslips for an employee across a fiscal year (July 1 to June 30).
   - Calculates total gross salary, total taxable salary, total income tax withheld, and company NTN details as required by FBR Form IT-3.
-- [ ] 9.14-BE Expose `GET /api/v1/payslips/annual-tax-certificate?employeeId=&taxYear=` protected by `payroll.view` (`own` or `all`).
-- [ ] 9.14-FE Add "Download Tax Certificate" button in `MyPayslipsPage.jsx` and employee profile with tax year selector.
-- [ ] 9.14-TEST Write Vitest test asserting annual tax certificate accurately sums all monthly withholding taxes for the selected tax year.
+- [x] 9.14-BE Expose `GET /api/v1/payslips/annual-tax-certificate?employeeId=&taxYear=` protected by `payroll.view` (`own` or `all`).
+- [x] 9.14-FE Add "Download Tax Certificate" button in `MyPayslipsPage.jsx` and employee profile with tax year selector.
+- [x] 9.14-TEST Write Vitest test asserting annual tax certificate accurately sums all monthly withholding taxes for the selected tax year.
 
 ---
 
 ### Slice 9.15: Statutory Withholding & EOBI Compliance Audit Reports (BUILD-GUIDE 9.15)
-- [ ] 9.15-BE Implement `getTaxComplianceReport` and `getEobiComplianceReport` in `payroll.service.js` aggregating monthly employee withholdings, employer EOBI contributions, and deposit challan details.
-- [ ] 9.15-BE Expose `GET /api/v1/reports/tax-compliance` and `GET /api/v1/reports/eobi-compliance` protected by `payroll.export`.
-- [ ] 9.15-FE Add Statutory Compliance tab to Reports section with tax year filter, monthly breakdown table, and Excel export button.
-- [ ] 9.15-TEST Write integration test asserting report sums match the sum of individual payslip deductions for the selected period.
+- [x] 9.15-BE Implement `getTaxComplianceReport` and `getEobiComplianceReport` in `payroll.service.js` aggregating monthly employee withholdings, employer EOBI contributions, and deposit challan details.
+- [x] 9.15-BE Expose `GET /api/v1/reports/tax-compliance` and `GET /api/v1/reports/eobi-compliance` protected by `payroll.export`.
+- [x] 9.15-FE Add Statutory Compliance tab to Reports section with tax year filter, monthly breakdown table, and Excel export button.
+- [x] 9.15-TEST Write integration test asserting report sums match the sum of individual payslip deductions for the selected period.
 
 ---
 
 ### Slice 9.16: Department Manager Team Overtime Guard (BUILD-GUIDE 9.16)
-- [ ] 9.16-BE Implement `getTeamOvertimeHours` in `payroll.service.js` returning employee names, designations, and overtime hours worked for the manager's team; strictly exclude basic pay, gross pay, and net pay fields from projection.
-- [ ] 9.16-BE Expose `GET /api/v1/payroll/team-overtime` protected by `attendance.view` with scope `team`.
-- [ ] 9.16-FE Add "Team Overtime Hours" widget/page for Department Managers displaying member hours without any monetary salary values.
-- [ ] 9.16-TEST Write security test asserting that a Department Manager calling `/api/v1/payroll/team-overtime` receives team hours, but calling `/api/v1/payroll/runs` or salary endpoints returns 403 Forbidden.
+- [x] 9.16-BE Implement `getTeamOvertimeHours` in `payroll.service.js` returning employee names, designations, and overtime hours worked for the manager's team; strictly exclude basic pay, gross pay, and net pay fields from projection.
+- [x] 9.16-BE Expose `GET /api/v1/payroll/team-overtime` protected by `attendance.view` with scope `team`.
+- [x] 9.16-FE Add "Team Overtime Hours" widget/page for Department Managers displaying member hours without any monetary salary values.
+- [x] 9.16-TEST Write security test asserting that a Department Manager calling `/api/v1/payroll/team-overtime` receives team hours, but calling `/api/v1/payroll/runs` or salary endpoints returns 403 Forbidden.
 
 ---
 
 ### Slice 9.17: Departmental Payroll Cost Analytics (BUILD-GUIDE 9.17)
-- [ ] 9.17-BE Implement `getDepartmentPayrollCostAnalytics` in `payroll.service.js` using MongoDB aggregation pipeline grouping total gross, net, overtime, and statutory contributions by department.
-- [ ] 9.17-BE Expose `GET /api/v1/reports/payroll-cost` protected by `payroll.view` with scope `all`.
-- [ ] 9.17-FE Add Departmental Payroll Cost chart and breakdown table to Admin Dashboard and Reports view.
-- [ ] 9.17-TEST Write Vitest test verifying aggregation pipeline returns accurate departmental cost totals matching the underlying payroll run.
+- [x] 9.17-BE Implement `getDepartmentPayrollCostAnalytics` in `payroll.service.js` using MongoDB aggregation pipeline grouping total gross, net, overtime, and statutory contributions by department.
+- [x] 9.17-BE Expose `GET /api/v1/reports/payroll-cost` protected by `payroll.view` with scope `all`.
+- [x] 9.17-FE Add Departmental Payroll Cost chart and breakdown table to Admin Dashboard and Reports view.
+- [x] 9.17-TEST Write Vitest test verifying aggregation pipeline returns accurate departmental cost totals matching the underlying payroll run.
 
 ---
 
