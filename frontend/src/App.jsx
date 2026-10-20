@@ -39,6 +39,8 @@ import LeaveApprovalsPage from './features/leaves/pages/LeaveApprovalsPage.jsx';
 import TeamLeaveCalendarPage from './features/leaves/pages/TeamLeaveCalendarPage.jsx';
 import EncashmentPage from './features/leaves/pages/EncashmentPage.jsx';
 import { SalaryStructuresPage } from './features/payroll/pages/SalaryStructuresPage.jsx';
+import { PayrollRunsPage } from './features/payroll/pages/PayrollRunsPage.jsx';
+import { PayrollRunDetailPage } from './features/payroll/pages/PayrollRunDetailPage.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
 import { useRefreshTokenMutation } from './features/auth/authApi.js';
@@ -387,6 +389,26 @@ export default function App() {
           <Route
             path="salary-structures"
             element={<Navigate to="/payroll/salary-structures" replace />}
+          />
+          <Route
+            path="payroll/runs"
+            element={
+              <ProtectedRoute requiredPermission="payroll.view">
+                <PayrollRunsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="payroll/runs/:id"
+            element={
+              <ProtectedRoute requiredPermission="payroll.view">
+                <PayrollRunDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="payroll"
+            element={<Navigate to="/payroll/runs" replace />}
           />
         </Route>
 

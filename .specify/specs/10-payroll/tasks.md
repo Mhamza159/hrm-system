@@ -72,62 +72,62 @@ Tasks are strictly organized into vertical slices by BUILD-GUIDE ID. For every f
 ## Phase 2: Core Batch Payroll Engine & 4-Stage Release Lifecycle (P1)
 
 ### Slice 9.3: Earnings Sub-Ledger Integration (BUILD-GUIDE 9.3)
-- [ ] 9.3-BE Extend `payroll.service.js` to compute itemized earnings subdocuments for each employee:
+- [x] 9.3-BE Extend `payroll.service.js` to compute itemized earnings subdocuments for each employee:
   - Basic pay, House Rent, Medical, Conveyance, Other Allowances from active `SalaryStructure`.
   - Overtime pay computed from M5 Attendance approved overtime hours `(basicSalary / 30 / 8) * 1.5 * overtimeHours`.
   - Approved leave encashment earnings imported from M6 `LeaveEncashment` records.
   - Bonuses, commissions, and manual arrears items.
-- [ ] 9.3-FE Add Earnings breakdown table in `frontend/src/features/payroll/components/PayslipPreviewModal.jsx` displaying itemized categories and amounts in PKR.
-- [ ] 9.3-TEST Write integration test verifying that approved overtime hours from M5 Attendance and leave encashments from M6 are accurately calculated and appended to earnings.
+- [x] 9.3-FE Add Earnings breakdown table in `frontend/src/features/payroll/components/PayslipPreviewModal.jsx` displaying itemized categories and amounts in PKR.
+- [x] 9.3-TEST Write integration test verifying that approved overtime hours from M5 Attendance and leave encashments from M6 are accurately calculated and appended to earnings.
 
 ---
 
 ### Slice 9.4: Deductions Sub-Ledger Integration (BUILD-GUIDE 9.4)
-- [ ] 9.4-BE Extend `payroll.service.js` to compute itemized deductions subdocuments for each employee:
+- [x] 9.4-BE Extend `payroll.service.js` to compute itemized deductions subdocuments for each employee:
   - FBR Income Tax withholding from `taxCalculator.js`.
   - EOBI and PESSI employee deductions from `contributionsCalculator.js`.
   - Unpaid absence deductions computed from M6 unpaid leaves: `(grossSalary / 30) * unpaidLeaveDays`.
   - Late arrival penalties aggregated from M5 Attendance penalty rules.
   - Active monthly loan installments linked from M10 Loans.
-- [ ] 9.4-FE Add Deductions breakdown table in `PayslipPreviewModal.jsx` displaying itemized categories and amounts in PKR.
-- [ ] 9.4-TEST Write integration test asserting that unpaid leaves and late penalties correctly deduct from gross salary and do not produce negative net pay.
+- [x] 9.4-FE Add Deductions breakdown table in `PayslipPreviewModal.jsx` displaying itemized categories and amounts in PKR.
+- [x] 9.4-TEST Write integration test asserting that unpaid leaves and late penalties correctly deduct from gross salary and do not produce negative net pay.
 
 ---
 
 ### Slice 9.7: Asynchronous BullMQ Batch Payroll Generator (BUILD-GUIDE 9.7)
-- [ ] 9.7-BE Configure BullMQ Queue `payroll-queue` and worker `payrollProcessor.js` in `backend/src/modules/payroll/payroll.queue.js`.
-- [ ] 9.7-BE Implement `POST /api/v1/payroll/runs/generate` with precondition check: verify that M5 `MonthLock` is locked for target month/year; return `422 Unprocessable Entity` if unlocked.
-- [ ] 9.7-BE Implement chunked batch worker processing active employees, calculating payslips, saving records to `payslips`, updating `payrollruns` aggregates, and emitting live Socket.io events `payroll:progress` `{ completed, total, percentage }`.
-- [ ] 9.7-FE Implement `useGeneratePayrollRunMutation` in `frontend/src/features/payroll/payrollApi.js`.
-- [ ] 9.7-FE Create `PayrollProgressBar.jsx` listening to `payroll:progress` socket event with live percentage bar, counters, and status spinner.
-- [ ] 9.7-FE Create `PayrollRunsPage.jsx` displaying monthly runs list, status badges (`draft`, `review`, `approved`, `paid`), and Generate Payroll modal.
-- [ ] 9.7-FE Register `/payroll/runs` route in `frontend/src/App.jsx` protected by `payroll.view`.
-- [ ] 9.7-TEST Write Vitest test verifying that generating payroll on an unlocked month fails with 422, and succeeds when locked, dispatching the BullMQ job.
+- [x] 9.7-BE Configure BullMQ Queue `payroll-queue` and worker `payrollProcessor.js` in `backend/src/modules/payroll/payroll.queue.js`.
+- [x] 9.7-BE Implement `POST /api/v1/payroll/runs/generate` with precondition check: verify that M5 `MonthLock` is locked for target month/year; return `422 Unprocessable Entity` if unlocked.
+- [x] 9.7-BE Implement chunked batch worker processing active employees, calculating payslips, saving records to `payslips`, updating `payrollruns` aggregates, and emitting live Socket.io events `payroll:progress` `{ completed, total, percentage }`.
+- [x] 9.7-FE Implement `useGeneratePayrollRunMutation` in `frontend/src/features/payroll/payrollApi.js`.
+- [x] 9.7-FE Create `PayrollProgressBar.jsx` listening to `payroll:progress` socket event with live percentage bar, counters, and status spinner.
+- [x] 9.7-FE Create `PayrollRunsPage.jsx` displaying monthly runs list, status badges (`draft`, `review`, `approved`, `paid`), and Generate Payroll modal.
+- [x] 9.7-FE Register `/payroll/runs` route in `frontend/src/App.jsx` protected by `payroll.view`.
+- [x] 9.7-TEST Write Vitest test verifying that generating payroll on an unlocked month fails with 422, and succeeds when locked, dispatching the BullMQ job.
 
 ---
 
 ### Slice 9.8: 4-Stage Governed Release Lifecycle (BUILD-GUIDE 9.8)
-- [ ] 9.8-BE Implement state transition state machine in `payroll.service.js` enforcing `draft` $\rightarrow$ `review` $\rightarrow$ `approved` $\rightarrow$ `paid`:
+- [x] 9.8-BE Implement state transition state machine in `payroll.service.js` enforcing `draft` $\rightarrow$ `review` $\rightarrow$ `approved` $\rightarrow$ `paid`:
   - `PATCH /api/v1/payroll/runs/:id/approve` transitions to `approved`, locks slip edits, and requires `payroll.approve` authority (Super Admin only).
   - `PATCH /api/v1/payroll/runs/:id/mark-paid` transitions to `paid`, records `paidAt` and `paidBy`, and triggers slip delivery.
-- [ ] 9.8-BE Ensure HR Manager role is strictly blocked (HTTP 403) from calling `/approve` or `/mark-paid`.
-- [ ] 9.8-FE Implement `useApprovePayrollRunMutation` and `useMarkPayrollPaidMutation` in `payrollApi.js`.
-- [ ] 9.8-FE Create `PayrollRunDetailPage.jsx` displaying 4-stage stepper header, aggregate financial totals (Gross, Deductions, Net, Tax, EOBI), payslips data table, and conditional action buttons.
-- [ ] 9.8-FE Wrap "Approve & Release" and "Mark Paid" buttons in `<Can action="payroll.approve" subject="Payroll">` so only Super Admin can trigger release.
-- [ ] 9.8-FE Register `/payroll/runs/:id` route in `frontend/src/App.jsx`.
-- [ ] 9.8-TEST Write Vitest test verifying HR Manager gets 403 on approve endpoint while Super Admin successfully transitions run to `approved` and `paid`.
+- [x] 9.8-BE Ensure HR Manager role is strictly blocked (HTTP 403) from calling `/approve` or `/mark-paid`.
+- [x] 9.8-FE Implement `useApprovePayrollRunMutation` and `useMarkPayrollPaidMutation` in `payrollApi.js`.
+- [x] 9.8-FE Create `PayrollRunDetailPage.jsx` displaying 4-stage stepper header, aggregate financial totals (Gross, Deductions, Net, Tax, EOBI), payslips data table, and conditional action buttons.
+- [x] 9.8-FE Wrap "Approve & Release" and "Mark Paid" buttons in `<Can action="payroll.approve" subject="Payroll">` so only Super Admin can trigger release.
+- [x] 9.8-FE Register `/payroll/runs/:id` route in `frontend/src/App.jsx`.
+- [x] 9.8-TEST Write Vitest test verifying HR Manager gets 403 on approve endpoint while Super Admin successfully transitions run to `approved` and `paid`.
 
 ---
 
 ### Slice 9.9: Draft Line-Item Adjustments & Single-Slip Recalculation (BUILD-GUIDE 9.9)
-- [ ] 9.9-BE Implement `adjustPayslipLineItem` in `payroll.service.js` wrapped in MongoDB `session.withTransaction()`:
+- [x] 9.9-BE Implement `adjustPayslipLineItem` in `payroll.service.js` wrapped in MongoDB `session.withTransaction()`:
   - Allows adding/updating earnings (bonus, arrears) or deductions (advance, penalty) only when parent `PayrollRun` is in `draft` or `review` status.
   - Automatically recalculates taxable gross, tax withholding, net pay, and updates parent `PayrollRun` totals atomically.
   - Rejects modifications if run status is `approved` or `paid` (`409 Conflict`).
-- [ ] 9.9-BE Expose `PATCH /api/v1/payroll/runs/:id/payslips/:slipId` in `payroll.routes.js` protected by `payroll.run`.
-- [ ] 9.9-FE Implement `useAdjustPayslipMutation` in `payrollApi.js`.
-- [ ] 9.9-FE Create `PayslipAdjustmentDrawer.jsx` allowing HR to select earning/deduction category, input amount in PKR, enter justification, and view updated net pay instantly.
-- [ ] 9.9-TEST Write integration test asserting that adding a PKR 25,000 bonus recalculates gross pay, tax withholding, net pay, and parent run totals within a transaction.
+- [x] 9.9-BE Expose `PATCH /api/v1/payroll/runs/:id/payslips/:slipId` in `payroll.routes.js` protected by `payroll.run`.
+- [x] 9.9-FE Implement `useAdjustPayslipMutation` in `payrollApi.js`.
+- [x] 9.9-FE Create `PayslipAdjustmentDrawer.jsx` allowing HR to select earning/deduction category, input amount in PKR, enter justification, and view updated net pay instantly.
+- [x] 9.9-TEST Write integration test asserting that adding a PKR 25,000 bonus recalculates gross pay, tax withholding, net pay, and parent run totals within a transaction.
 
 ---
 

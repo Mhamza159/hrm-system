@@ -236,4 +236,301 @@ export class PayrollService {
 
     return newStructure;
   }
+
+  /**
+   * 9.7: Trigger Batch Payroll Generation
+   */
+  static async generatePayrollRun(month, year, actor) {
+    const { executeBatchPayrollCalculation } = await import('./payrollProcessor.js');
+    return await executeBatchPayrollCalculation({ month, year, actor });
+  }
+
+  /**
+   * 9.7: List Paginated Payroll Runs
+   */
+  static async getPayrollRuns(query = {}) {
+    const { page = 1, limit = 20, status, year } = query;
+    const filter = {};
+    if (status) filter.status = status;
+    if (year) filter.year = Number(year);
+
+    const { PayrollRun } = await import('../../models/payrollRun.model.js');
+    return await paginate(PayrollRun, filter, {
+      page,
+      limit,
+      sort: { year: -1, month: -1 },
+      populate: [
+        { path: 'generatedBy', select: 'name email' },
+        { path: 'approvedBy', select: 'name email' },
+        { path: 'paidBy', select: 'name email' }
+      ]
+    });
+  }
+
+  /**
+   * 9.8: Get Detailed Payroll Run with Paginated Payslips
+   */
+  static async getPayrollRunById(runId, query = {}) {
+    const { PayrollRun } = await import('../../models/payrollRun.model.js');
+    const { Payslip } = await import('../../models/payslip.model.js');
+
+    const run = await PayrollRun.findById(runId).populate([
+      { path: 'generatedBy', select: 'name email' },
+      { path: 'approvedBy', select: 'name email' },
+      { path: 'paidBy', select: 'name email' }
+    ]);
+
+    if (!run) {
+      throw new ApiError(404, 'Payroll run not found');
+    }
+
+    const { page = 1, limit = 50, search } = query;
+    const slipFilter = { payrollRunId: run._id };
+
+    if (search) {
+      const matchingEmployees = await Employee.find({
+        $or: [
+          { employeeCode: new RegExp(search.trim(), 'i') },
+          { name: new RegExp(search.trim(), 'i') }
+        ]
+      }).select('_id');
+      slipFilter.employeeId = { $in: matchingEmployees.map((e) => e._id) };
+    }
+
+    const paginatedSlips = await paginate(Payslip, slipFilter, {
+      page,
+      limit,
+      sort: { netPay: -1 },
+      populate: {
+        path: 'employeeId',
+        select: 'name employeeCode email departmentId designationId',
+        populate: [
+          { path: 'departmentId', select: 'name' },
+          { path: 'designationId', select: 'title' }
+        ]
+      }
+    });
+
+    return {
+      run,
+      payslips: paginatedSlips.docs,
+      meta: paginatedSlips.meta
+    };
+  }
+
+  /**
+   * 9.9: Adjust Draft Payslip Line Item & Atomically Recalculate
+   */
+  static async adjustPayslipLineItem(runId, slipId, adjustment, actor, ip = null, userAgent = null) {
+    const { PayrollRun } = await import('../../models/payrollRun.model.js');
+    const { Payslip } = await import('../../models/payslip.model.js');
+    const { calculateAnnualIncomeTax } = await import('./taxCalculator.js');
+
+    const run = await PayrollRun.findById(runId);
+    if (!run) throw new ApiError(404, 'Payroll run not found');
+
+    if (run.status === 'approved' || run.status === 'paid') {
+      throw new ApiError(409, `Cannot adjust payslips on an ${run.status} payroll run.`);
+    }
+
+    const slip = await Payslip.findOne({ _id: slipId, payrollRunId: runId });
+    if (!slip) throw new ApiError(404, 'Payslip not found in this run');
+
+    const { type, name, category, amount, description } = adjustment;
+    const itemAmount = Math.max(0, Math.round(Number(amount || 0)));
+
+    if (type === 'earning') {
+      slip.earnings.push({
+        name,
+        category,
+        amount: itemAmount,
+        description: description || 'Manual HR earning adjustment'
+      });
+    } else {
+      slip.deductions.push({
+        name,
+        category,
+        amount: itemAmount,
+        description: description || 'Manual HR deduction adjustment'
+      });
+    }
+
+    // Recompute gross
+    const newGross = slip.earnings.reduce((sum, item) => sum + item.amount, 0);
+    slip.grossPay = newGross;
+
+    // Recalculate tax
+    const taxResult = await calculateAnnualIncomeTax(newGross);
+    const newTax = taxResult.monthlyTaxPaisa;
+    slip.taxWithheld = newTax;
+
+    const existingTaxItem = slip.deductions.find((d) => d.category === 'tax');
+    if (existingTaxItem) {
+      existingTaxItem.amount = newTax;
+    } else if (newTax > 0) {
+      slip.deductions.push({
+        name: 'FBR Income Tax Withholding',
+        category: 'tax',
+        amount: newTax
+      });
+    }
+
+    // Recompute deductions & net
+    slip.totalDeductions = slip.deductions.reduce((sum, item) => sum + item.amount, 0);
+    slip.netPay = Math.max(0, slip.grossPay - slip.totalDeductions);
+    await slip.save();
+
+    // Recalculate parent run aggregates
+    const aggregates = await Payslip.aggregate([
+      { $match: { payrollRunId: run._id } },
+      {
+        $group: {
+          _id: null,
+          totalGross: { $sum: '$grossPay' },
+          totalDeductions: { $sum: '$totalDeductions' },
+          totalNet: { $sum: '$netPay' },
+          totalTax: { $sum: '$taxWithheld' },
+          totalOvertime: { $sum: '$overtimePay' }
+        }
+      }
+    ]);
+
+    if (aggregates.length > 0) {
+      run.totalGrossPay = aggregates[0].totalGross;
+      run.totalDeductions = aggregates[0].totalDeductions;
+      run.totalNetPay = aggregates[0].totalNet;
+      run.totalTaxWithheld = aggregates[0].totalTax;
+      run.totalOvertimePay = aggregates[0].totalOvertime;
+      await run.save();
+    }
+
+    await recordAuditLog({
+      userId: actor?._id,
+      actor,
+      action: 'PAYSLIP_LINE_ITEM_ADJUST',
+      entity: 'Payslip',
+      entityId: slip._id,
+      ip,
+      userAgent,
+      details: {
+        runId,
+        adjustmentType: type,
+        category,
+        amount: itemAmount,
+        newNetPay: slip.netPay
+      }
+    });
+
+    return slip;
+  }
+
+  /**
+   * 9.8: Approve Payroll Run (Super Admin Only)
+   */
+  static async approvePayrollRun(runId, actor, ip = null, userAgent = null) {
+    const { PayrollRun } = await import('../../models/payrollRun.model.js');
+    const { Payslip } = await import('../../models/payslip.model.js');
+
+    const run = await PayrollRun.findById(runId);
+    if (!run) throw new ApiError(404, 'Payroll run not found');
+
+    if (run.status !== 'review' && run.status !== 'draft') {
+      throw new ApiError(409, `Cannot approve payroll run in '${run.status}' status.`);
+    }
+
+    run.status = 'approved';
+    run.approvedBy = actor._id;
+    run.approvedAt = new Date();
+    run.isLocked = true;
+    await run.save();
+
+    // Mark all slips in run as approved
+    await Payslip.updateMany({ payrollRunId: run._id }, { status: 'approved' });
+
+    await recordAuditLog({
+      userId: actor._id,
+      actor,
+      action: 'PAYROLL_RUN_APPROVE',
+      entity: 'PayrollRun',
+      entityId: run._id,
+      ip,
+      userAgent,
+      details: {
+        month: run.month,
+        year: run.year,
+        totalNetPay: run.totalNetPay,
+        totalEmployees: run.totalEmployees
+      }
+    });
+
+    return run;
+  }
+
+  /**
+   * 9.8: Mark Payroll Run as Paid
+   */
+  static async markPayrollPaid(runId, actor, paymentData = {}, ip = null, userAgent = null) {
+    const { PayrollRun } = await import('../../models/payrollRun.model.js');
+    const { Payslip } = await import('../../models/payslip.model.js');
+
+    const run = await PayrollRun.findById(runId);
+    if (!run) throw new ApiError(404, 'Payroll run not found');
+
+    if (run.status !== 'approved') {
+      throw new ApiError(409, 'Only approved payroll runs can be marked as paid.');
+    }
+
+    run.status = 'paid';
+    run.paidBy = actor._id;
+    run.paidAt = new Date();
+    if (paymentData.paymentMethod) run.paymentMethod = paymentData.paymentMethod;
+    await run.save();
+
+    // Mark all slips in run as paid
+    await Payslip.updateMany({ payrollRunId: run._id }, { status: 'paid' });
+
+    await recordAuditLog({
+      userId: actor._id,
+      actor,
+      action: 'PAYROLL_RUN_MARK_PAID',
+      entity: 'PayrollRun',
+      entityId: run._id,
+      ip,
+      userAgent,
+      details: {
+        month: run.month,
+        year: run.year,
+        totalNetPay: run.totalNetPay,
+        paidAt: run.paidAt
+      }
+    });
+
+    return run;
+  }
+
+  /**
+   * 9.11: Self-Service Get My Payslips
+   */
+  static async getMyPayslips(user, query = {}) {
+    const { Payslip } = await import('../../models/payslip.model.js');
+    const emp = await Employee.findOne({
+      $or: [{ _id: user.employeeId }, { email: user.email }]
+    });
+
+    if (!emp) {
+      throw new ApiError(404, 'Employee record not associated with this account');
+    }
+
+    const { page = 1, limit = 12 } = query;
+    return await paginate(
+      Payslip,
+      { employeeId: emp._id, status: { $in: ['approved', 'paid'] } },
+      {
+        page,
+        limit,
+        sort: { year: -1, month: -1 },
+        populate: { path: 'payrollRunId', select: 'status payDate' }
+      }
+    );
+  }
 }

@@ -100,6 +100,7 @@ export function Sidebar({ isOpen = false, onClose }) {
     { name: 'Leave Types', path: '/leave-types', icon: Calendar, permission: 'leave.settings' },
     { name: 'Attendance Lock', path: '/attendance/lock', icon: Shield, permission: 'attendance.lock' },
     { name: 'Salary Structures', path: '/payroll/salary-structures', icon: BadgeDollarSign, permission: 'payroll.manage' },
+    { name: 'Payroll Runs', path: '/payroll/runs', icon: BadgeDollarSign, permission: 'payroll.manage' },
     { name: 'Roles & Permissions', path: '/roles', icon: Shield, permission: 'role.view' },
     { name: 'Change Requests', path: '/change-requests', icon: FileCheck, permission: 'employee.edit' },
     { name: 'User Access', path: '/users', icon: Users, permission: 'user.manage' },
