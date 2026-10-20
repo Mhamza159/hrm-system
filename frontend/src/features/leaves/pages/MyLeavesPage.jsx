@@ -9,8 +9,9 @@
  */
 
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Calendar, Plus, Filter, Clock, FileText, ChevronDown, CheckCircle2, XCircle, AlertCircle, ExternalLink, Ban } from 'lucide-react';
+import { Calendar, Plus, Filter, Clock, FileText, ChevronDown, CheckCircle2, XCircle, AlertCircle, ExternalLink, Ban, Coins } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { LeaveBalanceCards } from '../components/LeaveBalanceCards.jsx';
 import { ApplyLeaveModal } from '../components/ApplyLeaveModal.jsx';
@@ -97,6 +98,16 @@ export function MyLeavesPage() {
               </select>
               <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
+
+            {/* Request Encashment Action */}
+            <Link
+              to="/leaves/encashment"
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#0F111A] hover:bg-[#1E2235] border border-[#1E2235] hover:border-amber-500/40 text-slate-300 hover:text-white text-xs font-semibold transition-all cursor-pointer"
+              title="Request annual leave encashment and view payout history"
+            >
+              <Coins className="w-4 h-4 text-amber-400" />
+              <span>Leave Encashment</span>
+            </Link>
 
             {/* Apply Leave Action */}
             <button

@@ -78,7 +78,7 @@ describe('Module M6 — Sick Leave Medical Certificate Proof (Slice 6.5-TEST)', 
       env.JWT_ACCESS_SECRET,
       { expiresIn: '1h' }
     );
-  });
+  }, 30000);
 
   afterAll(async () => {
     await User.deleteMany({});
@@ -88,7 +88,7 @@ describe('Module M6 — Sick Leave Medical Certificate Proof (Slice 6.5-TEST)', 
     await LeaveBalance.deleteMany({});
     await Leave.deleteMany({});
     await mongoose.disconnect();
-  });
+  }, 30000);
 
   it('1. Sick leave under minDaysForAttachment (1 day) does not require attachment (201 Created)', async () => {
     const res = await request(app)

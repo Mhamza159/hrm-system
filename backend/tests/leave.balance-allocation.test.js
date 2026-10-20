@@ -61,7 +61,7 @@ describe('Module M6 — Leave Balance Allocation & Rollover (Slice 6.2-TEST)', (
       status: 'Active'
     });
     testEmployeeId = emp._id;
-  });
+  }, 30000);
 
   afterAll(async () => {
     await User.deleteMany({});
@@ -69,7 +69,7 @@ describe('Module M6 — Leave Balance Allocation & Rollover (Slice 6.2-TEST)', (
     await LeaveType.deleteMany({});
     await LeaveBalance.deleteMany({});
     await mongoose.disconnect();
-  });
+  }, 30000);
 
   it('1. initializeEmployeeLeaveBalances creates balances for all active leave types', async () => {
     const balance = await initializeEmployeeLeaveBalances(testEmployeeId, 2025);

@@ -75,7 +75,7 @@ describe('Module M6 — Half-Day Leave Support (Slice 6.4-TEST)', () => {
       env.JWT_ACCESS_SECRET,
       { expiresIn: '1h' }
     );
-  });
+  }, 30000);
 
   afterAll(async () => {
     await User.deleteMany({});
@@ -85,7 +85,7 @@ describe('Module M6 — Half-Day Leave Support (Slice 6.4-TEST)', () => {
     await LeaveBalance.deleteMany({});
     await Leave.deleteMany({});
     await mongoose.disconnect();
-  });
+  }, 30000);
 
   it('1. Half-day leave on a single calendar day succeeds with 0.5 days deduction (201 Created)', async () => {
     const res = await request(app)

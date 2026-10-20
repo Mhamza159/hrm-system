@@ -29,7 +29,8 @@ import { ConfirmDialog } from '../../../components/common/ConfirmDialog.jsx';
 import { Can } from '../../../components/common/Can.jsx';
 import {
   useGetHolidaysQuery,
-  useDeleteHolidayMutation
+  useDeleteHolidayMutation,
+  useSeedHolidaysMutation
 } from '../leavesApi.js';
 import { HolidayModal } from '../components/HolidayModal.jsx';
 
@@ -46,6 +47,8 @@ export function HolidaysPage() {
   const holidays = response?.data || [];
 
   const [deleteHoliday, { isLoading: isDeleting }] = useDeleteHolidayMutation();
+  const [seedHolidays, { isLoading: isSeeding }] = useSeedHolidaysMutation();
+  const [showSeedConfirm, setShowSeedConfirm] = useState(false);
 
   // Metric aggregates
   const totalHolidays = holidays.length;
@@ -76,6 +79,23 @@ export function HolidaysPage() {
       setFeedback({ type: 'error', message: err?.data?.message || err?.message || 'Failed to delete holiday' });
     } finally {
       setDeleteTarget(null);
+    }
+  };
+
+  const handleSeedConfirm = async () => {
+    try {
+      const res = await seedHolidays({ year: selectedYear }).unwrap();
+      setFeedback({
+        type: 'success',
+        message: res.message || `Successfully seeded official holidays for ${selectedYear}.`
+      });
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        message: err?.data?.message || err?.message || 'Failed to seed holidays'
+      });
+    } finally {
+      setShowSeedConfirm(false);
     }
   };
 
@@ -199,6 +219,15 @@ export function HolidaysPage() {
 
             <Can I="leave.settings" a="Leave">
               <button
+                onClick={() => setShowSeedConfirm(true)}
+                disabled={isSeeding}
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-300 bg-[#1e2337] border border-[#262B40] hover:text-white hover:bg-[#262B40] rounded-lg transition-colors shadow-sm disabled:opacity-50"
+                title="Seed standard Pakistan official gazetted and public holidays"
+              >
+                <Sparkles className="w-4 h-4 text-emerald-400" />
+                <span>{isSeeding ? 'Seeding...' : 'Seed Official Holidays'}</span>
+              </button>
+              <button
                 onClick={handleCreate}
                 className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-colors shadow-sm"
               >
@@ -299,6 +328,18 @@ export function HolidaysPage() {
         message={`Are you sure you want to deactivate '${deleteTarget?.name}'? Working day calculations will no longer exclude this date.`}
         confirmText="Delete"
         confirmVariant="danger"
+      />
+
+      {/* Confirm Seed Dialog */}
+      <ConfirmDialog
+        isOpen={showSeedConfirm}
+        onClose={() => setShowSeedConfirm(false)}
+        onConfirm={handleSeedConfirm}
+        isLoading={isSeeding}
+        title={`Seed Official Holidays for ${selectedYear}`}
+        message={`This will populate standard official Pakistan gazetted and public holidays for the year ${selectedYear} without duplicating any existing dates. Continue?`}
+        confirmText={isSeeding ? 'Seeding...' : 'Seed Holidays'}
+        confirmVariant="primary"
       />
     </div>
   );

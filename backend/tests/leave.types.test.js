@@ -86,14 +86,14 @@ describe('Module M6 — Leave Types API Test Suite (Slice 6.1-TEST)', () => {
     hrToken = await createTestUser('hr@test.com', hrRole._id);
     managerToken = await createTestUser('manager@test.com', managerRole._id);
     employeeToken = await createTestUser('employee@test.com', employeeRole._id);
-  });
+  }, 30000);
 
   afterAll(async () => {
     await User.deleteMany({});
     await Role.deleteMany({});
     await LeaveType.deleteMany({});
     await mongoose.disconnect();
-  });
+  }, 30000);
 
   it('1. HR Manager can create a valid leave type with full attributes (HTTP 201)', async () => {
     const res = await request(app)

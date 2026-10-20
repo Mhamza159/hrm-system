@@ -19,8 +19,42 @@ import { SettingService } from '../settings/setting.service.js';
 import { ApiError } from '../../utils/apiError.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { notify } from '../../services/notify.service.js';
+import { checkApprovalLimit } from '../../utils/approvalLimit.js';
 import ExcelJS from 'exceljs';
 import { calculateDeductibleDays } from './leaveCalculator.js';
+
+/**
+ * Helper to check whether user has a specific permission action across their roles
+ */
+export const userHasPermission = (user, actionName, requiredScopes = ['own', 'team', 'department', 'all']) => {
+  if (!user) return false;
+  const roles = Array.isArray(user.roles) ? user.roles : [];
+  for (const role of roles) {
+    if (role === 'Super Admin' || role?.name === 'Super Admin') return true;
+    if (Array.isArray(role?.permissions)) {
+      for (const p of role.permissions) {
+        if (p.action === 'manage' && (p.subject === 'all' || !p.subject)) return true;
+        if (p.action === actionName || p.action === 'manage') {
+          if (!p.scope || requiredScopes.includes(p.scope)) return true;
+        }
+      }
+    }
+  }
+  return false;
+};
+
+/**
+ * Helper to identify Super Admin or HR Manager
+ */
+export const isUserAdminOrHR = (user) => {
+  if (!user) return false;
+  const roles = Array.isArray(user.roles) ? user.roles : user.role ? [user.role] : [];
+  const isNamed = roles.some((r) => {
+    const name = typeof r === 'string' ? r : r.name;
+    return name === 'Super Admin' || name === 'HR Manager';
+  });
+  return isNamed || userHasPermission(user, 'leave.settings', ['all']) || userHasPermission(user, 'leave.approve', ['all']);
+};
 
 /**
  * Normalizes date to UTC start-of-day (00:00:00.000Z)
@@ -732,8 +766,7 @@ export const syncLeaveToAttendance = async (leave) => {
  */
 export const getPendingApprovals = async (user, query = {}) => {
   const isSuperAdmin = user.roles?.some((r) => r === 'Super Admin' || r?.name === 'Super Admin');
-  const userRoleNames = (user.roles || []).map((r) => (typeof r === 'string' ? r : r.name));
-  const isHR = isSuperAdmin || userRoleNames.includes('HR Manager') || user.permissions?.includes('leave.approve:all');
+  const isHR = isUserAdminOrHR(user);
 
   // Check active delegations where user is the designated substitute
   const now = new Date();
@@ -834,14 +867,27 @@ export const decideLeave = async (leaveId, action, reason, user) => {
         actingAsDelegateFor = currentStep.approverId;
       }
     } else if (currentStep.approverRole === 'Department Manager') {
-      isAuthorized = user.permissions?.includes('leave.approve:team') || user.permissions?.includes('leave.approve:all');
+      isAuthorized = userHasPermission(user, 'leave.approve', ['team', 'department', 'all']);
     } else if (currentStep.approverRole === 'HR Manager') {
-      isAuthorized = user.permissions?.includes('leave.approve:all') || user.roles?.some((r) => r === 'HR Manager' || r?.name === 'HR Manager');
+      isAuthorized = isUserAdminOrHR(user);
     }
   }
 
   if (!isAuthorized) {
     throw new ApiError(403, 'You do not have permission to approve or reject this stage of the leave application');
+  }
+
+  // Enforce operational approval limit on final approval (or single-step approval)
+  const isFinalStep = currentStep.step === leave.approvalChain.length;
+  if (action === 'approve' && isFinalStep && !isSuperAdmin) {
+    const limitCheck = checkApprovalLimit(user, 'leave.approve', leave.days);
+    if (!limitCheck.allowed) {
+      throw new ApiError(
+        403,
+        limitCheck.reason ||
+          `Forbidden: Leave duration of ${leave.days} days exceeds your maximum approval limit of ${limitCheck.maxLimit} days. Escalation required.`
+      );
+    }
   }
 
   const applicant = await Employee.findById(leave.employeeId).select('userId name email');
@@ -978,8 +1024,7 @@ export const cancelLeave = async (leaveId, cancellationReason, user) => {
 
   // Caller authorization: must be applicant or HR / Super Admin
   const isSuperAdmin = user.roles?.some((r) => r === 'Super Admin' || r?.name === 'Super Admin');
-  const userRoleNames = (user.roles || []).map((r) => (typeof r === 'string' ? r : r.name));
-  const isHR = isSuperAdmin || userRoleNames.includes('HR Manager') || user.permissions?.includes('leave.settings:all');
+  const isHR = isUserAdminOrHR(user);
 
   const callerEmployeeId = user.employeeId?.toString();
   const isApplicant = callerEmployeeId && callerEmployeeId === leave.employeeId.toString();
@@ -1046,8 +1091,7 @@ export const cancelLeave = async (leaveId, cancellationReason, user) => {
  */
 export const getLeaveCalendar = async (query = {}, user) => {
   const isSuperAdmin = user.roles?.some((r) => r === 'Super Admin' || r?.name === 'Super Admin');
-  const userRoleNames = (user.roles || []).map((r) => (typeof r === 'string' ? r : r.name));
-  const isHR = isSuperAdmin || userRoleNames.includes('HR Manager') || user.permissions?.includes('leave.view:all');
+  const isHR = isUserAdminOrHR(user);
 
   const now = new Date();
   let year = now.getUTCFullYear();
@@ -1290,8 +1334,7 @@ export const requestLeaveEncashment = async (employeeId, payload, actor) => {
  */
 export const getLeaveEncashments = async (query = {}, user) => {
   const isSuperAdmin = user.roles?.some((r) => r === 'Super Admin' || r?.name === 'Super Admin');
-  const userRoleNames = (user.roles || []).map((r) => (typeof r === 'string' ? r : r.name));
-  const isHR = isSuperAdmin || userRoleNames.includes('HR Manager') || user.permissions?.includes('leave.encash:all') || user.permissions?.includes('leave.settings:all');
+  const isHR = isUserAdminOrHR(user) || userHasPermission(user, 'leave.encash', ['all']);
 
   const filter = {};
 
@@ -1486,7 +1529,7 @@ export const generateLeaveExcel = async ({
   }
 
   // Role-based data isolation
-  if (user && !isFullAdminOrHR(user)) {
+  if (user && !isUserAdminOrHR(user)) {
     const managerEmp = await Employee.findOne({ userId: user._id, isDeleted: false }, 'departmentId').lean();
     if (managerEmp?.departmentId) {
       const deptEmployees = await Employee.find({ departmentId: managerEmp.departmentId, isDeleted: false }).distinct('_id');

@@ -28,6 +28,13 @@ router.get(
   leaveController.getHolidays
 );
 
+// 6.11: Seed official Pakistan gazetted & public holidays (Super Admin / HR Manager only)
+router.post(
+  '/seed',
+  checkPermission('leave.settings', 'all'),
+  leaveController.seedHolidays
+);
+
 // 6.11: Get single holiday details
 router.get(
   '/:id',

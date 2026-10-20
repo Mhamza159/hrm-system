@@ -134,18 +134,29 @@ export const getPakistanHolidaysData = (year = 2026) => [
 
 export const seedPakistanHolidays = async (year = 2026, actorId = null) => {
   const holidays = getPakistanHolidaysData(year);
-  let seededCount = 0;
 
-  for (const h of holidays) {
-    const exists = await Holiday.findOne({ date: h.date, name: h.name });
-    if (!exists) {
-      await Holiday.create({
-        ...h,
-        createdBy: actorId
-      });
-      seededCount++;
-    }
+  // Batch query to locate already existing holidays for the target year
+  const existingDocs = await Holiday.find({
+    year,
+    name: { $in: holidays.map((h) => h.name) }
+  })
+    .select('date name')
+    .lean();
+
+  const existingSet = new Set(
+    existingDocs.map((doc) => `${new Date(doc.date).toISOString().split('T')[0]}_${doc.name.trim()}`)
+  );
+
+  const toInsert = holidays
+    .filter((h) => !existingSet.has(`${new Date(h.date).toISOString().split('T')[0]}_${h.name.trim()}`))
+    .map((h) => ({
+      ...h,
+      createdBy: actorId
+    }));
+
+  if (toInsert.length > 0) {
+    await Holiday.insertMany(toInsert, { ordered: false });
   }
 
-  return { total: holidays.length, seeded: seededCount };
+  return { total: holidays.length, seeded: toInsert.length };
 };

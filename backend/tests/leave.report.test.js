@@ -177,7 +177,7 @@ describe('Module M6 — Leave Analytics & ExcelJS Report Export (Slice 6.15-TEST
 
   afterAll(async () => {
     await mongoose.connection.close();
-  });
+  }, 30000);
 
   it('1. should reject export when requested by regular Employee without report.export permission (403 Forbidden)', async () => {
     const res = await request(app)

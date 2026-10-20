@@ -11,6 +11,7 @@
 import cron from 'node-cron';
 import { Attendance } from '../../../models/attendance.model.js';
 import { Employee } from '../../../models/employee.model.js';
+import { Holiday } from '../../../models/holiday.model.js';
 import { Setting } from '../../../models/setting.model.js';
 import { normalizeToUtcMidnight } from '../attendance.service.js';
 
@@ -21,6 +22,19 @@ import { normalizeToUtcMidnight } from '../attendance.service.js';
  */
 export const runAutoAbsentSweep = async (runDate = new Date()) => {
   const targetDate = normalizeToUtcMidnight(runDate);
+
+  // 1. Check if targetDate is an active Pakistan Gazetted Holiday (Module M6 Row 6.11 & 6.12)
+  const gazettedHoliday = await Holiday.findOne({
+    date: targetDate,
+    isActive: true,
+    type: 'gazetted'
+  }).lean();
+
+  if (gazettedHoliday) {
+    console.log(`⏱️ [AutoAbsent] Skipped auto-absent sweep: ${targetDate.toISOString().split('T')[0]} is Gazetted Holiday (${gazettedHoliday.name}).`);
+    return { processed: 0, markedAbsent: 0, skipped: 0, holiday: gazettedHoliday.name };
+  }
+
   const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   const dayName = dayNames[targetDate.getUTCDay()];
 

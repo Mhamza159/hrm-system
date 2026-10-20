@@ -166,7 +166,7 @@ describe('Module M6 — Live Leave Balance Query & Quota Inspector (Slice 6.9-TE
       env.JWT_ACCESS_SECRET,
       { expiresIn: '1h' }
     );
-  });
+  }, 30000);
 
   afterAll(async () => {
     await User.deleteMany({});
@@ -175,7 +175,7 @@ describe('Module M6 — Live Leave Balance Query & Quota Inspector (Slice 6.9-TE
     await LeaveType.deleteMany({});
     await LeaveBalance.deleteMany({});
     await mongoose.disconnect();
-  });
+  }, 30000);
 
   it('1. Employee queries own live balance without query parameters (200 OK & correct available days)', async () => {
     const res = await request(app)

@@ -114,6 +114,15 @@ export const leavesApi = baseApi.injectEndpoints({
         'Leave'
       ]
     }),
+
+    seedHolidays: builder.mutation({
+      query: (body = {}) => ({
+        url: '/holidays/seed',
+        method: 'POST',
+        body
+      }),
+      invalidatesTags: [{ type: 'Holiday', id: 'LIST' }, 'Leave']
+    }),
     // 6.9: Live Leave Balance
     getLeaveBalance: builder.query({
       query: (params) => ({
@@ -230,6 +239,7 @@ export const {
   useCreateHolidayMutation,
   useUpdateHolidayMutation,
   useDeleteHolidayMutation,
+  useSeedHolidaysMutation,
   useGetLeaveBalanceQuery,
   useApplyLeaveMutation,
   useGetMyLeavesQuery,

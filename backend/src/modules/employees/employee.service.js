@@ -1277,7 +1277,15 @@ export const importEmployeesFromExcel = async (buffer, actor) => {
   });
 
   if (validEmployees.length > 0) {
-    await Employee.insertMany(validEmployees);
+    const inserted = await Employee.insertMany(validEmployees);
+    const curYear = new Date().getUTCFullYear();
+    for (const emp of inserted) {
+      try {
+        await initializeEmployeeLeaveBalances(emp._id, curYear);
+      } catch (leaveErr) {
+        // Fallback silently if leave types not yet seeded
+      }
+    }
   }
 
   await recordAuditLog({

@@ -68,7 +68,9 @@ export const calculateDeductibleDays = async (startDateInput, endDateInput, half
   // 3. Iterate through each calendar day in the range
   const breakdown = [];
   let current = new Date(start);
-  let netDeductibleDays = 0;
+
+  const isHalfDay = halfDay && halfDay !== 'none';
+  const dayWeight = isHalfDay ? 0.5 : 1;
 
   while (current <= end) {
     const dateKey = current.toISOString().split('T')[0];
@@ -77,23 +79,7 @@ export const calculateDeductibleDays = async (startDateInput, endDateInput, half
     const holidayName = holidayDateMap.get(dateKey) || null;
     const isPublicHoliday = Boolean(holidayName);
 
-    let isDeductible = false;
-    let dayWeight = 1;
-
-    if (halfDay && halfDay !== 'none') {
-      dayWeight = 0.5;
-    }
-
-    if (isPublicHoliday) {
-      // Gazetted holiday is non-deductible
-      isDeductible = false;
-    } else if (!isCompanyWorkingDay) {
-      // Weekend / non-working day is non-deductible unless strict sandwich rule applies
-      isDeductible = false;
-    } else {
-      isDeductible = true;
-      netDeductibleDays += dayWeight;
-    }
+    const isWorkingDay = isCompanyWorkingDay && !isPublicHoliday;
 
     breakdown.push({
       date: dateKey,
@@ -101,12 +87,33 @@ export const calculateDeductibleDays = async (startDateInput, endDateInput, half
       isCompanyWorkingDay,
       isPublicHoliday,
       holidayName,
-      isDeductible,
-      weight: isDeductible ? dayWeight : 0
+      isWorkingDay,
+      isDeductible: isWorkingDay,
+      isSandwiched: false,
+      weight: isWorkingDay ? dayWeight : 0
     });
 
     current.setUTCDate(current.getUTCDate() + 1);
   }
+
+  // 4. Evaluate Sandwich Rule (if enabled by corporate leave policy and not half-day)
+  if (leavePolicy.sandwichRule && !isHalfDay && breakdown.length > 2) {
+    for (let i = 0; i < breakdown.length; i++) {
+      if (!breakdown[i].isWorkingDay) {
+        // Check if there is at least one working day before and after this non-working date
+        const hasWorkingBefore = breakdown.slice(0, i).some((d) => d.isWorkingDay);
+        const hasWorkingAfter = breakdown.slice(i + 1).some((d) => d.isWorkingDay);
+
+        if (hasWorkingBefore && hasWorkingAfter) {
+          breakdown[i].isDeductible = true;
+          breakdown[i].isSandwiched = true;
+          breakdown[i].weight = 1;
+        }
+      }
+    }
+  }
+
+  const netDeductibleDays = breakdown.reduce((acc, curr) => acc + curr.weight, 0);
 
   return {
     netDays: netDeductibleDays,

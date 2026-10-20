@@ -13,6 +13,7 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import { ApiError } from '../../utils/apiError.js';
 import { Employee } from '../../models/employee.model.js';
 import { isCloudinaryConfigured, uploadBufferToCloudinary } from '../../config/cloudinary.js';
+import { seedPakistanHolidays } from '../../seed/holidays.seed.js';
 import * as leaveService from './leave.service.js';
 
 /**
@@ -156,6 +157,22 @@ export const deleteHoliday = asyncHandler(async (req, res) => {
     statusCode: 200,
     data: holiday,
     message: 'Holiday deleted successfully'
+  });
+});
+
+/**
+ * 6.11: Seed Pakistan official gazetted and public holidays
+ * POST /api/v1/holidays/seed
+ */
+export const seedHolidays = asyncHandler(async (req, res) => {
+  const year = req.body.year ? parseInt(req.body.year, 10) : new Date().getUTCFullYear();
+  const actorId = req.user?._id;
+  const result = await seedPakistanHolidays(year, actorId);
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data: result,
+    message: `Successfully seeded ${result.seeded} Pakistan official holidays for year ${year}`
   });
 });
 

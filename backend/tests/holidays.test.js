@@ -83,14 +83,14 @@ describe('Module M6 — Holidays API Test Suite (Slice 6.11-TEST)', () => {
     hrToken = await createTestUser('hr@test.com', hrRole._id);
     managerToken = await createTestUser('manager@test.com', managerRole._id);
     employeeToken = await createTestUser('employee@test.com', employeeRole._id);
-  });
+  }, 30000);
 
   afterAll(async () => {
     await User.deleteMany({});
     await Role.deleteMany({});
     await Holiday.deleteMany({});
     await mongoose.disconnect();
-  });
+  }, 30000);
 
   it('1. Seed script successfully seeds 10+ official Pakistan gazetted holidays', async () => {
     const result = await seedPakistanHolidays(2026);

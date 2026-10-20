@@ -15,6 +15,7 @@ import { connectDB } from './config/db.js';
 import { env } from './config/env.js';
 import { initSocketIO } from './services/socket.service.js';
 import { initAutoAbsentJob } from './modules/attendance/jobs/autoAbsent.job.js';
+import { initYearlyLeaveCron } from './jobs/yearlyLeave.job.js';
 
 const startServer = async () => {
   try {
@@ -29,6 +30,7 @@ const startServer = async () => {
 
     // 4. Initialize Scheduled Cron Jobs
     initAutoAbsentJob();
+    initYearlyLeaveCron();
 
     // 5. Start HTTP & WebSocket Listener
     httpServer.listen(env.PORT, () => {
