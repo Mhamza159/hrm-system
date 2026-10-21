@@ -55,6 +55,14 @@ const decryptEmployeeFields = (employeeDoc) => {
     }
   }
 
+  if (emp.bankDetails?.accountNumber) {
+    try {
+      emp.bankDetails.accountNumber = decrypt(emp.bankDetails.accountNumber);
+    } catch {
+      // keep as is if decryption fails
+    }
+  }
+
   return emp;
 };
 
@@ -128,6 +136,12 @@ export const createEmployee = async (payload, actor) => {
     employeeData.bankDetails = {
       ...employeeData.bankDetails,
       iban: encrypt(employeeData.bankDetails.iban)
+    };
+  }
+  if (employeeData.bankDetails?.accountNumber) {
+    employeeData.bankDetails = {
+      ...employeeData.bankDetails,
+      accountNumber: encrypt(employeeData.bankDetails.accountNumber)
     };
   }
 
@@ -373,8 +387,8 @@ export const getEmployeeById = async (id, actor, permissionScope = 'all') => {
 
   // Enforce horizontal access boundary
   const isOwn =
-    String(employee.userId?._id || employee.userId) === String(actor._id) ||
-    String(employee._id) === String(actor.employeeId);
+    String(employee.userId?._id || employee.userId) === String(actor?._id) ||
+    String(employee._id) === String(actor?.employeeId);
 
   if (permissionScope === 'own' && !isOwn) {
     throw new ApiError(403, 'Forbidden: You can only view your own employee profile');
@@ -397,7 +411,10 @@ export const getEmployeeById = async (id, actor, permissionScope = 'all') => {
 
   const canViewFinancials =
     isOwn ||
-    actor.roles?.some((r) => r.name === 'Super Admin' || r.name === 'HR Manager');
+    actor?.roles?.some((r) => {
+      const name = typeof r === 'string' ? r : r?.name;
+      return name === 'Super Admin' || name === 'HR Manager';
+    });
 
   if (canViewFinancials) {
     return decryptEmployeeFields(employee);
@@ -499,6 +516,15 @@ export const updateEmployee = async (id, payload, actor) => {
       ...employee.bankDetails?.toObject?.(),
       ...updates.bankDetails,
       iban: encrypt(updates.bankDetails.iban)
+    };
+  }
+
+  // Re-encrypt Account Number if changed
+  if (updates.bankDetails?.accountNumber) {
+    updates.bankDetails = {
+      ...employee.bankDetails?.toObject?.(),
+      ...updates.bankDetails,
+      accountNumber: encrypt(updates.bankDetails.accountNumber)
     };
   }
 

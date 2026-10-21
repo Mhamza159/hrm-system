@@ -39,6 +39,7 @@ import {
   Megaphone,
   Coins,
   BarChart3,
+  ShieldCheck,
   X
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -107,6 +108,7 @@ export function Sidebar({ isOpen = false, onClose }) {
     { name: 'Exit Settlements', path: '/payroll/settlement', icon: Coins, permission: 'payroll.manage' },
     { name: 'Payroll Reports', path: '/payroll/reports', icon: BarChart3, permission: 'payroll.view' },
     { name: 'Roles & Permissions', path: '/roles', icon: Shield, permission: 'role.view' },
+    { name: 'Audit Logs', path: '/audit-logs', icon: ShieldCheck, permission: 'audit.view', superAdminOnly: true },
     { name: 'Change Requests', path: '/change-requests', icon: FileCheck, permission: 'employee.edit' },
     { name: 'User Access', path: '/users', icon: Users, permission: 'user.manage' },
     { name: 'Settings', path: '/settings', icon: Settings, permission: 'settings.manage' }
@@ -214,7 +216,7 @@ export function Sidebar({ isOpen = false, onClose }) {
             {adminNavItems.map((item) => {
               if (item.permission && !can(item.permission)) return null;
               if (item.hrOnly && !isHR && !can('user.manage')) return null;
-              if (item.superAdminOnly && !isSuperAdmin && !can('settings.manage')) return null;
+              if (item.superAdminOnly && !isSuperAdmin) return null;
 
               const Icon = item.icon;
 

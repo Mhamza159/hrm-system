@@ -51,7 +51,7 @@ export const getSalaryStructures = asyncHandler(async (req, res) => {
  * GET /api/v1/salary-structures/employee/:id
  */
 export const getEmployeeSalaryStructure = asyncHandler(async (req, res) => {
-  const data = await PayrollService.getEmployeeSalaryStructure(req.params.id);
+  const data = await PayrollService.getEmployeeSalaryStructure(req.params.id, req.user);
 
   res.status(200).json({
     success: true,
@@ -334,6 +334,21 @@ export const getDepartmentPayrollCostAnalytics = asyncHandler(async (req, res) =
     statusCode: 200,
     data,
     message: 'Departmental payroll cost analytics retrieved successfully'
+  });
+});
+
+/**
+ * X1.2: Delete Payroll Run with finalized immutability lock
+ * DELETE /api/v1/payroll/runs/:id
+ */
+export const deletePayrollRun = asyncHandler(async (req, res) => {
+  const result = await PayrollService.deletePayrollRun(req.params.id, req.user);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data: result,
+    message: result.message
   });
 });
 

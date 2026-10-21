@@ -198,6 +198,15 @@ const payslipSchema = new mongoose.Schema(
     generatedAt: {
       type: Date,
       default: Date.now
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+    deletedAt: {
+      type: Date,
+      default: null
     }
   },
   {

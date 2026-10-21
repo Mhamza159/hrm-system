@@ -23,6 +23,7 @@ import { Card } from '../../../components/common/Card.jsx';
 import { ConfirmDialog } from '../../../components/common/ConfirmDialog.jsx';
 import { Can } from '../../../components/common/Can.jsx';
 import { DocumentUploadModal } from './DocumentUploadModal.jsx';
+import { openSecureFile } from '../../../utils/fileHelper.js';
 import { useDeleteDocumentMutation } from '../employeesApi.js';
 import { formatDate } from '../../../lib/formatters.js';
 
@@ -113,15 +114,14 @@ export function ProfileDocumentsTab({ employeeId, documents = [], canManage = fa
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 mt-3 border-t">
-                <a
-                  href={doc.fileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1.5 rounded-lg text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition-colors inline-flex items-center gap-1 text-xs"
-                  title="View / Download File"
+                <button
+                  type="button"
+                  onClick={() => openSecureFile(doc.fileUrl)}
+                  className="p-1.5 rounded-lg text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition-colors inline-flex items-center gap-1 text-xs cursor-pointer"
+                  title="Secure View / Download"
                 >
                   <ExternalLink className="w-3.5 h-3.5" /> View
-                </a>
+                </button>
 
                 {canManage && (
                   <button

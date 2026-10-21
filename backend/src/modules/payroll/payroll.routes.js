@@ -73,6 +73,15 @@ router.patch(
   payrollController.markPayrollPaid
 );
 
+// X1.2: Delete Payroll Run (Draft Only - Finalized Runs Locked)
+router.delete(
+  '/runs/:id',
+  authenticate,
+  checkPermission('payroll.manage', 'all'),
+  validate(runIdParamSchema),
+  payrollController.deletePayrollRun
+);
+
 // 9.12: Export Bank Advice Sheet (XLSX)
 router.get(
   '/runs/:id/bank-advice',

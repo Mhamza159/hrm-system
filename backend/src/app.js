@@ -41,6 +41,8 @@ import salaryStructureRoutes from './modules/payroll/salaryStructure.routes.js';
 import payrollRoutes from './modules/payroll/payroll.routes.js';
 import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
 import reportsRoutes from './modules/reports/reports.routes.js';
+import auditRoutes from './modules/audit/audit.routes.js';
+import fileRoutes from './modules/files/file.routes.js';
 import * as attendanceController from './modules/attendance/attendance.controller.js';
 import * as leaveController from './modules/leaves/leave.controller.js';
 import * as payrollController from './modules/payroll/payroll.controller.js';
@@ -52,10 +54,19 @@ import { checkPermission } from './middlewares/checkPermission.js';
 import * as roleController from './modules/roles/role.controller.js';
 import * as departmentController from './modules/departments/department.controller.js';
 
+import { sanitize } from './middlewares/sanitize.js';
+import { apiLimiter, authLimiter } from './middlewares/rateLimiter.js';
+
 const app = express();
 
 // 1. Security Headers via Helmet
-app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    xContentTypeOptions: true,
+    xFrameOptions: { action: 'sameorigin' }
+  })
+);
 
 // 2. Cross-Origin Resource Sharing (CORS) with strict client whitelisting & cookie forwarding
 app.use(
@@ -71,19 +82,23 @@ app.use(
 app.use(express.json({ limit: '16kb' }));
 app.use(express.urlencoded({ extended: true, limit: '16kb' }));
 
-// 4. Cookie parser for httpOnly refresh tokens
+// 4. Perimeter NoSQL Injection & Query Parameter Sanitizer (Row X1.5)
+app.use(sanitize);
+
+// 5. Cookie parser for httpOnly refresh tokens
 app.use(cookieParser());
 
 // Static file serving for uploads (logos, documents)
 app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
-// 5. Health Check Liveness Probe (M0 Row 0.13)
+// 6. Health Check Liveness Probe (M0 Row 0.13)
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// 6. Mount Domain Modules
-app.use('/api/v1/auth', authRoutes);
+// 7. Perimeter Rate Limiting & Domain Modules
+app.use('/api/v1/auth', authLimiter, authRoutes);
+app.use('/api/v1', apiLimiter);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/roles', roleRoutes);
 app.use('/api/v1/delegations', delegationRoutes);
@@ -110,6 +125,8 @@ app.get('/api/v1/reports/eobi-compliance', authenticate, checkPermission('payrol
 app.get('/api/v1/reports/payroll-cost', authenticate, checkPermission('payroll.view', 'all'), payrollController.getDepartmentPayrollCostAnalytics);
 app.get('/api/v1/reports/leaves', authenticate, checkPermission('report.export', 'team'), leaveController.exportLeaveReport);
 app.use('/api/v1/reports', reportsRoutes);
+app.use('/api/v1/audit-logs', auditRoutes);
+app.use('/api/v1/files', fileRoutes);
 app.patch('/api/v1/leave-balances/:id', authenticate, checkPermission('leave.settings', 'all'), validate(adjustBalanceSchema), leaveController.adjustLeaveBalance);
 app.get('/api/v1/permissions', authenticate, checkPermission('role.view'), roleController.getPermissions);
 app.get('/api/v1/org-chart', authenticate, checkPermission('org.view'), departmentController.getOrgChart);

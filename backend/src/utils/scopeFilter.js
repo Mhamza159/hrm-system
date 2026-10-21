@@ -45,6 +45,9 @@ export const buildScopeQuery = (user, scope = 'own', options = {}) => {
 
   // 3. Team scope: restricts to direct subordinates of actor (manager/team lead)
   if (scope === 'team') {
+    if (options.teamEmployeeIds && Array.isArray(options.teamEmployeeIds)) {
+      return { [employeeField]: { $in: options.teamEmployeeIds } };
+    }
     if (entity.toLowerCase() === 'employee') {
       // Subordinates whose managerId matches actor's employeeId
       return { managerId: actorEmployeeId };

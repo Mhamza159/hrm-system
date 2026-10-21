@@ -268,16 +268,16 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| X1.1 | Audit log screen | `GET /audit-logs` (audit.view, filters) | `AuditLogsPage.jsx` (before/after diff) | Har tabdeeli nazar aaye | ☐ |
-| X1.2 | Soft delete aur finalized payroll lock | sab models isDeleted; paid run delete band | — | Paid run delete na ho | ☐ |
-| X1.3 | Encryption at rest | CNIC, bank, salary fields encrypted | — | DB mein parhne ke qabil na ho | ☐ |
-| X1.4 | Server par har API ka permission | har route mein checkPermission | — | Har route ka 403 test | ☐ |
-| X1.5 | Rate limit, sanitize, XSS | middlewares | React escape (dangerouslySetInnerHTML nahi) | Script input na chale | ☐ |
-| X1.6 | Private files | signed, expire hone wale links | — | Purana link band | ☐ |
-| X1.7 | Backups + restore test | 2.10 + restore script | — | Restore kar ke data check | ☐ |
-| X1.8 | Performance | indexes, pagination, lean queries | Lazy loading pages | 500 employees par page < 3 sec | ☐ |
-| X1.9 | Responsive | — | Har page mobile/tablet par | Phone par check-in aur leave | ☐ |
-| X1.10 | Tests | Vitest (calculations), Supertest (APIs) | Playwright (login, leave, check-in, payroll) | CI green | ☐ |
+| X1.1 | Audit log screen | `GET /audit-logs` (audit.view, filters) | `AuditLogsPage.jsx` (before/after diff) | Har tabdeeli nazar aaye | ☑ |
+| X1.2 | Soft delete aur finalized payroll lock | sab models isDeleted; paid run delete band | — | Paid run delete na ho | ☑ |
+| X1.3 | Encryption at rest | CNIC, bank, salary fields encrypted | — | DB mein parhne ke qabil na ho | ☑ |
+| X1.4 | Server par har API ka permission | har route mein checkPermission | — | Har route ka 403 test | ☑ |
+| X1.5 | Rate limit, sanitize, XSS | middlewares | React escape (dangerouslySetInnerHTML nahi) | Script input na chale | ☑ |
+| X1.6 | Private files | signed, expire hone wale links | — | Purana link band | ☑ |
+| X1.7 | Backups + restore test | 2.10 + restore script | — | Restore kar ke data check | ☑ |
+| X1.8 | Performance | indexes, pagination, lean queries | Lazy loading pages | 500 employees par page < 3 sec | ☑ |
+| X1.9 | Responsive | — | Har page mobile/tablet par | Phone par check-in aur leave | ☑ |
+| X1.10 | Tests | Vitest (calculations), Supertest (APIs) | Playwright (login, leave, check-in, payroll) | CI green | ☑ |
 
 ## 15. M10 — Loans & Advances
 

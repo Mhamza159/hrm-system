@@ -10,6 +10,8 @@
 
 import { SalaryStructure } from '../../models/salaryStructure.model.js';
 import { Employee } from '../../models/employee.model.js';
+import { PayrollRun } from '../../models/payrollRun.model.js';
+import { Payslip } from '../../models/payslip.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { paginate } from '../../utils/paginate.js';
 import { recordAuditLog } from '../../services/audit.service.js';
@@ -129,13 +131,29 @@ export class PayrollService {
   /**
    * 9.2: Get employee current salary structure and revision history
    */
-  static async getEmployeeSalaryStructure(employeeId) {
+  static async getEmployeeSalaryStructure(employeeId, user = null) {
     const employee = await Employee.findById(employeeId).populate([
       { path: 'departmentId', select: 'name' },
       { path: 'designationId', select: 'title' }
     ]);
     if (!employee || employee.isDeleted) {
       throw new ApiError(404, 'Employee not found');
+    }
+
+    // Role / Ownership Authorization Check (BUG-01 Fix)
+    // Super Admin & HR Manager can view any salary structure; Employees can only view their own
+    if (user) {
+      const userRoleNames = (user.roles || []).map((r) => (typeof r === 'object' ? r.name : r));
+      const isHrOrAdmin = userRoleNames.some((r) => ['Super Admin', 'HR Manager'].includes(r));
+      if (!isHrOrAdmin) {
+        const isOwner =
+          employee._id.toString() === user.employeeId?.toString() ||
+          employee.email === user.email ||
+          employee.userId?.toString() === user._id?.toString();
+        if (!isOwner) {
+          throw new ApiError(403, 'You are not authorized to access this salary structure');
+        }
+      }
     }
 
     const current = await SalaryStructure.findOne({
@@ -954,6 +972,50 @@ export class PayrollService {
     ]);
 
     return analytics;
+  }
+
+  /**
+   * X1.2: Immutability lock - Delete or soft delete payroll run
+   */
+  static async deletePayrollRun(runId, actor) {
+    const run = await PayrollRun.findById(runId);
+    if (!run || run.isDeleted) {
+      throw new ApiError(404, 'Payroll run not found');
+    }
+
+    // Strict Security Invariant: Finalized payroll runs (approved or paid) can NEVER be deleted
+    if (['approved', 'paid'].includes(run.status) || run.isLocked) {
+      throw new ApiError(400, 'Cannot delete an approved, paid, or locked payroll run.');
+    }
+
+    run.isDeleted = true;
+    run.deletedAt = new Date();
+    run.deletedBy = actor?._id || null;
+    await run.save();
+
+    await Payslip.updateMany(
+      { payrollRunId: run._id },
+      { $set: { isDeleted: true, deletedAt: new Date() } }
+    );
+
+    // Revert associated leave encashments back to approved & unlinked status (BUG-03 Fix)
+    const { LeaveEncashment } = await import('../../models/leaveEncashment.model.js');
+    await LeaveEncashment.updateMany(
+      { payrollRunId: run._id },
+      { $set: { status: 'approved', payrollRunId: null } }
+    );
+
+    await recordAuditLog({
+      userId: actor?._id,
+      actor,
+      action: 'PAYROLL_RUN_DELETED',
+      entity: 'PayrollRun',
+      entityId: run._id,
+      before: { status: run.status, month: run.month, year: run.year },
+      after: { isDeleted: true }
+    });
+
+    return { message: 'Payroll run deleted successfully' };
   }
 }
 

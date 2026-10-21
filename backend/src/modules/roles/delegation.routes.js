@@ -32,8 +32,8 @@ const createDelegationSchema = z.object({
   })
 });
 
-router.get('/', delegationController.getDelegations);
-router.post('/', validate(createDelegationSchema), delegationController.createDelegation);
-router.delete('/:id', delegationController.cancelDelegation);
+router.get('/', checkPermission('delegation.view'), delegationController.getDelegations);
+router.post('/', checkPermission('delegation.create'), validate(createDelegationSchema), delegationController.createDelegation);
+router.delete('/:id', checkPermission('delegation.cancel'), delegationController.cancelDelegation);
 
 export default router;

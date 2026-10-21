@@ -19,6 +19,7 @@ import { Setting } from '../../models/setting.model.js';
 import { ApiError } from '../../utils/apiError.js';
 import { evaluateAttendanceStatus, calculateWorkMetrics } from './services/statusEngine.service.js';
 import { emitToCompany, emitToDepartment } from '../../services/socket.service.js';
+import { notify } from '../../services/notify.service.js';
 
 /**
  * Normalizes any Date or date string to UTC Midnight (00:00:00.000Z)
@@ -572,6 +573,25 @@ export const applyWFH = async ({ user, date, reason }) => {
   });
 
   await wfh.save();
+
+  // Notify manager about new WFH request (BUG-04 Fix)
+  try {
+    const applicantEmp = await Employee.findById(employeeId).populate({
+      path: 'managerId',
+      select: 'userId'
+    });
+    if (applicantEmp?.managerId?.userId) {
+      notify(applicantEmp.managerId.userId, {
+        type: 'attendance',
+        title: 'New WFH Request',
+        body: `${applicantEmp.name || 'Team member'} applied for WFH on ${targetDate.toISOString().split('T')[0]}.`,
+        link: '/attendance/team'
+      }).catch(() => {});
+    }
+  } catch (notifErr) {
+    console.warn(`[attendance.service] WFH submission notification failed: ${notifErr.message}`);
+  }
+
   return wfh;
 };
 
@@ -608,6 +628,22 @@ export const decideWFH = async ({ requestId, user, decision, decisionReason }) =
   wfh.decisionReason = decisionReason || null;
 
   await wfh.save();
+
+  // Notify applicant of manager decision (BUG-04 Fix)
+  try {
+    const applicantEmp = await Employee.findById(wfh.employeeId).select('userId name');
+    if (applicantEmp?.userId) {
+      notify(applicantEmp.userId, {
+        type: 'attendance',
+        title: `WFH Request ${decision === 'approved' ? 'Approved' : 'Rejected'}`,
+        body: `Your WFH request for ${wfh.date.toISOString().split('T')[0]} has been ${decision}.`,
+        link: '/attendance/my'
+      }).catch(() => {});
+    }
+  } catch (notifErr) {
+    console.warn(`[attendance.service] WFH decision notification failed: ${notifErr.message}`);
+  }
+
   return wfh;
 };
 
@@ -633,6 +669,25 @@ export const applyCorrection = async ({ user, date, requestedCheckIn, requestedC
   });
 
   await correction.save();
+
+  // Notify manager about new attendance correction request (BUG-04 Fix)
+  try {
+    const applicantEmp = await Employee.findById(employeeId).populate({
+      path: 'managerId',
+      select: 'userId'
+    });
+    if (applicantEmp?.managerId?.userId) {
+      notify(applicantEmp.managerId.userId, {
+        type: 'attendance',
+        title: 'New Attendance Correction Request',
+        body: `${applicantEmp.name || 'Team member'} submitted an attendance correction request for ${targetDate.toISOString().split('T')[0]}.`,
+        link: '/attendance/team'
+      }).catch(() => {});
+    }
+  } catch (notifErr) {
+    console.warn(`[attendance.service] Correction submission notification failed: ${notifErr.message}`);
+  }
+
   return correction;
 };
 
@@ -717,6 +772,21 @@ export const decideCorrection = async ({ correctionId, user, decision, decisionN
     });
 
     await att.save();
+  }
+
+  // Notify applicant of decision (BUG-04 Fix)
+  try {
+    const applicantEmp = await Employee.findById(correction.employeeId).select('userId name');
+    if (applicantEmp?.userId) {
+      notify(applicantEmp.userId, {
+        type: 'attendance',
+        title: `Attendance Correction ${decision === 'approved' ? 'Approved' : 'Rejected'}`,
+        body: `Your attendance correction for ${correction.date.toISOString().split('T')[0]} has been ${decision}.`,
+        link: '/attendance/my'
+      }).catch(() => {});
+    }
+  } catch (notifErr) {
+    console.warn(`[attendance.service] Correction decision notification failed: ${notifErr.message}`);
   }
 
   return correction;

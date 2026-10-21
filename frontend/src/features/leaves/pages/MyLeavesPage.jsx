@@ -17,6 +17,7 @@ import { LeaveBalanceCards } from '../components/LeaveBalanceCards.jsx';
 import { ApplyLeaveModal } from '../components/ApplyLeaveModal.jsx';
 import { useGetMyLeavesQuery, useCancelLeaveMutation } from '../leavesApi.js';
 import { cn } from '../../../lib/utils.js';
+import { openSecureFile } from '../../../utils/fileHelper.js';
 
 const STATUS_BADGES = {
   approved: {
@@ -211,16 +212,15 @@ export function MyLeavesPage() {
                       </td>
                       <td className="py-3.5 px-3">
                         {item.attachmentUrl ? (
-                          <a
-                            href={item.attachmentUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-[#5E6AD2] hover:underline text-[11px]"
+                          <button
+                            type="button"
+                            onClick={() => openSecureFile(item.attachmentUrl)}
+                            className="inline-flex items-center gap-1 text-[#5E6AD2] hover:underline text-[11px] cursor-pointer bg-transparent border-none p-0"
                           >
                             <FileText className="w-3.5 h-3.5" />
                             <span>Proof</span>
                             <ExternalLink className="w-3 h-3" />
-                          </a>
+                          </button>
                         ) : (
                           <span className="text-slate-600 text-[11px]">—</span>
                         )}

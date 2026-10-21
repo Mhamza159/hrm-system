@@ -14,6 +14,7 @@ import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { LeaveDecideModal } from '../components/LeaveDecideModal.jsx';
 import { useGetPendingApprovalsQuery } from '../leavesApi.js';
 import { cn } from '../../../lib/utils.js';
+import { openSecureFile } from '../../../utils/fileHelper.js';
 
 export function LeaveApprovalsPage() {
   const [selectedLeave, setSelectedLeave] = useState(null);
@@ -120,16 +121,15 @@ export function LeaveApprovalsPage() {
                       <td className="py-3.5 px-3 max-w-xs">
                         <p className="text-slate-300 truncate" title={leave.reason}>{leave.reason}</p>
                         {leave.attachmentUrl && (
-                          <a
-                            href={leave.attachmentUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-[#5E6AD2] hover:underline text-[10px] mt-0.5"
+                          <button
+                            type="button"
+                            onClick={() => openSecureFile(leave.attachmentUrl)}
+                            className="inline-flex items-center gap-1 text-[#5E6AD2] hover:underline text-[10px] mt-0.5 cursor-pointer bg-transparent border-none p-0"
                           >
                             <FileText className="w-3 h-3" />
                             <span>Medical Proof</span>
                             <ExternalLink className="w-2.5 h-2.5" />
-                          </a>
+                          </button>
                         )}
                       </td>
 

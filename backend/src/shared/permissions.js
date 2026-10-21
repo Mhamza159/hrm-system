@@ -441,6 +441,21 @@ export const PERMISSIONS_CATALOGUE = [
         defaultScope: 'team'
       }
     ]
+  },
+  {
+    module: 'audit',
+    label: 'Audit & Compliance Logging',
+    subject: 'AuditLog',
+    description: 'Forensic inspection of immutable system audit trails and data diffs.',
+    actions: [
+      {
+        action: 'audit.view',
+        label: 'View Audit Logs',
+        description: 'Access the system audit log screen and inspect state changes.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      }
+    ]
   }
 ];
 
