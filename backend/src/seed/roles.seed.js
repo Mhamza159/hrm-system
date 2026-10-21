@@ -67,6 +67,7 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'report.export', subject: 'Report', scope: 'all' },
       { action: 'notification.view', subject: 'Notification', scope: 'own' },
       { action: 'notification.manage', subject: 'Notification', scope: 'all' },
+      { action: 'dashboard.view', subject: 'Dashboard', scope: 'all' },
       { action: 'announcement.view', subject: 'Announcement', scope: 'all' },
       { action: 'announcement.create', subject: 'Announcement', scope: 'all' },
       { action: 'announcement.edit', subject: 'Announcement', scope: 'all' },
@@ -98,6 +99,7 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'org.view', subject: 'Organization', scope: 'all' },
       { action: 'report.view', subject: 'Report', scope: 'team' },
       { action: 'report.export', subject: 'Report', scope: 'team' },
+      { action: 'dashboard.view', subject: 'Dashboard', scope: 'team' },
       { action: 'notification.view', subject: 'Notification', scope: 'own' },
       { action: 'announcement.view', subject: 'Announcement', scope: 'department' },
       { action: 'announcement.create', subject: 'Announcement', scope: 'department' },
@@ -124,7 +126,8 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'notification.view', subject: 'Notification', scope: 'own' },
       { action: 'announcement.view', subject: 'Announcement', scope: 'own' },
       { action: 'org.view', subject: 'Organization', scope: 'all' },
-      { action: 'report.view', subject: 'Report', scope: 'own' }
+      { action: 'report.view', subject: 'Report', scope: 'own' },
+      { action: 'dashboard.view', subject: 'Dashboard', scope: 'own' }
     ]
   }
 ];

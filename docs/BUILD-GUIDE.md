@@ -255,14 +255,14 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 7.1 | Admin dashboard | `GET /dashboard` (role: admin) aggregation | `DashboardPage.jsx` → `AdminDashboard.jsx` | Numbers DB se milein | ☐ |
-| 7.2 | HR dashboard | role: hr | `HrDashboard.jsx` | Pending approvals sahi | ☐ |
-| 7.3 | Manager dashboard | role: manager (scoped) | `ManagerDashboard.jsx` | Sirf team | ☐ |
-| 7.4 | Employee dashboard | role: employee | `EmployeeDashboard.jsx` (attendance, balance, aakhri slip, tasks) | Apna data | ☐ |
-| 7.5 | Widgets: headcount, aaj ki attendance, pending approvals, birthdays, open positions, payroll cost | har widget ki aggregation | `StatCard.jsx`, `AttendanceChart.jsx`, `PendingList.jsx`, `BirthdaysCard.jsx` | Har widget | ☐ |
-| 7.6 | Reports: attendance, leave, payroll, headcount, turnover, department cost | `GET /reports/:type` | `ReportsPage.jsx` | Har report | ☐ |
-| 7.7 | Filters | from, to, departmentId, employeeId | Filter bar | Filter ke mutabiq data | ☐ |
-| 7.8 | Export Excel/PDF | `?format=xlsx` ya `pdf` (report.export) | Export buttons | File khule | ☐ |
+| 7.1 | Admin dashboard | `GET /dashboard` (role: admin) aggregation | `DashboardPage.jsx` → `AdminDashboard.jsx` | Numbers DB se milein | ☑ |
+| 7.2 | HR dashboard | role: hr | `HrDashboard.jsx` | Pending approvals sahi | ☑ |
+| 7.3 | Manager dashboard | role: manager (scoped) | `ManagerDashboard.jsx` | Sirf team | ☑ |
+| 7.4 | Employee dashboard | role: employee | `EmployeeDashboard.jsx` (attendance, balance, aakhri slip, tasks) | Apna data | ☑ |
+| 7.5 | Widgets: headcount, aaj ki attendance, pending approvals, birthdays, open positions, payroll cost | har widget ki aggregation | `StatCard.jsx`, `AttendanceChart.jsx`, `PendingList.jsx`, `BirthdaysCard.jsx` | Har widget | ☑ |
+| 7.6 | Reports: attendance, leave, payroll, headcount, turnover, department cost | `GET /reports/:type` | `ReportsPage.jsx` | Har report | ☑ |
+| 7.7 | Filters | from, to, departmentId, employeeId | Filter bar | Filter ke mutabiq data | ☑ |
+| 7.8 | Export Excel/PDF | `?format=xlsx` ya `pdf` (report.export) | Export buttons | File khule | ☑ |
 
 ## 14. X1 — Security, Audit & Quality (Phase 1 ka aakhri check)
 

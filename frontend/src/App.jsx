@@ -44,6 +44,7 @@ import { PayrollRunDetailPage } from './features/payroll/pages/PayrollRunDetailP
 import { MyPayslipsPage } from './features/payroll/pages/MyPayslipsPage.jsx';
 import { FinalSettlementPage } from './features/payroll/pages/FinalSettlementPage.jsx';
 import { PayrollReportsPage } from './features/payroll/pages/PayrollReportsPage.jsx';
+import ReportsPage from './features/reports/pages/ReportsPage.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
 import { useRefreshTokenMutation } from './features/auth/authApi.js';
@@ -109,6 +110,15 @@ export default function App() {
           }
         >
           <Route index element={<DashboardPage />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route
+            path="reports"
+            element={
+              <ProtectedRoute requiredPermission="report.view">
+                <ReportsPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="users"
             element={

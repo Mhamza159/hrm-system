@@ -1,6 +1,6 @@
 # Phase 1: Core HR & Payroll — Execution Status & Roadmap Tracking
 
-## Completed & Verified Modules (9 / 12)
+## Completed & Verified Modules (11 / 12)
 1. **M0 Foundation (Section 3 · Rows 0.1 - 0.14):** Express app, MongoDB replica set, Redis cache, Zod validation, Multer storage, standard envelope, centralized errorHandler, BullMQ queues, Socket.io, React+Vite AppLayout, Helmet, CORS, rate-limit.
 2. **M1 Authentication & Access Control (Section 4 · Rows 1.1 - 1.14):** JWT access + rotating refresh token, brute-force lockout, 2FA email OTP, forced password reset, session revocation, login history.
 3. **M26 Roles & Permissions / RBAC (Section 5 · Rows 26.1 - 26.17):** CASL PBAC, 4 core system roles, data scopes, field-level masking, permission matrix, approval limits, role cloning, temporal delegations.
@@ -10,8 +10,8 @@
 7. **M8 Notifications & Announcements (Section 9 · Rows 8.1 - 8.8):** Multi-channel notify service (Socket.io + in-app bell + email/WhatsApp templates), user notification preferences, audience-targeted announcements, notice board pin, read receipts.
 8. **M5 Attendance & Shifts (Section 10 · Rows 5.1 - 5.15):** Attendance check-in/out, breaks, late/early calculation, overtime, WFH request workflow, monthly attendance calendar, manager team view, attendance corrections, auto-absent cron, monthly attendance lock, Excel export.
 9. **M6 Leave & Holidays (Section 11 · Rows 6.1 - 6.15):** Leave types CRUD, annual quota & carry forward rollover, leave apply, half-day leaves, medical certificate upload, multi-tier approval chains (Manager -> HR -> Admin), approve/reject, cancellation & quota rollback, live balance cards, team leave calendar, Pakistan gazetted & lunar holidays, attendance on_leave sync, leave encashment, HR balance override with audit log, ExcelJS leave report export. Verified 100% via Playwright MCP & Vitest.
+10. **M9 Payroll (+ Pakistan Statutory Compliance) (Section 12 · Rows 9.1 - 9.17):** Salary structures (integer paisa), historical revisions with audit reasons, earnings (overtime, bonuses, encashment), deductions (unpaid leaves, late penalties, loans), FBR tax slabs (FY 2024-2025 Sec 149), statutory contributions (EOBI, PESSI, gratuity), 4-stage batch payroll lifecycle (draft, review, approved, paid) with BullMQ, payslips PDF with HMAC, notifications, corporate bank advice sheets (Meezan, HBL), annual tax withholding certificate, compliance reports, and manager-scoped overtime. 39/39 Vitest tests passing.
+11. **M7 Dashboard & Reports (Section 13 · Rows 7.1 - 7.8):** Role-specific dashboards (Super Admin, HR Manager, Department Manager, Employee), KPI stat widgets (headcount, today's attendance, pending approvals queue, birthdays, open positions, payroll cost), multi-axis reports (attendance, leaves, payroll, headcount, turnover, department cost), date/department/employee filters, streaming ExcelJS & PDFKit export engines with PBAC report.export check and audit logging. 25/25 Vitest tests passing.
 
-## Next Up in Phase 1 (Remaining 3 Modules)
-1. **M9 Payroll (+ Pakistan Statutory Compliance) (Section 12 · Rows 9.1 - 9.17):** Salary structures, increments, earnings, deductions, FBR income tax slabs, EOBI, PESSI, PF, gratuity, BullMQ payroll generation, payslips, bank transfer advice.
-2. **M7 Dashboard & Reports (Section 13 · Rows 7.1 - 7.8):** 8 features
-3. **X1 Security, Audit & Quality Gate (Section 14 · Rows X1.1 - X1.10):** 10 features
+## Next Up
+12. **X1 Security, Audit & Quality Gate (Section 14 · Rows X1.1 - X1.10):** Phase 1 final hardening.

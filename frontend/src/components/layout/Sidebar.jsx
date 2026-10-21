@@ -88,6 +88,7 @@ export function Sidebar({ isOpen = false, onClose }) {
     { name: 'Public Holidays', path: '/holidays', icon: CalendarDays },
     { name: 'Payroll', path: '/payroll', icon: BadgeDollarSign, permission: 'payroll.manage' },
     { name: 'My Payslips', path: '/payroll/my-payslips', icon: BadgeDollarSign },
+    { name: 'Reports', path: '/reports', icon: BarChart3, permission: 'report.view' },
     { name: 'Company Policies', path: '/policies', icon: BookOpen, permission: 'settings.view' },
     { name: 'Announcements', path: '/announcements', icon: Megaphone, permission: 'announcement.view' },
     { name: 'Notifications', path: '/notifications', icon: Bell, badge: 3 },

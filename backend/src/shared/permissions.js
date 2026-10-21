@@ -404,6 +404,43 @@ export const PERMISSIONS_CATALOGUE = [
         defaultScope: 'department'
       }
     ]
+  },
+  {
+    module: 'dashboard',
+    label: 'Dashboards & Analytics',
+    subject: 'Dashboard',
+    description: 'Role-based organizational and personal analytical workspaces.',
+    actions: [
+      {
+        action: 'dashboard.view',
+        label: 'View Dashboard',
+        description: 'Access role-specific dashboard (Admin, HR, Manager, or Employee).',
+        allowedScopes: ['own', 'team', 'all'],
+        defaultScope: 'own'
+      }
+    ]
+  },
+  {
+    module: 'reports',
+    label: 'Reports & Analytics',
+    subject: 'Report',
+    description: 'Multi-axis organizational compliance reports and export engines.',
+    actions: [
+      {
+        action: 'report.view',
+        label: 'View Reports',
+        description: 'Access attendance, leave, payroll, headcount, and turnover reports.',
+        allowedScopes: ['team', 'all'],
+        defaultScope: 'team'
+      },
+      {
+        action: 'report.export',
+        label: 'Export Reports (Excel/PDF)',
+        description: 'Export report data to styled Microsoft Excel or PDF documents.',
+        allowedScopes: ['team', 'all'],
+        defaultScope: 'team'
+      }
+    ]
   }
 ];
 

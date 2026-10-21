@@ -80,6 +80,33 @@ export const formatDate = (dateStr) => {
 };
 
 /**
+ * Format ISO date string into short format (DD MMM)
+ * @param {string|Date} dateStr 
+ * @returns {string}
+ */
+export const formatDateShort = (dateStr) => {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short'
+  });
+};
+
+/**
+ * Get YYYY-MM-DD string from a Date or defaults to today
+ * @param {Date} [d]
+ * @returns {string}
+ */
+export const toDateInputString = (d = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+/**
  * Resolve display username from user session object
  * @param {Object} user 
  * @returns {string}
