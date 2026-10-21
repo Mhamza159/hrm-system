@@ -33,7 +33,7 @@ router.post(
 router.get(
   '/runs',
   authenticate,
-  checkPermission('payroll.view'),
+  checkPermission('payroll.view', 'all'),
   payrollController.getPayrollRuns
 );
 
@@ -41,7 +41,7 @@ router.get(
 router.get(
   '/runs/:id',
   authenticate,
-  checkPermission('payroll.view'),
+  checkPermission('payroll.view', 'all'),
   validate(runIdParamSchema),
   payrollController.getPayrollRunById
 );
@@ -77,7 +77,7 @@ router.patch(
 router.get(
   '/runs/:id/bank-advice',
   authenticate,
-  checkPermission('payroll.view'),
+  checkPermission('payroll.view', 'all'),
   validate(runIdParamSchema),
   payrollController.exportBankAdvice
 );

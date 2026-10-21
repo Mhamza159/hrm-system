@@ -46,8 +46,11 @@ export function FinalSettlementPage() {
     { skip: !selectedEmployee }
   );
 
-  const employees = employeesData?.data || [];
-  const meta = employeesData?.meta || { totalDocs: 0, totalPages: 1 };
+  const employees = employeesData?.data?.items || (Array.isArray(employeesData?.data) ? employeesData?.data : []);
+  const meta = {
+    totalDocs: employeesData?.data?.total || employees.length,
+    totalPages: employeesData?.data?.totalPages || 1
+  };
 
   const handleOpenSettlement = (emp) => {
     setSelectedEmployee(emp);

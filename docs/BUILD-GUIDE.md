@@ -231,23 +231,23 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 9.1 | Salary structure | `salaryStructure.model.js` (basic, house rent, medical, conveyance, others), CRUD `/salary-structures` (payroll.manage); paisa integers | `SalaryStructuresPage.jsx`, `SalaryForm.jsx` | Total sahi | ☐ |
-| 9.2 | Increment / revision (effective date) | naya structure effectiveFrom; purana history | "Revise Salary" dialog | Beech mahine increment ka hisaab | ☐ |
-| 9.3 | Earnings | overtime (M5), bonus, arrears, commission, encashment (6.13) | Slip edit mein earnings | Har earning slip mein | ☐ |
-| 9.4 | Deductions | unpaid leave, late penalty, loan (M10), advance | Slip mein deductions | Sahi katoti | ☐ |
-| 9.5 | Income tax (FBR slabs) | `utils/taxCalculator.js` (salana taxable / 12, tax year July–June) | — | Unit test: har slab | ☐ |
-| 9.6 | EOBI, PESSI, PF, gratuity | `utils/contributions.js` (settings 2.7 se, optional on/off) | — | Unit test | ☐ |
-| 9.7 | Payroll generate | `POST /payroll/runs` → BullMQ job, `payroll:progress` socket | `PayrollRunsPage.jsx` + progress bar | 100 employees ka run | ☐ |
-| 9.8 | Draft → review → approve → paid | `PATCH /runs/:id/approve` (payroll.approve), `/mark-paid` | `PayrollRunDetailPage.jsx` (status steps) | Approve se pehle release na ho | ☐ |
-| 9.9 | Slip theek karna/regenerate | `PATCH /runs/:id/payslips/:slipId`, `POST .../regenerate` | Slip edit drawer | Sirf draft mein | ☐ |
-| 9.10 | Payslip PDF (branding) | `pdf.service.js` (logo, company, breakdown) | PDF preview/download | PDF sahi | ☐ |
-| 9.11 | Slip delivery: portal, email, WhatsApp | approve par notify job | `MyPayslipsPage.jsx` | Teeno jagah slip | ☐ |
-| 9.12 | Bank transfer sheet | `GET /runs/:id/bank-sheet?bank=` (ExcelJS, bank formats) | Download dropdown | Bank format sahi | ☐ |
-| 9.13 | Final settlement | `POST /payroll/final-settlement/:employeeId` (bache din, leave encash, loan baqaya) | `FinalSettlementPage.jsx` | M18 exit se jude | ☐ |
-| 9.14 | Salana tax certificate | `GET /payslips/tax-certificate?year=` | My Payslips → Tax Certificate | PDF mein saal ka tax | ☐ |
-| 9.15 | Withholding aur EOBI reports | `GET /reports/tax`, `/reports/eobi` | Reports page | Totals runs se milein | ☐ |
-| 9.16 | Manager: team overtime (salary nahi) | `GET /payroll/team-overtime` | Team page par OT ghante | Salary na dikhe | ☐ |
-| 9.17 | Payroll cost report | `GET /reports/payroll-cost` (department wise) | Reports + Admin dashboard | Totals sahi | ☐ |
+| 9.1 | Salary structure | `salaryStructure.model.js` (basic, house rent, medical, conveyance, others), CRUD `/salary-structures` (payroll.manage); paisa integers | `SalaryStructuresPage.jsx`, `SalaryForm.jsx` | Total sahi | ☑ |
+| 9.2 | Increment / revision (effective date) | naya structure effectiveFrom; purana history | "Revise Salary" dialog | Beech mahine increment ka hisaab | ☑ |
+| 9.3 | Earnings | overtime (M5), bonus, arrears, commission, encashment (6.13) | Slip edit mein earnings | Har earning slip mein | ☑ |
+| 9.4 | Deductions | unpaid leave, late penalty, loan (M10), advance | Slip mein deductions | Sahi katoti | ☑ |
+| 9.5 | Income tax (FBR slabs) | `utils/taxCalculator.js` (salana taxable / 12, tax year July–June) | — | Unit test: har slab | ☑ |
+| 9.6 | EOBI, PESSI, PF, gratuity | `utils/contributions.js` (settings 2.7 se, optional on/off) | — | Unit test | ☑ |
+| 9.7 | Payroll generate | `POST /payroll/runs` → BullMQ job, `payroll:progress` socket | `PayrollRunsPage.jsx` + progress bar | 100 employees ka run | ☑ |
+| 9.8 | Draft → review → approve → paid | `PATCH /runs/:id/approve` (payroll.approve), `/mark-paid` | `PayrollRunDetailPage.jsx` (status steps) | Approve se pehle release na ho | ☑ |
+| 9.9 | Slip theek karna/regenerate | `PATCH /runs/:id/payslips/:slipId`, `POST .../regenerate` | Slip edit drawer | Sirf draft mein | ☑ |
+| 9.10 | Payslip PDF (branding) | `pdf.service.js` (logo, company, breakdown) | PDF preview/download | PDF sahi | ☑ |
+| 9.11 | Slip delivery: portal, email, WhatsApp | approve par notify job | `MyPayslipsPage.jsx` | Teeno jagah slip | ☑ |
+| 9.12 | Bank transfer sheet | `GET /runs/:id/bank-sheet?bank=` (ExcelJS, bank formats) | Download dropdown | Bank format sahi | ☑ |
+| 9.13 | Final settlement | `POST /payroll/final-settlement/:employeeId` (bache din, leave encash, loan baqaya) | `FinalSettlementPage.jsx` | M18 exit se jude | ☑ |
+| 9.14 | Salana tax certificate | `GET /payslips/tax-certificate?year=` | My Payslips → Tax Certificate | PDF mein saal ka tax | ☑ |
+| 9.15 | Withholding aur EOBI reports | `GET /reports/tax`, `/reports/eobi` | Reports page | Totals runs se milein | ☑ |
+| 9.16 | Manager: team overtime (salary nahi) | `GET /payroll/team-overtime` | Team page par OT ghante | Salary na dikhe | ☑ |
+| 9.17 | Payroll cost report | `GET /reports/payroll-cost` (department wise) | Reports + Admin dashboard | Totals sahi | ☑ |
 
 **Mukammal tab:** 5 test employees ka poora mahina manual Excel se match ho.
 

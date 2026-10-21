@@ -9,6 +9,7 @@
  */
 
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import {
   X,
   FileSpreadsheet,
@@ -24,6 +25,7 @@ export function BankAdviceExportModal({ isOpen, onClose, runId, periodLabel }) {
   const [bankFormat, setBankFormat] = useState('standard');
   const [isExporting, setIsExporting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const accessToken = useSelector((state) => state.auth?.accessToken);
 
   if (!isOpen) return null;
 
@@ -53,11 +55,10 @@ export function BankAdviceExportModal({ isOpen, onClose, runId, periodLabel }) {
     setErrorMsg('');
 
     try {
-      const token = localStorage.getItem('accessToken');
       const response = await fetch(`/api/v1/payroll/runs/${runId}/bank-advice?bank=${bankFormat}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        method: 'GET',
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+        credentials: 'include'
       });
 
       if (!response.ok) {

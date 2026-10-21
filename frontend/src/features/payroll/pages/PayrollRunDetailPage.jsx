@@ -10,6 +10,7 @@
 
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import {
   ArrowLeft,
   Calendar,
@@ -48,13 +49,14 @@ export function PayrollRunDetailPage() {
   const [selectedPayslipForPreview, setSelectedPayslipForPreview] = useState(null);
   const [isBankAdviceModalOpen, setIsBankAdviceModalOpen] = useState(false);
   const [actionError, setActionError] = useState('');
+  const accessToken = useSelector((state) => state.auth?.accessToken);
 
   const { data, isLoading, refetch } = useGetPayrollRunByIdQuery({ id });
   const [approvePayrollRun, { isLoading: isApproving }] = useApprovePayrollRunMutation();
   const [markPayrollPaid, { isLoading: isPaying }] = useMarkPayrollPaidMutation();
 
-  const run = data?.data?.run || {};
-  const payslips = data?.data?.payslips || [];
+  const run = data?.data?.run || data?.run || data?.data || {};
+  const payslips = data?.data?.payslips || data?.payslips || [];
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -94,9 +96,9 @@ export function PayrollRunDetailPage() {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     const emp = slip.employeeId || {};
-    const name = `${emp.firstName || ''} ${emp.lastName || ''}`.toLowerCase();
-    const code = (emp.employeeId || '').toLowerCase();
-    const dept = (emp.department?.name || '').toLowerCase();
+    const name = (emp.name || `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || 'Employee').toLowerCase();
+    const code = (emp.employeeCode || emp.employeeId || '').toLowerCase();
+    const dept = (emp.departmentId?.name || emp.department?.name || '').toLowerCase();
     return name.includes(term) || code.includes(term) || dept.includes(term);
   });
 
@@ -329,6 +331,11 @@ export function PayrollRunDetailPage() {
               {filteredPayslips.map((slip) => {
                 const emp = slip.employeeId || {};
                 const isLocked = run.status === 'approved' || run.status === 'paid';
+                const empName = emp.name || `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || 'Employee';
+                const empCode = emp.employeeCode || emp.employeeId || 'EMP';
+                const deptName = emp.departmentId?.name || emp.department?.name || 'General';
+                const initials = empName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'EM';
+                const taxWithheld = slip.taxWithheld || slip.incomeTax || 0;
 
                 return (
                   <tr
@@ -338,14 +345,14 @@ export function PayrollRunDetailPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-600 dark:text-slate-300 text-xs">
-                          {emp.firstName?.[0] || 'E'}{emp.lastName?.[0] || ''}
+                          {initials}
                         </div>
                         <div>
                           <div className="font-semibold text-slate-900 dark:text-white">
-                            {emp.firstName} {emp.lastName}
+                            {empName}
                           </div>
                           <div className="text-xs text-slate-400">
-                            {emp.employeeId || 'EMP'} · {emp.department?.name || 'General'}
+                            {empCode} · {deptName}
                           </div>
                         </div>
                       </div>
@@ -364,7 +371,7 @@ export function PayrollRunDetailPage() {
                     </td>
 
                     <td className="px-6 py-4 text-right font-medium text-rose-600 dark:text-rose-400 font-mono">
-                      PKR {((slip.incomeTax || 0) / 100).toLocaleString('en-PK')}
+                      PKR {((taxWithheld) / 100).toLocaleString('en-PK')}
                     </td>
 
                     <td className="px-6 py-4 text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono">
@@ -423,9 +430,10 @@ export function PayrollRunDetailPage() {
         payslip={selectedPayslipForPreview}
         onDownloadPdf={async (slipId) => {
           try {
-            const token = localStorage.getItem('accessToken');
             const res = await fetch(`/api/v1/payslips/${slipId}/pdf`, {
-              headers: { Authorization: `Bearer ${token}` }
+              method: 'GET',
+              headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+              credentials: 'include'
             });
             if (!res.ok) throw new Error('Failed to download PDF');
             const blob = await res.blob();

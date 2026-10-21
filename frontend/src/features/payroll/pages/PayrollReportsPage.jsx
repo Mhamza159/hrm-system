@@ -56,10 +56,10 @@ export function PayrollReportsPage() {
     { skip: activeTab !== 'overtime' }
   );
 
-  const departmentCosts = costData?.data || [];
-  const taxReport = taxData?.data || [];
-  const eobiReport = eobiData?.data || [];
-  const teamOvertime = overtimeData?.data || [];
+  const departmentCosts = Array.isArray(costData?.data) ? costData.data : [];
+  const taxReport = taxData?.data?.monthlyBreakdown || (Array.isArray(taxData?.data) ? taxData.data : []);
+  const eobiReport = eobiData?.data?.monthlyBreakdown || (Array.isArray(eobiData?.data) ? eobiData.data : []);
+  const teamOvertime = overtimeData?.data?.team || (Array.isArray(overtimeData?.data) ? overtimeData.data : []);
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -245,25 +245,31 @@ export function PayrollReportsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
-                  {taxReport.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30">
-                      <td className="py-3.5 px-4 font-semibold text-slate-900 dark:text-white">
-                        {monthNames[(row.month || 1) - 1]} {row.year}
-                      </td>
-                      <td className="py-3.5 px-4 text-center text-slate-600 dark:text-slate-300">
-                        {row.employeeCount || 0}
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-mono text-slate-800 dark:text-slate-200">
-                        PKR {((row.totalGross || 0) / 100).toLocaleString('en-PK')}
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-mono text-slate-800 dark:text-slate-200">
-                        PKR {((row.taxableGross || 0) / 100).toLocaleString('en-PK')}
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-bold text-rose-600 dark:text-rose-400">
-                        PKR {((row.totalTaxWithheld || 0) / 100).toLocaleString('en-PK')}
-                      </td>
-                    </tr>
-                  ))}
+                  {taxReport.map((row, idx) => {
+                    const gross = row.grossPaisa ?? row.totalGross ?? 0;
+                    const tax = row.taxPaisa ?? row.totalTaxWithheld ?? 0;
+                    const count = row.slipCount ?? row.employeeCount ?? 0;
+
+                    return (
+                      <tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30">
+                        <td className="py-3.5 px-4 font-semibold text-slate-900 dark:text-white">
+                          {monthNames[(row.month || 1) - 1]} {row.year}
+                        </td>
+                        <td className="py-3.5 px-4 text-center text-slate-600 dark:text-slate-300">
+                          {count}
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-mono text-slate-800 dark:text-slate-200">
+                          PKR {(gross / 100).toLocaleString('en-PK')}
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-mono text-slate-800 dark:text-slate-200">
+                          PKR {(gross / 100).toLocaleString('en-PK')}
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-mono font-bold text-rose-600 dark:text-rose-400">
+                          PKR {(tax / 100).toLocaleString('en-PK')}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}
@@ -305,25 +311,31 @@ export function PayrollReportsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
-                  {eobiReport.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30">
-                      <td className="py-3.5 px-4 font-semibold text-slate-900 dark:text-white">
-                        {monthNames[(row.month || 1) - 1]} {row.year}
-                      </td>
-                      <td className="py-3.5 px-4 text-center text-slate-600 dark:text-slate-300">
-                        {row.employeeCount || 0}
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-mono text-slate-800 dark:text-slate-200">
-                        PKR {((row.employeeEobi || 0) / 100).toLocaleString('en-PK')}
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-mono text-slate-800 dark:text-slate-200">
-                        PKR {((row.employerEobi || 0) / 100).toLocaleString('en-PK')}
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                        PKR {(((row.employeeEobi || 0) + (row.employerEobi || 0)) / 100).toLocaleString('en-PK')}
-                      </td>
-                    </tr>
-                  ))}
+                  {eobiReport.map((row, idx) => {
+                    const eeShare = row.employeeEobiPaisa ?? row.employeeEobi ?? 0;
+                    const erShare = row.employerEobiPaisa ?? row.employerEobi ?? 0;
+                    const count = row.count ?? row.employeeCount ?? 0;
+
+                    return (
+                      <tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30">
+                        <td className="py-3.5 px-4 font-semibold text-slate-900 dark:text-white">
+                          {monthNames[(row.month || 1) - 1]} {row.year}
+                        </td>
+                        <td className="py-3.5 px-4 text-center text-slate-600 dark:text-slate-300">
+                          {count}
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-mono text-slate-800 dark:text-slate-200">
+                          PKR {(eeShare / 100).toLocaleString('en-PK')}
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-mono text-slate-800 dark:text-slate-200">
+                          PKR {(erShare / 100).toLocaleString('en-PK')}
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                          PKR {((eeShare + erShare) / 100).toLocaleString('en-PK')}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             )}

@@ -124,7 +124,12 @@ export const getPayrollRunById = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     statusCode: 200,
-    data: result.run,
+    data: {
+      run: result.run,
+      payslips: result.payslips,
+      meta: result.meta
+    },
+    run: result.run,
     payslips: result.payslips,
     meta: result.meta,
     message: 'Payroll run details retrieved successfully'

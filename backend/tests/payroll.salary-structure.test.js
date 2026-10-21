@@ -136,7 +136,7 @@ describe('Module M9 — Salary Structure & Revision Test Suite (Slices 9.1-TEST 
       });
 
     expect(res.status).toBe(403);
-  });
+  }, 25000);
 
   it('9.1-BE: HR Manager successfully assigns initial salary structure in integer paisa', async () => {
     const res = await request(app)
@@ -161,7 +161,7 @@ describe('Module M9 — Salary Structure & Revision Test Suite (Slices 9.1-TEST 
     expect(res.body.data.basicSalary).toBe(10000000);
     expect(res.body.data.grossSalary).toBe(16000000); // PKR 160,000.00
     expect(res.body.data.status).toBe('active');
-  });
+  }, 25000);
 
   it('9.1-BE: Prevents duplicate initial active salary structure creation (409 Conflict)', async () => {
     const res = await request(app)

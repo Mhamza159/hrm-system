@@ -489,6 +489,38 @@ export class PayrollService {
     // Mark all slips in run as paid
     await Payslip.updateMany({ payrollRunId: run._id }, { status: 'paid' });
 
+    // Multi-Channel Notification: Alert employees of disbursed payslips (BUILD-GUIDE Row 9.11)
+    try {
+      const { notify } = await import('../../services/notify.service.js');
+      const paidSlips = await Payslip.find({ payrollRunId: run._id }).populate({
+        path: 'employeeId',
+        select: 'userId email name'
+      });
+
+      const recipientUserIds = paidSlips
+        .map((s) => s.employeeId?.userId)
+        .filter(Boolean);
+
+      if (recipientUserIds.length > 0) {
+        const monthNames = [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        const monthName = monthNames[(run.month || 1) - 1];
+
+        await notify(recipientUserIds, {
+          type: 'payroll',
+          title: `Salary Disbursed for ${monthName} ${run.year}`,
+          body: `Your salary slip for ${monthName} ${run.year} is now available in your portal.`,
+          link: '/payroll/my-payslips',
+          metadata: { runId: run._id, month: run.month, year: run.year },
+          channels: ['inApp', 'email']
+        });
+      }
+    } catch (notifErr) {
+      console.warn(`[payroll.service] Non-fatal notification failure on markPayrollPaid: ${notifErr.message}`);
+    }
+
     await recordAuditLog({
       userId: actor._id,
       actor,
@@ -632,6 +664,23 @@ export class PayrollService {
       employee.status = body.separationType === 'Terminated' ? 'Terminated' : 'Resigned';
       employee.statusReason = body.reason || 'Final settlement processed and cleared';
       await employee.save();
+    }
+
+    // Multi-Channel Notification: Alert employee of final exit settlement clearance
+    try {
+      const { notify } = await import('../../services/notify.service.js');
+      if (employee.userId) {
+        await notify(employee.userId, {
+          type: 'payroll',
+          title: 'Exit Settlement Processed & Cleared',
+          body: `Your final settlement and service gratuity calculation has been finalized. Net settlement: PKR ${(netSettlement / 100).toLocaleString('en-PK')}.`,
+          link: '/payroll/my-payslips',
+          metadata: { employeeId: employee._id },
+          channels: ['inApp', 'email']
+        });
+      }
+    } catch (notifErr) {
+      console.warn(`[payroll.service] Non-fatal notification failure on final settlement: ${notifErr.message}`);
     }
 
     const settlementData = {
@@ -883,7 +932,7 @@ export class PayrollService {
           departmentName: { $first: { $ifNull: ['$department.name', 'General'] } },
           totalGrossPay: { $sum: '$grossPay' },
           totalNetPay: { $sum: '$netPay' },
-          totalIncomeTax: { $sum: '$incomeTax' },
+          totalIncomeTax: { $sum: '$taxWithheld' },
           totalEobi: { $sum: '$eobiEmployee' },
           totalOvertimePay: { $sum: '$overtimePay' },
           headcount: { $addToSet: '$employeeId' }

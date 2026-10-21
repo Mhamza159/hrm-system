@@ -217,7 +217,7 @@ Tasks are strictly organized into vertical slices by BUILD-GUIDE ID. For every f
 ## Phase 5: Multi-Role End-to-End Automated Verification
 
 ### Slice 9.E2E: Full Multi-Role Playwright Test Suite
-- [ ] 9.E2E-TEST Execute end-to-end Playwright test suite in real Chrome browser across all four core roles verifying:
+- [x] 9.E2E-TEST Execute end-to-end Playwright test suite in real Chrome browser across all four core roles verifying:
   1. **Super Admin**: Views structures, triggers BullMQ run, audits slips, executes executive approval (`payroll.approve`), marks run paid, downloads bank advice sheet.
   2. **HR Manager**: Configures salary structures, increments salary with audit reason, reviews draft run, adds line-item bonus adjustment in drawer, exports bank sheet; asserts that clicking "Approve" is forbidden (403).
   3. **Department Manager**: Inspects team overtime hours; verifies that salary figures, payslip runs, and salary structures are completely hidden and APIs return 403 Forbidden.

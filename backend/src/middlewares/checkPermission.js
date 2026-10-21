@@ -124,7 +124,7 @@ export const getEffectiveScopeForAction = (user, actionName, activeDelegations =
  * @param {string} requiredPermission - Permission action identifier (e.g. 'role.manage', 'user.manage')
  * @param {string} [subject='all'] - Subject entity type (e.g. 'Role', 'User', 'Employee')
  */
-export const checkPermission = (requiredPermission, subject = 'all') => {
+export const checkPermission = (requiredPermission, subject = null) => {
   return asyncHandler(async (req, res, next) => {
     // 1. Guard against unauthenticated requests reaching authorization gate
     if (!req.user) {
@@ -149,11 +149,12 @@ export const checkPermission = (requiredPermission, subject = 'all') => {
 
     // 2. Build CASL Ability dynamically from user's current roles and delegations
     const ability = buildAbilityForUser(req.user, activeDelegations);
+    const targetSubject = subject || 'all';
 
     // 3. Evaluate whether ability permits 'manage all' or specific action
     const isAllowed =
       ability.can('manage', 'all') ||
-      ability.can(requiredPermission, subject) ||
+      ability.can(requiredPermission, targetSubject) ||
       ability.can(requiredPermission, 'all');
 
     if (!isAllowed) {
@@ -168,10 +169,10 @@ export const checkPermission = (requiredPermission, subject = 'all') => {
     req.ability = ability;
     req.permissionScope = effectiveScope;
 
-    // 5. Enforce horizontal scope hierarchy if subject parameter is a scope specifier
+    // 5. Enforce horizontal scope hierarchy if subject parameter is an explicit scope specifier
     const scopePriority = { all: 4, department: 3, team: 2, own: 1 };
     const isManageAll = ability.can('manage', 'all');
-    if (!isManageAll && scopePriority[subject] !== undefined) {
+    if (!isManageAll && subject && scopePriority[subject] !== undefined) {
       const requiredPriority = scopePriority[subject];
       const userPriority = scopePriority[effectiveScope] || 1;
       if (userPriority < requiredPriority) {

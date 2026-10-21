@@ -114,20 +114,20 @@ export function PayslipPreviewModal({ isOpen, onClose, payslip, onDownloadPdf })
               <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
                 <span className="text-slate-400">Employee Name:</span>
                 <span className="font-semibold text-slate-900 dark:text-white">
-                  {emp.firstName} {emp.lastName}
+                  {emp.name || `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || 'Employee'}
                 </span>
               </div>
               <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
                 <span className="text-slate-400">Employee ID:</span>
-                <span className="font-mono font-medium">{emp.employeeId || 'N/A'}</span>
+                <span className="font-mono font-medium">{emp.employeeCode || emp.employeeId || 'N/A'}</span>
               </div>
               <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
                 <span className="text-slate-400">Designation / Role:</span>
-                <span className="font-medium">{emp.designation?.title || 'Staff'}</span>
+                <span className="font-medium">{emp.designationId?.title || emp.designation?.title || 'Staff'}</span>
               </div>
               <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
                 <span className="text-slate-400">Department:</span>
-                <span className="font-medium">{emp.department?.name || 'General'}</span>
+                <span className="font-medium">{emp.departmentId?.name || emp.department?.name || 'General'}</span>
               </div>
             </div>
 

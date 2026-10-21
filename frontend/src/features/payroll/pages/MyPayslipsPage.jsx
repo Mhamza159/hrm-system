@@ -9,6 +9,7 @@
  */
 
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import {
   FileText,
   Download,
@@ -30,6 +31,7 @@ export function MyPayslipsPage() {
   const [page, setPage] = useState(1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [previewPayslip, setPreviewPayslip] = useState(null);
+  const accessToken = useSelector((state) => state.auth?.accessToken);
 
   const { data, isLoading } = useGetMyPayslipsQuery({
     page,
@@ -46,11 +48,10 @@ export function MyPayslipsPage() {
 
   const handleDownloadPdf = async (slipId) => {
     try {
-      const token = localStorage.getItem('accessToken');
       const response = await fetch(`/api/v1/payslips/${slipId}/pdf`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        method: 'GET',
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -73,11 +74,10 @@ export function MyPayslipsPage() {
 
   const handleDownloadTaxCertificate = async (taxYear) => {
     try {
-      const token = localStorage.getItem('accessToken');
       const response = await fetch(`/api/v1/payslips/annual-tax-certificate?taxYear=${taxYear}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        method: 'GET',
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -100,7 +100,7 @@ export function MyPayslipsPage() {
 
   // Compute aggregate stats across available payslips
   const totalNetPaisa = payslips.reduce((sum, s) => sum + (s.netPay || 0), 0);
-  const totalTaxPaisa = payslips.reduce((sum, s) => sum + (s.incomeTax || 0), 0);
+  const totalTaxPaisa = payslips.reduce((sum, s) => sum + (s.taxWithheld || s.incomeTax || 0), 0);
   const avgNetPaisa = payslips.length > 0 ? totalNetPaisa / payslips.length : 0;
 
   return (
