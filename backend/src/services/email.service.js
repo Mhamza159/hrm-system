@@ -26,15 +26,32 @@ class EmailService {
    */
   initTransporter() {
     if (env.SMTP_HOST && env.SMTP_USER) {
-      this.transporter = nodemailer.createTransport({
-        host: env.SMTP_HOST,
-        port: env.SMTP_PORT,
-        secure: env.SMTP_PORT === 465,
-        auth: {
-          user: env.SMTP_USER,
-          pass: env.SMTP_PASS
-        }
-      });
+      const isGmail = env.SMTP_HOST?.includes('gmail') || env.SMTP_USER?.includes('@gmail');
+      const transportConfig = isGmail
+        ? {
+            service: 'gmail',
+            auth: {
+              user: env.SMTP_USER,
+              pass: env.SMTP_PASS
+            },
+            connectionTimeout: 8000,
+            greetingTimeout: 8000,
+            socketTimeout: 10000
+          }
+        : {
+            host: env.SMTP_HOST,
+            port: env.SMTP_PORT,
+            secure: env.SMTP_PORT === 465,
+            auth: {
+              user: env.SMTP_USER,
+              pass: env.SMTP_PASS
+            },
+            connectionTimeout: 8000,
+            greetingTimeout: 8000,
+            socketTimeout: 10000
+          };
+
+      this.transporter = nodemailer.createTransport(transportConfig);
     } else {
       // Development & test mock logger
       this.transporter = {
