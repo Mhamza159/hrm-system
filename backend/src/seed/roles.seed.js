@@ -174,12 +174,16 @@ export const seedRolesAndAdmin = async () => {
     });
     console.log(`✅ Initial Super Admin created: ${adminUser.email} (must change password on first login)`);
   } else {
-    // Ensure Super Admin has the Super Admin role assigned
+    // Ensure Super Admin is active, undeleted, and password matches Admin12345!
+    existingAdmin.passwordHash = await User.hashPassword('Admin12345!');
+    existingAdmin.isActive = true;
+    existingAdmin.isDeleted = false;
+    existingAdmin.mustChangePassword = false;
     if (!existingAdmin.roles.some((r) => r.toString() === seededRoles['Super Admin']._id.toString())) {
       existingAdmin.roles.push(seededRoles['Super Admin']._id);
-      await existingAdmin.save();
     }
-    console.log(`ℹ️ Super Admin account verified: ${existingAdmin.email}`);
+    await existingAdmin.save();
+    console.log(`ℹ️ Super Admin account verified & synced: ${existingAdmin.email}`);
   }
 
   // 3. Ensure Super Admin has an active Employee record for organizational reporting & Org Chart

@@ -16,11 +16,15 @@ import { env } from './config/env.js';
 import { initSocketIO } from './services/socket.service.js';
 import { initAutoAbsentJob } from './modules/attendance/jobs/autoAbsent.job.js';
 import { initYearlyLeaveCron } from './jobs/yearlyLeave.job.js';
+import { seedRolesAndAdmin } from './seed/roles.seed.js';
 
 const startServer = async () => {
   try {
     // 1. Connect to MongoDB
     await connectDB();
+
+    // 2. Ensure Core Roles and Super Admin are seeded in database
+    await seedRolesAndAdmin();
 
     // 2. Wrap Express with standard Node HTTP Server
     const httpServer = http.createServer(app);
