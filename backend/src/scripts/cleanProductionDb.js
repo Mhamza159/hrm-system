@@ -14,8 +14,8 @@ import { Attendance } from '../models/attendance.model.js';
 import { Leave } from '../models/leave.model.js';
 import { LeaveBalance } from '../models/leaveBalance.model.js';
 import { LeaveEncashment } from '../models/leaveEncashment.model.js';
-import { Correction } from '../models/correction.model.js';
-import { WFH } from '../models/wfh.model.js';
+import { AttendanceCorrection } from '../models/correction.model.js';
+import { WFHRequest } from '../models/wfh.model.js';
 import { PayrollRun } from '../models/payrollRun.model.js';
 import { Payslip } from '../models/payslip.model.js';
 import { Notification } from '../models/notification.model.js';
@@ -45,8 +45,8 @@ async function resetDb() {
     Leave.deleteMany({}),
     LeaveBalance.deleteMany({}),
     LeaveEncashment.deleteMany({}),
-    Correction.deleteMany({}),
-    WFH.deleteMany({}),
+    AttendanceCorrection.deleteMany({}),
+    WFHRequest.deleteMany({}),
     PayrollRun.deleteMany({}),
     Payslip.deleteMany({}),
     Notification.deleteMany({}),
