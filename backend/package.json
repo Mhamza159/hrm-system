@@ -9,6 +9,7 @@
     "dev": "nodemon src/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "clean:test-dbs": "node src/scripts/cleanTestDbs.js",
     "seed:roles": "node src/seed/roles.seed.js"
   },
   "dependencies": {

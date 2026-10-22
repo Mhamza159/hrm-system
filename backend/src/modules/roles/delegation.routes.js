@@ -6,7 +6,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { authenticate } from '../../middlewares/authenticate.js';
-import { checkPermission } from '../../middlewares/checkPermission.js';
 import { validate } from '../../middlewares/validate.js';
 import * as delegationController from './delegation.controller.js';
 
@@ -32,8 +31,8 @@ const createDelegationSchema = z.object({
   })
 });
 
-router.get('/', checkPermission('delegation.view'), delegationController.getDelegations);
-router.post('/', checkPermission('delegation.create'), validate(createDelegationSchema), delegationController.createDelegation);
-router.delete('/:id', checkPermission('delegation.cancel'), delegationController.cancelDelegation);
+router.get('/', delegationController.getDelegations);
+router.post('/', validate(createDelegationSchema), delegationController.createDelegation);
+router.delete('/:id', delegationController.cancelDelegation);
 
 export default router;
