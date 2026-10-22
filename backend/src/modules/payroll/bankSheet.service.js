@@ -9,7 +9,7 @@
  */
 
 import ExcelJS from 'exceljs';
-import { ApiError } from '../../utils/apiError.js';
+import { ApiError } from '../../utils/ApiError.js';
 import { PayrollRun } from '../../models/payrollRun.model.js';
 import { Payslip } from '../../models/payslip.model.js';
 

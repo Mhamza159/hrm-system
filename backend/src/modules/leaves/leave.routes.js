@@ -12,7 +12,7 @@ import multer from 'multer';
 import { authenticate } from '../../middlewares/authenticate.js';
 import { checkPermission } from '../../middlewares/checkPermission.js';
 import { validate } from '../../middlewares/validate.js';
-import { ApiError } from '../../utils/apiError.js';
+import { ApiError } from '../../utils/ApiError.js';
 import {
   applyLeaveSchema,
   decideLeaveSchema,

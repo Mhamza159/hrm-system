@@ -16,7 +16,7 @@ import { Attendance } from '../../models/attendance.model.js';
 import { Delegation } from '../../models/delegation.model.js';
 import { LeaveEncashment } from '../../models/leaveEncashment.model.js';
 import { SettingService } from '../settings/setting.service.js';
-import { ApiError } from '../../utils/apiError.js';
+import { ApiError } from '../../utils/ApiError.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { notify } from '../../services/notify.service.js';
 import { checkApprovalLimit } from '../../utils/approvalLimit.js';

@@ -6,7 +6,7 @@
 import mongoose from 'mongoose';
 import { Notification } from '../../models/notification.model.js';
 import { User } from '../../models/user.model.js';
-import { ApiError } from '../../utils/apiError.js';
+import { ApiError } from '../../utils/ApiError.js';
 
 /**
  * Retrieve paginated notifications and unread summary for authenticated user

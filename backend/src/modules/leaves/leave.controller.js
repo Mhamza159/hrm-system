@@ -10,7 +10,7 @@
 import fs from 'fs';
 import path from 'path';
 import { asyncHandler } from '../../utils/asyncHandler.js';
-import { ApiError } from '../../utils/apiError.js';
+import { ApiError } from '../../utils/ApiError.js';
 import { Employee } from '../../models/employee.model.js';
 import { isCloudinaryConfigured, uploadBufferToCloudinary } from '../../config/cloudinary.js';
 import { seedPakistanHolidays } from '../../seed/holidays.seed.js';

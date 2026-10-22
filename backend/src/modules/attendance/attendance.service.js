@@ -16,7 +16,7 @@ import { WFHRequest } from '../../models/wfh.model.js';
 import { AttendanceCorrection } from '../../models/correction.model.js';
 import { Employee } from '../../models/employee.model.js';
 import { Setting } from '../../models/setting.model.js';
-import { ApiError } from '../../utils/apiError.js';
+import { ApiError } from '../../utils/ApiError.js';
 import { evaluateAttendanceStatus, calculateWorkMetrics } from './services/statusEngine.service.js';
 import { emitToCompany, emitToDepartment } from '../../services/socket.service.js';
 import { notify } from '../../services/notify.service.js';

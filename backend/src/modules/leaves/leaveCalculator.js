@@ -10,7 +10,7 @@
 
 import { Holiday } from '../../models/holiday.model.js';
 import { SettingService } from '../settings/setting.service.js';
-import { ApiError } from '../../utils/apiError.js';
+import { ApiError } from '../../utils/ApiError.js';
 import { normalizeToUtcMidnight } from './leave.service.js';
 
 const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];

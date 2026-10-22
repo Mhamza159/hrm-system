@@ -4,7 +4,7 @@
  */
 
 import { AuditLog } from '../../models/auditLog.model.js';
-import { ApiError } from '../../utils/apiError.js';
+import { ApiError } from '../../utils/ApiError.js';
 import dayjs from 'dayjs';
 
 /**
