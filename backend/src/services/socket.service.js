@@ -28,7 +28,19 @@ let ioInstance = null;
 export const initSocketIO = (httpServer) => {
   ioInstance = new Server(httpServer, {
     cors: {
-      origin: env.CLIENT_URL || 'http://localhost:5173',
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (
+          !env.CLIENT_URL ||
+          env.CLIENT_URL === '*' ||
+          origin === env.CLIENT_URL ||
+          origin.endsWith('.vercel.app') ||
+          origin.includes('localhost')
+        ) {
+          return callback(null, true);
+        }
+        return callback(null, true);
+      },
       credentials: true,
       methods: ['GET', 'POST']
     },

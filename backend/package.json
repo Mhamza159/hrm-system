@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "clean:test-dbs": "node src/scripts/cleanTestDbs.js",
+    "clean:prod-db": "node src/scripts/cleanProductionDb.js",
     "seed:roles": "node src/seed/roles.seed.js"
   },
   "dependencies": {
