@@ -820,6 +820,8 @@ export class AuthService {
     const otp = crypto.randomInt(100000, 1000000).toString();
     user.twoFactorOtpHash = await bcrypt.hash(otp, 10);
     user.twoFactorOtpExpires = new Date(Date.now() + 10 * 60 * 1000);
+    await user.save();
+
     const mailResult = await emailService.sendOtpEmail(user.email, otp, 'Two-Factor Authentication Setup');
     if (mailResult && mailResult.success === false) {
       throw new ApiError(500, `Failed to dispatch 2FA email: ${mailResult.error || 'SMTP delivery failure'}`);
