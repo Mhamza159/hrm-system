@@ -58,7 +58,7 @@ const mutex = new Mutex();
 
 // Standard fetchBaseQuery instance
 const baseQuery = fetchBaseQuery({
-  baseUrl: '/api/v1',
+  baseUrl: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   credentials: 'include', // Transmit cookies cross-origin & cross-subdomain
   prepareHeaders: (headers, { getState }) => {
     // 1. Extract short-lived in-memory accessToken from Redux state
