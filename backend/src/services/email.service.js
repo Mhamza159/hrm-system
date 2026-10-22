@@ -73,6 +73,38 @@ class EmailService {
    * @returns {Promise<{ success: boolean, messageId?: string, error?: string }>}
    */
   async sendMail({ to, subject, html, text }) {
+    // 1. If Resend API key is configured, use HTTPS REST API (bypasses all cloud SMTP port blocks)
+    if (env.RESEND_API_KEY) {
+      try {
+        const response = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${env.RESEND_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: env.RESEND_FROM || 'HRM Enterprise <onboarding@resend.dev>',
+            to: Array.isArray(to) ? to : [to],
+            subject,
+            html,
+            text: text || html.replace(/<[^>]+>/g, '')
+          })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          console.error('Resend API error:', data);
+          return { success: false, error: data.message || 'Resend API error' };
+        }
+        console.log(`📧 [RESEND] Dispatched email to ${to} (ID: ${data.id})`);
+        return { success: true, messageId: data.id };
+      } catch (err) {
+        console.error('Resend dispatch failed:', err.message);
+        return { success: false, error: err.message };
+      }
+    }
+
+    // 2. Otherwise fall back to SMTP transporter
     try {
       const info = await this.transporter.sendMail({
         from: env.SMTP_FROM,
