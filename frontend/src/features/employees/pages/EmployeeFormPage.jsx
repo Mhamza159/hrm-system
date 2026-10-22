@@ -60,6 +60,7 @@ const STEPS = [
 export default function EmployeeFormPage() {
   const { id } = useParams();
   const isEditMode = Boolean(id);
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [createdAccountModal, setCreatedAccountModal] = useState(null);
   const [copied, setCopied] = useState(false);
