@@ -73,7 +73,40 @@ class EmailService {
    * @returns {Promise<{ success: boolean, messageId?: string, error?: string }>}
    */
   async sendMail({ to, subject, html, text }) {
-    // 1. If Resend API key is configured, use HTTPS REST API (bypasses all cloud SMTP port blocks)
+    // 1. If Brevo API key is configured, use Brevo HTTPS REST API (allows sending to ANY recipient without domain restriction)
+    if (env.BREVO_API_KEY) {
+      try {
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            accept: 'application/json',
+            'api-key': env.BREVO_API_KEY,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            sender: {
+              name: 'HRM Enterprise',
+              email: env.SMTP_USER || 'mhamzaofficial159@gmail.com'
+            },
+            to: Array.isArray(to) ? to.map((e) => ({ email: e })) : [{ email: to }],
+            subject,
+            htmlContent: html,
+            textContent: text || html.replace(/<[^>]+>/g, '')
+          })
+        });
+
+        const data = await response.json();
+        if (response.ok && data.messageId) {
+          console.log(`📧 [BREVO] Dispatched email to ${to} (ID: ${data.messageId})`);
+          return { success: true, messageId: data.messageId };
+        }
+        console.error('Brevo API error (falling back to Resend/SMTP):', data);
+      } catch (err) {
+        console.error('Brevo dispatch exception (falling back to Resend/SMTP):', err.message);
+      }
+    }
+
+    // 2. If Resend API key is configured, use Resend HTTPS REST API
     if (env.RESEND_API_KEY) {
       try {
         const response = await fetch('https://api.resend.com/emails', {
@@ -92,12 +125,12 @@ class EmailService {
         });
 
         const data = await response.json();
-        if (!response.ok) {
-          console.error('Resend API error:', data);
-          return { success: false, error: data.message || 'Resend API error' };
+        if (response.ok && data.id) {
+          console.log(`📧 [RESEND] Dispatched email to ${to} (ID: ${data.id})`);
+          return { success: true, messageId: data.id };
         }
-        console.log(`📧 [RESEND] Dispatched email to ${to} (ID: ${data.id})`);
-        return { success: true, messageId: data.id };
+        console.error('Resend API error:', data);
+        return { success: false, error: data.message || 'Resend API error' };
       } catch (err) {
         console.error('Resend dispatch failed:', err.message);
         return { success: false, error: err.message };

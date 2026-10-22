@@ -236,7 +236,11 @@ export const createEmployee = async (payload, actor) => {
     after: employee.toObject()
   });
 
-  return decryptEmployeeFields(employee);
+  const decrypted = decryptEmployeeFields(employee);
+  if (tempPassword) {
+    decrypted.tempPassword = tempPassword;
+  }
+  return decrypted;
 };
 
 /**

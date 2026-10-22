@@ -27,7 +27,9 @@ import {
   ArrowLeft,
   CheckCircle2,
   AlertTriangle,
-  Loader2
+  Loader2,
+  Copy,
+  Check
 } from 'lucide-react';
 
 import {
@@ -58,8 +60,9 @@ const STEPS = [
 export default function EmployeeFormPage() {
   const { id } = useParams();
   const isEditMode = Boolean(id);
-  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const [createdAccountModal, setCreatedAccountModal] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   // API hooks
   const {
@@ -358,12 +361,21 @@ export default function EmployeeFormPage() {
         navigate(`/employees/${id}`);
       } else {
         const res = await createEmployee(payload).unwrap();
-        toast.success(
-          formData.createAccount
-            ? 'Employee onboarded and login credentials sent via email!'
-            : 'Employee registered successfully!'
-        );
-        navigate(`/employees/${res?.data?._id || ''}`);
+        if (formData.createAccount && res?.data?.tempPassword) {
+          setCreatedAccountModal({
+            name: formData.name,
+            email: formData.email,
+            tempPassword: res.data.tempPassword,
+            employeeId: res?.data?._id || ''
+          });
+        } else {
+          toast.success(
+            formData.createAccount
+              ? 'Employee onboarded and login credentials sent via email!'
+              : 'Employee registered successfully!'
+          );
+          navigate(`/employees/${res?.data?._id || ''}`);
+        }
       }
     } catch (err) {
       toast.error(err?.data?.message || err?.message || 'Failed to save employee profile');
@@ -1059,6 +1071,59 @@ export default function EmployeeFormPage() {
           )}
         </div>
       </form>
+
+      {/* Onboarding Credentials Modal */}
+      {createdAccountModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
+          <div className="bg-[#0B261D] border border-emerald-500/30 rounded-2xl p-6 max-w-md w-full shadow-2xl text-white space-y-4">
+            <div className="flex items-center gap-3 text-emerald-400">
+              <CheckCircle2 className="w-6 h-6 shrink-0" />
+              <h3 className="text-lg font-bold">Employee Onboarded!</h3>
+            </div>
+            <p className="text-xs text-white/70">
+              Account credentials for <strong className="text-white">{createdAccountModal.name}</strong> have been created:
+            </p>
+            <div className="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-3 text-xs">
+              <div>
+                <span className="text-white/50 block text-[11px] mb-0.5">Login Email:</span>
+                <span className="font-semibold text-emerald-300 font-mono select-all text-sm block">
+                  {createdAccountModal.email}
+                </span>
+              </div>
+              <div>
+                <span className="text-white/50 block text-[11px] mb-0.5">Temporary Password:</span>
+                <div className="flex items-center justify-between mt-1 gap-2">
+                  <span className="font-semibold text-white font-mono bg-black/40 px-3 py-1.5 rounded-lg select-all text-sm truncate">
+                    {createdAccountModal.tempPassword}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(createdAccountModal.tempPassword);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    className="px-3 py-1.5 bg-[#00C471]/20 hover:bg-[#00C471]/30 text-emerald-400 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                  >
+                    {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied ? 'Copied!' : 'Copy'}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p className="text-[11px] text-white/50 leading-relaxed">
+              Login credentials have also been dispatched to the employee's email.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate(`/employees/${createdAccountModal.employeeId}`)}
+              className="w-full py-2.5 bg-[#00C471] hover:bg-emerald-400 text-white font-semibold rounded-xl text-sm transition-all shadow-[0_2px_10px_rgba(0,196,113,0.3)] cursor-pointer"
+            >
+              Done & View Profile
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
