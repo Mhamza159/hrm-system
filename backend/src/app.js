@@ -58,6 +58,7 @@ import { sanitize } from './middlewares/sanitize.js';
 import { apiLimiter, authLimiter } from './middlewares/rateLimiter.js';
 
 const app = express();
+app.set('trust proxy', 1);
 
 // 1. Security Headers via Helmet
 app.use(

@@ -26,14 +26,23 @@ export const apiLimiter = rateLimit({
 });
 
 /**
- * Strict authentication route limiter: 10 requests per 15 minutes per IP
+ * Authentication route limiter: 100 requests per 15 minutes per IP.
+ * Exempts non-brute-force endpoints like session refresh (/refresh) and /me.
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: process.env.NODE_ENV === 'development' ? 50 : 10,
+  limit: process.env.NODE_ENV === 'test' ? 1000 : 100,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
-  skip: (req) => process.env.NODE_ENV === 'test' && !req.headers['x-test-ratelimit'],
+  skip: (req) => {
+    if (process.env.NODE_ENV === 'test' && !req.headers['x-test-ratelimit']) return true;
+    // Skip rate limiting for silent session maintenance so regular app usage never causes lockouts
+    const cleanPath = req.path || '';
+    if (cleanPath.endsWith('/refresh') || cleanPath.endsWith('/me') || cleanPath.endsWith('/logout')) {
+      return true;
+    }
+    return false;
+  },
   message: {
     success: false,
     message: 'Too many authentication attempts, please try again after 15 minutes.'
