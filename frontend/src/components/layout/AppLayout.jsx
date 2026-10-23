@@ -14,6 +14,7 @@ import { Sidebar } from './Sidebar.jsx';
 import { Topbar } from './Topbar.jsx';
 import { useIdleTimer } from '../../hooks/useIdleTimer.js';
 import { AbilityProvider } from '../../lib/ability.js';
+import { ErrorBoundary } from '../common/ErrorBoundary.jsx';
 
 export function AppLayout() {
   // Activate automatic 30-minute inactivity auto-logout (Slice 1.11)
@@ -38,7 +39,9 @@ export function AppLayout() {
           {/* Scrollable Active Route Viewport */}
           <main className="flex-1 overflow-y-auto p-6 lg:p-8 bg-[#F8FAFC] dark:bg-[#0A110D]">
             <div className="max-w-[1600px] mx-auto space-y-6">
-              <Outlet />
+              <ErrorBoundary>
+                <Outlet />
+              </ErrorBoundary>
             </div>
           </main>
         </div>

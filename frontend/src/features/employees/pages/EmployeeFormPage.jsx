@@ -113,8 +113,12 @@ export default function EmployeeFormPage() {
   const shifts = shiftData?.data || [];
   const managers = staffData?.data?.items || [];
   const roles = useMemo(() => {
-    const list = rolesData?.data?.roles || rolesData?.data || [];
-    return list.filter((r) => r.name !== 'Super Admin');
+    const list = Array.isArray(rolesData?.data?.roles)
+      ? rolesData.data.roles
+      : Array.isArray(rolesData?.data)
+      ? rolesData.data
+      : [];
+    return list.filter((r) => r?.name && r.name !== 'Super Admin');
   }, [rolesData]);
 
   const {
@@ -232,9 +236,9 @@ export default function EmployeeFormPage() {
       }
 
       // c) Management Roles: Super Admin, HR Manager, Department Manager
-      const userRoles = mgr.userId?.roles || [];
+      const userRoles = Array.isArray(mgr.userId?.roles) ? mgr.userId.roles : [];
       const hasManagerRole = userRoles.some((r) => {
-        const roleName = typeof r === 'string' ? r : r.name;
+        const roleName = typeof r === 'string' ? r : r?.name;
         return ['Super Admin', 'HR Manager', 'Department Manager'].includes(roleName);
       });
       if (hasManagerRole) {
