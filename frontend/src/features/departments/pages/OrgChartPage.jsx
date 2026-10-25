@@ -223,16 +223,16 @@ export const OrgChartPage = () => {
       </div>
 
       {/* Interactive Controls Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-slate-900/80 border border-slate-800 shadow-md">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-3.5 rounded-2xl bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] shadow-xs">
         {/* Search */}
         <form onSubmit={handleSearchSubmit} className="relative flex-1 min-w-[240px] max-w-md">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search by name, code, role, or department..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs bg-slate-950 border border-slate-700/80 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500/80 transition-colors"
+            className="w-full pl-9 pr-3.5 py-2 text-xs bg-slate-50 dark:bg-[#0A110D] border border-slate-200 dark:border-[#1A3125] rounded-xl text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471] transition-all"
           />
         </form>
 
@@ -243,8 +243,8 @@ export const OrgChartPage = () => {
             onClick={() => setSelectedDept('ALL')}
             className={`px-3 py-1.5 text-xs rounded-full font-semibold transition-all shrink-0 cursor-pointer ${
               selectedDept === 'ALL'
-                ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                ? 'bg-[#00C471] text-white shadow-xs'
+                : 'bg-slate-100 dark:bg-[#162820] text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-[#1F382D] border border-transparent dark:border-[#1A3125]/60'
             }`}
           >
             All Departments
@@ -256,8 +256,8 @@ export const OrgChartPage = () => {
               onClick={() => setSelectedDept(dept)}
               className={`px-3 py-1.5 text-xs rounded-full font-semibold transition-all shrink-0 cursor-pointer ${
                 selectedDept === dept
-                  ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  ? 'bg-[#00C471] text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-[#162820] text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-[#1F382D] border border-transparent dark:border-[#1A3125]/60'
               }`}
             >
               {dept}
@@ -268,7 +268,7 @@ export const OrgChartPage = () => {
             onClick={handleRefresh}
             disabled={isFetching}
             title="Reload latest organizational chart data"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition-all shrink-0 cursor-pointer disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full font-semibold bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/40 transition-all shrink-0 cursor-pointer disabled:opacity-50 shadow-2xs"
           >
             <RefreshCw className={`w-3 h-3 ${isFetching ? 'animate-spin' : ''}`} />
             <span>{isFetching ? 'Reloading...' : 'Reload Chart'}</span>
@@ -276,42 +276,42 @@ export const OrgChartPage = () => {
         </div>
 
         {/* Zoom & Canvas Toolset */}
-        <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-lg p-1 shrink-0">
+        <div className="flex items-center gap-1 bg-slate-50 dark:bg-[#0A110D] border border-slate-200 dark:border-[#1A3125] rounded-xl p-1 shrink-0">
           <button
             type="button"
             onClick={handleRefresh}
             disabled={isFetching}
             title={isFetching ? 'Reloading Org Chart...' : 'Reload Org Chart Data'}
-            className="p-1.5 text-slate-400 hover:text-emerald-400 rounded hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50"
+            className="p-1.5 text-slate-500 hover:text-[#00C471] dark:text-slate-400 dark:hover:text-[#00C471] rounded-lg hover:bg-white dark:hover:bg-[#162820] transition-colors cursor-pointer disabled:opacity-50"
           >
-            <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin text-emerald-400' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin text-[#00C471]' : ''}`} />
           </button>
-          <div className="w-px h-4 bg-slate-800 mx-0.5" />
+          <div className="w-px h-4 bg-slate-200 dark:bg-[#1A3125] mx-0.5" />
           <button
             type="button"
             onClick={handleZoomIn}
             title="Zoom In"
-            className="p-1.5 text-slate-400 hover:text-slate-100 rounded hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 rounded-lg hover:bg-white dark:hover:bg-[#162820] transition-colors cursor-pointer"
           >
             <ZoomIn className="w-4 h-4" />
           </button>
-          <span className="text-[11px] font-mono font-medium text-slate-400 px-1.5 min-w-[3rem] text-center select-none">
+          <span className="text-[11px] font-mono font-semibold text-slate-600 dark:text-slate-300 px-1.5 min-w-[3rem] text-center select-none">
             {Math.round(zoom * 100)}%
           </span>
           <button
             type="button"
             onClick={handleZoomOut}
             title="Zoom Out"
-            className="p-1.5 text-slate-400 hover:text-slate-100 rounded hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 rounded-lg hover:bg-white dark:hover:bg-[#162820] transition-colors cursor-pointer"
           >
             <ZoomOut className="w-4 h-4" />
           </button>
-          <div className="w-px h-4 bg-slate-800 mx-0.5" />
+          <div className="w-px h-4 bg-slate-200 dark:bg-[#1A3125] mx-0.5" />
           <button
             type="button"
             onClick={handleResetZoom}
             title="Reset to 100%"
-            className="p-1.5 text-slate-400 hover:text-slate-100 rounded hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 rounded-lg hover:bg-white dark:hover:bg-[#162820] transition-colors cursor-pointer"
           >
             <RotateCcw className="w-4 h-4" />
           </button>
@@ -319,7 +319,7 @@ export const OrgChartPage = () => {
             type="button"
             onClick={toggleFullscreen}
             title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-            className="p-1.5 text-slate-400 hover:text-slate-100 rounded hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 rounded-lg hover:bg-white dark:hover:bg-[#162820] transition-colors cursor-pointer"
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
@@ -329,23 +329,27 @@ export const OrgChartPage = () => {
       {/* Org Chart Interactive Canvas */}
       <div
         ref={canvasRef}
-        className={`relative overflow-auto rounded-2xl border border-slate-800 bg-[#061A14]/95 p-8 shadow-inner min-h-[620px] flex items-start justify-center ${
-          isFullscreen ? 'h-screen w-screen p-12 bg-[#061A14]' : ''
+        className={`relative overflow-auto rounded-2xl border border-slate-200 dark:border-[#1A3125] bg-slate-50/70 dark:bg-[#061A14]/95 p-8 shadow-xs min-h-[620px] flex items-start justify-center text-slate-300/40 dark:text-emerald-950/40 ${
+          isFullscreen ? 'h-screen w-screen p-12 bg-slate-50 dark:bg-[#061A14]' : ''
         }`}
+        style={{
+          backgroundImage: 'radial-gradient(currentColor 1.25px, transparent 1.25px)',
+          backgroundSize: '24px 24px'
+        }}
       >
         {isLoading && (
-          <div className="flex flex-col items-center justify-center my-32 text-slate-400">
-            <div className="w-10 h-10 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4" />
+          <div className="flex flex-col items-center justify-center my-32 text-slate-500 dark:text-slate-400">
+            <div className="w-10 h-10 border-2 border-[#00C471] border-t-transparent rounded-full animate-spin mb-4" />
             <p className="text-sm font-medium">Building organizational hierarchy graph...</p>
           </div>
         )}
 
         {isError && (
-          <div className="flex flex-col items-center justify-center my-32 text-rose-400">
+          <div className="flex flex-col items-center justify-center my-32 text-rose-500 dark:text-rose-400">
             <p className="text-sm font-semibold">Failed to load organizational structure.</p>
             <button
               onClick={() => refetch()}
-              className="mt-3 px-3.5 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors"
+              className="mt-3 px-3.5 py-1.5 text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg transition-colors cursor-pointer shadow-2xs"
             >
               Retry
             </button>
@@ -353,10 +357,10 @@ export const OrgChartPage = () => {
         )}
 
         {!isLoading && !isError && tree.length === 0 && (
-          <div className="flex flex-col items-center justify-center my-32 text-slate-500">
-            <Users className="w-12 h-12 stroke-1 mb-3 text-slate-600" />
-            <p className="text-sm font-medium text-slate-400">No organizational hierarchy records found.</p>
-            <p className="text-xs text-slate-600 mt-1">
+          <div className="flex flex-col items-center justify-center my-32 text-slate-400 dark:text-slate-500">
+            <Users className="w-12 h-12 stroke-1 mb-3 text-slate-400 dark:text-slate-600" />
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-300">No organizational hierarchy records found.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
               Add employees and assign reporting managers to populate the chart.
             </p>
           </div>
@@ -390,20 +394,20 @@ export const OrgChartPage = () => {
 
       {/* Interactive Employee Detail Modal / Drawer */}
       {selectedEmployee && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-lg bg-[#0E1713] border border-slate-700/80 rounded-2xl p-6 shadow-2xl text-slate-100 space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 dark:bg-black/75 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="relative w-full max-w-lg bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-6 shadow-2xl text-slate-800 dark:text-slate-100 space-y-5">
             {/* Modal Header */}
-            <div className="flex items-start justify-between pb-3 border-b border-slate-800">
+            <div className="flex items-start justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-3">
                 <div className="relative shrink-0">
                   {selectedEmployee.avatar ? (
                     <img
                       src={selectedEmployee.avatar}
                       alt={selectedEmployee.name}
-                      className="w-14 h-14 rounded-full object-cover ring-2 ring-emerald-500 shadow-md"
+                      className="w-14 h-14 rounded-full object-cover ring-2 ring-[#00C471] shadow-sm"
                     />
                   ) : (
-                    <div className="w-14 h-14 rounded-full bg-emerald-600 text-slate-950 font-bold flex items-center justify-center text-lg shadow-md ring-2 ring-emerald-400/40">
+                    <div className="w-14 h-14 rounded-full bg-[#00C471] text-white font-bold flex items-center justify-center text-lg shadow-sm ring-2 ring-[#00C471]/30">
                       {selectedEmployee.name
                         ? selectedEmployee.name
                             .split(' ')
@@ -413,20 +417,20 @@ export const OrgChartPage = () => {
                         : 'EM'}
                     </div>
                   )}
-                  <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-[#0E1713] rounded-full" />
+                  <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-[#111D17] rounded-full" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-base font-bold text-white">{selectedEmployee.name}</h3>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 border border-slate-700 font-semibold text-slate-300">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{selectedEmployee.name}</h3>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold text-slate-700 dark:text-slate-300">
                       {selectedEmployee.employeeCode}
                     </span>
                   </div>
-                  <p className="text-xs text-emerald-400 font-medium flex items-center gap-1.5 mt-0.5">
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5 mt-0.5">
                     <Briefcase className="w-3.5 h-3.5" />
                     <span>{selectedEmployee.designation}</span>
                   </p>
-                  <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
                     <Building className="w-3.5 h-3.5" />
                     <span>{selectedEmployee.department}</span>
                   </p>
@@ -436,7 +440,7 @@ export const OrgChartPage = () => {
               <button
                 type="button"
                 onClick={() => setSelectedEmployee(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -444,17 +448,17 @@ export const OrgChartPage = () => {
 
             {/* Quick Details Grid */}
             <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                <span className="text-slate-400 font-medium">Work Email</span>
-                <p className="text-slate-200 font-mono truncate flex items-center gap-1.5">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-1">
+                <span className="text-slate-400 dark:text-slate-500 font-medium">Work Email</span>
+                <p className="text-slate-800 dark:text-slate-200 font-mono truncate flex items-center gap-1.5">
                   <Mail className="w-3.5 h-3.5 text-slate-400" />
                   <span className="truncate">{selectedEmployee.email || 'N/A'}</span>
                 </p>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
-                <span className="text-slate-400 font-medium">Phone Number</span>
-                <p className="text-slate-200 font-mono truncate flex items-center gap-1.5">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-1">
+                <span className="text-slate-400 dark:text-slate-500 font-medium">Phone Number</span>
+                <p className="text-slate-800 dark:text-slate-200 font-mono truncate flex items-center gap-1.5">
                   <Phone className="w-3.5 h-3.5 text-slate-400" />
                   <span>{selectedEmployee.phone || 'N/A'}</span>
                 </p>
@@ -462,23 +466,23 @@ export const OrgChartPage = () => {
             </div>
 
             {/* Reporting Hierarchy Summary */}
-            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2 text-xs">
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-2 text-xs">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-slate-300 flex items-center gap-1.5">
-                  <UserCheck className="w-4 h-4 text-emerald-400" />
+                <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <UserCheck className="w-4 h-4 text-[#00C471]" />
                   Reports To:
                 </span>
-                <span className="text-slate-200 font-medium">
+                <span className="text-slate-800 dark:text-slate-200 font-medium">
                   {selectedEmployee.managerName ? (
-                    <span className="text-emerald-300 font-semibold">{selectedEmployee.managerName}</span>
+                    <span className="text-emerald-700 dark:text-emerald-300 font-semibold">{selectedEmployee.managerName}</span>
                   ) : (
-                    <span className="text-amber-400 font-semibold">Chief Executive Officer (Root)</span>
+                    <span className="text-amber-600 dark:text-amber-400 font-semibold">Chief Executive Officer (Root)</span>
                   )}
                 </span>
               </div>
 
               {selectedEmployee.managerDesignation && (
-                <p className="text-[11px] text-slate-400 text-right">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 text-right">
                   {selectedEmployee.managerDesignation}
                 </p>
               )}
@@ -487,9 +491,9 @@ export const OrgChartPage = () => {
             {/* Direct Subordinates List */}
             {selectedEmployee.children && selectedEmployee.children.length > 0 && (
               <div className="space-y-2">
-                <h4 className="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                <h4 className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                   <span>Direct Subordinates</span>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px]">
+                  <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[10px] font-semibold">
                     {selectedEmployee.children.length} Reports
                   </span>
                 </h4>
@@ -501,22 +505,22 @@ export const OrgChartPage = () => {
                         setSelectedEmployee(child);
                         handleFocusNode(child.id);
                       }}
-                      className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800/80 hover:border-emerald-500/50 flex items-center justify-between cursor-pointer transition-all hover:bg-slate-800"
+                      className="p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 dark:bg-slate-900/90 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800/80 hover:border-emerald-500/50 flex items-center justify-between cursor-pointer transition-all"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         {child.avatar ? (
                           <img src={child.avatar} alt={child.name} className="w-7 h-7 rounded-full object-cover" />
                         ) : (
-                          <div className="w-7 h-7 rounded-full bg-slate-800 text-slate-200 flex items-center justify-center text-[10px] font-bold">
+                          <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center text-[10px] font-bold">
                             {child.name.slice(0, 2).toUpperCase()}
                           </div>
                         )}
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold text-slate-200 truncate">{child.name}</p>
-                          <p className="text-[10px] text-slate-400 truncate">{child.designation}</p>
+                          <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{child.name}</p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{child.designation}</p>
                         </div>
                       </div>
-                      <ChevronRight className="w-4 h-4 text-slate-500 shrink-0" />
+                      <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
                     </div>
                   ))}
                 </div>
@@ -524,16 +528,16 @@ export const OrgChartPage = () => {
             )}
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => {
                   handleFocusNode(selectedEmployee.id);
                   setSelectedEmployee(null);
                 }}
-                className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors"
+                className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
               >
-                <Crosshair className="w-4 h-4 text-emerald-400" />
+                <Crosshair className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 Focus in Tree
               </button>
 
@@ -546,7 +550,7 @@ export const OrgChartPage = () => {
                     navigate(`/employees/${selectedEmployee.id}`);
                   }
                 }}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold transition-all shadow-md shadow-emerald-950"
+                className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-[#00C471] hover:bg-[#049856] text-white font-semibold transition-all shadow-xs cursor-pointer"
               >
                 <span>View Full Profile</span>
                 <ExternalLink className="w-3.5 h-3.5" />
