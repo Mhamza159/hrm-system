@@ -6,9 +6,9 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
 
-export function PageHeader({ title, description, subtitle, actions = null, action = null }) {
+export function PageHeader({ title, description, subtitle, actions = null, action = null, children = null }) {
   const displayDesc = description || subtitle;
-  const displayActions = actions || action;
+  const displayActions = actions || action || children;
   const [timeStr, setTimeStr] = useState('');
   const [dateStr, setDateStr] = useState('');
 

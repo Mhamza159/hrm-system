@@ -33,8 +33,10 @@ import {
   Phone,
   ExternalLink,
   ChevronRight,
-  UserCheck
+  UserCheck,
+  RefreshCw
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useGetOrgChartQuery } from '../departmentsApi.js';
 import { OrgChartNode } from '../components/OrgChartNode.jsx';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
@@ -42,7 +44,7 @@ import { StatCard } from '../../../components/common/StatCard.jsx';
 
 export const OrgChartPage = () => {
   const navigate = useNavigate();
-  const { data, isLoading, isError, refetch } = useGetOrgChartQuery();
+  const { data, isLoading, isFetching, isError, refetch } = useGetOrgChartQuery();
   const [zoom, setZoom] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDept, setSelectedDept] = useState('ALL');
@@ -50,6 +52,20 @@ export const OrgChartPage = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const canvasRef = useRef(null);
+
+  // Manual data reload handler
+  const handleRefresh = async () => {
+    try {
+      const res = await refetch();
+      if (res?.error) {
+        toast.error('Failed to reload organizational chart');
+      } else {
+        toast.success('Org chart reloaded successfully');
+      }
+    } catch {
+      toast.error('Network error while reloading');
+    }
+  };
 
   const orgData = data?.data || { tree: [], reportingChain: [], totalNodes: 0 };
   const { tree = [], reportingChain = [], totalNodes = 0 } = orgData;
@@ -154,20 +170,32 @@ export const OrgChartPage = () => {
       <PageHeader
         title="Organizational Chart"
         subtitle="Explore interactive company hierarchy, reporting lines, and team structures."
-      >
-        <div className="flex items-center gap-2">
-          {findMyNodeId && (
+        actions={
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={handleFindMyPosition}
-              className="flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/25 transition-all shadow-sm shadow-emerald-950"
+              onClick={handleRefresh}
+              disabled={isFetching}
+              title="Reload organizational structure from database"
+              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#15241C] shadow-xs transition-all cursor-pointer disabled:opacity-60"
             >
-              <Crosshair className="w-4 h-4 text-emerald-400" />
-              Find My Position
+              <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin text-emerald-500' : 'text-slate-400'}`} />
+              <span>{isFetching ? 'Refreshing...' : 'Refresh'}</span>
             </button>
-          )}
-        </div>
-      </PageHeader>
+
+            {findMyNodeId && (
+              <button
+                type="button"
+                onClick={handleFindMyPosition}
+                className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/25 transition-all shadow-sm shadow-emerald-950 cursor-pointer"
+              >
+                <Crosshair className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Find My Position</span>
+              </button>
+            )}
+          </div>
+        }
+      />
 
       {/* Overview Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -213,7 +241,7 @@ export const OrgChartPage = () => {
           <button
             type="button"
             onClick={() => setSelectedDept('ALL')}
-            className={`px-3 py-1.5 text-xs rounded-full font-semibold transition-all shrink-0 ${
+            className={`px-3 py-1.5 text-xs rounded-full font-semibold transition-all shrink-0 cursor-pointer ${
               selectedDept === 'ALL'
                 ? 'bg-emerald-500 text-slate-950 shadow-sm'
                 : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
@@ -226,7 +254,7 @@ export const OrgChartPage = () => {
               key={dept}
               type="button"
               onClick={() => setSelectedDept(dept)}
-              className={`px-3 py-1.5 text-xs rounded-full font-semibold transition-all shrink-0 ${
+              className={`px-3 py-1.5 text-xs rounded-full font-semibold transition-all shrink-0 cursor-pointer ${
                 selectedDept === dept
                   ? 'bg-emerald-500 text-slate-950 shadow-sm'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
@@ -235,15 +263,35 @@ export const OrgChartPage = () => {
               {dept}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isFetching}
+            title="Reload latest organizational chart data"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-full font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 transition-all shrink-0 cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3 h-3 ${isFetching ? 'animate-spin' : ''}`} />
+            <span>{isFetching ? 'Reloading...' : 'Reload Chart'}</span>
+          </button>
         </div>
 
         {/* Zoom & Canvas Toolset */}
         <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-lg p-1 shrink-0">
           <button
             type="button"
+            onClick={handleRefresh}
+            disabled={isFetching}
+            title={isFetching ? 'Reloading Org Chart...' : 'Reload Org Chart Data'}
+            className="p-1.5 text-slate-400 hover:text-emerald-400 rounded hover:bg-slate-800 transition-colors cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin text-emerald-400' : ''}`} />
+          </button>
+          <div className="w-px h-4 bg-slate-800 mx-0.5" />
+          <button
+            type="button"
             onClick={handleZoomIn}
             title="Zoom In"
-            className="p-1.5 text-slate-400 hover:text-slate-100 rounded hover:bg-slate-800 transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-100 rounded hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <ZoomIn className="w-4 h-4" />
           </button>
@@ -254,7 +302,7 @@ export const OrgChartPage = () => {
             type="button"
             onClick={handleZoomOut}
             title="Zoom Out"
-            className="p-1.5 text-slate-400 hover:text-slate-100 rounded hover:bg-slate-800 transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-100 rounded hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <ZoomOut className="w-4 h-4" />
           </button>
@@ -263,7 +311,7 @@ export const OrgChartPage = () => {
             type="button"
             onClick={handleResetZoom}
             title="Reset to 100%"
-            className="p-1.5 text-slate-400 hover:text-slate-100 rounded hover:bg-slate-800 transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-100 rounded hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <RotateCcw className="w-4 h-4" />
           </button>
@@ -271,7 +319,7 @@ export const OrgChartPage = () => {
             type="button"
             onClick={toggleFullscreen}
             title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-            className="p-1.5 text-slate-400 hover:text-slate-100 rounded hover:bg-slate-800 transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-100 rounded hover:bg-slate-800 transition-colors cursor-pointer"
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
