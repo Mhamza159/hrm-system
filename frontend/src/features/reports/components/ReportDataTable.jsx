@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { ChevronLeft, ChevronRight, FileSpreadsheet } from 'lucide-react';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 
 export function ReportDataTable({
   columns = [],
@@ -23,9 +24,8 @@ export function ReportDataTable({
 
   if (isLoading) {
     return (
-      <div className="py-24 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center space-y-3">
-        <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs text-slate-500 font-medium">Aggregating report records...</p>
+      <div className="bg-white dark:bg-[#111D17] rounded-2xl border border-slate-200 dark:border-[#1A3125] p-4 shadow-xs">
+        <ScreenSkeleton variant="table" title="Generating Analytics Report" message="Aggregating records and compiling analytical statistics from database..." rows={6} />
       </div>
     );
   }

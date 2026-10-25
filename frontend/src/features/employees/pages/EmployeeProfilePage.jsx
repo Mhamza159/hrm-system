@@ -41,6 +41,7 @@ import { Card } from '../../../components/common/Card.jsx';
 import { StatusBadge } from '../../../components/common/StatusBadge.jsx';
 import { ConfirmDialog } from '../../../components/common/ConfirmDialog.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { ProfileOverviewTab } from '../components/ProfileOverviewTab.jsx';
 import { ProfileDocumentsTab } from '../components/ProfileDocumentsTab.jsx';
 import { ProfileHistoryTab } from '../components/ProfileHistoryTab.jsx';
@@ -146,11 +147,7 @@ export default function EmployeeProfilePage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#00C471]" />
-      </div>
-    );
+    return <ScreenSkeleton variant="profile" title="Employee Profile Data" message="Loading employee personal records, hierarchy & vault..." />;
   }
 
   if (error || !employee) {
@@ -189,14 +186,14 @@ export default function EmployeeProfilePage() {
       <button
         type="button"
         onClick={() => (isTargetSuperAdmin ? navigate('/me') : navigate('/employees'))}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
       >
         <ArrowLeft className="w-4 h-4" />{' '}
         {isTargetSuperAdmin ? 'Back to My Profile' : 'Back to Employee Directory'}
       </button>
 
       {/* Header Profile Hero Card */}
-      <Card className="p-6 border-slate-200">
+      <Card className="p-6 border-slate-200 dark:border-[#1A3125] shadow-xs">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="relative shrink-0 group">
@@ -223,7 +220,7 @@ export default function EmployeeProfilePage() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gradient-to-tr from-[#061A14] to-[#0C2A20] text-[#00C471] font-bold text-xl flex items-center justify-center">
+                  <div className="w-full h-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/60 font-bold text-xl flex items-center justify-center">
                     {initials}
                   </div>
                 )}
@@ -250,25 +247,25 @@ export default function EmployeeProfilePage() {
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-2.5 flex-wrap">
-                <h2 className="text-lg font-bold text-slate-900">{employee.name}</h2>
-                <span className="font-mono text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">{employee.name}</h2>
+                <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-[#0A110D] px-2.5 py-0.5 rounded-md border border-slate-200 dark:border-[#1A3125]">
                   {employee.employeeCode}
                 </span>
                 <StatusBadge status={employee.status} />
               </div>
-              <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
-                <span className="inline-flex items-center gap-1 text-slate-700 font-medium">
-                  <Briefcase className="w-3.5 h-3.5 text-slate-400" />
+              <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                <span className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 font-medium">
+                  <Briefcase className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                   {employee.designationId?.title || 'Designation Unassigned'}
                   {employee.designationId?.grade && ` (${employee.designationId.grade})`}
                 </span>
-                <span>•</span>
-                <span className="inline-flex items-center gap-1 text-slate-700 font-medium">
-                  <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-slate-300 dark:text-slate-600">•</span>
+                <span className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 font-medium">
+                  <Building2 className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                   {employee.departmentId?.name || 'Department Unassigned'}
                 </span>
-                <span>•</span>
-                <span>{employee.email || '—'}</span>
+                <span className="text-slate-300 dark:text-slate-600">•</span>
+                <span className="text-slate-600 dark:text-slate-400">{employee.email || '—'}</span>
               </div>
             </div>
           </div>
@@ -279,7 +276,7 @@ export default function EmployeeProfilePage() {
               <button
                 type="button"
                 onClick={() => setIsStatusModalOpen(true)}
-                className="px-3.5 py-2 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] hover:bg-slate-50 dark:hover:bg-[#15241C] text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
               >
                 Change Status
               </button>
@@ -287,7 +284,7 @@ export default function EmployeeProfilePage() {
               <button
                 type="button"
                 onClick={() => navigate(`/employees/${id}/edit`)}
-                className="px-3.5 py-2 rounded-xl bg-[#00C471] hover:bg-[#049856] text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                className="px-3.5 py-2 rounded-xl bg-[#00C471] hover:bg-[#00ad64] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
               >
                 <Edit className="w-3.5 h-3.5" /> Edit Profile
               </button>
@@ -299,7 +296,7 @@ export default function EmployeeProfilePage() {
                   type="button"
                   disabled={isResettingPassword}
                   onClick={() => setIsResetConfirmOpen(true)}
-                  className="px-3.5 py-2 rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/20 hover:bg-amber-100/70 text-amber-800 dark:text-amber-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/20 hover:bg-amber-100/70 text-amber-800 dark:text-amber-300 text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
                   title="Generate and dispatch new temporary password via email"
                 >
                   <KeyRound className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
@@ -312,7 +309,7 @@ export default function EmployeeProfilePage() {
               <button
                 type="button"
                 onClick={() => setIsArchiveConfirmOpen(true)}
-                className="p-2 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                className="p-2 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/60 dark:bg-rose-950/20 hover:bg-rose-100/70 text-rose-600 dark:text-rose-400 shadow-2xs transition-colors cursor-pointer"
                 title="Archive Employee"
               >
                 <Trash2 className="w-4 h-4" />
@@ -322,7 +319,7 @@ export default function EmployeeProfilePage() {
         </div>
 
         {/* Tab Header Navigation */}
-        <div className="flex items-center gap-1 border-t border-slate-100 mt-6 pt-2 overflow-x-auto">
+        <div className="flex items-center gap-1 border-t border-slate-100 dark:border-[#1A3125] mt-6 pt-3 overflow-x-auto">
           {[
             { id: 'overview', label: 'Overview', icon: User },
             { id: 'leaves', label: 'Leaves & Quota', icon: Calendar },
@@ -343,8 +340,8 @@ export default function EmployeeProfilePage() {
                 className={cn(
                   'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border',
                   isActive
-                    ? 'bg-[#00C471]/10 text-[#00C471] border-[#00C471]/30 font-bold shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50 border-transparent'
+                    ? 'bg-[#00C471]/10 text-[#00C471] dark:bg-[#00C471]/15 dark:text-[#00C471] border-[#00C471]/30 font-bold shadow-2xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.04] border-transparent'
                 )}
               >
                 <Icon className="w-4 h-4" />
@@ -353,7 +350,9 @@ export default function EmployeeProfilePage() {
                   <span
                     className={cn(
                       'px-1.5 py-0.2 rounded-full text-[10px] font-mono',
-                      isActive ? 'bg-[#00C471] text-white' : 'bg-slate-100 text-slate-600'
+                      isActive
+                        ? 'bg-[#00C471] text-white'
+                        : 'bg-slate-100 dark:bg-[#162820] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-[#1A3125]'
                     )}
                   >
                     {tab.count}

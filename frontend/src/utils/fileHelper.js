@@ -16,14 +16,15 @@
 export async function openSecureFile(fileUrl) {
   if (!fileUrl) return;
 
-  // External CDN links can be opened directly
-  if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
-    window.open(fileUrl, '_blank', 'noopener,noreferrer');
-    return;
+  // Open a blank tab synchronously to prevent browser popup blockers from blocking async navigation
+  let targetWindow = null;
+  try {
+    targetWindow = window.open('about:blank', '_blank');
+  } catch {
+    // Popup might be blocked, continue with fallback
   }
 
   try {
-    // If it's a local /uploads path, obtain ephemeral HMAC signed link
     const token = localStorage.getItem('token');
     const res = await fetch(`/api/v1/files/signed-url?path=${encodeURIComponent(fileUrl)}`, {
       headers: {
@@ -33,12 +34,21 @@ export async function openSecureFile(fileUrl) {
 
     const body = await res.json();
     if (body.success && body.data?.url) {
-      window.open(body.data.url, '_blank', 'noopener,noreferrer');
-    } else {
-      window.open(fileUrl, '_blank', 'noopener,noreferrer');
+      if (targetWindow) {
+        targetWindow.location.href = body.data.url;
+      } else {
+        window.open(body.data.url, '_blank', 'noopener,noreferrer');
+      }
+      return;
     }
   } catch (err) {
     console.error('Failed to obtain signed download URL:', err);
+  }
+
+  // Fallback
+  if (targetWindow) {
+    targetWindow.location.href = fileUrl;
+  } else {
     window.open(fileUrl, '_blank', 'noopener,noreferrer');
   }
 }

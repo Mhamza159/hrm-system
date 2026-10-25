@@ -24,18 +24,14 @@ import { StatCard } from './widgets/StatCard.jsx';
 import { AttendanceChart } from './widgets/AttendanceChart.jsx';
 import { DepartmentCostChart } from './widgets/DepartmentCostChart.jsx';
 import { PinnedNoticeBoard } from '../../announcements/components/PinnedNoticeBoard.jsx';
+import { DashboardSkeleton } from './DashboardSkeleton.jsx';
 
 export function AdminDashboard() {
   const { data: response, isLoading, error } = useGetAdminDashboardQuery();
   const data = response?.data;
 
   if (isLoading) {
-    return (
-      <div className="py-24 flex flex-col items-center justify-center space-y-3">
-        <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Aggregating executive intelligence...</p>
-      </div>
-    );
+    return <DashboardSkeleton variant="admin" message="Aggregating executive workforce analytics & company costs..." />;
   }
 
   if (error) {

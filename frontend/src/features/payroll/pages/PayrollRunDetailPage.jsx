@@ -39,6 +39,7 @@ import { PayslipAdjustmentDrawer } from '../components/PayslipAdjustmentDrawer.j
 import { PayslipPreviewModal } from '../components/PayslipPreviewModal.jsx';
 import { BankAdviceExportModal } from '../components/BankAdviceExportModal.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 
 export function PayrollRunDetailPage() {
   const { id } = useParams();
@@ -112,12 +113,7 @@ export function PayrollRunDetailPage() {
   const currentStageIndex = stages.findIndex((s) => s.key === run.status);
 
   if (isLoading) {
-    return (
-      <div className="py-24 flex flex-col items-center justify-center space-y-3">
-        <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-slate-500">Loading payroll details...</p>
-      </div>
-    );
+    return <ScreenSkeleton variant="table" title="Payroll Run Details" message="Aggregating payslips, statutory deductions & stage state..." rows={6} />;
   }
 
   return (

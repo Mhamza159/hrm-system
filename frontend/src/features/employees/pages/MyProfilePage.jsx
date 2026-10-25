@@ -55,6 +55,7 @@ import { usePermission } from '../../../hooks/usePermission.js';
 import { Card } from '../../../components/common/Card.jsx';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { StatusBadge } from '../../../components/common/StatusBadge.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { ChangeRequestModal } from '../components/ChangeRequestModal.jsx';
 import { TwoFactorModal } from '../../auth/components/TwoFactorModal.jsx';
 import { ChangePasswordModal } from '../../auth/components/ChangePasswordModal.jsx';
@@ -264,11 +265,7 @@ export default function MyProfilePage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex h-96 items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#00C471]" />
-      </div>
-    );
+    return <ScreenSkeleton variant="profile" title="My Profile Records" message="Loading your personal employee file, documents & compensation..." />;
   }
 
   if (error || !employee) {

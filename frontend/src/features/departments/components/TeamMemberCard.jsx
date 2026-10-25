@@ -27,11 +27,11 @@ export const TeamMemberCard = ({ member }) => {
   if (!member) return null;
 
   const gradeStyles = {
-    Executive: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    Lead: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-    Senior: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    Mid: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    Junior: 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+    Executive: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300/80 dark:border-amber-500/30',
+    Lead: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-300/80 dark:border-purple-500/30',
+    Senior: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-300/80 dark:border-blue-500/30',
+    Mid: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-300/80 dark:border-emerald-500/30',
+    Junior: 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-300/80 dark:border-slate-700'
   };
 
   const formattedDate = member.joiningDate
@@ -43,11 +43,11 @@ export const TeamMemberCard = ({ member }) => {
     : null;
 
   return (
-    <div className="group relative rounded-xl p-5 bg-slate-900/80 border border-slate-800 hover:border-slate-700/80 hover:bg-slate-900 transition-all duration-200 shadow-md flex flex-col justify-between">
+    <div className="group relative rounded-2xl p-5 bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] hover:border-emerald-500/40 dark:hover:border-emerald-500/40 hover:shadow-md transition-all duration-200 shadow-xs flex flex-col justify-between">
       <div>
         {/* Top Header: Code, Grade Badge, Status */}
         <div className="flex items-center justify-between gap-2 mb-3">
-          <span className="text-xs font-mono font-medium text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded">
+          <span className="text-xs font-mono font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-[#0A110D] border border-slate-200 dark:border-[#1A3125] px-2 py-0.5 rounded-md">
             {member.employeeCode}
           </span>
           <div className="flex items-center gap-1.5">
@@ -68,10 +68,10 @@ export const TeamMemberCard = ({ member }) => {
             <img
               src={member.avatar}
               alt={member.name}
-              className="w-12 h-12 rounded-full object-cover border border-slate-700 shrink-0 shadow-inner group-hover:border-emerald-500/50 transition-colors"
+              className="w-12 h-12 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0 shadow-xs group-hover:border-emerald-500/50 transition-colors"
             />
           ) : (
-            <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm bg-gradient-to-br from-slate-700 to-slate-800 text-slate-200 border border-slate-700 shrink-0 shadow-inner group-hover:border-emerald-500/40 transition-colors">
+            <div className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shrink-0 shadow-xs group-hover:border-emerald-500/40 transition-colors">
               {member.name
                 ? member.name
                     .split(' ')
@@ -84,45 +84,45 @@ export const TeamMemberCard = ({ member }) => {
           )}
 
           <div className="min-w-0 flex-1">
-            <h4 className="text-sm font-semibold text-slate-100 truncate group-hover:text-emerald-400 transition-colors">
+            <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate group-hover:text-[#00C471] transition-colors">
               {member.name}
             </h4>
-            <p className="text-xs text-slate-400 truncate flex items-center gap-1.5 mt-0.5">
-              <Briefcase className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <p className="text-xs text-slate-600 dark:text-slate-400 truncate flex items-center gap-1.5 mt-0.5">
+              <Briefcase className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
               {member.designation || 'Team Member'}
             </p>
-            <p className="text-xs text-slate-500 truncate flex items-center gap-1.5 mt-0.5">
-              <Building className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+            <p className="text-xs text-slate-500 dark:text-slate-400 truncate flex items-center gap-1.5 mt-0.5">
+              <Building className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
               {member.department || 'General'}
             </p>
           </div>
         </div>
 
         {/* Shift Capsule */}
-        <div className="mt-4 p-2.5 rounded-lg bg-slate-950/70 border border-slate-800/80">
+        <div className="mt-4 p-2.5 rounded-xl bg-slate-50 dark:bg-[#0A110D] border border-slate-200/80 dark:border-[#1A3125]">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-400 flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5 text-slate-500" />
+            <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1 font-medium">
+              <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
               Shift:
             </span>
-            <div className="flex items-center gap-1.5 font-medium text-slate-200">
+            <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
               {member.shift ? (
                 <>
                   {member.shift.isCrossMidnight ? (
-                    <span className="flex items-center gap-1 text-[11px] text-purple-400 bg-purple-950/50 px-1.5 py-0.5 rounded border border-purple-800/50">
-                      <Moon className="w-3 h-3" /> Night
+                    <span className="flex items-center gap-1 text-[11px] font-semibold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/50 px-2 py-0.5 rounded-md border border-purple-200 dark:border-purple-800/50">
+                      <Moon className="w-3 h-3 text-purple-600 dark:text-purple-400" /> Night
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 text-[11px] text-amber-400 bg-amber-950/50 px-1.5 py-0.5 rounded border border-amber-800/50">
-                      <Sun className="w-3 h-3" /> Day
+                    <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800/50">
+                      <Sun className="w-3 h-3 text-amber-600 dark:text-amber-400" /> Day
                     </span>
                   )}
-                  <span className="font-mono text-xs text-slate-300">
+                  <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">
                     {member.shift.startTime} – {member.shift.endTime}
                   </span>
                 </>
               ) : (
-                <span className="text-slate-500 italic text-[11px]">Unassigned</span>
+                <span className="text-slate-400 dark:text-slate-500 italic text-[11px]">Unassigned</span>
               )}
             </div>
           </div>
@@ -130,32 +130,32 @@ export const TeamMemberCard = ({ member }) => {
 
         {/* Joined Date */}
         {formattedDate && (
-          <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-500">
-            <Calendar className="w-3 h-3 text-slate-600 shrink-0" />
+          <div className="mt-2.5 flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+            <Calendar className="w-3 h-3 text-slate-400 dark:text-slate-500 shrink-0" />
             <span>Joined {formattedDate}</span>
           </div>
         )}
       </div>
 
       {/* Quick Contact Footer */}
-      <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-[#1A3125] flex items-center justify-between gap-2">
         {member.email ? (
           <a
             href={`mailto:${member.email}`}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2.5 text-xs font-medium text-slate-300 hover:text-emerald-400 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/60 rounded-lg transition-colors truncate"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-[#00C471] dark:hover:text-[#00C471] bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-xl transition-colors truncate"
             title={member.email}
           >
-            <Mail className="w-3.5 h-3.5 shrink-0" />
+            <Mail className="w-3.5 h-3.5 shrink-0 text-slate-400 dark:text-slate-400" />
             <span className="truncate">{member.email}</span>
           </a>
         ) : (
-          <span className="text-xs text-slate-600">No email</span>
+          <span className="text-xs text-slate-400 italic">No email</span>
         )}
 
         {member.phone && (
           <a
             href={`tel:${member.phone}`}
-            className="p-1.5 text-slate-400 hover:text-emerald-400 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/60 rounded-lg transition-colors"
+            className="p-2 text-slate-600 dark:text-slate-400 hover:text-[#00C471] dark:hover:text-[#00C471] bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/60 rounded-xl transition-colors"
             title={member.phone}
           >
             <Phone className="w-3.5 h-3.5" />

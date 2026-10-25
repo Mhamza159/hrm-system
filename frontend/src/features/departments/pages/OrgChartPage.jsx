@@ -41,6 +41,7 @@ import { useGetOrgChartQuery } from '../departmentsApi.js';
 import { OrgChartNode } from '../components/OrgChartNode.jsx';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { StatCard } from '../../../components/common/StatCard.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 
 export const OrgChartPage = () => {
   const navigate = useNavigate();
@@ -338,9 +339,8 @@ export const OrgChartPage = () => {
         }}
       >
         {isLoading && (
-          <div className="flex flex-col items-center justify-center my-32 text-slate-500 dark:text-slate-400">
-            <div className="w-10 h-10 border-2 border-[#00C471] border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-sm font-medium">Building organizational hierarchy graph...</p>
+          <div className="p-6">
+            <ScreenSkeleton variant="orgchart" title="Organizational Hierarchy" message="Computing reporting lines and department branches..." />
           </div>
         )}
 

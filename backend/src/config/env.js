@@ -11,12 +11,20 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+const rawMongoUri =
+  process.env.MONGO_URI ||
+  'mongodb+srv://mhamzaofficial159_db_user:Cpc5Q5IS3RWA4o23@clusterhrm.pkwysxb.mongodb.net/hrm_production?retryWrites=true&w=majority';
+
+// Test isolation safeguard: when running under Vitest, keep 'hrm_development' token so tests safely replace to 'hrm_test_*'
+const mongoUri =
+  process.env.NODE_ENV === 'test' || process.env.VITEST
+    ? rawMongoUri.replace('hrm_production', 'hrm_development')
+    : rawMongoUri;
+
 export const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: parseInt(process.env.PORT || '5000', 10),
-  MONGO_URI:
-    process.env.MONGO_URI ||
-    'mongodb+srv://mhamzaofficial159_db_user:Cpc5Q5IS3RWA4o23@clusterhrm.pkwysxb.mongodb.net/hrm_development?retryWrites=true&w=majority',
+  MONGO_URI: mongoUri,
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
   JWT_ACCESS_SECRET:
     process.env.JWT_ACCESS_SECRET ||

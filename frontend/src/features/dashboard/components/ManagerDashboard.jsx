@@ -22,18 +22,14 @@ import { useGetManagerDashboardQuery } from '../dashboardApi.js';
 import { StatCard } from './widgets/StatCard.jsx';
 import { AttendanceChart } from './widgets/AttendanceChart.jsx';
 import { PendingList } from './widgets/PendingList.jsx';
+import { DashboardSkeleton } from './DashboardSkeleton.jsx';
 
 export function ManagerDashboard() {
   const { data: response, isLoading, error } = useGetManagerDashboardQuery();
   const data = response?.data;
 
   if (isLoading) {
-    return (
-      <div className="py-24 flex flex-col items-center justify-center space-y-3">
-        <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Loading team overview...</p>
-      </div>
-    );
+    return <DashboardSkeleton variant="manager" message="Loading team roster, attendance trends & approvals..." />;
   }
 
   if (error) {

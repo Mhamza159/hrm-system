@@ -25,6 +25,7 @@ import {
 import { useGetEmployeesQuery } from '../../employees/employeesApi.js';
 import { useGetEmployeeSalaryStructureQuery } from '../payrollApi.js';
 import { SettlementGratuityModal } from '../components/SettlementGratuityModal.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 
 export function FinalSettlementPage() {
   const [search, setSearch] = useState('');
@@ -127,11 +128,10 @@ export function FinalSettlementPage() {
       </div>
 
       {/* Staff Settlement Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+      <div className="bg-white dark:bg-[#111D17] rounded-2xl border border-slate-200 dark:border-[#1A3125] overflow-hidden shadow-sm">
         {isLoadingEmployees ? (
-          <div className="py-20 flex flex-col items-center justify-center space-y-3">
-            <div className="w-8 h-8 border-3 border-rose-600 border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-slate-500">Loading offboarding staff...</p>
+          <div className="p-4">
+            <ScreenSkeleton variant="table" title="Offboarding Staff Roster" message="Retrieving employee offboarding dossiers & settlement records..." rows={4} />
           </div>
         ) : employees.length === 0 ? (
           <div className="py-20 text-center space-y-3">

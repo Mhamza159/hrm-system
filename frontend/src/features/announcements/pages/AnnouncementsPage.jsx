@@ -15,6 +15,7 @@ import {
   Inbox
 } from 'lucide-react';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { useGetAnnouncementsQuery } from '../announcementsApi.js';
 import { AnnouncementCard } from '../components/AnnouncementCard.jsx';
 import { AnnouncementFormModal } from '../components/AnnouncementFormModal.jsx';
@@ -170,10 +171,7 @@ export function AnnouncementsPage() {
 
       {/* Feed List */}
       {isLoading ? (
-        <div className="py-24 flex flex-col items-center justify-center space-y-3">
-          <div className="w-7 h-7 border-2 border-[#5E6AD2] border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs text-[#8F94A8]">Loading announcements...</span>
-        </div>
+        <ScreenSkeleton variant="cards" title="Company Broadcasts" message="Retrieving active announcements & policy notices..." cards={3} />
       ) : announcements.length === 0 ? (
         <div className="py-20 bg-[#0F111A] border border-[#1E2235] rounded-xl text-center flex flex-col items-center justify-center p-6">
           <div className="w-12 h-12 rounded-full bg-[#141724] border border-[#1E2235] flex items-center justify-center text-[#62677B] mb-3">

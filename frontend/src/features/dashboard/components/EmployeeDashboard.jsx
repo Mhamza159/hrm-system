@@ -23,18 +23,14 @@ import {
 } from 'lucide-react';
 import { useGetEmployeeDashboardQuery } from '../dashboardApi.js';
 import { PinnedNoticeBoard } from '../../announcements/components/PinnedNoticeBoard.jsx';
+import { DashboardSkeleton } from './DashboardSkeleton.jsx';
 
 export function EmployeeDashboard() {
   const { data: response, isLoading, error } = useGetEmployeeDashboardQuery();
   const data = response?.data;
 
   if (isLoading) {
-    return (
-      <div className="py-24 flex flex-col items-center justify-center space-y-3">
-        <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Loading personal dashboard...</p>
-      </div>
-    );
+    return <DashboardSkeleton variant="employee" message="Loading your attendance records, leaves & personal payroll..." />;
   }
 
   if (error) {

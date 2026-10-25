@@ -23,6 +23,7 @@ export function DataTable({
   columns = [],
   data = [],
   isLoading = false,
+  showSearch = true,
   searchPlaceholder = 'Search records...',
   searchField = null,
   emptyMessage = 'No records found',
@@ -69,20 +70,22 @@ export function DataTable({
   return (
     <div className={cn('w-full flex flex-col space-y-4', className)}>
       {/* Search Input Bar */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative w-full max-w-sm">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-            <Search className="h-4 w-4" />
+      {showSearch && (
+        <div className="flex items-center justify-between gap-4">
+          <div className="relative w-full max-w-sm">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <Search className="h-4 w-4" />
+            </div>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder={searchPlaceholder}
+              className="w-full pl-10 pr-3.5 py-2 bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] focus:border-[#00C471] rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/20 transition-all shadow-2xs"
+            />
           </div>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={searchPlaceholder}
-            className="w-full pl-10 pr-3.5 py-2 bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] focus:border-[#00C471] rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/20 transition-all shadow-2xs"
-          />
         </div>
-      </div>
+      )}
 
       {/* Table Container Surface (Matching docs/ui-reference.png Card) */}
       <div className="w-full overflow-hidden rounded-2xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] shadow-sm">
@@ -112,14 +115,25 @@ export function DataTable({
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-[#1A3125] text-slate-700 dark:text-slate-200">
               {isLoading ? (
-                <tr>
-                  <td colSpan={columns.length} className="py-14 text-center text-slate-400">
-                    <div className="inline-flex items-center gap-2">
-                      <Loader2 className="w-5 h-5 animate-spin text-[#00C471]" />
-                      <span className="text-xs font-medium">Loading records...</span>
-                    </div>
-                  </td>
-                </tr>
+                Array.from({ length: 6 }).map((_, rIdx) => (
+                  <tr key={`table-skeleton-${rIdx}`} className="relative overflow-hidden">
+                    {columns.map((col, cIdx) => (
+                      <td key={`table-skeleton-cell-${rIdx}-${cIdx}`} className="py-4 px-4">
+                        <div className="flex items-center gap-2.5">
+                          {cIdx === 0 && (
+                            <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-[#1A3125] shrink-0 animate-pulse" />
+                          )}
+                          <div
+                            className="h-3 bg-slate-200 dark:bg-[#1A3125] rounded-md animate-pulse"
+                            style={{
+                              width: cIdx === 0 ? '60%' : cIdx === columns.length - 1 ? '45%' : `${35 + ((rIdx * 19 + cIdx * 29) % 45)}%`
+                            }}
+                          />
+                        </div>
+                      </td>
+                    ))}
+                  </tr>
+                ))
               ) : sortedData.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className="py-14 text-center text-slate-400">

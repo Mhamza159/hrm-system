@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useGetPermissionsQuery } from '../rolesApi.js';
 import { cn } from '../../../lib/utils.js';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 
 export function PermissionMatrix({
   value = [],
@@ -123,12 +124,7 @@ export function PermissionMatrix({
   };
 
   if (isLoading) {
-    return (
-      <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500">
-        <Loader2 className="w-6 h-6 animate-spin text-[#00C471]" />
-        <span className="text-xs font-medium">Loading permission catalogue taxonomy...</span>
-      </div>
-    );
+    return <ScreenSkeleton variant="matrix" title="Security & RBAC Matrix" message="Loading permission catalogue taxonomy and authorization scopes..." />;
   }
 
   if (isError) {
