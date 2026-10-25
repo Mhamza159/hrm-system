@@ -221,7 +221,7 @@ export function Sidebar({ isOpen = false, onClose }) {
         </div>
 
         {/* Navigation Link List */}
-        <nav className="flex-1 py-5 px-3.5 space-y-1.5 overflow-y-auto">
+        <nav className="flex-1 py-5 px-3.5 space-y-1.5 overflow-y-auto sidebar-scrollbar">
           {navStructure.map((item) => {
             // Standalone Link
             if (item.type === 'link') {
