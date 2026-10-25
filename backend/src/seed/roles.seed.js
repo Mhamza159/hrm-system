@@ -12,6 +12,8 @@ import mongoose from 'mongoose';
 import { Role } from '../models/role.model.js';
 import { User } from '../models/user.model.js';
 import { Employee } from '../models/employee.model.js';
+import { Department } from '../models/department.model.js';
+import { Designation } from '../models/designation.model.js';
 import { env } from '../config/env.js';
 import '../config/db.js';
 
@@ -190,21 +192,40 @@ export const seedRolesAndAdmin = async () => {
   const adminDoc = existingAdmin || (await User.findOne({ email: adminEmail }));
   if (adminDoc) {
     let adminEmpDoc = await Employee.findOne({ email: adminEmail });
+    const execDept = await Department.findOne({ code: 'EXEC', isDeleted: false });
+    const ceoDesig = await Designation.findOne({ code: 'CEO', isDeleted: false });
+
     if (!adminEmpDoc) {
       adminEmpDoc = await Employee.create({
         employeeCode: 'EMP-000',
         userId: adminDoc._id,
-        name: 'Super Admin',
+        name: 'Mohammad Hamza Hakim',
         email: adminEmail,
+        departmentId: execDept?._id || null,
+        designationId: ceoDesig?._id || null,
         status: 'Active',
         employmentType: 'Permanent',
         joiningDate: new Date('2023-01-01'),
         isDeleted: false
       });
       console.log(`✅ Super Admin Employee record created: EMP-000`);
-    } else if (!adminEmpDoc.userId) {
-      adminEmpDoc.userId = adminDoc._id;
-      await adminEmpDoc.save();
+    } else {
+      let modified = false;
+      if (!adminEmpDoc.userId) {
+        adminEmpDoc.userId = adminDoc._id;
+        modified = true;
+      }
+      if (!adminEmpDoc.departmentId && execDept) {
+        adminEmpDoc.departmentId = execDept._id;
+        modified = true;
+      }
+      if (!adminEmpDoc.designationId && ceoDesig) {
+        adminEmpDoc.designationId = ceoDesig._id;
+        modified = true;
+      }
+      if (modified) {
+        await adminEmpDoc.save();
+      }
     }
 
     if (String(adminDoc.employeeId) !== String(adminEmpDoc._id)) {

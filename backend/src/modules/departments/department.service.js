@@ -947,6 +947,7 @@ export const getOrgChart = async (requestingUserId, permissionScope = 'all', act
 
   for (const emp of scopedEmployees) {
     const id = emp._id.toString();
+    const isRootExecutive = emp.employeeCode === 'EMP-000' || !emp.managerId;
     employeeMap.set(id, {
       id,
       name: emp.name,
@@ -954,10 +955,10 @@ export const getOrgChart = async (requestingUserId, permissionScope = 'all', act
       email: emp.email || '',
       phone: emp.phone || '',
       avatar: emp.avatar || '',
-      department: emp.departmentId?.name || 'General',
-      departmentCode: emp.departmentId?.code || '',
-      designation: emp.designationId?.title || 'Team Member',
-      grade: emp.designationId?.grade || 'Mid',
+      department: emp.departmentId?.name || (isRootExecutive ? 'Executive Management' : 'General'),
+      departmentCode: emp.departmentId?.code || (isRootExecutive ? 'EXEC' : ''),
+      designation: emp.designationId?.title || (isRootExecutive ? 'Chief Executive Officer' : 'Team Member'),
+      grade: emp.designationId?.grade || (isRootExecutive ? 'Executive' : 'Mid'),
       status: emp.status || 'Active',
       userId: emp.userId ? emp.userId.toString() : null,
       managerId: emp.managerId ? emp.managerId.toString() : null,
