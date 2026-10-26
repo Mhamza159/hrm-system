@@ -10,6 +10,10 @@ const STATUS_CONFIG = {
     label: 'Present',
     className: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60'
   },
+  wfh: {
+    label: 'WFH',
+    className: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-400 dark:border-indigo-800/60'
+  },
   late: {
     label: 'Late',
     className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/60'
@@ -32,9 +36,11 @@ const STATUS_CONFIG = {
   }
 };
 
-export const AttendanceStatusBadge = ({ status = 'present', className = '' }) => {
-  const config = STATUS_CONFIG[status] || {
-    label: status.replace('_', ' ').toUpperCase(),
+export const AttendanceStatusBadge = ({ status = 'present', flags = [], className = '' }) => {
+  const isWFH = flags?.includes('wfh') || status === 'wfh';
+  const effectiveStatus = isWFH ? 'wfh' : status;
+  const config = STATUS_CONFIG[effectiveStatus] || {
+    label: effectiveStatus.replace('_', ' ').toUpperCase(),
     className: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800'
   };
 
@@ -43,7 +49,7 @@ export const AttendanceStatusBadge = ({ status = 'present', className = '' }) =>
       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border transition-colors ${config.className} ${className}`}
     >
       <span className="w-1.5 h-1.5 rounded-full bg-current mr-1.5 opacity-80" />
-      {config.label}
+      {isWFH ? '🏠 WFH' : config.label}
     </span>
   );
 };

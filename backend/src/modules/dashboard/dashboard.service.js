@@ -18,6 +18,7 @@ import { Department } from '../../models/department.model.js';
 import { Attendance } from '../../models/attendance.model.js';
 import { Leave } from '../../models/leave.model.js';
 import { AttendanceCorrection } from '../../models/correction.model.js';
+import { WFHRequest } from '../../models/wfh.model.js';
 import { PayrollRun } from '../../models/payrollRun.model.js';
 import { Payslip } from '../../models/payslip.model.js';
 import { LeaveBalance } from '../../models/leaveBalance.model.js';
@@ -165,7 +166,27 @@ export const getPendingApprovalsQueue = async (scopeFilter = {}) => {
     .lean();
 
   const pendingCorrections = await AttendanceCorrection.find({ status: 'pending', ...scopeFilter })
-    .populate('employeeId', 'name employeeCode avatar')
+    .populate({
+      path: 'employeeId',
+      select: 'name firstName lastName employeeCode avatar departmentId designationId',
+      populate: [
+        { path: 'departmentId', select: 'name' },
+        { path: 'designationId', select: 'title' }
+      ]
+    })
+    .sort({ createdAt: -1 })
+    .limit(10)
+    .lean();
+
+  const pendingWFH = await WFHRequest.find({ status: 'pending', ...scopeFilter })
+    .populate({
+      path: 'employeeId',
+      select: 'name firstName lastName employeeCode avatar departmentId designationId',
+      populate: [
+        { path: 'departmentId', select: 'name' },
+        { path: 'designationId', select: 'title' }
+      ]
+    })
     .sort({ createdAt: -1 })
     .limit(10)
     .lean();
@@ -173,6 +194,7 @@ export const getPendingApprovalsQueue = async (scopeFilter = {}) => {
   return {
     pendingLeavesCount: await Leave.countDocuments({ status: 'pending', ...scopeFilter }),
     pendingCorrectionsCount: await AttendanceCorrection.countDocuments({ status: 'pending', ...scopeFilter }),
+    pendingWFHCount: await WFHRequest.countDocuments({ status: 'pending', ...scopeFilter }),
     leaves: pendingLeaves.map((l) => ({
       _id: l._id,
       type: 'leave',
@@ -189,14 +211,28 @@ export const getPendingApprovalsQueue = async (scopeFilter = {}) => {
     corrections: pendingCorrections.map((c) => ({
       _id: c._id,
       type: 'correction',
-      employeeName: c.employeeId?.name || 'Employee',
+      employeeName: c.employeeId?.name || `${c.employeeId?.firstName || ''} ${c.employeeId?.lastName || ''}`.trim() || 'Employee',
       employeeCode: c.employeeId?.employeeCode || '',
       avatar: c.employeeId?.avatar || null,
+      department: c.employeeId?.departmentId?.name || 'General',
+      designation: c.employeeId?.designationId?.title || 'Staff',
       date: c.date,
       requestedIn: c.requestedCheckIn,
       requestedOut: c.requestedCheckOut,
       reason: c.reason,
       createdAt: c.createdAt
+    })),
+    wfh: pendingWFH.map((w) => ({
+      _id: w._id,
+      type: 'wfh',
+      employeeName: w.employeeId?.name || `${w.employeeId?.firstName || ''} ${w.employeeId?.lastName || ''}`.trim() || 'Employee',
+      employeeCode: w.employeeId?.employeeCode || '',
+      avatar: w.employeeId?.avatar || null,
+      department: w.employeeId?.departmentId?.name || 'General',
+      designation: w.employeeId?.designationId?.title || 'Staff',
+      date: w.date,
+      reason: w.reason,
+      createdAt: w.createdAt
     }))
   };
 };
@@ -413,11 +449,13 @@ export const getHrDashboardData = async () => {
       todayAbsent: todayStatus.absent,
       pendingLeavesCount: pendingQueues.pendingLeavesCount,
       pendingCorrectionsCount: pendingQueues.pendingCorrectionsCount,
+      pendingWFHCount: pendingQueues.pendingWFHCount,
       probationReviewsCount: probationDueEmployees.length
     },
     todayBreakdown: todayStatus,
     pendingLeaves: pendingQueues.leaves,
     pendingCorrections: pendingQueues.corrections,
+    pendingWFH: pendingQueues.wfh,
     todayOnLeaveRoster: todayOnLeaveStaff.map((l) => ({
       _id: l._id,
       employeeName: l.employeeId?.name || 'Staff',
@@ -495,7 +533,7 @@ export const getManagerDashboardData = async (user) => {
 
   const teamMemberIds = teamMembers.map((m) => m._id);
 
-  const [todayAttendanceRaw, pendingLeaves, overtimeData, attendanceTrend] = await Promise.all([
+  const [todayAttendanceRaw, pendingLeaves, pendingCorrections, pendingWFH, overtimeData, attendanceTrend] = await Promise.all([
     Attendance.aggregate([
       {
         $match: {
@@ -512,6 +550,28 @@ export const getManagerDashboardData = async (user) => {
     Leave.find({ employeeId: { $in: teamMemberIds }, status: 'pending' })
       .populate('employeeId', 'name employeeCode avatar')
       .populate('leaveTypeId', 'name')
+      .lean(),
+    AttendanceCorrection.find({ employeeId: { $in: teamMemberIds }, status: 'pending' })
+      .populate({
+        path: 'employeeId',
+        select: 'name firstName lastName employeeCode avatar departmentId designationId',
+        populate: [
+          { path: 'departmentId', select: 'name' },
+          { path: 'designationId', select: 'title' }
+        ]
+      })
+      .sort({ createdAt: -1 })
+      .lean(),
+    WFHRequest.find({ employeeId: { $in: teamMemberIds }, status: 'pending' })
+      .populate({
+        path: 'employeeId',
+        select: 'name firstName lastName employeeCode avatar departmentId designationId',
+        populate: [
+          { path: 'departmentId', select: 'name' },
+          { path: 'designationId', select: 'title' }
+        ]
+      })
+      .sort({ createdAt: -1 })
       .lean(),
     Attendance.aggregate([
       {
@@ -558,7 +618,7 @@ export const getManagerDashboardData = async (user) => {
       todayLate: todayStatus.late,
       todayAbsent: todayStatus.absent,
       todayOnLeave: todayStatus.on_leave,
-      pendingApprovals: pendingLeaves.length,
+      pendingApprovals: pendingLeaves.length + pendingCorrections.length + pendingWFH.length,
       teamOvertimeHours
     },
     todayBreakdown: todayStatus,
@@ -572,6 +632,32 @@ export const getManagerDashboardData = async (user) => {
       endDate: l.endDate,
       totalDays: l.days ?? l.totalDays ?? 1,
       reason: l.reason
+    })),
+    pendingCorrections: pendingCorrections.map((c) => ({
+      _id: c._id,
+      type: 'correction',
+      employeeName: c.employeeId?.name || `${c.employeeId?.firstName || ''} ${c.employeeId?.lastName || ''}`.trim() || 'Employee',
+      employeeCode: c.employeeId?.employeeCode || '',
+      avatar: c.employeeId?.avatar || null,
+      department: c.employeeId?.departmentId?.name || 'General',
+      designation: c.employeeId?.designationId?.title || 'Staff',
+      date: c.date,
+      requestedIn: c.requestedCheckIn,
+      requestedOut: c.requestedCheckOut,
+      reason: c.reason,
+      createdAt: c.createdAt
+    })),
+    pendingWFH: pendingWFH.map((w) => ({
+      _id: w._id,
+      type: 'wfh',
+      employeeName: w.employeeId?.name || `${w.employeeId?.firstName || ''} ${w.employeeId?.lastName || ''}`.trim() || 'Employee',
+      employeeCode: w.employeeId?.employeeCode || '',
+      avatar: w.employeeId?.avatar || null,
+      department: w.employeeId?.departmentId?.name || 'General',
+      designation: w.employeeId?.designationId?.title || 'Staff',
+      date: w.date,
+      reason: w.reason,
+      createdAt: w.createdAt
     })),
     teamMembers: teamMembers.map((m) => ({
       _id: m._id,

@@ -414,7 +414,7 @@ describe('Module M5 — Attendance & Shifts Integration Test Suite', { timeout: 
   // 5.15-TEST: Excel Export
   it('5.15-TEST: Exports Excel timesheet with spreadsheet content-type header', async () => {
     const res = await request(app)
-      .get('/api/v1/reports/attendance')
+      .get('/api/v1/attendance/export')
       .set('Authorization', `Bearer ${hrToken}`);
 
     expect(res.status).toBe(200);

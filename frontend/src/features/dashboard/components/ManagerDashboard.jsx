@@ -25,7 +25,7 @@ import { PendingList } from './widgets/PendingList.jsx';
 import { DashboardSkeleton } from './DashboardSkeleton.jsx';
 
 export function ManagerDashboard() {
-  const { data: response, isLoading, error } = useGetManagerDashboardQuery();
+  const { data: response, isLoading, error, refetch } = useGetManagerDashboardQuery();
   const data = response?.data;
 
   if (isLoading) {
@@ -86,8 +86,10 @@ export function ManagerDashboard() {
         />
         <PendingList
           leaves={data?.pendingApprovals || []}
-          corrections={[]}
+          corrections={data?.pendingCorrections || []}
+          wfh={data?.pendingWFH || []}
           title="Team Pending Approvals"
+          onRefresh={refetch}
         />
       </div>
 

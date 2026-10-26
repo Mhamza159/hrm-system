@@ -12,9 +12,9 @@ import { X, DollarSign, AlertCircle, Building2, Shield, Percent } from 'lucide-r
 import { useCreateSalaryStructureMutation } from '../payrollApi.js';
 import { useGetEmployeesQuery } from '../../employees/employeesApi.js';
 
-export function SalaryFormModal({ isOpen, onClose, onSuccess }) {
+export function SalaryFormModal({ isOpen, onClose, onSuccess, initialEmployeeId = '' }) {
   const [formData, setFormData] = useState({
-    employeeId: '',
+    employeeId: initialEmployeeId || '',
     effectiveFrom: new Date().toISOString().split('T')[0],
     basicSalary: '',
     houseRentAllowance: '',
@@ -41,7 +41,7 @@ export function SalaryFormModal({ isOpen, onClose, onSuccess }) {
   useEffect(() => {
     if (isOpen) {
       setFormData({
-        employeeId: '',
+        employeeId: initialEmployeeId || '',
         effectiveFrom: new Date().toISOString().split('T')[0],
         basicSalary: '',
         houseRentAllowance: '',

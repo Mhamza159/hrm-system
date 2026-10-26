@@ -25,6 +25,15 @@ export const attendanceApi = baseApi.injectEndpoints({
       providesTags: ['Attendance']
     }),
 
+    // 5.15: Get attendance monthly history matrix
+    getAttendanceHistory: builder.query({
+      query: (params) => ({
+        url: '/attendance/history',
+        params
+      }),
+      providesTags: ['Attendance']
+    }),
+
     // 5.3: Clock in
     checkIn: builder.mutation({
       query: (body) => ({
@@ -109,16 +118,22 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'POST',
         body
       }),
-      invalidatesTags: ['WFH']
+      invalidatesTags: ['WFH', 'Dashboard']
     }),
 
     getMyWFHRequests: builder.query({
-      query: () => '/attendance/wfh/my',
+      query: (params) => ({
+        url: '/attendance/wfh/my',
+        params
+      }),
       providesTags: ['WFH']
     }),
 
     getTeamWFHRequests: builder.query({
-      query: () => '/attendance/wfh/team',
+      query: (params) => ({
+        url: '/attendance/wfh/team',
+        params
+      }),
       providesTags: ['WFH']
     }),
 
@@ -128,7 +143,12 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'PATCH',
         body
       }),
-      invalidatesTags: ['WFH', 'Attendance']
+      invalidatesTags: ['WFH', 'Attendance', 'Dashboard']
+    }),
+
+    getWFHAuditContext: builder.query({
+      query: (id) => `/attendance/wfh/${id}/audit-context`,
+      providesTags: (result, error, id) => [{ type: 'WFH', id }]
     }),
 
     // 5.12: Attendance Corrections
@@ -138,16 +158,22 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'POST',
         body
       }),
-      invalidatesTags: ['Correction']
+      invalidatesTags: ['Correction', 'Dashboard']
     }),
 
     getMyCorrections: builder.query({
-      query: () => '/attendance/corrections/my',
+      query: (params) => ({
+        url: '/attendance/corrections/my',
+        params
+      }),
       providesTags: ['Correction']
     }),
 
     getTeamCorrections: builder.query({
-      query: () => '/attendance/corrections/team',
+      query: (params) => ({
+        url: '/attendance/corrections/team',
+        params
+      }),
       providesTags: ['Correction']
     }),
 
@@ -157,7 +183,12 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'PATCH',
         body
       }),
-      invalidatesTags: ['Correction', 'Attendance']
+      invalidatesTags: ['Correction', 'Attendance', 'Dashboard']
+    }),
+
+    getCorrectionAuditContext: builder.query({
+      query: (id) => `/attendance/corrections/${id}/audit-context`,
+      providesTags: (result, error, id) => [{ type: 'Correction', id }]
     }),
 
     // 5.2: Shift Management
@@ -197,6 +228,7 @@ export const attendanceApi = baseApi.injectEndpoints({
 export const {
   useGetMyAttendanceQuery,
   useGetTeamAttendanceQuery,
+  useGetAttendanceHistoryQuery,
   useCheckInMutation,
   useCheckOutMutation,
   useStartBreakMutation,
@@ -209,10 +241,12 @@ export const {
   useGetMyWFHRequestsQuery,
   useGetTeamWFHRequestsQuery,
   useDecideWFHMutation,
+  useGetWFHAuditContextQuery,
   useApplyCorrectionMutation,
   useGetMyCorrectionsQuery,
   useGetTeamCorrectionsQuery,
   useDecideCorrectionMutation,
+  useGetCorrectionAuditContextQuery,
   useGetShiftsQuery,
   useCreateShiftMutation,
   useUpdateShiftMutation,

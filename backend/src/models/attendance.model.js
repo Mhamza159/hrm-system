@@ -122,12 +122,12 @@ const attendanceSchema = new mongoose.Schema(
     },
     flags: {
       type: [String],
-      enum: ['earlyDeparture', 'graceApplied', 'wfh', 'manualAdjustment'],
+      enum: ['earlyDeparture', 'graceApplied', 'wfh', 'manualAdjustment', 'flexible_executive'],
       default: []
     },
     source: {
       type: String,
-      enum: ['web', 'mobile', 'biometric', 'qr', 'system_auto_absent', 'manual_hr'],
+      enum: ['web', 'mobile', 'biometric', 'qr', 'system_auto_absent', 'manual_hr', 'wfh'],
       default: 'web'
     },
     location: {

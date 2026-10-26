@@ -27,7 +27,8 @@ import {
   correctionDecideSchema,
   queryMyAttendanceSchema,
   queryTeamAttendanceSchema,
-  exportAttendanceSchema
+  exportAttendanceSchema,
+  queryAttendanceHistorySchema
 } from './attendance.validation.js';
 
 const router = Router();
@@ -119,6 +120,16 @@ router.get(
 );
 
 /**
+ * 5.15: Monthly Attendance History Matrix
+ */
+router.get(
+  '/history',
+  checkPermission('attendance.view', 'own'),
+  validate(queryAttendanceHistorySchema),
+  attendanceController.getAttendanceHistory
+);
+
+/**
  * 5.14: Pre-Payroll Monthly Attendance Lock Control
  */
 router.post(
@@ -164,6 +175,12 @@ router.get(
   attendanceController.getTeamWFHRequests
 );
 
+router.get(
+  '/wfh/:id/audit-context',
+  checkPermission('attendance.approve', 'team'),
+  attendanceController.getWFHAuditContext
+);
+
 router.patch(
   '/wfh/:id/decide',
   checkPermission('attendance.approve', 'team'),
@@ -192,6 +209,12 @@ router.get(
   '/corrections/team',
   checkPermission('attendance.approve', 'team'),
   attendanceController.getTeamCorrections
+);
+
+router.get(
+  '/corrections/:id/audit-context',
+  checkPermission('attendance.approve', 'team'),
+  attendanceController.getCorrectionAuditContext
 );
 
 router.patch(

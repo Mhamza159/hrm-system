@@ -24,7 +24,7 @@ export const ExportAttendanceModal = ({ isOpen, onClose }) => {
     setErrorMessage('');
 
     try {
-      const response = await fetch(`/api/v1/reports/attendance?month=${month}`, {
+      const response = await fetch(`/api/v1/attendance/export?month=${month}`, {
         method: 'GET',
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
         credentials: 'include'

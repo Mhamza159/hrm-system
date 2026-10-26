@@ -88,12 +88,16 @@ export const wfhDecideSchema = z.object({
 });
 
 export const correctionRequestSchema = z.object({
-  body: z.object({
-    date: z.string().min(1, 'Date is required'),
-    requestedCheckIn: z.string().datetime().optional().nullable(),
-    requestedCheckOut: z.string().datetime().optional().nullable(),
-    reason: z.string().min(5, 'Reason must be at least 5 characters')
-  })
+  body: z
+    .object({
+      date: z.string().min(1, 'Date is required'),
+      requestedCheckIn: z.string().datetime().optional().nullable(),
+      requestedCheckOut: z.string().datetime().optional().nullable(),
+      reason: z.string().min(5, 'Reason must be at least 5 characters')
+    })
+    .refine((data) => Boolean(data.requestedCheckIn || data.requestedCheckOut), {
+      message: 'At least requested check-in or check-out time must be specified'
+    })
 });
 
 export const correctionDecideSchema = z.object({
@@ -130,5 +134,16 @@ export const exportAttendanceSchema = z.object({
     month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional(),
     departmentId: z.string().optional(),
     status: z.string().optional()
+  })
+});
+
+export const queryAttendanceHistorySchema = z.object({
+  query: z.object({
+    month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional(),
+    search: z.string().optional(),
+    departmentId: z.string().optional(),
+    selfOnly: z.coerce.boolean().optional().default(false),
+    page: z.coerce.number().int().positive().optional().default(1),
+    limit: z.coerce.number().int().positive().max(100).optional().default(50)
   })
 });

@@ -24,15 +24,23 @@ import {
   ArrowUpRight,
   ArrowDownRight
 } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../../../hooks/useAuth.js';
 import { useGetMyPayslipsQuery } from '../payrollApi.js';
 import { PayslipPreviewModal } from '../components/PayslipPreviewModal.jsx';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 
 export function MyPayslipsPage() {
+  const { isSuperAdmin } = useAuth();
   const [page, setPage] = useState(1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [previewPayslip, setPreviewPayslip] = useState(null);
   const accessToken = useSelector((state) => state.auth?.accessToken);
+
+  // Super Admin / Owner does not draw salary payslips; redirect to payroll dashboard
+  if (isSuperAdmin) {
+    return <Navigate to="/payroll" replace />;
+  }
 
   const { data, isLoading } = useGetMyPayslipsQuery({
     page,

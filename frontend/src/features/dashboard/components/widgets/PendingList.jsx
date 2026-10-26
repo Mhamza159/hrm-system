@@ -1,17 +1,29 @@
-/**
- * @file PendingList.jsx
- * @description Actionable tabbed pending approval list for HR and Managers.
- */
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Clock, ArrowRight, CheckCircle2, User } from 'lucide-react';
+import { Calendar, Clock, ArrowRight, CheckCircle2, User, Eye } from 'lucide-react';
 import { formatDate } from '../../../../lib/formatters.js';
+import { PunchCorrectionReviewModal } from '../../../attendance/components/PunchCorrectionReviewModal.jsx';
+import { WFHReviewModal } from '../../../attendance/components/WFHReviewModal.jsx';
 
-export function PendingList({ leaves = [], corrections = [], title = 'Pending Approvals' }) {
-  const [activeTab, setActiveTab] = useState('leaves');
+export function PendingList({ leaves = [], corrections = [], wfh = [], title = 'Pending Approvals', onRefresh }) {
+  const [activeTab, setActiveTab] = useState('leaves'); // 'leaves' | 'corrections' | 'wfh'
+  const [selectedCorrection, setSelectedCorrection] = useState(null);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
-  const items = activeTab === 'leaves' ? leaves : corrections;
+  const [selectedWFH, setSelectedWFH] = useState(null);
+  const [isWFHModalOpen, setIsWFHModalOpen] = useState(false);
+
+  const items = activeTab === 'leaves' ? leaves : activeTab === 'corrections' ? corrections : wfh;
+
+  const handleOpenCorrection = (item) => {
+    setSelectedCorrection(item);
+    setIsReviewModalOpen(true);
+  };
+
+  const handleOpenWFH = (item) => {
+    setSelectedWFH(item);
+    setIsWFHModalOpen(true);
+  };
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
@@ -38,6 +50,16 @@ export function PendingList({ leaves = [], corrections = [], title = 'Pending Ap
           >
             Corrections ({corrections.length})
           </button>
+          <button
+            onClick={() => setActiveTab('wfh')}
+            className={`px-3 py-1 rounded-lg font-medium transition-all ${
+              activeTab === 'wfh'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            WFH ({wfh.length})
+          </button>
         </div>
       </div>
 
@@ -49,7 +71,15 @@ export function PendingList({ leaves = [], corrections = [], title = 'Pending Ap
           </div>
         ) : (
           items.slice(0, 6).map((item) => (
-            <div key={item._id} className="py-3 flex items-center justify-between gap-3">
+            <div
+              key={item._id}
+              onClick={() => activeTab === 'corrections' && handleOpenCorrection(item)}
+              className={`py-3 flex items-center justify-between gap-3 ${
+                activeTab === 'corrections'
+                  ? 'cursor-pointer hover:bg-slate-50/80 dark:hover:bg-slate-800/40 px-2 -mx-2 rounded-xl transition-all group'
+                  : ''
+              }`}
+            >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 text-xs font-semibold text-slate-600 dark:text-slate-300 overflow-hidden">
                   {item.avatar ? (
@@ -59,7 +89,7 @@ export function PendingList({ leaves = [], corrections = [], title = 'Pending Ap
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                  <p className="text-xs font-semibold text-slate-900 dark:text-white truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                     {item.employeeName}
                   </p>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
@@ -69,23 +99,56 @@ export function PendingList({ leaves = [], corrections = [], title = 'Pending Ap
                         {' · '}
                         {item.totalDays} {item.totalDays === 1 ? 'day' : 'days'}
                       </>
-                    ) : (
+                    ) : activeTab === 'corrections' ? (
                       <>
                         Missed Punch on{' '}
-                        <span className="font-medium">{formatDate(item.date)}</span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">{formatDate(item.date)}</span>
+                        {item.department ? ` · ${item.department}` : ''}
+                      </>
+                    ) : (
+                      <>
+                        Work From Home on{' '}
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">{formatDate(item.date)}</span>
+                        {item.department ? ` · ${item.department}` : ''}
                       </>
                     )}
                   </p>
                 </div>
               </div>
 
-              <Link
-                to={activeTab === 'leaves' ? '/leaves' : '/attendance'}
-                className="shrink-0 p-1.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                title="Review request"
-              >
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+              {activeTab === 'corrections' ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenCorrection(item);
+                  }}
+                  className="shrink-0 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200/80 dark:border-emerald-800/60 rounded-lg transition-colors flex items-center gap-1 shadow-xs"
+                >
+                  <span>Review</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              ) : activeTab === 'wfh' ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenWFH(item);
+                  }}
+                  className="shrink-0 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 border border-indigo-200/80 dark:border-indigo-800/60 rounded-lg transition-colors flex items-center gap-1 shadow-xs"
+                >
+                  <span>Review</span>
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+              ) : (
+                <Link
+                  to="/leaves"
+                  className="shrink-0 p-1.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                  title="Review request"
+                >
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              )}
             </div>
           ))
         )}
@@ -94,13 +157,37 @@ export function PendingList({ leaves = [], corrections = [], title = 'Pending Ap
       {items.length > 6 && (
         <div className="pt-2 text-center border-t border-slate-100 dark:border-slate-800">
           <Link
-            to={activeTab === 'leaves' ? '/leaves' : '/attendance'}
+            to={activeTab === 'leaves' ? '/leaves' : activeTab === 'wfh' ? '/attendance/team?tab=wfh' : '/attendance/team?tab=corrections'}
             className="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
           >
             View all {items.length} pending requests
           </Link>
         </div>
       )}
+
+      {/* Audit & Decision Modal for Corrections */}
+      <PunchCorrectionReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => {
+          setIsReviewModalOpen(false);
+          setSelectedCorrection(null);
+        }}
+        correctionId={selectedCorrection?._id}
+        fallbackData={selectedCorrection}
+        onSuccess={onRefresh}
+      />
+
+      {/* Audit & Decision Modal for WFH */}
+      <WFHReviewModal
+        isOpen={isWFHModalOpen}
+        onClose={() => {
+          setIsWFHModalOpen(false);
+          setSelectedWFH(null);
+        }}
+        requestId={selectedWFH?._id}
+        fallbackData={selectedWFH}
+        onSuccess={onRefresh}
+      />
     </div>
   );
 }

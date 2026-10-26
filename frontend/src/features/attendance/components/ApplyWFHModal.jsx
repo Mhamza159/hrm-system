@@ -11,7 +11,7 @@ import { X, Laptop, AlertCircle } from 'lucide-react';
 import { useApplyWFHMutation } from '../attendanceApi.js';
 
 export const ApplyWFHModal = ({ isOpen, onClose, onSuccess }) => {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(new Date().toLocaleDateString('en-CA'));
   const [reason, setReason] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 

@@ -27,7 +27,7 @@ import { formatDate, formatDateShort } from '../../../lib/formatters.js';
 import { DashboardSkeleton } from './DashboardSkeleton.jsx';
 
 export function HrDashboard() {
-  const { data: response, isLoading, error } = useGetHrDashboardQuery();
+  const { data: response, isLoading, error, refetch } = useGetHrDashboardQuery();
   const data = response?.data;
 
   if (isLoading) {
@@ -85,7 +85,9 @@ export function HrDashboard() {
         <PendingList
           leaves={data?.pendingLeaves || []}
           corrections={data?.pendingCorrections || []}
+          wfh={data?.pendingWFH || []}
           title="Action Items & Approvals Queue"
+          onRefresh={refetch}
         />
 
         {/* Today's On-Leave Roster */}

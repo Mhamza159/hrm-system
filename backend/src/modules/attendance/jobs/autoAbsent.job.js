@@ -12,6 +12,8 @@ import cron from 'node-cron';
 import { Attendance } from '../../../models/attendance.model.js';
 import { Employee } from '../../../models/employee.model.js';
 import { Holiday } from '../../../models/holiday.model.js';
+import { Leave } from '../../../models/leave.model.js';
+import { WFHRequest } from '../../../models/wfh.model.js';
 import { Setting } from '../../../models/setting.model.js';
 import { normalizeToUtcMidnight } from '../attendance.service.js';
 
@@ -65,6 +67,53 @@ export const runAutoAbsentSweep = async (runDate = new Date()) => {
     // Check if attendance record exists for today
     const existing = await Attendance.findOne({ employeeId: emp._id, date: targetDate });
     if (existing) {
+      skipped++;
+      continue;
+    }
+
+    // 1. Check if employee has an approved leave for today
+    const approvedLeave = await Leave.findOne({
+      employeeId: emp._id,
+      status: 'approved',
+      startDate: { $lte: targetDate },
+      endDate: { $gte: targetDate }
+    }).lean();
+
+    if (approvedLeave) {
+      const leaveRecord = new Attendance({
+        employeeId: emp._id,
+        date: targetDate,
+        shiftId: emp.shiftId?._id || null,
+        checkIn: null,
+        checkOut: null,
+        status: 'on_leave',
+        source: 'system_leave_sync',
+        flags: []
+      });
+      await leaveRecord.save();
+      skipped++;
+      continue;
+    }
+
+    // 2. Check if employee has an approved WFH for today
+    const approvedWFH = await WFHRequest.findOne({
+      employeeId: emp._id,
+      date: targetDate,
+      status: 'approved'
+    }).lean();
+
+    if (approvedWFH) {
+      const wfhRecord = new Attendance({
+        employeeId: emp._id,
+        date: targetDate,
+        shiftId: emp.shiftId?._id || null,
+        checkIn: null,
+        checkOut: null,
+        status: 'present',
+        source: 'wfh',
+        flags: ['wfh']
+      });
+      await wfhRecord.save();
       skipped++;
       continue;
     }

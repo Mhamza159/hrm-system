@@ -26,9 +26,11 @@ import {
 } from '../attendanceApi.js';
 import { AttendanceStatusBadge } from './AttendanceStatusBadge.jsx';
 import { usePermission } from '../../../hooks/usePermission.js';
+import { useAuth } from '../../../hooks/useAuth.js';
 
 export const PunchCardWidget = ({ onActionSuccess }) => {
   const { can } = usePermission();
+  const { isSuperAdmin } = useAuth();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [breakModalOpen, setBreakModalOpen] = useState(false);
   const [selectedBreakType, setSelectedBreakType] = useState('meal');
@@ -168,9 +170,14 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
             {isClockedOut ? 'Total Worked Today' : isClockedIn ? 'Active Session' : 'Shift Status'}
           </span>
           <div className="text-xl font-bold font-mono text-slate-800 dark:text-slate-100">
-            {isClockedIn ? elapsedDuration : '--:--:--'}
+            {isClockedIn ? elapsedDuration : isSuperAdmin ? 'Flexible (Executive)' : '--:--:--'}
           </div>
           <div className="mt-1 flex items-center gap-2">
+            {!isClockedIn && isSuperAdmin && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60">
+                24/7 Any-Time Clock In
+              </span>
+            )}
             {todayRecord?.status && (
               <AttendanceStatusBadge status={todayRecord.status} />
             )}

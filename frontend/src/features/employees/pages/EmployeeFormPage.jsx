@@ -45,6 +45,8 @@ import {
   useGetShiftsQuery
 } from '../../departments/departmentsApi.js';
 import { useGetRolesQuery } from '../../roles/rolesApi.js';
+import { RoleSelect } from '../components/RoleSelect.jsx';
+import { ManagerSelect } from '../components/ManagerSelect.jsx';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { Card } from '../../../components/common/Card.jsx';
 import { cn } from '../../../lib/utils.js';
@@ -54,7 +56,7 @@ const STEPS = [
   { id: 2, title: 'Contact & Emergency', icon: Phone },
   { id: 3, title: 'Job Assignment', icon: Briefcase },
   { id: 4, title: 'Bank & Financials', icon: CreditCard },
-  { id: 5, title: 'Account & Submit', icon: ShieldCheck }
+  { id: 5, title: 'Account & Review', icon: ShieldCheck }
 ];
 
 export default function EmployeeFormPage() {
@@ -206,7 +208,8 @@ export default function EmployeeFormPage() {
 
   // Filter Direct Reporting Managers:
   // 1. Exclude the employee currently being edited (prevents self-reporting circular loop)
-  // 2. Only include High Staff (Senior, Lead, Executive grades, management roles, or Executive Admin)
+  // 2. Restrict strictly to Higher Authority personnel: Super Admin, HR Manager, Department Manager, or Executive Directors
+  // Standard non-authority staff (such as Senior Software Engineers like Sajwar Babar or Junior staff) are excluded.
   const currentEditingId = isEditMode ? (employeeData?.data?._id || id) : null;
 
   const eligibleManagers = useMemo(() => {
@@ -219,35 +222,29 @@ export default function EmployeeFormPage() {
         return false;
       }
 
-      // Rule 2: High Staff Eligibility:
-      // a) Super Admin / Top Executive by email or code
+      // Rule 2: Super Admin by employeeCode or root email
       if (
-        mgr.email === 'admin@hrm.company.pk' ||
+        mgr.employeeCode === 'EMP-000' ||
         mgr.email === 'mhamzaofficial159@gmail.com' ||
-        mgr.employeeCode === 'EMP-000'
+        mgr.email === 'admin@hrm.company.pk'
       ) {
         return true;
       }
 
-      // b) Designation Grade: Executive, Lead, Senior
-      const grade = mgr.designationId?.grade;
-      if (['Executive', 'Lead', 'Senior'].includes(grade)) {
-        return true;
-      }
-
-      // c) Management Roles: Super Admin, HR Manager, Department Manager
-      const userRoles = Array.isArray(mgr.userId?.roles) ? mgr.userId.roles : [];
-      const hasManagerRole = userRoles.some((r) => {
+      // Rule 3: Check system user role authorization (Super Admin, HR Manager, Department Manager)
+      const userRoles = mgr.userId?.roles || [];
+      const hasMgmtRole = userRoles.some((r) => {
         const roleName = typeof r === 'string' ? r : r?.name;
         return ['Super Admin', 'HR Manager', 'Department Manager'].includes(roleName);
       });
-      if (hasManagerRole) {
+      if (hasMgmtRole) {
         return true;
       }
 
-      // d) Manager / Director / Head in job title
+      // Rule 4: Executive / Managerial title check, strictly excluding standard software engineering/development staff
       const title = (mgr.designationId?.title || '').toLowerCase();
-      if (/director|manager|head|lead|chief|executive|officer|admin/i.test(title)) {
+      const isStaffOrEngineer = /engineer|developer|intern|junior|officer|assistant|clerk|tester|qa|analyst/i.test(title);
+      if (!isStaffOrEngineer && /\b(director|manager|head of|chief|ceo|cto|cfo|executive director)\b/i.test(title)) {
         return true;
       }
 
@@ -261,6 +258,16 @@ export default function EmployeeFormPage() {
       setValue('employeeCode', nextCodeData.data.nextCode);
     }
   }, [isEditMode, nextCodeData, setValue]);
+
+  // Set default roleId in create mode
+  useEffect(() => {
+    if (!isEditMode && roles.length > 0 && !watch('roleId')) {
+      const defaultRole = roles.find((r) => r.name === 'Employee') || roles[0];
+      if (defaultRole) {
+        setValue('roleId', defaultRole._id);
+      }
+    }
+  }, [isEditMode, roles, setValue, watch]);
 
   // Populate data in edit mode
   useEffect(() => {
@@ -452,7 +459,11 @@ export default function EmployeeFormPage() {
             <button
               key={step.id}
               type="button"
-              onClick={() => setCurrentStep(step.id)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setCurrentStep(step.id);
+              }}
               className={cn(
                 'flex flex-col md:flex-row items-center gap-2 p-2.5 rounded-lg text-left transition-all cursor-pointer',
                 isActive && 'bg-[#00C471]/10 text-[#00C471] font-semibold border border-[#00C471]/30',
@@ -478,7 +489,15 @@ export default function EmployeeFormPage() {
         })}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        onKeyDown={(e) => {
+          // Strictly prevent accidental submit when pressing Enter in text inputs
+          if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+            e.preventDefault();
+          }
+        }}
+      >
         {/* STEP 1: Personal Details */}
         {currentStep === 1 && (
           <Card className="p-6 space-y-5">
@@ -778,22 +797,17 @@ export default function EmployeeFormPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Direct Reporting Manager
                 </label>
-                <select
-                  {...register('managerId')}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
-                >
-                  <option value="">-- Select Reporting Manager --</option>
-                  {eligibleManagers.map((mgr) => (
-                    <option key={mgr._id} value={mgr._id}>
-                      {mgr.name} ({mgr.employeeCode}){mgr.designationId?.title ? ` • ${mgr.designationId.title}` : ''}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-[11px] text-slate-500 mt-1">
-                  Only senior managers, department leads, and executive admins are eligible.
+                <ManagerSelect
+                  managers={eligibleManagers}
+                  value={watch('managerId')}
+                  onChange={(mgrId) => setValue('managerId', mgrId, { shouldValidate: true })}
+                />
+                <input type="hidden" {...register('managerId')} />
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                  Designated leadership authority (Super Admin, HR Manager, or Department Manager).
                 </p>
               </div>
 
@@ -933,7 +947,7 @@ export default function EmployeeFormPage() {
         {!isSuperAdminProfile && currentStep === 5 && (
           <Card className="p-6 space-y-6">
             <h3 className="text-base font-semibold text-slate-900 border-b pb-3">
-              Step 5: Account Provisioning & Submission
+              Step 5: Account Provisioning & Review
             </h3>
 
             {!isEditMode && (
@@ -960,16 +974,11 @@ export default function EmployeeFormPage() {
                       <span>System Access Role</span>
                       <span className="text-rose-500">*</span>
                     </label>
-                    <select
-                      {...register('roleId')}
-                      className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-[#0B1510] focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] text-slate-800 dark:text-slate-100 font-semibold cursor-pointer"
-                    >
-                      {roles.map((role) => (
-                        <option key={role._id} value={role._id}>
-                          {role.name} {role.isSystem ? '· (System Core)' : '· (Custom Role)'}
-                        </option>
-                      ))}
-                    </select>
+                    <RoleSelect
+                      roles={roles}
+                      value={watch('roleId')}
+                      onChange={(roleId) => setValue('roleId', roleId, { shouldValidate: true })}
+                    />
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">
                       Select the system software permissions role for this employee (e.g. <strong>HR Manager</strong> for company-wide HR management, <strong>Department Manager</strong> for team approvals, or <strong>Employee</strong> for self-service). Super Admin is restricted for executive security.
                     </p>
@@ -984,16 +993,11 @@ export default function EmployeeFormPage() {
                   <ShieldCheck className="w-4 h-4 text-[#00C471]" />
                   <span>Assigned System Access Role</span>
                 </label>
-                <select
-                  {...register('roleId')}
-                  className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#0B1510] focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] text-slate-800 dark:text-slate-100 font-semibold cursor-pointer"
-                >
-                  {roles.map((role) => (
-                    <option key={role._id} value={role._id}>
-                      {role.name} {role.isSystem ? '· (System Core)' : '· (Custom Role)'}
-                    </option>
-                  ))}
-                </select>
+                <RoleSelect
+                  roles={roles}
+                  value={watch('roleId')}
+                  onChange={(roleId) => setValue('roleId', roleId, { shouldValidate: true })}
+                />
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   Modifying this role updates the software access and permissions of this employee's linked portal account.
                 </p>
@@ -1046,14 +1050,20 @@ export default function EmployeeFormPage() {
 
           {currentStep < totalSteps ? (
             <button
+              key="btn-next-step"
               type="button"
-              onClick={nextStep}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                nextStep();
+              }}
               className="px-5 py-2.5 rounded-lg text-xs font-semibold bg-[#00C471] text-white hover:bg-[#049856] flex items-center gap-2 shadow-sm cursor-pointer transition-colors"
             >
               Next Step <ArrowRight className="w-4 h-4" />
             </button>
           ) : (
             <button
+              key="btn-submit-employee"
               type="submit"
               disabled={isCreating || isUpdating}
               className="px-6 py-2.5 rounded-lg text-xs font-semibold bg-[#00C471] text-white hover:bg-[#049856] flex items-center gap-2 shadow-sm cursor-pointer transition-colors disabled:opacity-50"

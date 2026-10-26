@@ -113,12 +113,12 @@ export const applyWFH = asyncHandler(async (req, res) => {
 });
 
 export const getMyWFHRequests = asyncHandler(async (req, res) => {
-  const result = await attendanceService.getMyWFHRequests(req.user);
+  const result = await attendanceService.getMyWFHRequests(req.user, req.query);
   return res.status(200).json(apiResponse(200, result, 'My WFH requests retrieved successfully'));
 });
 
 export const getTeamWFHRequests = asyncHandler(async (req, res) => {
-  const result = await attendanceService.getTeamWFHRequests(req.user);
+  const result = await attendanceService.getTeamWFHRequests(req.user, req.query);
   return res.status(200).json(apiResponse(200, result, 'Team WFH requests retrieved successfully'));
 });
 
@@ -130,6 +130,14 @@ export const decideWFH = asyncHandler(async (req, res) => {
     decisionReason: req.body.decisionReason
   });
   return res.status(200).json(apiResponse(200, result, `WFH request ${req.body.decision} successfully`));
+});
+
+export const getWFHAuditContext = asyncHandler(async (req, res) => {
+  const result = await attendanceService.getWFHAuditContext({
+    requestId: req.params.id,
+    user: req.user
+  });
+  return res.status(200).json(apiResponse(200, result, 'WFH audit context retrieved successfully'));
 });
 
 export const applyCorrection = asyncHandler(async (req, res) => {
@@ -144,12 +152,12 @@ export const applyCorrection = asyncHandler(async (req, res) => {
 });
 
 export const getMyCorrections = asyncHandler(async (req, res) => {
-  const result = await attendanceService.getMyCorrections(req.user);
+  const result = await attendanceService.getMyCorrections(req.user, req.query);
   return res.status(200).json(apiResponse(200, result, 'My correction requests retrieved successfully'));
 });
 
 export const getTeamCorrections = asyncHandler(async (req, res) => {
-  const result = await attendanceService.getTeamCorrections(req.user);
+  const result = await attendanceService.getTeamCorrections(req.user, req.query);
   return res.status(200).json(apiResponse(200, result, 'Team correction requests retrieved successfully'));
 });
 
@@ -161,6 +169,14 @@ export const decideCorrection = asyncHandler(async (req, res) => {
     decisionNotes: req.body.decisionNotes
   });
   return res.status(200).json(apiResponse(200, result, `Correction request ${req.body.decision} successfully`));
+});
+
+export const getCorrectionAuditContext = asyncHandler(async (req, res) => {
+  const result = await attendanceService.getCorrectionAuditContext({
+    correctionId: req.params.id,
+    user: req.user
+  });
+  return res.status(200).json(apiResponse(200, result, 'Correction audit context retrieved successfully'));
 });
 
 export const exportAttendance = asyncHandler(async (req, res) => {
@@ -180,3 +196,17 @@ export const triggerAutoAbsentSweep = asyncHandler(async (req, res) => {
   const result = await runAutoAbsentSweep(targetDate);
   return res.status(200).json(apiResponse(200, result, 'Auto-absent sweep executed successfully'));
 });
+
+export const getAttendanceHistory = asyncHandler(async (req, res) => {
+  const result = await attendanceService.getAttendanceHistory({
+    user: req.user,
+    month: req.query.month,
+    search: req.query.search,
+    departmentId: req.query.departmentId,
+    selfOnly: req.query.selfOnly === true || req.query.selfOnly === 'true',
+    page: req.query.page,
+    limit: req.query.limit
+  });
+  return res.status(200).json(apiResponse(200, result, 'Attendance history retrieved successfully'));
+});
+

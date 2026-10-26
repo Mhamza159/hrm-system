@@ -66,6 +66,7 @@ export function Sidebar({ isOpen = false, onClose }) {
 
   // Helper to filter items based on CASL permission & role guards
   const isItemVisible = (item) => {
+    if (item.excludeSuperAdmin && isSuperAdmin) return false;
     if (item.permission && !can(item.permission)) return false;
     if (item.hrOnly && !isHR && !can('user.manage')) return false;
     if (item.superAdminOnly && !isSuperAdmin) return false;
@@ -107,7 +108,7 @@ export function Sidebar({ isOpen = false, onClose }) {
       name: 'Payroll',
       icon: BadgeDollarSign,
       children: [
-        { name: 'My Payslips', path: '/payroll/my-payslips' },
+        { name: 'My Payslips', path: '/payroll/my-payslips', excludeSuperAdmin: true },
         { name: 'Payroll Overview', path: '/payroll', permission: 'payroll.manage' },
         { name: 'Salary Structures', path: '/payroll/salary-structures', permission: 'payroll.manage' },
         { name: 'Payroll Runs', path: '/payroll/runs', permission: 'payroll.manage' },
