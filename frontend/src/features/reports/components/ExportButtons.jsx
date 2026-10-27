@@ -14,7 +14,7 @@ import { FileSpreadsheet, FileText, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePermission } from '../../../hooks/usePermission.js';
 
-export function ExportButtons({ type, from, to, departmentId, employeeId, status }) {
+export function ExportButtons({ type, from, to, departmentId, employeeId, status, view }) {
   const { can } = usePermission();
   const [isExportingExcel, setIsExportingExcel] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
@@ -37,6 +37,7 @@ export function ExportButtons({ type, from, to, departmentId, employeeId, status
       if (departmentId) params.append('departmentId', departmentId);
       if (employeeId) params.append('employeeId', employeeId);
       if (status) params.append('status', status);
+      if (view) params.append('view', view);
 
       const url = `/api/v1/reports/${type}?${params.toString()}`;
 

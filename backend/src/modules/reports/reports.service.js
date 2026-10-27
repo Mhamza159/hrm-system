@@ -59,6 +59,7 @@ export const generateReportData = async ({
   departmentId,
   employeeId,
   status,
+  view = 'daily',
   page = 1,
   limit = 25,
   user,
@@ -86,11 +87,11 @@ export const generateReportData = async ({
   let result;
   switch (type) {
     case 'attendance':
-      result = await generateAttendanceReport({ from, to, departmentId, employeeId, status, page, limit, teamMemberIds });
+      result = await generateAttendanceReport({ from, to, departmentId, employeeId, status, view, page, limit, teamMemberIds });
       break;
 
     case 'leave':
-      result = await generateLeaveReport({ from, to, departmentId, employeeId, status, page, limit, teamMemberIds });
+      result = await generateLeaveReport({ from, to, departmentId, employeeId, status, view, page, limit, teamMemberIds });
       break;
 
     case 'payroll':
@@ -129,7 +130,7 @@ export const generateReportData = async ({
 /**
  * Attendance Report
  */
-async function generateAttendanceReport({ from, to, departmentId, employeeId, status, page, limit, teamMemberIds }) {
+async function generateAttendanceReport({ from, to, departmentId, employeeId, status, view = 'daily', page, limit, teamMemberIds }) {
   const query = {};
 
   if (from && to) {
@@ -190,12 +191,160 @@ async function generateAttendanceReport({ from, to, departmentId, employeeId, st
     }
   }
 
+  // 1. Compute Overall KPI Summary Across All Matching Records
+  const allMatched = await Attendance.find(query)
+    .select('status workDurationMinutes overtimeMinutes overtimeApproved checkIn')
+    .lean();
+
+  const totalWorkedMinutes = allMatched.reduce((acc, a) => acc + (a.workDurationMinutes || 0), 0);
+  const totalOtMinutes = allMatched.reduce((acc, a) => acc + (a.overtimeMinutes || 0), 0);
+  const presentCount = allMatched.filter((a) => a.status === 'present').length;
+  const lateCount = allMatched.filter((a) => a.status === 'late').length;
+  const halfDayCount = allMatched.filter((a) => a.status === 'half_day').length;
+  const absentCount = allMatched.filter((a) => a.status === 'absent').length;
+  const totalPunches = allMatched.length;
+  const rate = totalPunches > 0 ? Math.round(((presentCount + lateCount + halfDayCount * 0.5) / totalPunches) * 1000) / 10 : 0;
+
+  const summary = {
+    totalRecords: totalPunches,
+    totalWorkHours: Math.round((totalWorkedMinutes / 60) * 10) / 10,
+    totalOvertimeHours: Math.round((totalOtMinutes / 60) * 10) / 10,
+    totalLates: lateCount,
+    totalAbsents: absentCount,
+    attendanceRate: rate
+  };
+
+  // 2. View Mode: Employee-wise Aggregated Rollup with Drill-Down
+  if (view === 'employee') {
+    const allRecords = await Attendance.find(query)
+      .populate({
+        path: 'employeeId',
+        select: 'name employeeCode avatar departmentId designationId',
+        populate: [
+          { path: 'departmentId', select: 'name' },
+          { path: 'designationId', select: 'title' }
+        ]
+      })
+      .sort({ date: -1 })
+      .lean();
+
+    // Group by Employee ID
+    const empGroups = {};
+    for (const r of allRecords) {
+      const eId = r.employeeId?._id?.toString() || 'unknown';
+      if (!empGroups[eId]) {
+        empGroups[eId] = {
+          _id: eId,
+          employeeId: r.employeeId?._id,
+          employeeCode: r.employeeId?.employeeCode || 'N/A',
+          name: r.employeeId?.name || 'Staff',
+          avatar: r.employeeId?.avatar || null,
+          department: r.employeeId?.departmentId?.name || 'General',
+          designation: r.employeeId?.designationId?.title || 'Team Member',
+          presentDays: 0,
+          lateDays: 0,
+          halfDays: 0,
+          absentDays: 0,
+          totalWorkMinutes: 0,
+          totalOtMinutes: 0,
+          approvedOtMinutes: 0,
+          totalDays: 0,
+          punches: []
+        };
+      }
+
+      const g = empGroups[eId];
+      g.totalDays += 1;
+      if (r.status === 'present') g.presentDays += 1;
+      else if (r.status === 'late') g.lateDays += 1;
+      else if (r.status === 'half_day') g.halfDays += 1;
+      else if (r.status === 'absent') g.absentDays += 1;
+
+      g.totalWorkMinutes += (r.workDurationMinutes || 0);
+      g.totalOtMinutes += (r.overtimeMinutes || 0);
+      if (r.overtimeApproved) g.approvedOtMinutes += (r.overtimeMinutes || 0);
+
+      let lateMins = 0;
+      if (r.status === 'late' && r.checkIn) {
+        const d = dayjs(r.checkIn);
+        const shiftStart = d.startOf('day').add(9, 'hour');
+        lateMins = Math.max(0, d.diff(shiftStart, 'minute'));
+      }
+
+      g.punches.push({
+        _id: r._id,
+        date: r.date ? dayjs(r.date).format('DD MMM YYYY') : '-',
+        rawDate: r.date,
+        status: r.status,
+        checkIn: r.checkIn ? dayjs(r.checkIn).format('hh:mm A') : '-',
+        checkOut: r.checkOut ? dayjs(r.checkOut).format('hh:mm A') : '-',
+        workHours: Math.round(((r.workDurationMinutes || 0) / 60) * 10) / 10,
+        lateMinutes: lateMins,
+        overtimeHours: Math.round(((r.overtimeMinutes || 0) / 60) * 10) / 10,
+        overtimeApproved: !!r.overtimeApproved
+      });
+    }
+
+    const employeeRows = Object.values(empGroups).map((g) => {
+      const attRate = g.totalDays > 0
+        ? Math.round(((g.presentDays + g.lateDays + g.halfDays * 0.5) / g.totalDays) * 1000) / 10
+        : 0;
+
+      return {
+        _id: g._id,
+        employeeCode: g.employeeCode,
+        name: g.name,
+        avatar: g.avatar,
+        department: g.department,
+        designation: g.designation,
+        presentDays: g.presentDays,
+        lateDays: g.lateDays,
+        halfDays: g.halfDays,
+        absentDays: g.absentDays,
+        totalWorkHours: Math.round((g.totalWorkMinutes / 60) * 10) / 10,
+        totalOvertimeHours: Math.round((g.totalOtMinutes / 60) * 10) / 10,
+        approvedOvertimeHours: Math.round((g.approvedOtMinutes / 60) * 10) / 10,
+        attendanceRate: `${attRate}%`,
+        punches: g.punches
+      };
+    });
+
+    const columns = [
+      { header: 'Employee', key: 'name' },
+      { header: 'Department', key: 'department' },
+      { header: 'Present Days', key: 'presentDays' },
+      { header: 'Late Days', key: 'lateDays' },
+      { header: 'Half Days', key: 'halfDays' },
+      { header: 'Absent Days', key: 'absentDays' },
+      { header: 'Worked Hours', key: 'totalWorkHours' },
+      { header: 'Overtime (hrs)', key: 'totalOvertimeHours' },
+      { header: 'Attendance Rate', key: 'attendanceRate' }
+    ];
+
+    const totalEmps = employeeRows.length;
+    const paginatedItems = employeeRows.slice((page - 1) * limit, page * limit);
+
+    return {
+      columns,
+      items: paginatedItems,
+      total: totalEmps,
+      page,
+      limit,
+      summary,
+      title: 'Employee Attendance Rollup & Analytics'
+    };
+  }
+
+  // 3. View Mode: Daily Transactional Log
   const total = await Attendance.countDocuments(query);
   const records = await Attendance.find(query)
     .populate({
       path: 'employeeId',
-      select: 'name employeeCode departmentId',
-      populate: { path: 'departmentId', select: 'name' }
+      select: 'name employeeCode avatar departmentId designationId',
+      populate: [
+        { path: 'departmentId', select: 'name' },
+        { path: 'designationId', select: 'title' }
+      ]
     })
     .sort({ date: -1 })
     .skip((page - 1) * limit)
@@ -212,30 +361,44 @@ async function generateAttendanceReport({ from, to, departmentId, employeeId, st
     { header: 'Check Out', key: 'checkOut' },
     { header: 'Work Hours', key: 'workHours' },
     { header: 'Late (Mins)', key: 'lateMinutes' },
-    { header: 'Overtime (Mins)', key: 'overtimeMinutes' }
+    { header: 'Overtime', key: 'overtimeMinutes' }
   ];
 
-  const items = records.map((r) => ({
-    _id: r._id,
-    employeeCode: r.employeeId?.employeeCode || 'N/A',
-    name: r.employeeId?.name || 'Staff',
-    department: r.employeeId?.departmentId?.name || 'General',
-    date: r.date,
-    status: r.status?.toUpperCase() || 'PRESENT',
-    checkIn: r.checkIn?.time ? dayjs(r.checkIn.time).format('hh:mm A') : '-',
-    checkOut: r.checkOut?.time ? dayjs(r.checkOut.time).format('hh:mm A') : '-',
-    workHours: Math.round(((r.workDurationMinutes || 0) / 60) * 10) / 10,
-    lateMinutes: r.lateMinutes || 0,
-    overtimeMinutes: r.overtimeMinutes || 0
-  }));
+  const items = records.map((r) => {
+    let lateMins = 0;
+    if (r.status === 'late' && r.checkIn) {
+      const d = dayjs(r.checkIn);
+      const shiftStart = d.startOf('day').add(9, 'hour');
+      lateMins = Math.max(0, d.diff(shiftStart, 'minute'));
+    }
 
-  return { columns, items, total, page, limit, title: 'Attendance Summary Report' };
+    return {
+      _id: r._id,
+      employeeId: r.employeeId?._id,
+      employeeCode: r.employeeId?.employeeCode || 'N/A',
+      name: r.employeeId?.name || 'Staff',
+      avatar: r.employeeId?.avatar || null,
+      department: r.employeeId?.departmentId?.name || 'General',
+      designation: r.employeeId?.designationId?.title || 'Staff',
+      date: r.date ? dayjs(r.date).format('DD MMM YYYY') : '-',
+      rawDate: r.date,
+      status: r.status?.toUpperCase() || 'PRESENT',
+      checkIn: r.checkIn ? dayjs(r.checkIn).format('hh:mm A') : '-',
+      checkOut: r.checkOut ? dayjs(r.checkOut).format('hh:mm A') : '-',
+      workHours: Math.round(((r.workDurationMinutes || 0) / 60) * 10) / 10,
+      lateMinutes: lateMins,
+      overtimeMinutes: r.overtimeMinutes || 0,
+      overtimeApproved: !!r.overtimeApproved
+    };
+  });
+
+  return { columns, items, total, page, limit, summary, title: 'Attendance Summary Report' };
 }
 
 /**
  * Leave Utilization Report
  */
-async function generateLeaveReport({ from, to, departmentId, employeeId, status, page, limit, teamMemberIds }) {
+async function generateLeaveReport({ from, to, departmentId, employeeId, status, view = 'daily', page, limit, teamMemberIds }) {
   const query = {};
 
   if (from && to) {
@@ -278,12 +441,146 @@ async function generateLeaveReport({ from, to, departmentId, employeeId, status,
     }
   }
 
+  // 1. KPI Summary
+  const allLeaves = await Leave.find(query).populate('leaveTypeId', 'name code isPaid').lean();
+  let totalApprovedDays = 0;
+  let paidDays = 0;
+  let unpaidDays = 0;
+  let pendingCount = 0;
+
+  for (const l of allLeaves) {
+    const d = l.days ?? l.totalDays ?? 1;
+    if (l.status === 'approved') {
+      totalApprovedDays += d;
+      if (l.leaveTypeId?.isPaid !== false && l.leaveTypeId?.code !== 'UNPAID') {
+        paidDays += d;
+      } else {
+        unpaidDays += d;
+      }
+    } else if (l.status === 'pending') {
+      pendingCount += 1;
+    }
+  }
+
+  const summary = {
+    totalApplications: allLeaves.length,
+    totalLeaveDays: totalApprovedDays,
+    paidLeaveDays: paidDays,
+    unpaidLeaveDays: unpaidDays,
+    pendingApplications: pendingCount
+  };
+
+  // 2. View Mode: Employee-wise Aggregated Rollup with Drill-Down
+  if (view === 'employee') {
+    const empGroups = {};
+    for (const l of allLeaves) {
+      const eId = l.employeeId?.toString() || 'unknown';
+      if (!empGroups[eId]) {
+        empGroups[eId] = {
+          _id: eId,
+          employeeId: l.employeeId,
+          casualDays: 0,
+          annualDays: 0,
+          sickDays: 0,
+          unpaidDays: 0,
+          totalApprovedDays: 0,
+          pendingRequests: 0,
+          applications: []
+        };
+      }
+
+      const g = empGroups[eId];
+      const d = l.days ?? l.totalDays ?? 1;
+      const code = (l.leaveTypeId?.code || '').toUpperCase();
+
+      if (l.status === 'approved') {
+        g.totalApprovedDays += d;
+        if (code === 'CASUAL') g.casualDays += d;
+        else if (code === 'ANNUAL') g.annualDays += d;
+        else if (code === 'SICK') g.sickDays += d;
+        else if (code === 'UNPAID') g.unpaidDays += d;
+      } else if (l.status === 'pending') {
+        g.pendingRequests += 1;
+      }
+
+      g.applications.push({
+        _id: l._id,
+        leaveType: l.leaveTypeId?.name || 'Leave',
+        code: l.leaveTypeId?.code || 'LEAVE',
+        startDate: l.startDate ? dayjs(l.startDate).format('DD MMM YYYY') : '-',
+        endDate: l.endDate ? dayjs(l.endDate).format('DD MMM YYYY') : '-',
+        totalDays: d,
+        status: l.status ? l.status.toUpperCase() : 'PENDING',
+        reason: l.reason || '-'
+      });
+    }
+
+    // Populate employee details for the groups
+    const empIds = Object.keys(empGroups);
+    const emps = await Employee.find({ _id: { $in: empIds } })
+      .populate('departmentId', 'name')
+      .populate('designationId', 'title')
+      .lean();
+
+    const empInfoMap = {};
+    for (const e of emps) {
+      empInfoMap[e._id.toString()] = e;
+    }
+
+    const employeeRows = Object.values(empGroups).map((g) => {
+      const emp = empInfoMap[g._id] || {};
+      return {
+        _id: g._id,
+        employeeCode: emp.employeeCode || 'N/A',
+        name: emp.name || 'Staff',
+        avatar: emp.avatar || null,
+        department: emp.departmentId?.name || 'General',
+        designation: emp.designationId?.title || 'Staff',
+        casualDays: g.casualDays,
+        annualDays: g.annualDays,
+        sickDays: g.sickDays,
+        unpaidDays: g.unpaidDays,
+        totalApprovedDays: g.totalApprovedDays,
+        pendingRequests: g.pendingRequests,
+        applications: g.applications
+      };
+    });
+
+    const columns = [
+      { header: 'Employee', key: 'name' },
+      { header: 'Department', key: 'department' },
+      { header: 'Casual Used', key: 'casualDays' },
+      { header: 'Annual Used', key: 'annualDays' },
+      { header: 'Sick Used', key: 'sickDays' },
+      { header: 'Unpaid (LWP)', key: 'unpaidDays' },
+      { header: 'Total Approved', key: 'totalApprovedDays' },
+      { header: 'Pending Requests', key: 'pendingRequests' }
+    ];
+
+    const totalEmps = employeeRows.length;
+    const paginatedItems = employeeRows.slice((page - 1) * limit, page * limit);
+
+    return {
+      columns,
+      items: paginatedItems,
+      total: totalEmps,
+      page,
+      limit,
+      summary,
+      title: 'Employee Leave Ledger & Utilization'
+    };
+  }
+
+  // 3. View Mode: Daily Transactional Log
   const total = await Leave.countDocuments(query);
   const records = await Leave.find(query)
     .populate({
       path: 'employeeId',
-      select: 'name employeeCode departmentId',
-      populate: { path: 'departmentId', select: 'name' }
+      select: 'name employeeCode avatar departmentId designationId',
+      populate: [
+        { path: 'departmentId', select: 'name' },
+        { path: 'designationId', select: 'title' }
+      ]
     })
     .populate('leaveTypeId', 'name code')
     .sort({ createdAt: -1 })
@@ -305,18 +602,21 @@ async function generateLeaveReport({ from, to, departmentId, employeeId, status,
 
   const items = records.map((l) => ({
     _id: l._id,
+    employeeId: l.employeeId?._id,
     employeeCode: l.employeeId?.employeeCode || 'N/A',
     name: l.employeeId?.name || 'Staff',
+    avatar: l.employeeId?.avatar || null,
     department: l.employeeId?.departmentId?.name || 'General',
+    designation: l.employeeId?.designationId?.title || 'Staff',
     leaveType: l.leaveTypeId?.name || 'Leave',
-    startDate: l.startDate ? dayjs(l.startDate).format('YYYY-MM-DD') : '-',
-    endDate: l.endDate ? dayjs(l.endDate).format('YYYY-MM-DD') : '-',
+    startDate: l.startDate ? dayjs(l.startDate).format('DD MMM YYYY') : '-',
+    endDate: l.endDate ? dayjs(l.endDate).format('DD MMM YYYY') : '-',
     totalDays: l.days ?? l.totalDays ?? 1,
     status: l.status?.toUpperCase() || 'PENDING',
     reason: l.reason || '-'
   }));
 
-  return { columns, items, total, page, limit, title: 'Leave Utilization Report' };
+  return { columns, items, total, page, limit, summary, title: 'Leave Utilization Report' };
 }
 
 /**

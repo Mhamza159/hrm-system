@@ -8,7 +8,7 @@ import { baseApi } from '../../lib/baseApi.js';
 export const reportsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getReportData: builder.query({
-      query: ({ type, from, to, departmentId, employeeId, status, page = 1, limit = 25 }) => ({
+      query: ({ type, from, to, departmentId, employeeId, status, view, page = 1, limit = 25 }) => ({
         url: `/reports/${type}`,
         params: {
           from: from || undefined,
@@ -16,6 +16,7 @@ export const reportsApi = baseApi.injectEndpoints({
           departmentId: departmentId || undefined,
           employeeId: employeeId || undefined,
           status: status || undefined,
+          view: view || undefined,
           page,
           limit
         }

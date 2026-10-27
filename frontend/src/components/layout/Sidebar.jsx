@@ -49,6 +49,7 @@ import { useAuth } from '../../hooks/useAuth.js';
 import { usePermission } from '../../hooks/usePermission.js';
 import { logout } from '../../features/auth/authSlice.js';
 import { useLogoutMutation } from '../../features/auth/authApi.js';
+import { useGetNotificationsQuery } from '../../features/notifications/notificationsApi.js';
 import { RoleBadge } from '../common/RoleBadge.jsx';
 import { getUserDisplayName } from '../../lib/formatters.js';
 import { cn } from '../../lib/utils.js';
@@ -60,6 +61,12 @@ export function Sidebar({ isOpen = false, onClose }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [logoutApi] = useLogoutMutation();
+
+  const { data: notifData } = useGetNotificationsQuery(
+    { page: 1, limit: 1, unreadOnly: 'false' },
+    { pollingInterval: 60000 }
+  );
+  const unreadCount = notifData?.data?.unreadCount || 0;
 
   const userName = getUserDisplayName(user);
   const primaryRole = user?.roles?.[0] || 'Employee';
@@ -119,7 +126,7 @@ export function Sidebar({ isOpen = false, onClose }) {
     { type: 'link', name: 'Reports', path: '/reports', icon: BarChart3, permission: 'report.view' },
     { type: 'link', name: 'Company Policies', path: '/policies', icon: BookOpen, permission: 'settings.view' },
     { type: 'link', name: 'Announcements', path: '/announcements', icon: Megaphone, permission: 'announcement.view' },
-    { type: 'link', name: 'Notifications', path: '/notifications', icon: Bell, badge: 3 },
+    { type: 'link', name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount > 0 ? unreadCount : undefined },
     { type: 'link', name: 'Login History', path: '/login-history', icon: History, permission: 'login.history' }
   ];
 

@@ -22,6 +22,7 @@ export const reportQuerySchema = z
     departmentId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid department ID').optional(),
     employeeId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid employee ID').optional(),
     status: z.string().max(40).regex(/^[a-zA-Z0-9_\s-]+$/, 'Invalid status format').optional(),
+    view: z.enum(['daily', 'employee']).default('daily').optional(),
     format: z.enum(['json', 'xlsx', 'pdf']).default('json'),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(500).default(25)

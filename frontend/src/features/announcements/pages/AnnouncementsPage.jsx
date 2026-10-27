@@ -1,6 +1,11 @@
 /**
  * @file AnnouncementsPage.jsx
  * @description Main Company & Department Announcements Page (Module M8 / Slice 8.6).
+ * 
+ * SPECIFICATION:
+ * - Module: M8 Internal Comms & Announcements
+ * - Design: Forest & Emerald Enterprise Craft (DESIGN.md)
+ * - Layer: Feature Page (React 18 / Tailwind)
  */
 
 import React, { useState } from 'react';
@@ -8,12 +13,12 @@ import {
   Megaphone,
   Plus,
   Search,
-  Filter,
   Globe2,
   Building2,
   RefreshCw,
   Inbox
 } from 'lucide-react';
+import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { Can } from '../../../components/common/Can.jsx';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { useGetAnnouncementsQuery } from '../announcementsApi.js';
@@ -53,23 +58,17 @@ export function AnnouncementsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner / Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-[#1E2235]">
-        <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2.5">
-            <Megaphone className="w-5 h-5 text-[#5E6AD2]" />
-            <span>Announcements & Notice Board</span>
-          </h1>
-          <p className="text-xs text-[#8F94A8] mt-1">
-            Stay aligned with executive announcements, department directives, and operational bulletins.
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-3">
+      {/* 1. Page Header */}
+      <PageHeader
+        title="Announcements & Notice Board"
+        description="Stay aligned with executive announcements, department directives, and operational bulletins."
+      >
+        <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="p-2 rounded-lg bg-[#0F111A] border border-[#1E2235] text-[#8F94A8] hover:text-white hover:border-[#2A2E45] transition-colors"
+            className="p-2 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#13221B] transition-colors shadow-xs"
             title="Refresh Feed"
           >
             <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
@@ -77,21 +76,22 @@ export function AnnouncementsPage() {
 
           <Can I="announcement.create" a="Announcement">
             <button
+              type="button"
               onClick={handleOpenCreate}
-              className="inline-flex items-center px-4 py-2 text-xs font-medium text-white bg-[#5E6AD2] hover:bg-[#4D58BF] rounded-lg shadow-lg shadow-[#5E6AD2]/20 transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-[#00C471] hover:bg-[#049856] rounded-xl shadow-xs transition-all active:scale-95"
             >
-              <Plus className="w-4 h-4 mr-1.5" />
+              <Plus className="w-4 h-4" />
               <span>New Announcement</span>
             </button>
           </Can>
         </div>
-      </div>
+      </PageHeader>
 
-      {/* Filter & Search Toolbar */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 bg-[#0F111A] border border-[#1E2235] rounded-xl p-3.5">
+      {/* 2. Filter & Search Toolbar */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-3.5 shadow-xs">
         {/* Search Input */}
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#62677B]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
             value={search}
@@ -100,53 +100,56 @@ export function AnnouncementsPage() {
               setPage(1);
             }}
             placeholder="Search announcements by title or content..."
-            className="w-full pl-9 pr-3.5 py-2 text-xs text-white bg-[#0A0B10] border border-[#1E2235] rounded-lg focus:outline-none focus:border-[#5E6AD2] transition-colors placeholder-[#62677B]"
+            className="w-full pl-9 pr-3.5 py-2 text-xs text-slate-900 dark:text-slate-100 bg-slate-50/70 dark:bg-[#13221B] border border-slate-200 dark:border-[#1A3125] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] transition-all placeholder:text-slate-400"
           />
         </div>
 
         {/* Audience Filter Pills & Priority Dropdown */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
           {/* Audience Filter Pills */}
-          <div className="inline-flex bg-[#0A0B10] border border-[#1E2235] p-0.5 rounded-lg text-xs">
+          <div className="inline-flex items-center gap-1 bg-slate-100 dark:bg-[#13221B] border border-slate-200/80 dark:border-[#1A3125] p-1 rounded-xl text-xs">
             <button
+              type="button"
               onClick={() => {
                 setTargetAudience('');
                 setPage(1);
               }}
-              className={`px-3 py-1.5 rounded-md font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
                 targetAudience === ''
-                  ? 'bg-[#5E6AD2] text-white'
-                  : 'text-[#8F94A8] hover:text-white'
+                  ? 'bg-white dark:bg-[#1A3125] text-slate-900 dark:text-white shadow-xs font-semibold'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               All
             </button>
             <button
+              type="button"
               onClick={() => {
                 setTargetAudience('company');
                 setPage(1);
               }}
-              className={`inline-flex items-center space-x-1 px-3 py-1.5 rounded-md font-medium transition-colors ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
                 targetAudience === 'company'
-                  ? 'bg-[#5E6AD2] text-white'
-                  : 'text-[#8F94A8] hover:text-white'
+                  ? 'bg-white dark:bg-[#1A3125] text-slate-900 dark:text-white shadow-xs font-semibold'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <Globe2 className="w-3 h-3" />
+              <Globe2 className="w-3.5 h-3.5 text-[#00C471]" />
               <span>Company</span>
             </button>
             <button
+              type="button"
               onClick={() => {
                 setTargetAudience('department');
                 setPage(1);
               }}
-              className={`inline-flex items-center space-x-1 px-3 py-1.5 rounded-md font-medium transition-colors ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
                 targetAudience === 'department'
-                  ? 'bg-[#5E6AD2] text-white'
-                  : 'text-[#8F94A8] hover:text-white'
+                  ? 'bg-white dark:bg-[#1A3125] text-slate-900 dark:text-white shadow-xs font-semibold'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <Building2 className="w-3 h-3" />
+              <Building2 className="w-3.5 h-3.5 text-[#00C471]" />
               <span>Department</span>
             </button>
           </div>
@@ -158,7 +161,7 @@ export function AnnouncementsPage() {
               setPriority(e.target.value);
               setPage(1);
             }}
-            className="px-3 py-1.5 text-xs text-white bg-[#0A0B10] border border-[#1E2235] rounded-lg focus:outline-none focus:border-[#5E6AD2] transition-colors"
+            className="px-3 py-2 text-xs text-slate-900 dark:text-slate-100 bg-slate-50/70 dark:bg-[#13221B] border border-slate-200 dark:border-[#1A3125] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] transition-all cursor-pointer"
           >
             <option value="">All Priorities</option>
             <option value="urgent">Urgent</option>
@@ -169,25 +172,33 @@ export function AnnouncementsPage() {
         </div>
       </div>
 
-      {/* Feed List */}
+      {/* 3. Feed List / Feed Content */}
       {isLoading ? (
-        <ScreenSkeleton variant="cards" title="Company Broadcasts" message="Retrieving active announcements & policy notices..." cards={3} />
+        <ScreenSkeleton
+          variant="cards"
+          title="Company Broadcasts"
+          message="Retrieving active announcements & policy notices..."
+          cards={3}
+        />
       ) : announcements.length === 0 ? (
-        <div className="py-20 bg-[#0F111A] border border-[#1E2235] rounded-xl text-center flex flex-col items-center justify-center p-6">
-          <div className="w-12 h-12 rounded-full bg-[#141724] border border-[#1E2235] flex items-center justify-center text-[#62677B] mb-3">
+        <div className="py-20 bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl text-center flex flex-col items-center justify-center p-6 shadow-xs space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/50 flex items-center justify-center text-[#00C471]">
             <Inbox className="w-6 h-6" />
           </div>
-          <h3 className="text-sm font-semibold text-white mb-1">No announcements found</h3>
-          <p className="text-xs text-[#8F94A8] max-w-sm mb-4">
-            There are no announcements matching your filters at this time.
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+            No announcements found
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm leading-relaxed">
+            There are no announcements matching your filters at this time. Broadcast official announcements or department bulletins for your team.
           </p>
           <Can I="announcement.create" a="Announcement">
             <button
+              type="button"
               onClick={handleOpenCreate}
-              className="inline-flex items-center px-4 py-2 text-xs font-medium text-white bg-[#5E6AD2] hover:bg-[#4D58BF] rounded-lg shadow transition-all"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#00C471] hover:bg-[#049856] rounded-xl shadow-xs transition-all active:scale-95 mt-2"
             >
-              <Plus className="w-3.5 h-3.5 mr-1.5" />
-              Publish First Announcement
+              <Plus className="w-3.5 h-3.5" />
+              <span>Publish First Announcement</span>
             </button>
           </Can>
         </div>
@@ -203,24 +214,26 @@ export function AnnouncementsPage() {
 
           {/* Pagination Footer */}
           {pagination.totalPages > 1 && (
-            <div className="pt-4 flex items-center justify-between border-t border-[#1E2235] text-xs">
-              <span className="text-[#8F94A8]">
-                Page <strong className="text-white">{pagination.page}</strong> of{' '}
-                <strong className="text-white">{pagination.totalPages}</strong> (
-                {pagination.total} total announcements)
+            <div className="pt-4 flex items-center justify-between border-t border-slate-200 dark:border-[#1A3125] text-xs">
+              <span className="text-slate-500 dark:text-slate-400">
+                Page <strong className="text-slate-900 dark:text-white font-mono">{pagination.page}</strong> of{' '}
+                <strong className="text-slate-900 dark:text-white font-mono">{pagination.totalPages}</strong> (
+                <span className="font-mono">{pagination.total}</span> total announcements)
               </span>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-2">
                 <button
+                  type="button"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={pagination.page <= 1}
-                  className="px-3 py-1.5 rounded-lg bg-[#0F111A] border border-[#1E2235] text-[#8F94A8] hover:text-white disabled:opacity-40 transition-colors"
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#13221B] disabled:opacity-40 transition-colors"
                 >
                   Previous
                 </button>
                 <button
+                  type="button"
                   onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
                   disabled={pagination.page >= pagination.totalPages}
-                  className="px-3 py-1.5 rounded-lg bg-[#0F111A] border border-[#1E2235] text-[#8F94A8] hover:text-white disabled:opacity-40 transition-colors"
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#13221B] disabled:opacity-40 transition-colors"
                 >
                   Next
                 </button>
@@ -230,7 +243,7 @@ export function AnnouncementsPage() {
         </div>
       )}
 
-      {/* Creation / Editing Modal */}
+      {/* 4. Creation / Editing Modal */}
       <AnnouncementFormModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
