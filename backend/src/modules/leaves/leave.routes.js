@@ -86,6 +86,13 @@ router.patch(
   leaveController.decideLeave
 );
 
+router.get(
+  '/:id/audit',
+  authenticate,
+  checkPermission('leave.approve', 'team'),
+  leaveController.getLeaveApplicantAudit
+);
+
 // ==========================================
 // 6.8: Leave Cancellation & Balance Revert
 // ==========================================

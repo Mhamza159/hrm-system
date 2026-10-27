@@ -25,6 +25,14 @@ import { useGetEmployeeDashboardQuery } from '../dashboardApi.js';
 import { PinnedNoticeBoard } from '../../announcements/components/PinnedNoticeBoard.jsx';
 import { DashboardSkeleton } from './DashboardSkeleton.jsx';
 
+const formatTime = (timeStr) => {
+  if (!timeStr) return '--:--';
+  const d = new Date(timeStr);
+  return isNaN(d.getTime())
+    ? '--:--'
+    : d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+};
+
 export function EmployeeDashboard() {
   const { data: response, isLoading, error } = useGetEmployeeDashboardQuery();
   const data = response?.data;
@@ -85,13 +93,13 @@ export function EmployeeDashboard() {
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
               <span className="text-[11px] text-slate-500 block">Punch In</span>
               <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                {attendance.checkInTime ? dayjs(attendance.checkInTime).format('hh:mm A') : '--:--'}
+                {formatTime(attendance.checkInTime)}
               </span>
             </div>
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
               <span className="text-[11px] text-slate-500 block">Punch Out</span>
               <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                {attendance.checkOutTime ? dayjs(attendance.checkOutTime).format('hh:mm A') : '--:--'}
+                {formatTime(attendance.checkOutTime)}
               </span>
             </div>
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">

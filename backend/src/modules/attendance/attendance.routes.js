@@ -28,7 +28,9 @@ import {
   queryMyAttendanceSchema,
   queryTeamAttendanceSchema,
   exportAttendanceSchema,
-  queryAttendanceHistorySchema
+  queryAttendanceHistorySchema,
+  decideOvertimeSchema,
+  queryTeamOvertimeSchema
 } from './attendance.validation.js';
 
 const router = Router();
@@ -241,6 +243,23 @@ router.post(
   '/trigger-auto-absent',
   checkPermission('attendance.lock', 'all'),
   attendanceController.triggerAutoAbsentSweep
+);
+
+/**
+ * 5.16: Team Overtime Punches & Approval Actions
+ */
+router.get(
+  '/overtime/team',
+  checkPermission('attendance.approve', 'team'),
+  validate(queryTeamOvertimeSchema),
+  attendanceController.getTeamOvertime
+);
+
+router.patch(
+  '/:id/overtime-decide',
+  checkPermission('attendance.approve', 'team'),
+  validate(decideOvertimeSchema),
+  attendanceController.decideOvertime
 );
 
 /**

@@ -74,9 +74,25 @@ export const updateAttendance = asyncHandler(async (req, res) => {
     checkIn: req.body.checkIn,
     checkOut: req.body.checkOut,
     status: req.body.status,
+    overtimeApproved: req.body.overtimeApproved,
     overrideReason: req.body.overrideReason
   });
   return res.status(200).json(apiResponse(200, result, 'Attendance record updated successfully'));
+});
+
+export const decideOvertime = asyncHandler(async (req, res) => {
+  const result = await attendanceService.decideOvertime({
+    attendanceId: req.params.id,
+    user: req.user,
+    approved: req.body.approved,
+    reason: req.body.reason
+  });
+  return res.status(200).json(apiResponse(200, result, `Overtime ${req.body.approved ? 'approved' : 'revoked'} successfully`));
+});
+
+export const getTeamOvertime = asyncHandler(async (req, res) => {
+  const result = await attendanceService.getTeamOvertimeRecords(req.user, req.query);
+  return res.status(200).json(apiResponse(200, result, 'Team overtime records retrieved successfully'));
 });
 
 export const lockMonth = asyncHandler(async (req, res) => {

@@ -10,6 +10,9 @@
 
 import { SalaryStructure } from '../../models/salaryStructure.model.js';
 import { Employee } from '../../models/employee.model.js';
+import '../../models/department.model.js';
+import '../../models/designation.model.js';
+import '../../models/leaveType.model.js';
 import { PayrollRun } from '../../models/payrollRun.model.js';
 import { Payslip } from '../../models/payslip.model.js';
 import { ApiError } from '../../utils/ApiError.js';
@@ -1017,6 +1020,268 @@ export class PayrollService {
 
     return { message: 'Payroll run deleted successfully' };
   }
+
+  /**
+   * Pre-Payroll Audit & Readiness Preview (Read-Only)
+   * Computes monthly employee attendance, leaves, late penalties, and overtime factors
+   * with itemized date-by-date evidence without creating database records.
+   */
+  static async computePrePayrollAudit({ month, year }) {
+    const padMonth = String(month).padStart(2, '0');
+    const yearMonth = `${year}-${padMonth}`;
+
+    const { MonthLock } = await import('../../models/monthLock.model.js');
+    const { Attendance } = await import('../../models/attendance.model.js');
+    const { Leave } = await import('../../models/leave.model.js');
+    const { LeaveEncashment } = await import('../../models/leaveEncashment.model.js');
+    const { calculateAnnualIncomeTax } = await import('./taxCalculator.js');
+    const { calculateStatutoryContributions } = await import('./contributionsCalculator.js');
+
+    // 1. Verify MonthLock status
+    const lock = await MonthLock.findOne({ yearMonth, isLocked: true });
+    const isMonthLocked = Boolean(lock);
+
+    // 2. Define date boundaries
+    const cycleStartDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+    const cycleEndDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+
+    // 3. Query active salary structures
+    const activeStructures = await SalaryStructure.find({
+      status: 'active',
+      isDeleted: false
+    }).populate({
+      path: 'employeeId',
+      select: 'name employeeCode email status isDeleted avatar departmentId designationId',
+      populate: [
+        { path: 'departmentId', select: 'name' },
+        { path: 'designationId', select: 'title' }
+      ]
+    });
+
+    const eligibleStructures = activeStructures.filter(
+      (s) => s.employeeId && !s.employeeId.isDeleted && s.employeeId.status !== 'Terminated' && s.employeeId.status !== 'Resigned'
+    );
+
+    let totalGrossPaisa = 0;
+    let totalOvertimePaisa = 0;
+    let totalDeductionsPaisa = 0;
+    let totalNetPaisa = 0;
+
+    const employeesAudit = [];
+
+    for (const structure of eligibleStructures) {
+      const emp = structure.employeeId;
+      const basicSalary = structure.basicSalary;
+      const baseGross = structure.grossSalary;
+
+      // A. Query monthly attendance records
+      const attendances = await Attendance.find({
+        employeeId: emp._id,
+        date: { $gte: cycleStartDate, $lte: cycleEndDate }
+      }).sort({ date: 1 });
+
+      let presentDays = 0;
+      let absentDays = 0;
+      let totalApprovedOtMinutes = 0;
+      const latesTimeline = [];
+      const overtimeTimeline = [];
+      const absencesTimeline = [];
+
+      for (const att of attendances) {
+        const dateStr = att.date ? new Date(att.date).toISOString().split('T')[0] : '';
+
+        if (att.status === 'present') {
+          presentDays += 1;
+        } else if (att.status === 'absent') {
+          absentDays += 1;
+          absencesTimeline.push({ date: dateStr });
+        } else if (att.status === 'late') {
+          presentDays += 1;
+          const checkInStr = att.checkIn ? new Date(att.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '09:35 AM';
+          let minutesLate = 35;
+          if (att.checkIn) {
+            const checkInDate = new Date(att.checkIn);
+            const scheduledStart = new Date(att.checkIn);
+            scheduledStart.setHours(9, 0, 0, 0);
+            const diffMs = checkInDate.getTime() - scheduledStart.getTime();
+            if (diffMs > 0) {
+              minutesLate = Math.round(diffMs / (1000 * 60));
+            }
+          }
+          latesTimeline.push({
+            date: dateStr,
+            checkIn: checkInStr,
+            scheduledStart: '09:00 AM',
+            minutesLate
+          });
+        }
+
+        if (att.overtimeApproved && att.overtimeMinutes > 0) {
+          totalApprovedOtMinutes += att.overtimeMinutes;
+          const hrs = Number((att.overtimeMinutes / 60).toFixed(1));
+          const payPaisa = Math.round(((basicSalary / 30) / 8) * 1.5 * hrs);
+          overtimeTimeline.push({
+            date: dateStr,
+            hours: hrs,
+            payPaisa
+          });
+        }
+      }
+
+      const lateCount = latesTimeline.length;
+      const latePenaltyDays = Math.floor(lateCount / 3);
+      const latePenaltyPaisa = latePenaltyDays > 0 ? Math.round((baseGross / 30) * latePenaltyDays) : 0;
+
+      const overtimeHours = Number((totalApprovedOtMinutes / 60).toFixed(2));
+      const overtimePayPaisa = overtimeHours > 0 ? Math.round(((basicSalary / 30) / 8) * 1.5 * overtimeHours) : 0;
+
+      // B. Query approved leaves
+      const leaves = await Leave.find({
+        employeeId: emp._id,
+        status: 'approved',
+        startDate: { $lte: cycleEndDate },
+        endDate: { $gte: cycleStartDate }
+      }).populate('leaveTypeId');
+
+      let paidLeaveDays = 0;
+      let unpaidLeaveDays = 0;
+      const paidLeavesTimeline = [];
+      const unpaidLeavesTimeline = [];
+
+      for (const lv of leaves) {
+        const startStr = lv.startDate ? new Date(lv.startDate).toISOString().split('T')[0] : '';
+        const endStr = lv.endDate ? new Date(lv.endDate).toISOString().split('T')[0] : '';
+        const days = lv.days || 1;
+
+        if (lv.leaveTypeId && !lv.leaveTypeId.isPaid) {
+          unpaidLeaveDays += days;
+          unpaidLeavesTimeline.push({
+            startDate: startStr,
+            endDate: endStr,
+            days,
+            reason: lv.reason || 'Unpaid Leave (LWP)'
+          });
+        } else {
+          paidLeaveDays += days;
+          paidLeavesTimeline.push({
+            type: lv.leaveTypeId?.name || 'Leave',
+            startDate: startStr,
+            endDate: endStr,
+            days
+          });
+        }
+      }
+
+      const unpaidLeavePaisa = unpaidLeaveDays > 0 ? Math.round((baseGross / 30) * unpaidLeaveDays) : 0;
+
+      // C. Query approved leave encashments pending processing
+      const encashments = await LeaveEncashment.find({
+        employeeId: emp._id,
+        status: 'approved',
+        payrollRunId: null
+      });
+
+      let encashmentPayPaisa = 0;
+      const encashmentsTimeline = [];
+      for (const enc of encashments) {
+        const amt = enc.totalAmountPaisa || 0;
+        encashmentPayPaisa += amt;
+        encashmentsTimeline.push({
+          days: enc.days || 1,
+          amountPaisa: amt
+        });
+      }
+
+      // D. Projected Gross & Tax/Statutory Calculations
+      const projectedGrossPaisa = baseGross + overtimePayPaisa + encashmentPayPaisa;
+      const taxableGross = Math.max(0, projectedGrossPaisa - unpaidLeavePaisa);
+
+      let taxWithheldPaisa = 0;
+      try {
+        const taxResult = await calculateAnnualIncomeTax(taxableGross);
+        taxWithheldPaisa = taxResult.monthlyTaxPaisa || 0;
+      } catch {
+        taxWithheldPaisa = 0;
+      }
+
+      let eobiEmployeePaisa = 0;
+      let pfEmployeePaisa = 0;
+
+      try {
+        const statutory = await calculateStatutoryContributions({
+          basicSalaryPaisa: basicSalary,
+          grossSalaryPaisa: projectedGrossPaisa,
+          eobiEnabled: structure.eobiEnabled,
+          pessiEnabled: structure.pessiEnabled,
+          pfEnabled: structure.providentFundEnabled,
+          pfRate: structure.providentFundRate
+        });
+        eobiEmployeePaisa = statutory.eobi?.employee || 0;
+        pfEmployeePaisa = statutory.providentFund?.employee || 0;
+      } catch {
+        // default statutory safe fallback
+      }
+
+      const projectedDeductionsPaisa = unpaidLeavePaisa + latePenaltyPaisa + taxWithheldPaisa + eobiEmployeePaisa + pfEmployeePaisa;
+      const projectedNetPaisa = Math.max(0, projectedGrossPaisa - projectedDeductionsPaisa);
+
+      totalGrossPaisa += projectedGrossPaisa;
+      totalOvertimePaisa += overtimePayPaisa;
+      totalDeductionsPaisa += projectedDeductionsPaisa;
+      totalNetPaisa += projectedNetPaisa;
+
+      employeesAudit.push({
+        employeeId: emp._id,
+        name: emp.name,
+        employeeCode: emp.employeeCode,
+        avatar: emp.avatar || '',
+        department: emp.departmentId?.name || 'Unassigned',
+        designation: emp.designationId?.title || 'Staff',
+        baseGrossPaisa: baseGross,
+        presentDays,
+        absentDays,
+        paidLeaveDays,
+        lateCount,
+        latePenaltyDays,
+        latePenaltyPaisa,
+        unpaidLeaveDays,
+        unpaidLeavePaisa,
+        overtimeHours,
+        overtimePayPaisa,
+        encashmentPayPaisa,
+        taxWithheldPaisa,
+        eobiPaisa: eobiEmployeePaisa,
+        providentFundPaisa: pfEmployeePaisa,
+        projectedGrossPaisa,
+        projectedDeductionsPaisa,
+        projectedNetPaisa,
+        auditBreakdown: {
+          lates: latesTimeline,
+          unpaidLeaves: unpaidLeavesTimeline,
+          paidLeaves: paidLeavesTimeline,
+          approvedOvertime: overtimeTimeline,
+          absences: absencesTimeline,
+          encashments: encashmentsTimeline
+        }
+      });
+    }
+
+    return {
+      month: Number(month),
+      year: Number(year),
+      yearMonth,
+      isMonthLocked,
+      totalEligibleEmployees: employeesAudit.length,
+      projectedTotals: {
+        totalGrossPaisa,
+        totalOvertimePaisa,
+        totalDeductionsPaisa,
+        totalNetPaisa
+      },
+      employees: employeesAudit
+    };
+  }
 }
+
 
 

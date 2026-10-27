@@ -15,10 +15,20 @@ import * as payrollController from './payroll.controller.js';
 import {
   generatePayrollRunSchema,
   runIdParamSchema,
-  adjustPayslipLineItemSchema
+  adjustPayslipLineItemSchema,
+  queryPreAuditSchema
 } from './payroll.validation.js';
 
 const router = Router();
+
+// Pre-Payroll Audit & Readiness Preview (Read-Only)
+router.get(
+  '/pre-audit',
+  authenticate,
+  checkPermission('payroll.view', 'all'),
+  validate(queryPreAuditSchema),
+  payrollController.getPrePayrollAudit
+);
 
 // 9.7: Generate Batch Monthly Payroll Run
 router.post(

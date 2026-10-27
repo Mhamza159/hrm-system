@@ -27,10 +27,10 @@ import {
   Lock
 } from 'lucide-react';
 import {
-  useGetPayrollRunsQuery,
-  useGeneratePayrollRunMutation
+  useGetPayrollRunsQuery
 } from '../payrollApi.js';
 import { PayrollProgressBar } from '../components/PayrollProgressBar.jsx';
+import { PrePayrollAuditModal } from '../components/PrePayrollAuditModal.jsx';
 import { Can } from '../../../components/common/Can.jsx';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 
@@ -42,10 +42,6 @@ export function PayrollRunsPage() {
 
   // Generation Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [genMonth, setGenMonth] = useState(new Date().getMonth() + 1);
-  const [genYear, setGenYear] = useState(new Date().getFullYear());
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [genError, setGenError] = useState('');
 
   const { data, isLoading, refetch } = useGetPayrollRunsQuery({
     page,
@@ -53,8 +49,6 @@ export function PayrollRunsPage() {
     status: statusFilter || undefined,
     year: yearFilter ? parseInt(yearFilter, 10) : undefined
   });
-
-  const [generatePayrollRun] = useGeneratePayrollRunMutation();
 
   const runs = data?.data || [];
   const meta = data?.meta || { totalDocs: 0, totalPages: 1 };
@@ -73,28 +67,6 @@ export function PayrollRunsPage() {
     { value: 11, label: 'November' },
     { value: 12, label: 'December' }
   ];
-
-  const handleStartGeneration = async (e) => {
-    e.preventDefault();
-    setGenError('');
-    setIsGenerating(true);
-
-    try {
-      await generatePayrollRun({
-        month: parseInt(genMonth, 10),
-        year: parseInt(genYear, 10)
-      }).unwrap();
-    } catch (err) {
-      setIsGenerating(false);
-      setGenError(err?.data?.message || err?.message || 'Failed to trigger batch payroll generation');
-    }
-  };
-
-  const handleGenerationComplete = () => {
-    setIsGenerating(false);
-    setIsModalOpen(false);
-    refetch();
-  };
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -367,111 +339,17 @@ export function PayrollRunsPage() {
         )}
       </div>
 
-      {/* Batch Generation Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-2xl">
-                  <Play className="w-5 h-5 fill-indigo-600 dark:fill-indigo-400" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                    Generate Monthly Payroll
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Calculates gross, tax, EOBI, unpaid leaves, and overtime
-                  </p>
-                </div>
-              </div>
-
-              {!isGenerating && (
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              )}
-            </div>
-
-            {/* Attendance MonthLock Alert */}
-            <div className="p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
-              <Lock className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
-              <div>
-                <strong>Precondition:</strong> Attendance records for the selected month must be locked by HR before payroll calculation can proceed.
-              </div>
-            </div>
-
-            {genError && (
-              <div className="p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-start gap-2.5 text-xs text-rose-600 dark:text-rose-400">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{genError}</span>
-              </div>
-            )}
-
-            {/* Socket Real-Time Progress Bar */}
-            <PayrollProgressBar
-              isGenerating={isGenerating}
-              onComplete={handleGenerationComplete}
-            />
-
-            {!isGenerating && (
-              <form onSubmit={handleStartGeneration} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                      Payroll Month
-                    </label>
-                    <select
-                      value={genMonth}
-                      onChange={(e) => setGenMonth(e.target.value)}
-                      className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      {months.map((m) => (
-                        <option key={m.value} value={m.value}>{m.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                      Payroll Year
-                    </label>
-                    <select
-                      value={genYear}
-                      onChange={(e) => setGenYear(e.target.value)}
-                      className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      {[2024, 2025, 2026, 2027].map((y) => (
-                        <option key={y} value={y}>{y}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition-colors"
-                  >
-                    <Play className="w-4 h-4 fill-white" />
-                    Start Batch Run
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
+      {/* 2-Step Pre-Payroll Attendance & Leave Audit Console */}
+      <PrePayrollAuditModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={(createdRunId) => {
+          refetch();
+          if (createdRunId) {
+            navigate(`/payroll/runs/${createdRunId}`);
+          }
+        }}
+      />
     </div>
   );
 }

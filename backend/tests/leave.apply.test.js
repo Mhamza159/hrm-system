@@ -65,6 +65,14 @@ describe('Module M6 — Leave Application & Working Days Validation (Slice 6.3-T
     });
     casualTypeId = casualType._id;
 
+    // Ensure test environment does not inherit active sandwich rule
+    const { Setting } = await import('../src/models/setting.model.js');
+    await Setting.findOneAndUpdate(
+      { key: 'leavePolicy' },
+      { key: 'leavePolicy', value: { sandwichRule: false } },
+      { upsert: true }
+    );
+
     // Public Holiday: Friday, 2026-05-01 (Labour Day)
     await Holiday.create({
       name: 'Labour Day',
@@ -214,5 +222,40 @@ describe('Module M6 — Leave Application & Working Days Validation (Slice 6.3-T
     expect(res.body.success).toBe(true);
     expect(res.body.data.length).toBe(2);
     expect(res.body.meta.total).toBe(2);
+  });
+
+  it('6. Super Admin / Executive Owner is exempt from leave applications with 400 informative guard', async () => {
+    const superAdminRole = await Role.create({
+      name: 'Super Admin',
+      isSystem: true,
+      permissions: [{ action: 'manage', subject: 'all', scope: 'all' }]
+    });
+
+    const adminUser = await User.create({
+      name: 'Owner Admin',
+      email: 'owner.exemption@company.pk',
+      passwordHash: '$2b$10$abcdefghijklmnopqrstuvwxyz1234567890',
+      employeeId,
+      roles: [superAdminRole._id]
+    });
+
+    const adminToken = jwt.sign(
+      { userId: adminUser._id, employeeId, roles: [superAdminRole] },
+      env.JWT_ACCESS_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    const res = await request(app)
+      .post('/api/v1/leaves')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        leaveTypeId: annualTypeId.toString(),
+        startDate: '2026-07-01',
+        endDate: '2026-07-03',
+        reason: 'Owner vacation'
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/exempt from annual leave quota balances/i);
   });
 });

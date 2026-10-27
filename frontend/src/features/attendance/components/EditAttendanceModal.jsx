@@ -7,7 +7,7 @@
  */
 
 import React, { useState } from 'react';
-import { X, Edit3, History, AlertCircle } from 'lucide-react';
+import { X, Edit3, History, AlertCircle, TrendingUp } from 'lucide-react';
 import { useUpdateAttendanceMutation } from '../attendanceApi.js';
 
 export const EditAttendanceModal = ({ isOpen, onClose, attendance, onSuccess }) => {
@@ -24,9 +24,30 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, onSuccess }) 
   const [checkInTime, setCheckInTime] = useState(initialCheckIn);
   const [checkOutTime, setCheckOutTime] = useState(initialCheckOut);
   const [status, setStatus] = useState(attendance.status || 'present');
+  const [overtimeApproved, setOvertimeApproved] = useState(!!attendance.overtimeApproved);
   const [overrideReason, setOverrideReason] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Sync state if a different attendance item is selected
+  React.useEffect(() => {
+    if (attendance) {
+      setCheckInTime(
+        attendance.checkIn
+          ? new Date(attendance.checkIn).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+          : ''
+      );
+      setCheckOutTime(
+        attendance.checkOut
+          ? new Date(attendance.checkOut).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+          : ''
+      );
+      setStatus(attendance.status || 'present');
+      setOvertimeApproved(!!attendance.overtimeApproved);
+      setOverrideReason('');
+      setErrorMessage('');
+    }
+  }, [attendance]);
 
   const [updateAttendance, { isLoading }] = useUpdateAttendanceMutation();
 
@@ -48,6 +69,7 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, onSuccess }) 
         checkIn: checkInIso,
         checkOut: checkOutIso,
         status,
+        overtimeApproved,
         overrideReason: overrideReason.trim()
       }).unwrap();
 
@@ -133,6 +155,30 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, onSuccess }) 
               <option value="holiday">Holiday</option>
             </select>
           </div>
+
+          {/* Overtime Approval Toggle */}
+          {attendance.overtimeMinutes > 0 && (
+            <div className="p-3 bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 rounded-xl flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                  <TrendingUp className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  Overtime ({(attendance.overtimeMinutes / 60).toFixed(1)} hrs)
+                </span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Include overtime in payroll 1.5x formula calculation
+                </span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={overtimeApproved}
+                  onChange={(e) => setOvertimeApproved(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-emerald-600"></div>
+              </label>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">

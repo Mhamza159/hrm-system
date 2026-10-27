@@ -379,6 +379,7 @@ export function ProfileSalaryTab({ employee, canView = false }) {
       <SalaryFormModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
+        employee={employee}
         initialEmployeeId={employee?._id}
         onSuccess={refetch}
       />

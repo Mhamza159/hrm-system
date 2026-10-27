@@ -13,8 +13,16 @@ export function PinnedNoticeBoard() {
 
   const pinnedItems = data?.data || [];
 
-  if (isLoading || pinnedItems.length === 0) {
+  if (isLoading) {
     return null;
+  }
+
+  if (pinnedItems.length === 0) {
+    return (
+      <div className="py-6 text-center text-xs text-slate-500">
+        No active company notices pinned at this time.
+      </div>
+    );
   }
 
   return (

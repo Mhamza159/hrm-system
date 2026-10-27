@@ -95,7 +95,7 @@ export function Sidebar({ isOpen = false, onClose }) {
       name: 'Leaves & Holidays',
       icon: Calendar,
       children: [
-        { name: 'My Leaves', path: '/leaves', permission: 'leave.view' },
+        { name: 'My Leaves', path: '/leaves', permission: 'leave.view', excludeSuperAdmin: true },
         { name: 'Leave Approvals', path: '/leaves/approvals', permission: 'leave.approve' },
         { name: 'Leave Calendar', path: '/leaves/calendar', permission: 'leave.view' },
         { name: 'Leave Encashment', path: '/leaves/encashment', permission: 'leave.view' },

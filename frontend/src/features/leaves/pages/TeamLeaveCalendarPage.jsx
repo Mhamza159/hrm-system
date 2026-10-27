@@ -179,11 +179,11 @@ export function TeamLeaveCalendarPage() {
                 <select
                   value={selectedDeptId}
                   onChange={(e) => setSelectedDeptId(e.target.value)}
-                  className="appearance-none bg-[#0F111A] border border-[#1E2235] text-slate-200 text-xs font-semibold rounded-xl pl-3 pr-8 py-2.5 hover:border-[#5E6AD2] focus:outline-hidden focus:ring-2 focus:ring-[#5E6AD2]/30 transition-all cursor-pointer"
+                  className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-xl pl-3 pr-8 py-2.5 hover:border-emerald-500 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 shadow-xs transition-all cursor-pointer"
                 >
                   <option value="">All Departments</option>
                   {departments.map((d) => (
-                    <option key={d._id} value={d._id} className="bg-[#0F111A] text-white">
+                    <option key={d._id} value={d._id} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
                       {d.name}
                     </option>
                   ))}
@@ -193,23 +193,23 @@ export function TeamLeaveCalendarPage() {
             )}
 
             {/* Month Navigator */}
-            <div className="inline-flex items-center gap-1 bg-[#0F111A] border border-[#1E2235] p-1 rounded-xl">
+            <div className="inline-flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1 rounded-xl shadow-xs">
               <button
                 type="button"
                 onClick={handlePrevMonth}
                 aria-label="Previous Month"
-                className="p-1.5 text-slate-400 hover:text-white hover:bg-[#1E2235] rounded-lg transition-colors cursor-pointer"
+                className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="px-3 text-xs font-semibold text-slate-200 min-w-32 text-center">
+              <span className="px-3 text-xs font-semibold text-slate-800 dark:text-slate-200 min-w-32 text-center">
                 {monthName}
               </span>
               <button
                 type="button"
                 onClick={handleNextMonth}
                 aria-label="Next Month"
-                className="p-1.5 text-slate-400 hover:text-white hover:bg-[#1E2235] rounded-lg transition-colors cursor-pointer"
+                className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -220,9 +220,9 @@ export function TeamLeaveCalendarPage() {
               <button
                 type="button"
                 onClick={() => setIsExportModalOpen(true)}
-                className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#0F111A] hover:bg-[#1E2235] border border-[#1E2235] text-slate-200 hover:text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
               >
-                <Download className="w-3.5 h-3.5 text-emerald-400" />
+                <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 <span>Export Report</span>
               </button>
             )}
@@ -232,49 +232,49 @@ export function TeamLeaveCalendarPage() {
 
       {/* Summary KPI Badges */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-xl border border-[#1E2235] bg-[#0F111A] p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#5E6AD2]/10 border border-[#5E6AD2]/20 flex items-center justify-center text-[#5E6AD2]">
+        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex items-center gap-3 shadow-xs">
+          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
             <CalendarIcon className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xl font-bold text-white">{calendarPayload.totalLeaves}</div>
-            <div className="text-xs text-slate-400">Approved Team Absences</div>
+            <div className="text-xl font-bold text-slate-900 dark:text-white">{calendarPayload.totalLeaves}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Approved Team Absences</div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#1E2235] bg-[#0F111A] p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex items-center gap-3 shadow-xs">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/50 flex items-center justify-center text-amber-600 dark:text-amber-400">
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xl font-bold text-white">{calendarPayload.holidays?.length || 0}</div>
-            <div className="text-xs text-slate-400">Gazetted / Public Holidays</div>
+            <div className="text-xl font-bold text-slate-900 dark:text-white">{calendarPayload.holidays?.length || 0}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Gazetted / Public Holidays</div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-[#1E2235] bg-[#0F111A] p-4 flex items-center gap-3">
+        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex items-center gap-3 shadow-xs">
           <div className={cn(
             'w-10 h-10 rounded-xl flex items-center justify-center border',
             calendarPayload.conflicts?.length > 0
-              ? 'bg-rose-500/10 border-rose-500/20 text-rose-400'
-              : 'bg-slate-800/40 border-slate-700/40 text-slate-500'
+              ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/50 text-rose-600 dark:text-rose-400'
+              : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/40 text-slate-400'
           )}>
             <AlertTriangle className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-xl font-bold text-white">{calendarPayload.conflicts?.length || 0}</div>
-            <div className="text-xs text-slate-400">Capacity Conflict Days</div>
+            <div className="text-xl font-bold text-slate-900 dark:text-white">{calendarPayload.conflicts?.length || 0}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Capacity Conflict Days</div>
           </div>
         </div>
       </section>
 
       {/* Conflict Warning Banner if conflicts exist */}
       {calendarPayload.conflicts?.length > 0 && (
-        <div className="rounded-xl border border-rose-500/30 bg-rose-500/5 p-4 flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+        <div className="rounded-xl border border-rose-200 dark:border-rose-800/50 bg-rose-50/80 dark:bg-rose-950/20 p-4 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
           <div className="text-xs">
-            <h4 className="font-semibold text-rose-300">Staffing Capacity Alert</h4>
-            <p className="text-slate-400 mt-0.5">
+            <h4 className="font-semibold text-rose-800 dark:text-rose-300">Staffing Capacity Alert</h4>
+            <p className="text-rose-700 dark:text-slate-400 mt-0.5">
               Multiple members from the same department are on leave on identical dates:{' '}
               {calendarPayload.conflicts.map((c) => c.date).join(', ')}. Review project coverage and shift cover requirements.
             </p>
@@ -283,18 +283,18 @@ export function TeamLeaveCalendarPage() {
       )}
 
       {/* Calendar Grid */}
-      <section className="rounded-2xl border border-[#1E2235] bg-[#0F111A] overflow-hidden shadow-sm">
+      <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
         {/* Weekday Headers */}
-        <div className="grid grid-cols-7 border-b border-[#1E2235] bg-[#161926]/60 text-center text-xs font-bold text-slate-400 py-3 uppercase tracking-wider">
+        <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-center text-xs font-bold text-slate-500 dark:text-slate-400 py-3 uppercase tracking-wider">
           {WEEKDAYS.map((w, idx) => (
-            <div key={w} className={cn(idx === 0 || idx === 6 ? 'text-slate-500' : '')}>
+            <div key={w} className={cn(idx === 0 || idx === 6 ? 'text-slate-400 dark:text-slate-500' : '')}>
               {w}
             </div>
           ))}
         </div>
 
         {/* Days Grid */}
-        <div className="grid grid-cols-7 divide-x divide-y divide-[#1E2235]/60">
+        <div className="grid grid-cols-7 divide-x divide-y divide-slate-200 dark:divide-slate-800">
           {calendarDays.map((cell, idx) => {
             const events = cell.dateStr ? dateEventMap[cell.dateStr] : null;
             const holidays = events?.holidays || [];
@@ -310,8 +310,10 @@ export function TeamLeaveCalendarPage() {
                 key={idx}
                 className={cn(
                   'min-h-28 p-2 flex flex-col justify-between transition-colors',
-                  cell.isCurrentMonth ? 'bg-[#0F111A] hover:bg-[#161926]/40' : 'bg-[#090A0F]/60 text-slate-600',
-                  conflict ? 'bg-rose-950/10' : ''
+                  cell.isCurrentMonth
+                    ? 'bg-white dark:bg-slate-900 hover:bg-slate-50/80 dark:hover:bg-slate-800/40'
+                    : 'bg-slate-50/50 dark:bg-slate-950/60 text-slate-400 dark:text-slate-600',
+                  conflict ? 'bg-rose-50/30 dark:bg-rose-950/15' : ''
                 )}
               >
                 {/* Header: Date Number + Indicators */}
@@ -320,10 +322,10 @@ export function TeamLeaveCalendarPage() {
                     className={cn(
                       'text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center',
                       isToday
-                        ? 'bg-[#5E6AD2] text-white'
+                        ? 'bg-emerald-600 text-white font-bold shadow-xs'
                         : cell.isCurrentMonth
-                        ? 'text-slate-300'
-                        : 'text-slate-600'
+                        ? 'text-slate-800 dark:text-slate-200'
+                        : 'text-slate-400 dark:text-slate-600'
                     )}
                   >
                     {cell.dayNumber}
@@ -332,7 +334,7 @@ export function TeamLeaveCalendarPage() {
                   {conflict && (
                     <span
                       title={`${conflict.count} team members away simultaneously!`}
-                      className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                      className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30"
                     >
                       <AlertTriangle className="w-2.5 h-2.5" />
                       <span>{conflict.count} off</span>
@@ -346,7 +348,7 @@ export function TeamLeaveCalendarPage() {
                   {holidays.map((h) => (
                     <div
                       key={h._id}
-                      className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 truncate"
+                      className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-300 truncate"
                       title={h.name}
                     >
                       🎉 {h.name}
@@ -360,8 +362,8 @@ export function TeamLeaveCalendarPage() {
                       className={cn(
                         'text-[10px] px-1.5 py-0.5 rounded border truncate flex items-center justify-between',
                         l.status === 'approved'
-                          ? 'bg-sky-500/10 border-sky-500/20 text-sky-300'
-                          : 'bg-amber-500/10 border-amber-500/20 text-amber-300'
+                          ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800/50 text-sky-700 dark:text-sky-300'
+                          : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/50 text-amber-700 dark:text-amber-300'
                       )}
                       title={`${l.employeeId?.name || 'Staff'} (${l.leaveTypeId?.name || 'Leave'}) - ${l.reason}`}
                     >

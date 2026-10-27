@@ -52,6 +52,7 @@ export const manualEditSchema = z.object({
     checkIn: z.string().datetime().optional().nullable(),
     checkOut: z.string().datetime().optional().nullable(),
     status: z.enum(['present', 'late', 'half_day', 'absent', 'on_leave', 'holiday']).optional(),
+    overtimeApproved: z.boolean().optional(),
     overrideReason: z.string().min(5, 'Override reason must be at least 5 characters')
   })
 });
@@ -147,3 +148,25 @@ export const queryAttendanceHistorySchema = z.object({
     limit: z.coerce.number().int().positive().max(100).optional().default(50)
   })
 });
+
+export const decideOvertimeSchema = z.object({
+  params: z.object({
+    id: z.string().min(1, 'Attendance ID is required')
+  }),
+  body: z.object({
+    approved: z.boolean(),
+    reason: z.string().optional().default('')
+  })
+});
+
+export const queryTeamOvertimeSchema = z.object({
+  query: z.object({
+    status: z.enum(['all', 'pending', 'approved']).optional().default('all'),
+    month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional(),
+    search: z.string().optional(),
+    departmentId: z.string().optional(),
+    page: z.coerce.number().int().positive().optional().default(1),
+    limit: z.coerce.number().int().positive().max(100).optional().default(20)
+  }).optional()
+});
+

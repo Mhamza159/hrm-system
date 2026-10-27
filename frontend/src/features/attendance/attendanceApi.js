@@ -41,7 +41,7 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'POST',
         body
       }),
-      invalidatesTags: ['Attendance']
+      invalidatesTags: ['Attendance', 'Dashboard']
     }),
 
     // 5.4: Clock out
@@ -51,7 +51,7 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'POST',
         body
       }),
-      invalidatesTags: ['Attendance']
+      invalidatesTags: ['Attendance', 'Dashboard']
     }),
 
     // 5.5: Start break
@@ -61,7 +61,7 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'POST',
         body
       }),
-      invalidatesTags: ['Attendance']
+      invalidatesTags: ['Attendance', 'Dashboard']
     }),
 
     // 5.5: End break
@@ -71,7 +71,7 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'POST',
         body
       }),
-      invalidatesTags: ['Attendance']
+      invalidatesTags: ['Attendance', 'Dashboard']
     }),
 
     // 5.11: Manual Attendance Override
@@ -81,7 +81,7 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'PATCH',
         body
       }),
-      invalidatesTags: ['Attendance']
+      invalidatesTags: ['Attendance', 'Dashboard']
     }),
 
     // 5.14: Month Lock status & toggle
@@ -221,6 +221,24 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'DELETE'
       }),
       invalidatesTags: ['Shifts']
+    }),
+
+    // 5.16: Team Overtime Punches & Approval Actions
+    getTeamOvertimeRecords: builder.query({
+      query: (params) => ({
+        url: '/attendance/overtime/team',
+        params
+      }),
+      providesTags: ['Attendance']
+    }),
+
+    decideOvertime: builder.mutation({
+      query: ({ id, approved, reason }) => ({
+        url: `/attendance/${id}/overtime-decide`,
+        method: 'PATCH',
+        body: { approved, reason }
+      }),
+      invalidatesTags: ['Attendance', 'Dashboard', 'Payroll']
     })
   })
 });
@@ -250,5 +268,7 @@ export const {
   useGetShiftsQuery,
   useCreateShiftMutation,
   useUpdateShiftMutation,
-  useDeleteShiftMutation
+  useDeleteShiftMutation,
+  useGetTeamOvertimeRecordsQuery,
+  useDecideOvertimeMutation
 } = attendanceApi;

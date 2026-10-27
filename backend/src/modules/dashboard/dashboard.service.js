@@ -23,6 +23,9 @@ import { PayrollRun } from '../../models/payrollRun.model.js';
 import { Payslip } from '../../models/payslip.model.js';
 import { LeaveBalance } from '../../models/leaveBalance.model.js';
 import { Announcement } from '../../models/announcement.model.js';
+import { Designation } from '../../models/designation.model.js';
+import { LeaveType } from '../../models/leaveType.model.js';
+import { getEmployeeLeaveBalance } from '../leaves/leave.service.js';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -707,9 +710,7 @@ export const getEmployeeDashboardData = async (user) => {
         { date: { $gte: todayStart, $lte: todayEnd } }
       ]
     }).lean(),
-    LeaveBalance.findOne({ employeeId: employee._id, year: currentYear })
-      .populate('balances.leaveTypeId', 'name code isPaid')
-      .lean(),
+    getEmployeeLeaveBalance(employee._id, currentYear),
     Payslip.findOne({
       employeeId: employee._id,
       status: { $in: ['approved', 'paid'] }
@@ -724,13 +725,14 @@ export const getEmployeeDashboardData = async (user) => {
   ]);
 
   const formattedBalances = (leaveBalanceDoc?.balances || []).map((b) => {
+    const typeObj = b.leaveType || b.leaveTypeId;
     const allocated = (b.allocatedDays || 0) + (b.carriedForwardDays || 0);
-    const used = (b.usedDays || 0) + (b.pendingDays || 0);
-    const available = Math.max(0, allocated - used);
+    const used = (b.usedDays || 0) + (b.pendingDays || 0) + (b.encashedDays || 0);
+    const available = b.availableDays ?? Math.max(0, allocated - used);
     return {
-      _id: b.leaveTypeId?._id || b.leaveTypeId || String(Math.random()),
-      leaveType: b.leaveTypeId?.name || 'Leave',
-      code: b.leaveTypeId?.code || 'LV',
+      _id: typeObj?._id || typeObj || String(Math.random()),
+      leaveType: typeObj?.name || 'Leave',
+      code: typeObj?.code || 'LV',
       allocated,
       used,
       available
@@ -749,9 +751,13 @@ export const getEmployeeDashboardData = async (user) => {
     todayAttendance: todayAttendance
       ? {
           status: todayAttendance.status,
-          checkInTime: todayAttendance.checkIn?.time || null,
-          checkOutTime: todayAttendance.checkOut?.time || null,
-          workDurationMinutes: todayAttendance.workDurationMinutes || 0,
+          checkInTime: todayAttendance.checkIn || null,
+          checkOutTime: todayAttendance.checkOut || null,
+          workDurationMinutes:
+            todayAttendance.workDurationMinutes ||
+            (todayAttendance.checkIn && !todayAttendance.checkOut
+              ? Math.max(0, Math.floor((new Date() - new Date(todayAttendance.checkIn)) / 60000) - (todayAttendance.totalBreakMinutes || 0))
+              : 0),
           onBreak: todayAttendance.breaks?.some((b) => !b.endTime) || false
         }
       : {

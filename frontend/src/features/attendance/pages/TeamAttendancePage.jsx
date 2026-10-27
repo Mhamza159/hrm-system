@@ -37,7 +37,10 @@ import {
   CalendarDays,
   FileText,
   Check,
-  X
+  X,
+  TrendingUp,
+  Sparkles,
+  CheckCheck
 } from 'lucide-react';
 import {
   useGetTeamAttendanceQuery,
@@ -45,8 +48,11 @@ import {
   useGetTeamWFHRequestsQuery,
   useDecideWFHMutation,
   useGetTeamCorrectionsQuery,
-  useDecideCorrectionMutation
+  useDecideCorrectionMutation,
+  useGetTeamOvertimeRecordsQuery,
+  useDecideOvertimeMutation
 } from '../attendanceApi.js';
+import { toast } from 'sonner';
 import { AttendanceStatusBadge } from '../components/AttendanceStatusBadge.jsx';
 import { EditAttendanceModal } from '../components/EditAttendanceModal.jsx';
 import { ExportAttendanceModal } from '../components/ExportAttendanceModal.jsx';
@@ -61,12 +67,12 @@ export const TeamAttendancePage = () => {
   const [searchParams] = useSearchParams();
   const urlTab = searchParams.get('tab');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [activeTab, setActiveTab] = useState(urlTab || 'all'); // 'all' | 'history' | 'wfh' | 'corrections'
+  const [activeTab, setActiveTab] = useState(urlTab || 'all'); // 'all' | 'history' | 'wfh' | 'corrections' | 'overtime'
   const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['all', 'history', 'wfh', 'corrections'].includes(tab)) {
+    if (tab && ['all', 'history', 'wfh', 'corrections', 'overtime'].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -166,6 +172,45 @@ export const TeamAttendancePage = () => {
   const [decideWFH, { isLoading: isDecidingWFH }] = useDecideWFHMutation();
   const [decideCorrection, { isLoading: isDecidingCorrection }] = useDecideCorrectionMutation();
 
+  // Overtime Approvals State
+  const [otStatusFilter, setOtStatusFilter] = useState('all'); // 'all' | 'pending' | 'approved'
+  const [otSearch, setOtSearch] = useState('');
+  const [otMonth, setOtMonth] = useState('');
+  const [otPage, setOtPage] = useState(1);
+
+  // Overtime Query & Mutation
+  const {
+    data: otData,
+    isLoading: isOtLoading,
+    refetch: refetchOvertime
+  } = useGetTeamOvertimeRecordsQuery(
+    {
+      status: otStatusFilter,
+      month: otMonth || undefined,
+      search: otSearch.trim() || undefined,
+      page: otPage,
+      limit: 15
+    },
+    { skip: !can('attendance.approve') }
+  );
+
+  const [decideOvertime, { isLoading: isDecidingOT }] = useDecideOvertimeMutation();
+
+  const handleQuickDecideOT = async (attendanceId, approved) => {
+    try {
+      await decideOvertime({
+        id: attendanceId,
+        approved,
+        reason: approved ? 'Manager 1-click Quick Approval' : 'Manager Overtime Revocation'
+      }).unwrap();
+      toast.success(approved ? 'Overtime approved successfully!' : 'Overtime approval revoked.');
+      refetchTeam();
+      refetchOvertime();
+    } catch (err) {
+      toast.error(err.data?.message || err.message || 'Failed to update overtime status');
+    }
+  };
+
   // Listen to real-time punch events via Socket.io
   useEffect(() => {
     let socket;
@@ -188,6 +233,14 @@ export const TeamAttendancePage = () => {
   const teamMembers = teamData?.data?.items || [];
   const wfhRequests = wfhData?.data || [];
   const corrections = correctionsData?.data || [];
+  const otItems = otData?.data?.items || [];
+  const otTotal = otData?.data?.total || 0;
+  const otCounts = otData?.data?.counts || {
+    total: otTotal,
+    pending: otItems.filter((i) => !i.overtimeApproved).length,
+    approved: otItems.filter((i) => i.overtimeApproved).length
+  };
+  const otPages = otData?.data?.pages || 1;
 
   const pendingWFHCount = wfhRequests.filter((r) => r.status === 'pending').length;
   const approvedWFHCount = wfhRequests.filter((r) => r.status === 'approved').length;
@@ -361,6 +414,26 @@ export const TeamAttendancePage = () => {
                     {corrections.length}
                   </span>
                 )}
+              </button>
+              <button
+                onClick={() => setActiveTab('overtime')}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2 ${
+                  activeTab === 'overtime'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <TrendingUp className="w-4 h-4" />
+                <span>Overtime Approvals</span>
+                {otCounts.pending > 0 ? (
+                  <span className="px-1.5 py-0.2 bg-amber-500 text-white rounded-full text-xs font-bold animate-pulse">
+                    {otCounts.pending}
+                  </span>
+                ) : otCounts.total > 0 ? (
+                  <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 rounded-full text-xs font-semibold">
+                    {otCounts.total}
+                  </span>
+                ) : null}
               </button>
             </>
           )}
@@ -589,6 +662,59 @@ export const TeamAttendancePage = () => {
                             </span>
                           )}
                         </div>
+
+                        {/* Overtime Strip & 1-Click Action */}
+                        {att?.overtimeMinutes > 0 && (
+                          <div
+                            className={`flex items-center justify-between px-3 py-1.5 rounded-xl text-xs border transition-colors ${
+                              att.overtimeApproved
+                                ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300'
+                                : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/50 text-amber-800 dark:text-amber-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5 font-medium">
+                              <TrendingUp className="w-3.5 h-3.5 shrink-0 text-current" />
+                              <span>
+                                OT:{' '}
+                                <strong className="font-bold">
+                                  {(att.overtimeMinutes / 60).toFixed(1)}h
+                                </strong>
+                              </span>
+                              <span
+                                className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider ${
+                                  att.overtimeApproved
+                                    ? 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300'
+                                    : 'bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 animate-pulse'
+                                }`}
+                              >
+                                {att.overtimeApproved ? 'Approved' : 'Pending'}
+                              </span>
+                            </div>
+
+                            {can('attendance.approve') && (
+                              <button
+                                type="button"
+                                onClick={() => handleQuickDecideOT(att._id, !att.overtimeApproved)}
+                                disabled={isDecidingOT}
+                                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold shadow-2xs transition-all flex items-center gap-1 disabled:opacity-50 ${
+                                  att.overtimeApproved
+                                    ? 'bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 dark:bg-slate-800 dark:hover:bg-rose-950/40 dark:text-slate-300 dark:hover:text-rose-300 dark:border-slate-700'
+                                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                }`}
+                                title={att.overtimeApproved ? 'Revoke overtime approval' : '1-Click Approve this Overtime'}
+                              >
+                                {att.overtimeApproved ? (
+                                  <span>Revoke</span>
+                                ) : (
+                                  <>
+                                    <Check className="w-3 h-3" />
+                                    <span>Approve OT</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1762,6 +1888,363 @@ export const TeamAttendancePage = () => {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Tab 5: Overtime Approvals Console */}
+      {activeTab === 'overtime' && (
+        <div className="space-y-4">
+          {/* Header & Metric Strip */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                    Team Overtime Approvals & Audit Console
+                  </h2>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Review shift overtime punches, approve 1.5x basic rate line-item eligibility, and track audit decisions.
+                </p>
+              </div>
+
+              {/* Quick Status KPI Summary Badges */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 flex items-center gap-2.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-slate-400" />
+                  <div className="flex flex-col text-left">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Recorded</span>
+                    <span className="text-sm font-extrabold text-slate-800 dark:text-slate-100">{otCounts.total}</span>
+                  </div>
+                </div>
+
+                <div className="px-3.5 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 flex items-center gap-2.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse" />
+                  <div className="flex flex-col text-left">
+                    <span className="text-[10px] uppercase font-bold text-amber-700 dark:text-amber-300 tracking-wider">Pending Review</span>
+                    <span className="text-sm font-extrabold text-amber-900 dark:text-amber-200">{otCounts.pending}</span>
+                  </div>
+                </div>
+
+                <div className="px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-2.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                  <div className="flex flex-col text-left">
+                    <span className="text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-300 tracking-wider">Approved OT</span>
+                    <span className="text-sm font-extrabold text-emerald-900 dark:text-emerald-200">{otCounts.approved}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Filter Toolbar */}
+            <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
+              {/* Search & Month Filter */}
+              <div className="flex items-center gap-2.5 flex-1 flex-wrap">
+                <div className="relative min-w-[220px] flex-1 max-w-sm">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={otSearch}
+                    onChange={(e) => {
+                      setOtSearch(e.target.value);
+                      setOtPage(1);
+                    }}
+                    placeholder="Search by employee name or code..."
+                    className="w-full pl-9 pr-3 py-1.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-xl text-xs text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  />
+                  {otSearch && (
+                    <button
+                      onClick={() => {
+                        setOtSearch('');
+                        setOtPage(1);
+                      }}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* Month Selector */}
+                <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-xl text-xs">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    <input
+                      type="month"
+                      value={otMonth}
+                      onChange={(e) => {
+                        setOtMonth(e.target.value);
+                        setOtPage(1);
+                      }}
+                      className="bg-transparent border-0 text-slate-800 dark:text-slate-200 text-xs focus:outline-none cursor-pointer"
+                    />
+                  </div>
+                  {otMonth && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOtMonth('');
+                        setOtPage(1);
+                      }}
+                      className="text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 px-2 py-1"
+                      title="Clear Month Filter"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Status Filter Pills */}
+              <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700/60 self-start md:self-auto">
+                {[
+                  { id: 'all', label: 'All Punches', count: otCounts.total },
+                  { id: 'pending', label: 'Pending', count: otCounts.pending },
+                  { id: 'approved', label: 'Approved', count: otCounts.approved }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setOtStatusFilter(tab.id);
+                      setOtPage(1);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                      otStatusFilter === tab.id
+                        ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    <span
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                        otStatusFilter === tab.id
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                          : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Overtime Punches Table */}
+          {isOtLoading ? (
+            <div className="p-12 text-center text-sm text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+              Loading overtime records...
+            </div>
+          ) : otItems.length === 0 ? (
+            <div className="p-12 text-center text-sm text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+              <TrendingUp className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+              <p className="font-semibold text-slate-600 dark:text-slate-300">No overtime records found</p>
+              <p className="text-xs text-slate-400 mt-1">
+                {otMonth ? `No shift punches exceeded scheduled hours in ${otMonth}.` : 'No team overtime punches matched this filter criteria.'}
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 uppercase text-[10px] font-bold tracking-wider">
+                    <tr>
+                      <th className="py-3 px-4">Employee</th>
+                      <th className="py-3 px-4">Punch Date</th>
+                      <th className="py-3 px-4">Clock In / Out</th>
+                      <th className="py-3 px-4">Total Worked</th>
+                      <th className="py-3 px-4">Overtime Hours</th>
+                      <th className="py-3 px-4">Approval Status</th>
+                      <th className="py-3 px-4 text-right min-w-[150px]">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                    {otItems.map((rec) => {
+                      const emp = rec.employeeId || {};
+                      const empName = emp.name || `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || 'Employee';
+                      const initials =
+                        empName
+                          .split(/\s+/)
+                          .filter(Boolean)
+                          .map((n) => n[0])
+                          .slice(0, 2)
+                          .join('')
+                          .toUpperCase() || 'EM';
+                      const otHours = (rec.overtimeMinutes / 60).toFixed(1);
+                      const workedHours = (rec.workDurationMinutes / 60).toFixed(1);
+                      const punchDateStr = rec.date
+                        ? new Date(rec.date).toLocaleDateString('en-GB', {
+                            weekday: 'short',
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          })
+                        : '—';
+                      const checkInTime = rec.checkIn
+                        ? new Date(rec.checkIn).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+                        : '—';
+                      const checkOutTime = rec.checkOut
+                        ? new Date(rec.checkOut).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+                        : '—';
+
+                      return (
+                        <tr key={rec._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                          {/* Employee Info */}
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-3">
+                              {emp.avatar ? (
+                                <img
+                                  src={emp.avatar}
+                                  alt={empName}
+                                  className="w-9 h-9 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700"
+                                />
+                              ) : (
+                                <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center justify-center ring-1 ring-slate-200 dark:ring-slate-700">
+                                  {initials}
+                                </div>
+                              )}
+                              <div className="flex flex-col">
+                                <span className="font-bold text-slate-900 dark:text-white text-xs">{empName}</span>
+                                <span className="text-[11px] text-slate-500 font-mono">
+                                  {emp.employeeCode} {emp.departmentId?.name && `· ${emp.departmentId.name}`}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Date */}
+                          <td className="py-3.5 px-4 font-medium text-slate-700 dark:text-slate-300">
+                            {punchDateStr}
+                          </td>
+
+                          {/* In / Out */}
+                          <td className="py-3.5 px-4">
+                            <div className="flex items-center gap-2 font-mono text-xs">
+                              <span className="text-emerald-700 dark:text-emerald-400 font-semibold">{checkInTime}</span>
+                              <span className="text-slate-300 dark:text-slate-600">→</span>
+                              <span className="text-rose-600 dark:text-rose-400 font-semibold">{checkOutTime}</span>
+                            </div>
+                          </td>
+
+                          {/* Worked */}
+                          <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
+                            <span className="font-semibold">{workedHours}</span> hrs
+                          </td>
+
+                          {/* Overtime */}
+                          <td className="py-3.5 px-4">
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 font-bold text-xs">
+                              <TrendingUp className="w-3.5 h-3.5" />
+                              <span>{otHours} hrs</span>
+                            </div>
+                          </td>
+
+                          {/* Status */}
+                          <td className="py-3.5 px-4">
+                            {rec.overtimeApproved ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Approved</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-800 animate-pulse">
+                                <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                                <span>Pending Approval</span>
+                              </span>
+                            )}
+                          </td>
+
+                          {/* 1-Click Action & Edit */}
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {can('attendance.approve') && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleQuickDecideOT(rec._id, !rec.overtimeApproved)}
+                                  disabled={isDecidingOT}
+                                  className={`px-3 py-1.5 rounded-xl text-xs font-bold shadow-2xs transition-all flex items-center gap-1.5 disabled:opacity-50 ${
+                                    rec.overtimeApproved
+                                      ? 'bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 dark:bg-slate-800 dark:hover:bg-rose-950/40 dark:text-slate-300 dark:hover:text-rose-300 dark:border-slate-700'
+                                      : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                  }`}
+                                  title={rec.overtimeApproved ? 'Revoke Overtime Approval' : 'Approve Overtime for Payroll Line-Item'}
+                                >
+                                  {rec.overtimeApproved ? (
+                                    <>
+                                      <X className="w-3.5 h-3.5" />
+                                      <span>Revoke</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Check className="w-3.5 h-3.5" />
+                                      <span>Approve OT</span>
+                                    </>
+                                  )}
+                                </button>
+                              )}
+
+                              {can('attendance.edit') && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedAttendanceForEdit(rec);
+                                    setEditModalOpen(true);
+                                  }}
+                                  className="p-1.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                  title="Edit Attendance Punch"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {otPages > 1 && (
+                <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+                  <span>
+                    Showing {(otPage - 1) * 15 + 1} to {Math.min(otPage * 15, otTotal)} of {otTotal} entries
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setOtPage((p) => Math.max(1, p - 1))}
+                      disabled={otPage <= 1}
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    {Array.from({ length: otPages }, (_, i) => i + 1).map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setOtPage(p)}
+                        className={`w-7 h-7 rounded-xl text-xs font-bold transition-colors ${
+                          otPage === p
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setOtPage((p) => Math.min(otPages, p + 1))}
+                      disabled={otPage >= otPages}
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 

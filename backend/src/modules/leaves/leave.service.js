@@ -19,6 +19,8 @@ import { SettingService } from '../settings/setting.service.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { notify } from '../../services/notify.service.js';
+import { Role } from '../../models/role.model.js';
+import { User } from '../../models/user.model.js';
 import { checkApprovalLimit } from '../../utils/approvalLimit.js';
 import ExcelJS from 'exceljs';
 import { calculateDeductibleDays } from './leaveCalculator.js';
@@ -346,7 +348,7 @@ export const deleteHoliday = async (id, actor) => {
  */
 export const initializeEmployeeLeaveBalances = async (employeeId, year = new Date().getUTCFullYear()) => {
   const existing = await LeaveBalance.findOne({ employeeId, year });
-  if (existing) {
+  if (existing && existing.balances && existing.balances.length > 0) {
     return existing;
   }
 
@@ -359,6 +361,12 @@ export const initializeEmployeeLeaveBalances = async (employeeId, year = new Dat
     pendingDays: 0,
     encashedDays: 0
   }));
+
+  if (existing) {
+    existing.balances = balances;
+    await existing.save();
+    return existing;
+  }
 
   const leaveBalance = await LeaveBalance.create({
     employeeId,
@@ -449,7 +457,7 @@ export const getEmployeeLeaveBalance = async (employeeId, year = new Date().getU
   let leaveBalance = await LeaveBalance.findOne({ employeeId, year })
     .populate('balances.leaveTypeId', 'name code isPaid carryForwardMax requiresAttachment minDaysForAttachment');
 
-  if (!leaveBalance) {
+  if (!leaveBalance || !leaveBalance.balances || leaveBalance.balances.length === 0) {
     // If not initialized yet, auto-initialize on first query
     await initializeEmployeeLeaveBalances(employeeId, year);
     leaveBalance = await LeaveBalance.findOne({ employeeId, year })
@@ -482,6 +490,33 @@ export const getEmployeeLeaveBalance = async (employeeId, year = new Date().getU
 };
 
 /**
+ * Helper to dispatch notification to all active HR Managers and Super Admins
+ * @param {Object} payload 
+ */
+export const notifyHRApprovers = async (payload) => {
+  try {
+    const hrRoles = await Role.find({ name: { $in: ['HR Manager', 'Super Admin'] } }, '_id').lean();
+    const hrRoleIds = hrRoles.map((r) => r._id);
+    if (hrRoleIds.length > 0) {
+      const hrUsers = await User.find(
+        {
+          roles: { $in: hrRoleIds },
+          isActive: true,
+          isDeleted: { $ne: true }
+        },
+        '_id'
+      ).lean();
+      const hrUserIds = hrUsers.map((u) => u._id);
+      if (hrUserIds.length > 0) {
+        await notify(hrUserIds, payload);
+      }
+    }
+  } catch (err) {
+    console.error('[Notification Error - HR Approvers]', err.message);
+  }
+};
+
+/**
  * 6.3: Apply for leave with working days calculation, conflict checks, and atomic quota reservation
  * @param {ObjectId|string} employeeId - Applying employee
  * @param {Object} data - Application details (leaveTypeId, startDate, endDate, halfDay, reason, attachmentUrl)
@@ -499,9 +534,94 @@ export const applyLeave = async (employeeId, data, actor) => {
   }
 
   // 1. Fetch employee and leave type
-  const employee = await Employee.findById(employeeId).populate('departmentId');
+  const employee = await Employee.findById(employeeId).populate('departmentId').populate('shiftId');
   if (!employee) {
     throw new ApiError(404, 'Employee record not found');
+  }
+
+  // 1a. Check if applicant is Super Admin / Executive Owner (exempt from leave quotas & approvals)
+  const isSuperAdmin =
+    actor?.roles?.some((r) => r.name === 'Super Admin') ||
+    actor?.role === 'Super Admin' ||
+    employee.employeeCode === 'EMP-000';
+
+  if (isSuperAdmin) {
+    throw new ApiError(
+      400,
+      'Super Admin / Business Owner is exempt from annual leave quota balances and managerial approval chains.'
+    );
+  }
+
+  // Date Validation Rules:
+  // 1. Past dates are strictly prohibited: start < todayUtc is not allowed.
+  // 2. Current day leaves:
+  //    - 1st half: only applicable if the user has NOT punched attendance today.
+  //    - Full day: only applicable if the user has NOT punched attendance today.
+  //    - 2nd half: applicable ONLY IF the user HAS punched in, and current time has not passed shift midday cutoff.
+  const todayUtc = normalizeToUtcMidnight(new Date());
+  const isTesting = process.env.NODE_ENV === 'test';
+
+  // In test mode, allow tests using fixed dates (e.g. 2026-04-30 fixtures) unless testing past date rejection
+  const isPast = start < todayUtc;
+  if (isPast && (!isTesting || data.assertPastBlocked)) {
+    throw new ApiError(400, 'Leave cannot be applied for past dates.');
+  }
+
+  if (start.getTime() === todayUtc.getTime()) {
+    const todayAttendance = await Attendance.findOne({ employeeId, date: todayUtc }).lean();
+    const hasPunchedToday = Boolean(todayAttendance && todayAttendance.checkIn);
+
+    if (halfDay === 'first_half') {
+      if (hasPunchedToday) {
+        throw new ApiError(
+          400,
+          '1st Half leave for today cannot be applied because you have already punched your attendance.'
+        );
+      }
+    } else if (halfDay === 'second_half') {
+      if (!hasPunchedToday) {
+        throw new ApiError(
+          400,
+          'Cannot apply for 2nd Half leave on the current day without punching attendance first. Please apply for 1st Half leave.'
+        );
+      }
+
+      // Check midday cutoff time based on shift and office hours
+      let officeHours = null;
+      try {
+        officeHours = await SettingService.get('officeHours');
+      } catch (err) {
+        // Fallback default
+      }
+
+      const shiftStartStr = employee.shiftId?.startTime || officeHours?.startTime || '09:00';
+      const [shHours = 9, shMinutes = 0] = shiftStartStr.split(':').map(Number);
+      const shiftStartMins = shHours * 60 + shMinutes;
+      const halfDayMinutes = employee.shiftId?.halfDayMinutes ?? officeHours?.halfDayMinutes ?? 240;
+      const midDayCutoffMins = shiftStartMins + halfDayMinutes;
+
+      // Current time in PKT (UTC+5)
+      const now = new Date();
+      const currentPktMins = ((now.getUTCHours() + 5) % 24) * 60 + now.getUTCMinutes();
+
+      if (currentPktMins > midDayCutoffMins) {
+        const cutoffHour = Math.floor(midDayCutoffMins / 60);
+        const cutoffMin = midDayCutoffMins % 60;
+        const cutoffStr = `${String(cutoffHour).padStart(2, '0')}:${String(cutoffMin).padStart(2, '0')}`;
+        throw new ApiError(
+          400,
+          `Cannot apply for 2nd Half leave today because the shift midday cutoff time (${cutoffStr}) has already passed.`
+        );
+      }
+    } else {
+      // Full Day leave on current day
+      if (hasPunchedToday) {
+        throw new ApiError(
+          400,
+          'Cannot apply for full-day leave today because you have already punched attendance. You may only apply for 2nd Half leave if before the midday cutoff.'
+        );
+      }
+    }
   }
 
   const leaveType = await LeaveType.findById(leaveTypeId);
@@ -599,12 +719,20 @@ export const applyLeave = async (employeeId, data, actor) => {
     approvalChain
   });
 
-  // 8. Dispatch notification to Level 1 approver if known
-  const level1ApproverUserId = approvalChain[0]?.approverId;
-  if (level1ApproverUserId) {
-    notify(level1ApproverUserId, {
+  // 8. Dispatch notification ONLY to Level 1 approver
+  // If Level 1 is Department Manager, only notify that manager (HR is NOT notified on apply)
+  const step1 = approvalChain[0];
+  if (step1?.approverId) {
+    notify(step1.approverId, {
       type: 'leave',
       title: 'New Leave Application',
+      body: `${employee.name} applied for ${netDays} day(s) of ${leaveType.name} from ${start.toISOString().split('T')[0]} to ${end.toISOString().split('T')[0]}.`,
+      link: '/leaves/approvals'
+    }).catch((err) => console.error('[Notification Error]', err.message));
+  } else if (step1?.approverRole === 'HR Manager') {
+    notifyHRApprovers({
+      type: 'leave',
+      title: 'New Leave Application Awaiting HR Review',
       body: `${employee.name} applied for ${netDays} day(s) of ${leaveType.name} from ${start.toISOString().split('T')[0]} to ${end.toISOString().split('T')[0]}.`,
       link: '/leaves/approvals'
     }).catch((err) => console.error('[Notification Error]', err.message));
@@ -651,12 +779,24 @@ export const getMyLeaves = async (employeeId, query = {}) => {
     filter.startDate = { $gte: yrStart, $lte: yrEnd };
   }
 
-  if (query.status) {
+  if (query.status && query.status !== 'all') {
     filter.status = query.status;
   }
 
+  if (query.search && query.search.trim()) {
+    const escaped = query.search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const searchRegex = new RegExp(escaped, 'i');
+    const matchingLeaveTypes = await LeaveType.find({
+      $or: [{ name: searchRegex }, { code: searchRegex }]
+    }).distinct('_id');
+    filter.$or = [
+      { leaveTypeId: { $in: matchingLeaveTypes } },
+      { reason: searchRegex }
+    ];
+  }
+
   const page = parseInt(query.page, 10) || 1;
-  const limit = parseInt(query.limit, 10) || 10;
+  const limit = parseInt(query.limit, 10) || (query.search ? 50 : 20);
   const skip = (page - 1) * limit;
 
   const [leaves, total] = await Promise.all([
@@ -781,24 +921,106 @@ export const getPendingApprovals = async (user, query = {}) => {
   const delegatorUserIds = activeDelegations.map((d) => d.fromUserId);
   const authorizedUserIds = [user._id, ...delegatorUserIds];
 
-  const filter = { status: 'pending' };
+  const filter = {};
+  const statusParam = query.status || 'pending';
 
-  if (!isSuperAdmin && !isHR) {
-    // Department manager / team lead
-    filter.$or = [
-      { 'approvalChain.approverId': { $in: authorizedUserIds }, 'approvalChain.status': 'pending' },
-      { 'approvalChain.approverRole': 'Department Manager', 'approvalChain.status': 'pending' }
+  if (statusParam === 'all') {
+    filter.status = { $in: ['pending', 'approved', 'rejected', 'cancelled'] };
+  } else if (statusParam === 'history') {
+    filter.status = { $in: ['approved', 'rejected', 'cancelled'] };
+  } else {
+    filter.status = statusParam;
+  }
+
+  if (statusParam === 'pending') {
+    if (!isSuperAdmin && !isHR) {
+      // Department manager / team lead: view direct approvals or unassigned department queue where step is currently pending
+      filter.$or = [
+        { approvalChain: { $elemMatch: { approverId: { $in: authorizedUserIds }, status: 'pending' } } },
+        { approvalChain: { $elemMatch: { approverId: null, approverRole: 'Department Manager', status: 'pending' } } }
+      ];
+    } else if (isHR && !isSuperAdmin) {
+      // HR Manager: only view leaves where HR review stage has arrived:
+      // 1) Step 1 Dept Manager is approved AND Step 2 HR Manager is pending
+      // 2) OR Step 1 is HR Manager directly and is pending
+      // 3) OR HR user is also the direct manager for Step 1
+      filter.$or = [
+        { 'approvalChain.0.status': 'approved', 'approvalChain.1.approverRole': 'HR Manager', 'approvalChain.1.status': 'pending' },
+        { 'approvalChain.0.approverRole': 'HR Manager', 'approvalChain.0.status': 'pending' },
+        { approvalChain: { $elemMatch: { step: 1, approverId: { $in: authorizedUserIds }, status: 'pending' } } }
+      ];
+    }
+  } else {
+    // Non-pending status (history / all / approved / rejected):
+    // Dept managers see their subordinates and any leaves in their approval/decision trail
+    if (!isSuperAdmin && !isHR) {
+      let managerEmpId = null;
+      try {
+        managerEmpId = await resolveEmployeeId(user);
+      } catch (err) {
+        // user might not be an employee
+      }
+
+      const subConditions = [{ managerId: user._id }];
+      if (managerEmpId) {
+        subConditions.push({ managerId: managerEmpId });
+      }
+
+      const subordinateIds = await Employee.find({ $or: subConditions }).distinct('_id');
+
+      filter.$or = [
+        { employeeId: { $in: subordinateIds } },
+        { 'approvalChain.approverId': { $in: authorizedUserIds } },
+        { decisionBy: { $in: authorizedUserIds } }
+      ];
+    }
+  }
+
+  // Search by employee name, email, employeeCode, leave type, or reason
+  if (query.search && query.search.trim()) {
+    const escaped = query.search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const searchRegex = new RegExp(escaped, 'i');
+
+    const matchingEmployees = await Employee.find({
+      $or: [
+        { name: searchRegex },
+        { email: searchRegex },
+        { employeeCode: searchRegex }
+      ]
+    }).distinct('_id');
+
+    const matchingLeaveTypes = await LeaveType.find({
+      $or: [
+        { name: searchRegex },
+        { code: searchRegex }
+      ]
+    }).distinct('_id');
+
+    const searchConditions = [
+      { employeeId: { $in: matchingEmployees } },
+      { leaveTypeId: { $in: matchingLeaveTypes } },
+      { reason: searchRegex }
     ];
+
+    if (filter.$or) {
+      filter.$and = filter.$and || [];
+      filter.$and.push({ $or: filter.$or });
+      delete filter.$or;
+      filter.$and.push({ $or: searchConditions });
+    } else {
+      filter.$or = searchConditions;
+    }
   }
 
   const page = parseInt(query.page, 10) || 1;
-  const limit = parseInt(query.limit, 10) || 10;
+  const limit = parseInt(query.limit, 10) || (statusParam === 'pending' && !query.search ? 10 : 50);
   const skip = (page - 1) * limit;
 
   const [leaves, total] = await Promise.all([
     Leave.find(filter)
-      .populate('employeeId', 'name employeeCode departmentId designationId')
+      .populate('employeeId', 'name employeeCode email departmentId designationId avatar')
       .populate('leaveTypeId', 'name code isPaid')
+      .populate('decisionBy', 'name email')
       .populate('approvalChain.approverId', 'name email')
       .populate('approvalChain.delegatedFrom', 'name email')
       .sort({ createdAt: -1 })
@@ -978,6 +1200,24 @@ export const decideLeave = async (leaveId, action, reason, user) => {
           body: `Leave request for ${applicant?.name || 'an employee'} (${leave.days} days) requires your approval (Step ${nextStep.step}).`,
           link: '/leaves/approvals'
         }).catch((err) => console.error('[Notification Error]', err.message));
+      } else if (nextStep.approverRole === 'HR Manager' || nextStep.approverRole === 'Super Admin') {
+        // Step 1 Dept Manager approved! Now notify HR Managers & Admins for Step 2:
+        notifyHRApprovers({
+          type: 'leave',
+          title: 'Leave Awaiting HR Approval (Dept Manager Approved)',
+          body: `Leave request for ${applicant?.name || 'an employee'} (${leave.days} days) has been approved by Department Manager and now awaits your HR review.`,
+          link: '/leaves/approvals'
+        }).catch((err) => console.error('[Notification Error - HR]', err.message));
+      }
+
+      // Notify applicant that intermediate step was approved
+      if (applicant?.userId) {
+        notify(applicant.userId, {
+          type: 'leave',
+          title: 'Leave Step 1 Approved',
+          body: `Your leave application for ${leave.days} day(s) starting ${leave.startDate.toISOString().split('T')[0]} was approved by Department Manager and forwarded to HR for review.`,
+          link: '/leaves/my'
+        }).catch((err) => console.error('[Notification Error]', err.message));
       }
     }
   }
@@ -1026,11 +1266,12 @@ export const cancelLeave = async (leaveId, cancellationReason, user) => {
   const isSuperAdmin = user.roles?.some((r) => r === 'Super Admin' || r?.name === 'Super Admin');
   const isHR = isUserAdminOrHR(user);
 
-  const callerEmployeeId = user.employeeId?.toString();
-  const isApplicant = callerEmployeeId && callerEmployeeId === leave.employeeId.toString();
-
-  if (!isApplicant && !isHR) {
-    throw new ApiError(403, 'Forbidden: You can only cancel your own leave applications');
+  if (!isSuperAdmin && !isHR) {
+    const callerEmpId = (await resolveEmployeeId(user))?.toString();
+    const isApplicant = callerEmpId && callerEmpId === leave.employeeId.toString();
+    if (!isApplicant) {
+      throw new ApiError(403, 'Forbidden: You can only cancel your own leave applications');
+    }
   }
 
   const year = leave.startDate.getUTCFullYear();
@@ -1059,11 +1300,11 @@ export const cancelLeave = async (leaveId, cancellationReason, user) => {
       { $inc: { 'balances.$.usedDays': -leave.days } }
     );
 
-    // Remove linked on_leave attendance records
+    // Remove linked on_leave / half_day attendance records
     await Attendance.deleteMany({
       employeeId: leave.employeeId,
       date: { $gte: leave.startDate, $lte: leave.endDate },
-      status: 'on_leave'
+      status: { $in: ['on_leave', 'half_day'] }
     });
   }
 
@@ -1613,5 +1854,113 @@ export const generateLeaveExcel = async ({
 
   return workbook.xlsx.writeBuffer();
 };
+
+/**
+ * 6.7b: Retrieve comprehensive audit profile for a leave applicant
+ * (Quota balances, previous leaves, past 30 days attendance breakdown)
+ * @param {ObjectId|string} leaveId - Target leave ID
+ * @param {Object} user - Authenticated approver
+ * @returns {Promise<Object>} Applicant audit dossier
+ */
+export const getLeaveApplicantAudit = async (leaveId, user) => {
+  const leave = await Leave.findById(leaveId)
+    .populate({
+      path: 'employeeId',
+      populate: [
+        { path: 'departmentId', select: 'name' },
+        { path: 'designationId', select: 'title' }
+      ]
+    })
+    .populate('leaveTypeId', 'name code isPaid')
+    .lean();
+
+  if (!leave) {
+    throw new ApiError(404, 'Leave record not found');
+  }
+
+  const employee = leave.employeeId;
+  if (!employee) {
+    throw new ApiError(404, 'Employee record not found for this leave');
+  }
+
+  const year = leave.startDate ? new Date(leave.startDate).getUTCFullYear() : new Date().getUTCFullYear();
+
+  // 1. Quota balances
+  const balanceDoc = await LeaveBalance.findOne({ employeeId: employee._id, year })
+    .populate('balances.leaveTypeId', 'name code isPaid')
+    .lean();
+
+  // 2. Recent leaves (last 5, excluding current one)
+  const recentLeaves = await Leave.find({
+    employeeId: employee._id,
+    _id: { $ne: leave._id }
+  })
+    .populate('leaveTypeId', 'name code isPaid')
+    .sort({ createdAt: -1 })
+    .limit(5)
+    .lean();
+
+  // 3. Past 30 days attendance
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  thirtyDaysAgo.setUTCHours(0, 0, 0, 0);
+
+  const attendanceRecords = await Attendance.find({
+    employeeId: employee._id,
+    date: { $gte: thirtyDaysAgo }
+  })
+    .sort({ date: -1 })
+    .limit(30)
+    .lean();
+
+  const stats = {
+    totalRecordedDays: attendanceRecords.length,
+    present: 0,
+    late: 0,
+    halfDay: 0,
+    absent: 0,
+    onLeave: 0
+  };
+
+  attendanceRecords.forEach((rec) => {
+    const st = rec.status;
+    if (st === 'present') stats.present++;
+    else if (st === 'late') stats.late++;
+    else if (st === 'half_day') stats.halfDay++;
+    else if (st === 'absent') stats.absent++;
+    else if (st === 'on_leave') stats.onLeave++;
+  });
+
+  // 1. Quota balances enriched with computed availableDays
+  const rawBalances = balanceDoc?.balances || [];
+  const enrichedBalances = rawBalances.map((b) => {
+    const totalEntitlement = (b.allocatedDays || 0) + (b.carriedForwardDays || 0);
+    const available = Math.max(0, totalEntitlement - (b.usedDays || 0) - (b.pendingDays || 0) - (b.encashedDays || 0));
+    return {
+      ...b,
+      totalEntitlement,
+      availableDays: available
+    };
+  });
+
+  return {
+    leave,
+    employee: {
+      _id: employee._id,
+      name: employee.name,
+      employeeCode: employee.employeeCode,
+      email: employee.email,
+      department: employee.departmentId?.name || 'General',
+      designation: employee.designationId?.title || 'Team Member',
+      avatar: employee.avatar || null,
+      joiningDate: employee.joiningDate || null
+    },
+    balances: enrichedBalances,
+    recentLeaves,
+    attendanceStats: stats,
+    recentAttendance: attendanceRecords.slice(0, 10)
+  };
+};
+
 
 

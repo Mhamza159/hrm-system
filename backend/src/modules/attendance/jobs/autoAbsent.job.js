@@ -15,6 +15,7 @@ import { Holiday } from '../../../models/holiday.model.js';
 import { Leave } from '../../../models/leave.model.js';
 import { WFHRequest } from '../../../models/wfh.model.js';
 import { Setting } from '../../../models/setting.model.js';
+import { Role } from '../../../models/role.model.js';
 import { normalizeToUtcMidnight } from '../attendance.service.js';
 
 /**
@@ -25,11 +26,10 @@ import { normalizeToUtcMidnight } from '../attendance.service.js';
 export const runAutoAbsentSweep = async (runDate = new Date()) => {
   const targetDate = normalizeToUtcMidnight(runDate);
 
-  // 1. Check if targetDate is an active Pakistan Gazetted Holiday (Module M6 Row 6.11 & 6.12)
+  // 1. Check if targetDate is an active Public or Pakistan Gazetted Holiday (Module M6 Row 6.11 & 6.12)
   const gazettedHoliday = await Holiday.findOne({
     date: targetDate,
-    isActive: true,
-    type: 'gazetted'
+    isActive: true
   }).lean();
 
   if (gazettedHoliday) {
@@ -46,15 +46,29 @@ export const runAutoAbsentSweep = async (runDate = new Date()) => {
     d.toLowerCase()
   );
 
+  // Fetch Super Admin role to exempt executive owner from automated absenteeism
+  const superAdminRole = await Role.findOne({ name: 'Super Admin' }).lean();
+  const superAdminRoleId = superAdminRole ? String(superAdminRole._id) : null;
+
   // Fetch all active employees
   const employees = await Employee.find({ isDeleted: false, status: { $in: ['Active', 'Probation', 'active'] } })
     .populate('shiftId', 'workDays workingDays')
+    .populate({
+      path: 'userId',
+      select: 'roleId'
+    })
     .lean();
 
   let markedAbsent = 0;
   let skipped = 0;
 
   for (const emp of employees) {
+    // 0. Super Admin / Owner is 100% exempt from automated absenteeism penalties
+    const userRoleId = emp.userId?.roleId ? String(emp.userId.roleId) : null;
+    if ((superAdminRoleId && userRoleId === superAdminRoleId) || emp.employeeCode === 'EMP-000') {
+      skipped++;
+      continue;
+    }
     // Check if today is a scheduled work day for this employee
     const shiftDays = emp.shiftId?.workDays || emp.shiftId?.workingDays;
     const workingDays = shiftDays && shiftDays.length > 0 ? shiftDays.map((d) => d.toLowerCase()) : defaultWorkingDays;

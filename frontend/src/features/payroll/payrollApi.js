@@ -170,6 +170,15 @@ export const payrollApi = baseApi.injectEndpoints({
         url: '/reports/payroll-cost',
         params
       })
+    }),
+
+    // Pre-Payroll Attendance & Leave Audit Preview
+    getPrePayrollAudit: builder.query({
+      query: (params) => ({
+        url: '/payroll/pre-audit',
+        params
+      }),
+      providesTags: ['PrePayrollAudit']
     })
   })
 });
@@ -190,6 +199,8 @@ export const {
   useGetTaxComplianceReportQuery,
   useGetEobiComplianceReportQuery,
   useGetTeamOvertimeQuery,
-  useGetDepartmentPayrollCostQuery
+  useGetDepartmentPayrollCostQuery,
+  useGetPrePayrollAuditQuery
 } = payrollApi;
+
 

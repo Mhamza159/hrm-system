@@ -8,13 +8,34 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, DollarSign, AlertCircle, Building2, Shield, Percent } from 'lucide-react';
+import { X, DollarSign, AlertCircle, Building2, Shield, Percent, Lock, Briefcase } from 'lucide-react';
 import { useCreateSalaryStructureMutation } from '../payrollApi.js';
 import { useGetEmployeesQuery } from '../../employees/employeesApi.js';
 
-export function SalaryFormModal({ isOpen, onClose, onSuccess, initialEmployeeId = '' }) {
+const getEmployeeRole = (emp) => {
+  if (!emp) return '';
+  return (
+    emp.designationId?.title ||
+    (typeof emp.designation === 'string' ? emp.designation : emp.designation?.title) ||
+    emp.userId?.roleId?.name ||
+    emp.role ||
+    (Array.isArray(emp.roles) ? emp.roles[0] : null) ||
+    'Staff'
+  );
+};
+
+const getEmployeeDept = (emp) => {
+  if (!emp) return '';
+  return (
+    emp.departmentId?.name ||
+    (typeof emp.department === 'string' ? emp.department : emp.department?.name) ||
+    ''
+  );
+};
+
+export function SalaryFormModal({ isOpen, onClose, onSuccess, initialEmployeeId = '', employee = null }) {
   const [formData, setFormData] = useState({
-    employeeId: initialEmployeeId || '',
+    employeeId: employee?._id || initialEmployeeId || '',
     effectiveFrom: new Date().toISOString().split('T')[0],
     basicSalary: '',
     houseRentAllowance: '',
@@ -31,17 +52,19 @@ export function SalaryFormModal({ isOpen, onClose, onSuccess, initialEmployeeId 
 
   const { data: employeesData } = useGetEmployeesQuery(
     { status: 'Active', limit: 100 },
-    { skip: !isOpen }
+    { skip: !isOpen || Boolean(employee) }
   );
 
   const employees = employeesData?.data?.items || employeesData?.data || [];
+  const targetEmployee = employee || employees.find((e) => e._id === (formData.employeeId || initialEmployeeId));
+  const isLocked = Boolean(employee || (initialEmployeeId && targetEmployee));
 
   const [createSalaryStructure, { isLoading }] = useCreateSalaryStructureMutation();
 
   useEffect(() => {
     if (isOpen) {
       setFormData({
-        employeeId: initialEmployeeId || '',
+        employeeId: employee?._id || initialEmployeeId || '',
         effectiveFrom: new Date().toISOString().split('T')[0],
         basicSalary: '',
         houseRentAllowance: '',
@@ -55,7 +78,7 @@ export function SalaryFormModal({ isOpen, onClose, onSuccess, initialEmployeeId 
       });
       setErrorMessage('');
     }
-  }, [isOpen]);
+  }, [isOpen, initialEmployeeId, employee]);
 
   if (!isOpen) return null;
 
@@ -141,39 +164,126 @@ export function SalaryFormModal({ isOpen, onClose, onSuccess, initialEmployeeId 
           )}
 
           {/* Employee & Effective Date */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Select Employee <span className="text-red-500">*</span>
-              </label>
-              <select
-                required
-                value={formData.employeeId}
-                onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-                className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white"
-              >
-                <option value="">-- Choose Employee --</option>
-                {employees.map((emp) => (
-                  <option key={emp._id} value={emp._id}>
-                    {emp.name} ({emp.employeeCode})
-                  </option>
-                ))}
-              </select>
-            </div>
+          {isLocked && targetEmployee ? (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Target Employee <span className="text-emerald-500 font-medium">(Auto-Selected)</span>
+                </label>
+                <div className="p-3.5 bg-slate-50/80 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/80 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {targetEmployee.avatar ? (
+                      <img
+                        src={targetEmployee.avatar}
+                        alt={targetEmployee.name}
+                        className="w-11 h-11 rounded-xl object-cover border border-emerald-500/20 shadow-xs flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/60 font-bold text-sm flex items-center justify-center flex-shrink-0">
+                        {(targetEmployee.name || 'EMP')
+                          .split(' ')
+                          .filter(Boolean)
+                          .map((n) => n[0])
+                          .slice(0, 2)
+                          .join('')
+                          .toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                          {targetEmployee.name}
+                        </span>
+                        <span className="font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
+                          {targetEmployee.employeeCode}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-1 flex-wrap">
+                        <span className="inline-flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+                          <Briefcase className="w-3.5 h-3.5" />
+                          Role: {getEmployeeRole(targetEmployee)}
+                        </span>
+                        {getEmployeeDept(targetEmployee) && (
+                          <>
+                            <span className="text-slate-300 dark:text-slate-600">•</span>
+                            <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300">
+                              <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                              {getEmployeeDept(targetEmployee)}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Effective Date <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                required
-                value={formData.effectiveFrom}
-                onChange={(e) => setFormData({ ...formData, effectiveFrom: e.target.value })}
-                className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white"
-              />
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold border border-emerald-200/60 dark:border-emerald-800/50 flex-shrink-0">
+                    <Lock className="w-3 h-3 text-emerald-500" />
+                    <span>Locked</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Effective Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={formData.effectiveFrom}
+                  onChange={(e) => setFormData({ ...formData, effectiveFrom: e.target.value })}
+                  className="w-full sm:w-1/2 px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white"
+                />
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Select Employee <span className="text-red-500">*</span>
+                </label>
+                <select
+                  required
+                  value={formData.employeeId}
+                  onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+                  className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white"
+                >
+                  <option value="">-- Choose Employee --</option>
+                  {employees.map((emp) => (
+                    <option key={emp._id} value={emp._id}>
+                      {emp.name} ({emp.employeeCode})
+                    </option>
+                  ))}
+                </select>
+                {targetEmployee && (
+                  <div className="mt-1.5 flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                    <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                      Role: {getEmployeeRole(targetEmployee)}
+                    </span>
+                    {getEmployeeDept(targetEmployee) && (
+                      <>
+                        <span>•</span>
+                        <span>{getEmployeeDept(targetEmployee)}</span>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Effective Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={formData.effectiveFrom}
+                  onChange={(e) => setFormData({ ...formData, effectiveFrom: e.target.value })}
+                  className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Salary Components Breakdown */}
           <div className="border-t border-slate-200 dark:border-slate-800 pt-4">

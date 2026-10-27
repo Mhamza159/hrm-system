@@ -412,3 +412,18 @@ export const exportLeaveReport = asyncHandler(async (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   return res.status(200).send(buffer);
 });
+
+/**
+ * 6.7b: Get applicant audit profile (leaves quota, history & attendance metrics)
+ * GET /api/v1/leaves/:id/audit
+ */
+export const getLeaveApplicantAudit = asyncHandler(async (req, res) => {
+  const data = await leaveService.getLeaveApplicantAudit(req.params.id, req.user);
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data,
+    message: 'Applicant leave & attendance audit dossier retrieved successfully'
+  });
+});
+

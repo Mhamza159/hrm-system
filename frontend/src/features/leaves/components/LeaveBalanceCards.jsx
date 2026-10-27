@@ -1,64 +1,72 @@
 /**
  * @file LeaveBalanceCards.jsx
- * @description Category-wise Leave Quota & Live Balance cards with progress bars (BUILD-GUIDE Row 6.9).
+ * @description Category-wise Leave Quota & Live Balance cards with stacked progress bars (BUILD-GUIDE Row 6.9).
  * 
- * SPECIFICATION:
+ * SPECIFICATION & THEME:
  * - Module: M6 Leave & Holidays
  * - Component: LeaveBalanceCards
- * - Theme: Linear Dark Craft (#090A0F, #0F111A, #1E2235, #5E6AD2)
+ * - Design System: ELVARA Emerald & Enterprise Slate Tokens (100% Light & Dark Mode Compatible)
  */
 
 import React from 'react';
-import { Calendar, AlertCircle, Clock, CheckCircle2, Info } from 'lucide-react';
+import { Calendar, AlertCircle, Clock, CheckCircle2, Info, ShieldCheck } from 'lucide-react';
 import { useGetLeaveBalanceQuery } from '../leavesApi.js';
+import { usePermission } from '../../../hooks/usePermission.js';
 import { cn } from '../../../lib/utils.js';
 
 const CATEGORY_COLORS = {
   ANNUAL: {
-    badge: 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/60',
-    bar: 'bg-indigo-600 dark:bg-indigo-500',
-    text: 'text-indigo-600 dark:text-indigo-400'
+    badge: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60',
+    bar: 'bg-emerald-600 dark:bg-emerald-500',
+    text: 'text-emerald-600 dark:text-emerald-400'
   },
   CASUAL: {
-    badge: 'bg-cyan-50 dark:bg-cyan-950/50 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800/60',
-    bar: 'bg-cyan-600 dark:bg-cyan-500',
+    badge: 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800/60',
+    bar: 'bg-cyan-500',
     text: 'text-cyan-600 dark:text-cyan-400'
   },
   SICK: {
-    badge: 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60',
+    badge: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60',
     bar: 'bg-amber-500',
     text: 'text-amber-600 dark:text-amber-400'
   },
   MATERNITY: {
-    badge: 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/60',
+    badge: 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/60',
     bar: 'bg-rose-500',
     text: 'text-rose-600 dark:text-rose-400'
   },
   PATERNITY: {
-    badge: 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/60',
+    badge: 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/60',
     bar: 'bg-blue-500',
     text: 'text-blue-600 dark:text-blue-400'
   },
   HAJJ: {
-    badge: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60',
-    bar: 'bg-[#00C471]',
-    text: 'text-emerald-600 dark:text-emerald-400'
+    badge: 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800/60',
+    bar: 'bg-teal-500',
+    text: 'text-teal-600 dark:text-teal-400'
   },
   UNPAID: {
     badge: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700',
-    bar: 'bg-slate-500',
+    bar: 'bg-slate-400',
     text: 'text-slate-600 dark:text-slate-400'
   }
 };
 
 export function LeaveBalanceCards({ employeeId, year, onApplyClick }) {
+  const { isSuperAdmin } = usePermission();
   const queryParams = {};
   if (employeeId) queryParams.employeeId = employeeId;
   if (year) queryParams.year = year;
 
-  const { data: response, isLoading, isError, error } = useGetLeaveBalanceQuery(queryParams);
+  const { data: response, isLoading, isError, error } = useGetLeaveBalanceQuery(queryParams, {
+    skip: isSuperAdmin
+  });
   const balanceData = response?.data;
   const balances = balanceData?.balances || [];
+
+  if (isSuperAdmin) {
+    return null;
+  }
 
   if (isLoading) {
     return (
@@ -66,20 +74,19 @@ export function LeaveBalanceCards({ employeeId, year, onApplyClick }) {
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="rounded-2xl bg-white dark:bg-[#111D17] border border-slate-200/80 dark:border-[#1A3125] p-5 shadow-xs relative overflow-hidden flex flex-col justify-between h-44"
+            className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs relative overflow-hidden flex flex-col justify-between h-44 animate-pulse"
           >
-            <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 dark:via-emerald-400/5 to-transparent animate-shimmer pointer-events-none" />
             <div className="flex items-center justify-between">
-              <div className="h-4 w-28 bg-slate-200 dark:bg-[#1A3125] rounded-md animate-pulse" />
-              <div className="h-5 w-16 bg-slate-100 dark:bg-[#162820] rounded-full animate-pulse" />
+              <div className="h-4 w-28 bg-slate-200 dark:bg-slate-800 rounded-md" />
+              <div className="h-5 w-16 bg-slate-100 dark:bg-slate-800 rounded-full" />
             </div>
             <div className="space-y-2">
-              <div className="h-8 w-20 bg-slate-200 dark:bg-[#1A3125] rounded-lg animate-pulse" />
-              <div className="h-2 w-full bg-slate-100 dark:bg-[#162820] rounded-full animate-pulse" />
+              <div className="h-8 w-20 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+              <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full" />
             </div>
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-[#1A3125]/60">
-              <div className="h-3 w-16 bg-slate-100 dark:bg-[#162820] rounded-md animate-pulse" />
-              <div className="h-3 w-16 bg-slate-100 dark:bg-[#162820] rounded-md animate-pulse" />
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="h-3 w-16 bg-slate-100 dark:bg-slate-800 rounded-md" />
+              <div className="h-3 w-16 bg-slate-100 dark:bg-slate-800 rounded-md" />
             </div>
           </div>
         ))}
@@ -98,10 +105,12 @@ export function LeaveBalanceCards({ employeeId, year, onApplyClick }) {
 
   if (balances.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] p-8 text-center text-slate-500 dark:text-slate-400 shadow-xs">
-        <Calendar className="w-8 h-8 mx-auto mb-2 text-slate-400 dark:text-slate-600" />
-        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">No Leave Quotas Allocated</p>
-        <p className="text-xs text-slate-400 mt-1">No leave allowances allocated for year {balanceData?.year || new Date().getFullYear()}.</p>
+      <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 text-center text-slate-500 dark:text-slate-400 shadow-xs space-y-2">
+        <Calendar className="w-8 h-8 mx-auto text-slate-400 dark:text-slate-600" />
+        <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">No Leave Quotas Allocated</p>
+        <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+          No quota entitlements recorded for year {year || new Date().getFullYear()}. Contact your HR administrator to initialize category balances.
+        </p>
       </div>
     );
   }
@@ -112,9 +121,9 @@ export function LeaveBalanceCards({ employeeId, year, onApplyClick }) {
         const type = item.leaveType || {};
         const code = (type.code || 'UNPAID').toUpperCase();
         const colors = CATEGORY_COLORS[code] || {
-          badge: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60',
-          bar: 'bg-[#00C471]',
-          text: 'text-[#00C471]'
+          badge: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60',
+          bar: 'bg-emerald-600',
+          text: 'text-emerald-600 dark:text-emerald-400'
         };
 
         const totalEntitlement = item.totalEntitlement || 0;
@@ -127,12 +136,12 @@ export function LeaveBalanceCards({ employeeId, year, onApplyClick }) {
         return (
           <div
             key={type._id || code}
-            className="rounded-2xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] p-5 shadow-xs hover:shadow-md hover:border-emerald-500/40 dark:hover:border-emerald-500/40 transition-all flex flex-col justify-between relative overflow-hidden group"
+            className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-xs hover:shadow-md hover:border-emerald-500/40 dark:hover:border-emerald-500/40 transition-all flex flex-col justify-between relative overflow-hidden group"
           >
             {/* Header: Title & Code Badge */}
             <div>
               <div className="flex items-center justify-between gap-2 mb-2">
-                <span className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight truncate">
+                <span className="text-sm font-bold text-slate-900 dark:text-white tracking-tight truncate">
                   {type.name || code}
                 </span>
                 <span
@@ -147,7 +156,7 @@ export function LeaveBalanceCards({ employeeId, year, onApplyClick }) {
 
               {/* Available Days Metric */}
               <div className="flex items-baseline gap-2 mt-3">
-                <span className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 tabular-nums">
+                <span className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white tabular-nums">
                   {available}
                 </span>
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -156,37 +165,37 @@ export function LeaveBalanceCards({ employeeId, year, onApplyClick }) {
               </div>
             </div>
 
-            {/* Stacked Progress Bar: Used (Solid) + Pending (Striped/Muted) */}
+            {/* Stacked Progress Bar: Used (Solid) + Pending (Amber) */}
             <div className="mt-4">
-              <div className="w-full bg-slate-100 dark:bg-[#0A110D] h-2 rounded-full overflow-hidden flex border border-slate-200/50 dark:border-transparent">
+              <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden flex border border-slate-200/40 dark:border-transparent">
                 <div
                   className={cn('h-full transition-all duration-500', colors.bar)}
                   style={{ width: `${usedPct}%` }}
                   title={`Used: ${used} days`}
                 />
                 <div
-                  className="h-full bg-amber-500/70 transition-all duration-500"
+                  className="h-full bg-amber-400/80 transition-all duration-500"
                   style={{ width: `${pendingPct}%` }}
                   title={`In Review: ${pending} days`}
                 />
               </div>
 
               {/* Breakdown Row */}
-              <div className="grid grid-cols-4 gap-1 mt-3 pt-3 border-t border-slate-100 dark:border-[#1A3125] text-[11px] text-slate-500 dark:text-slate-400">
+              <div className="grid grid-cols-4 gap-1 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400">
                 <div>
-                  <span className="block text-[10px] text-slate-400 dark:text-slate-500 uppercase font-medium">Quota</span>
+                  <span className="block text-[10px] text-slate-400 uppercase font-medium">Quota</span>
                   <span className="font-semibold text-slate-800 dark:text-slate-200">{item.allocatedDays || 0}</span>
                 </div>
                 <div>
-                  <span className="block text-[10px] text-slate-400 dark:text-slate-500 uppercase font-medium">Carried</span>
+                  <span className="block text-[10px] text-slate-400 uppercase font-medium">Carried</span>
                   <span className="font-semibold text-slate-800 dark:text-slate-200">+{item.carriedForwardDays || 0}</span>
                 </div>
                 <div>
-                  <span className="block text-[10px] text-slate-400 dark:text-slate-500 uppercase font-medium">Used</span>
+                  <span className="block text-[10px] text-slate-400 uppercase font-medium">Used</span>
                   <span className="font-semibold text-rose-600 dark:text-rose-400">{used}</span>
                 </div>
                 <div>
-                  <span className="block text-[10px] text-slate-400 dark:text-slate-500 uppercase font-medium">Pending</span>
+                  <span className="block text-[10px] text-slate-400 uppercase font-medium">Pending</span>
                   <span className="font-semibold text-amber-600 dark:text-amber-400">{pending}</span>
                 </div>
               </div>

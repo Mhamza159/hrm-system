@@ -160,6 +160,12 @@ export const leavesApi = baseApi.injectEndpoints({
       providesTags: ['Leave']
     }),
 
+    // 6.7b: Applicant Leave & Attendance Audit Dossier
+    getLeaveApplicantAudit: builder.query({
+      query: (leaveId) => `/leaves/${leaveId}/audit`,
+      providesTags: (result, error, leaveId) => [{ type: 'Leave', id: `AUDIT_${leaveId}` }]
+    }),
+
     // 6.7: Decide Leave (Approve/Reject)
     decideLeave: builder.mutation({
       query: ({ id, ...body }) => ({
@@ -244,6 +250,7 @@ export const {
   useApplyLeaveMutation,
   useGetMyLeavesQuery,
   useGetPendingApprovalsQuery,
+  useGetLeaveApplicantAuditQuery,
   useDecideLeaveMutation,
   useCancelLeaveMutation,
   useGetLeaveCalendarQuery,

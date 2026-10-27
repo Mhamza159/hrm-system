@@ -519,7 +519,7 @@ export const getTeamAttendance = async ({ user, date, departmentId, status, page
 /**
  * 5.11: Manual Attendance Edit (HR Admin) with Audit Log
  */
-export const updateAttendanceRecord = async ({ attendanceId, user, checkIn, checkOut, status, overrideReason }) => {
+export const updateAttendanceRecord = async ({ attendanceId, user, checkIn, checkOut, status, overtimeApproved, overrideReason }) => {
   const attendance = await Attendance.findById(attendanceId);
   if (!attendance) {
     throw new ApiError(404, 'Attendance record not found');
@@ -533,6 +533,7 @@ export const updateAttendanceRecord = async ({ attendanceId, user, checkIn, chec
     status: attendance.status,
     workDurationMinutes: attendance.workDurationMinutes,
     overtimeMinutes: attendance.overtimeMinutes,
+    overtimeApproved: attendance.overtimeApproved,
     flags: attendance.flags
   };
 
@@ -544,6 +545,9 @@ export const updateAttendanceRecord = async ({ attendanceId, user, checkIn, chec
   }
   if (status) {
     attendance.status = status;
+  }
+  if (overtimeApproved !== undefined) {
+    attendance.overtimeApproved = Boolean(overtimeApproved);
   }
 
   // Recalculate duration & overtime if both checkIn and checkOut exist
@@ -571,6 +575,7 @@ export const updateAttendanceRecord = async ({ attendanceId, user, checkIn, chec
     status: attendance.status,
     workDurationMinutes: attendance.workDurationMinutes,
     overtimeMinutes: attendance.overtimeMinutes,
+    overtimeApproved: attendance.overtimeApproved,
     flags: attendance.flags
   };
 
@@ -1509,4 +1514,147 @@ export const getAttendanceHistory = async ({ user, month, search, departmentId, 
     items
   };
 };
+
+/**
+ * 5.16: Manager Overtime Approval / Decision
+ */
+export const decideOvertime = async ({ attendanceId, user, approved, reason }) => {
+  const attendance = await Attendance.findById(attendanceId);
+  if (!attendance) {
+    throw new ApiError(404, 'Attendance record not found');
+  }
+
+  await assertMonthNotLocked(attendance.date);
+
+  // PBAC Boundaries: Verify department scope if not full admin or HR
+  if (!isFullAdminOrHR(user)) {
+    const managerEmp = await Employee.findOne({ userId: user._id, isDeleted: false }, 'departmentId').lean();
+    const applicantEmp = await Employee.findById(attendance.employeeId).select('departmentId').lean();
+
+    if (managerEmp?.departmentId && applicantEmp?.departmentId && String(managerEmp.departmentId) !== String(applicantEmp.departmentId)) {
+      throw new ApiError(403, 'Forbidden: You do not have permission to decide overtime outside your department.');
+    }
+  }
+
+  const previousApproved = Boolean(attendance.overtimeApproved);
+  attendance.overtimeApproved = Boolean(approved);
+
+  attendance.auditLogs.push({
+    modifiedBy: user._id,
+    modifiedAt: new Date(),
+    previousValues: { overtimeApproved: previousApproved },
+    newValues: { overtimeApproved: Boolean(approved) },
+    reason: reason || (approved ? 'Overtime approved by manager' : 'Overtime revoked by manager')
+  });
+
+  await attendance.save();
+
+  // Notify employee of overtime approval/revocation
+  try {
+    const empUser = await Employee.findById(attendance.employeeId).select('userId name');
+    if (empUser?.userId) {
+      const hrs = ((attendance.overtimeMinutes || 0) / 60).toFixed(1);
+      const dateStr = attendance.date ? new Date(attendance.date).toISOString().split('T')[0] : '';
+      await notify(empUser.userId, {
+        type: 'attendance',
+        title: `Overtime ${approved ? 'Approved' : 'Revoked'}`,
+        body: `Your ${hrs} hrs overtime for ${dateStr} was ${approved ? 'approved' : 'revoked'}.`,
+        link: '/attendance/my'
+      });
+    }
+  } catch (notifErr) {
+    console.warn(`[attendance.service] Overtime decision notification failed: ${notifErr.message}`);
+  }
+
+  return attendance;
+};
+
+/**
+ * 5.16: Team Overtime Punches List & Audit
+ */
+export const getTeamOvertimeRecords = async (user, query = {}) => {
+  const { status = 'all', month, search, departmentId, page = 1, limit = 20 } = query;
+  const filter = { overtimeMinutes: { $gt: 0 } };
+
+  if (status === 'pending') {
+    filter.overtimeApproved = false;
+  } else if (status === 'approved') {
+    filter.overtimeApproved = true;
+  }
+
+  if (month) {
+    const [yStr, mStr] = month.split('-');
+    const y = parseInt(yStr, 10);
+    const m = parseInt(mStr, 10);
+    const start = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0));
+    const end = new Date(Date.UTC(y, m, 0, 23, 59, 59, 999));
+    filter.date = { $gte: start, $lte: end };
+  }
+
+  if (!isFullAdminOrHR(user)) {
+    const managerEmp = await Employee.findOne({ userId: user._id, isDeleted: false }, 'departmentId').lean();
+    if (managerEmp?.departmentId) {
+      const deptEmployees = await Employee.find({ departmentId: managerEmp.departmentId, isDeleted: false }).distinct('_id');
+      filter.employeeId = { $in: deptEmployees };
+    }
+  } else if (departmentId) {
+    const deptEmployees = await Employee.find({ departmentId, isDeleted: false }).distinct('_id');
+    filter.employeeId = { $in: deptEmployees };
+  }
+
+  if (search && search.trim()) {
+    const matchingEmployees = await Employee.find({
+      isDeleted: false,
+      $or: [
+        { name: new RegExp(search.trim(), 'i') },
+        { employeeCode: new RegExp(search.trim(), 'i') }
+      ]
+    }).distinct('_id');
+
+    if (filter.employeeId) {
+      const existing = filter.employeeId.$in.map((id) => id.toString());
+      filter.employeeId = { $in: matchingEmployees.filter((m) => existing.includes(m.toString())) };
+    } else {
+      filter.employeeId = { $in: matchingEmployees };
+    }
+  }
+
+  const skip = (Number(page) - 1) * Number(limit);
+  const total = await Attendance.countDocuments(filter);
+
+  const baseCountFilter = { ...filter };
+  delete baseCountFilter.overtimeApproved;
+  const [pendingCount, approvedCount] = await Promise.all([
+    Attendance.countDocuments({ ...baseCountFilter, overtimeApproved: false }),
+    Attendance.countDocuments({ ...baseCountFilter, overtimeApproved: true })
+  ]);
+
+  const items = await Attendance.find(filter)
+    .sort({ date: -1, createdAt: -1 })
+    .skip(skip)
+    .limit(Number(limit))
+    .populate({
+      path: 'employeeId',
+      select: 'name employeeCode email avatar departmentId designationId',
+      populate: [
+        { path: 'departmentId', select: 'name' },
+        { path: 'designationId', select: 'title' }
+      ]
+    })
+    .lean();
+
+  return {
+    items,
+    total,
+    counts: {
+      total: pendingCount + approvedCount,
+      pending: pendingCount,
+      approved: approvedCount
+    },
+    page: Number(page),
+    limit: Number(limit),
+    pages: Math.ceil(total / Number(limit)) || 1
+  };
+};
+
 

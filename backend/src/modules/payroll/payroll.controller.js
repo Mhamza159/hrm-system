@@ -352,4 +352,23 @@ export const deletePayrollRun = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * Pre-Payroll Audit & Readiness Preview
+ * GET /api/v1/payroll/pre-audit
+ */
+export const getPrePayrollAudit = asyncHandler(async (req, res) => {
+  const data = await PayrollService.computePrePayrollAudit({
+    month: req.query.month,
+    year: req.query.year
+  });
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data,
+    message: 'Pre-payroll audit preview retrieved successfully'
+  });
+});
+
+
 

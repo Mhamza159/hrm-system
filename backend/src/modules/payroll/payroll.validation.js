@@ -128,3 +128,14 @@ export const bankAdviceQuerySchema = z.object({
     bank: z.enum(['meezan', 'hbl', 'ubl', 'mcb', 'standard']).optional().default('standard')
   }).optional()
 });
+
+/**
+ * Pre-Payroll Audit Query Schema
+ */
+export const queryPreAuditSchema = z.object({
+  query: z.object({
+    month: z.string().regex(/^\d+$/).transform(Number).refine((n) => n >= 1 && n <= 12, 'Month must be 1-12'),
+    year: z.string().regex(/^\d{4}$/).transform(Number).refine((n) => n >= 2020 && n <= 2100, 'Year must be 2020-2100')
+  })
+});
+

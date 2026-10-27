@@ -154,8 +154,11 @@ export function DataTable({
                     )}
                   >
                     {columns.map((col, cIdx) => {
-                      const cellRenderer = col.render || col.cell;
-                      const fieldKey = col.key || col.accessor;
+                      const cellRenderer =
+                        col.render ||
+                        col.cell ||
+                        (typeof col.accessor === 'function' ? col.accessor : null);
+                      const fieldKey = typeof col.accessor === 'string' ? col.accessor : col.key;
                       return (
                         <td
                           key={`${fieldKey || col.label || col.header || 'cell'}-${cIdx}`}
@@ -164,7 +167,7 @@ export function DataTable({
                             col.className
                           )}
                         >
-                          {cellRenderer ? cellRenderer(row) : row[fieldKey]}
+                          {cellRenderer ? cellRenderer(row) : fieldKey ? row[fieldKey] : null}
                         </td>
                       );
                     })}
