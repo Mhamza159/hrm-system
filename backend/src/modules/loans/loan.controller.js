@@ -9,7 +9,7 @@
 
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { apiResponse } from '../../utils/apiResponse.js';
-import { ApiError } from '../../utils/apiError.js';
+import { ApiError } from '../../utils/ApiError.js';
 import * as loanService from './loan.service.js';
 import { calculateBorrowingLimits } from './loanPolicy.js';
 
