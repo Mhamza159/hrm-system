@@ -74,7 +74,13 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'announcement.create', subject: 'Announcement', scope: 'all' },
       { action: 'announcement.edit', subject: 'Announcement', scope: 'all' },
       { action: 'announcement.delete', subject: 'Announcement', scope: 'all' },
-      { action: 'announcement.pin', subject: 'Announcement', scope: 'all' }
+      { action: 'announcement.pin', subject: 'Announcement', scope: 'all' },
+      { action: 'loan.view', subject: 'Loan', scope: 'all' },
+      { action: 'loan.create', subject: 'Loan', scope: 'own' },
+      { action: 'loan.recommend', subject: 'Loan', scope: 'all' },
+      { action: 'loan.approve', subject: 'Loan', scope: 'all' },
+      { action: 'loan.prepay', subject: 'Loan', scope: 'all' },
+      { action: 'loan.settings', subject: 'Loan', scope: 'all' }
     ]
   },
   {
@@ -97,6 +103,9 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'leave.view', subject: 'Leave', scope: 'team' },
       { action: 'leave.approve', subject: 'Leave', scope: 'team', limit: 3 },
       { action: 'payroll.view', subject: 'Payroll', scope: 'own' },
+      { action: 'loan.view', subject: 'Loan', scope: 'team' },
+      { action: 'loan.create', subject: 'Loan', scope: 'own' },
+      { action: 'loan.recommend', subject: 'Loan', scope: 'team' },
       { action: 'settings.view', subject: 'Setting', scope: 'all' },
       { action: 'org.view', subject: 'Organization', scope: 'all' },
       { action: 'report.view', subject: 'Report', scope: 'team' },
@@ -124,6 +133,8 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'leave.view', subject: 'Leave', scope: 'own' },
       { action: 'leave.encash', subject: 'Leave', scope: 'own' },
       { action: 'payroll.view', subject: 'Payroll', scope: 'own' },
+      { action: 'loan.view', subject: 'Loan', scope: 'own' },
+      { action: 'loan.create', subject: 'Loan', scope: 'own' },
       { action: 'settings.view', subject: 'Setting', scope: 'all' },
       { action: 'notification.view', subject: 'Notification', scope: 'own' },
       { action: 'announcement.view', subject: 'Announcement', scope: 'own' },

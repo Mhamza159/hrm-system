@@ -510,6 +510,64 @@ export class PayrollService {
     // Mark all slips in run as paid
     await Payslip.updateMany({ payrollRunId: run._id }, { status: 'paid' });
 
+    // Slice 10.5: Settle active loan & advance installments deducted in this payroll run
+    try {
+      const { Loan } = await import('../../models/loan.model.js');
+      const padMonth = String(run.month).padStart(2, '0');
+      const yearMonth = `${run.year}-${padMonth}`;
+
+      const payslips = await Payslip.find({ payrollRunId: run._id }).lean();
+      for (const slip of payslips) {
+        const loanDeductions = (slip.deductions || []).filter(
+          (d) => d.category === 'loan_installment' || d.category === 'advance'
+        );
+
+        for (const item of loanDeductions) {
+          const match = item.name?.match(/\(([^)]+)\)/);
+          const loanQuery = {
+            employeeId: slip.employeeId,
+            status: 'active',
+            'schedule.dueMonth': yearMonth
+          };
+          if (match && match[1]) {
+            loanQuery.loanId = match[1];
+          }
+
+          const loan = await Loan.findOne(loanQuery);
+
+          if (loan) {
+            const inst = loan.schedule.find(
+              (s) => s.dueMonth === yearMonth && s.status === 'pending'
+            );
+            if (inst) {
+              inst.status = 'deducted';
+              inst.paidAt = run.paidAt || new Date();
+              inst.payslipId = slip._id;
+              inst.notes = `Deducted via Payroll ${yearMonth}`;
+            }
+
+            loan.remainingBalance = Math.max(0, loan.remainingBalance - item.amount);
+            loan.totalRepaid = (loan.totalRepaid || 0) + item.amount;
+            loan.repayments.push({
+              amount: item.amount,
+              paymentMethod: 'payroll',
+              reference: `PAYROLL-${yearMonth}-${slip._id.toString().slice(-6)}`,
+              paidAt: run.paidAt || new Date(),
+              recordedBy: actor._id
+            });
+
+            if (loan.remainingBalance === 0) {
+              loan.status = 'closed';
+            }
+
+            await loan.save();
+          }
+        }
+      }
+    } catch (loanErr) {
+      console.warn(`[payroll.service] Non-fatal loan deduction update failure: ${loanErr.message}`);
+    }
+
     // Multi-Channel Notification: Alert employees of disbursed payslips (BUILD-GUIDE Row 9.11)
     try {
       const { notify } = await import('../../services/notify.service.js');

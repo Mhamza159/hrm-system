@@ -281,14 +281,14 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 ## 15. M10 — Loans & Advances
 
-| ID | Feature | Backend | Frontend | Test | ☐ |
+| ID | Feature | Backend | Frontend | Test | ☑ |
 | --- | --- | --- | --- | --- | --- |
-| 10.1 | Loan/advance request | `loan.model.js`, `POST /loans` (amount, reason, installments) | `MyLoansPage.jsx` + form | Request ban jaye | ☐ |
-| 10.2 | Had (limit) | policy: jaise 1 mahine ki salary; role limit (26.9) | Form mein max | Had se zyada reject | ☐ |
-| 10.3 | Approval chain | Manager recommend → HR → Super Admin | `LoanApprovalsPage.jsx` | Chain chale | ☐ |
-| 10.4 | Qiston ka plan | `GET /loans/:id/schedule` | Schedule table | Qistein sahi | ☐ |
-| 10.5 | Payroll mein auto katoti | payroll service (9.4) | Slip mein "Loan" | Balance kam ho | ☐ |
-| 10.6 | Baqaya aur jaldi wapsi | `POST /loans/:id/prepay` | Balance + "Pay early" (HR) | Zero par Closed | ☐ |
+| 10.1 | Loan/advance request | `loan.model.js`, `POST /loans` (amount, reason, installments) | `MyLoansPage.jsx` + form | Request ban jaye | ☑ |
+| 10.2 | Had (limit) | policy: jaise 1 mahine ki salary; role limit (26.9) | Form mein max | Had se zyada reject | ☑ |
+| 10.3 | Approval chain | Manager recommend → HR → Super Admin | `LoanApprovalsPage.jsx` | Chain chale | ☑ |
+| 10.4 | Qiston ka plan | `GET /loans/:id/schedule` | Schedule table | Qistein sahi | ☑ |
+| 10.5 | Payroll mein auto katoti | payroll service (9.4) | Slip mein "Loan" | Balance kam ho | ☑ |
+| 10.6 | Baqaya aur jaldi wapsi | `POST /loans/:id/prepay` | Balance + "Pay early" (HR) | Zero par Closed | ☑ |
 
 ## 16. M11 — Expense Claims
 

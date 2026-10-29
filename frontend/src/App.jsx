@@ -44,6 +44,9 @@ import { PayrollRunDetailPage } from './features/payroll/pages/PayrollRunDetailP
 import { MyPayslipsPage } from './features/payroll/pages/MyPayslipsPage.jsx';
 import { FinalSettlementPage } from './features/payroll/pages/FinalSettlementPage.jsx';
 import { PayrollReportsPage } from './features/payroll/pages/PayrollReportsPage.jsx';
+import { MyLoansPage } from './features/loans/pages/MyLoansPage.jsx';
+import { LoanApprovalsPage } from './features/loans/pages/LoanApprovalsPage.jsx';
+import { LoanLedgerPage } from './features/loans/pages/LoanLedgerPage.jsx';
 import ReportsPage from './features/reports/pages/ReportsPage.jsx';
 import AuditLogsPage from './features/audit/pages/AuditLogsPage.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
@@ -457,6 +460,30 @@ export default function App() {
             element={
               <ProtectedRoute requiredPermission="audit.view">
                 <AuditLogsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="loans"
+            element={
+              <ProtectedRoute requiredPermission="loan.view">
+                <MyLoansPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="loans/approvals"
+            element={
+              <ProtectedRoute requiredPermission="loan.recommend">
+                <LoanApprovalsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="loans/ledger"
+            element={
+              <ProtectedRoute requiredPermission="loan.prepay">
+                <LoanLedgerPage />
               </ProtectedRoute>
             }
           />

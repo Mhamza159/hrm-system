@@ -123,6 +123,16 @@ export function Sidebar({ isOpen = false, onClose }) {
         { name: 'Payroll Reports', path: '/payroll/reports', permission: 'payroll.view' }
       ]
     },
+    {
+      type: 'group',
+      name: 'Loans & Advances',
+      icon: Coins,
+      children: [
+        { name: 'My Loans', path: '/loans', permission: 'loan.view', excludeSuperAdmin: true },
+        { name: 'Loan Approvals', path: '/loans/approvals', permission: 'loan.recommend' },
+        { name: 'Company Ledger', path: '/loans/ledger', permission: 'loan.prepay' }
+      ]
+    },
     { type: 'link', name: 'Reports', path: '/reports', icon: BarChart3, permission: 'report.view' },
     { type: 'link', name: 'Company Policies', path: '/policies', icon: BookOpen, permission: 'settings.view' },
     { type: 'link', name: 'Announcements', path: '/announcements', icon: Megaphone, permission: 'announcement.view' },
@@ -146,7 +156,8 @@ export function Sidebar({ isOpen = false, onClose }) {
   const [openGroups, setOpenGroups] = useState({
     Attendance: false,
     'Leaves & Holidays': false,
-    Payroll: false
+    Payroll: false,
+    'Loans & Advances': false
   });
 
   // Auto-expand group if the active route is within its children

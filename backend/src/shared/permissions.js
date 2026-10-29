@@ -456,6 +456,56 @@ export const PERMISSIONS_CATALOGUE = [
         defaultScope: 'all'
       }
     ]
+  },
+  {
+    module: 'loans',
+    label: 'Loans & Salary Advances',
+    subject: 'Loan',
+    description: 'Employee borrowing policies, multi-tier approvals, amortization schedules, and early prepayments.',
+    actions: [
+      {
+        action: 'loan.view',
+        label: 'View Loans & Schedules',
+        description: 'View loan records and installment schedules within assigned scope.',
+        allowedScopes: ['own', 'team', 'department', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'loan.create',
+        label: 'Apply for Loan / Advance',
+        description: 'Submit an emergency advance or monthly installment loan request.',
+        allowedScopes: ['own'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'loan.recommend',
+        label: 'Recommend Loan Applications',
+        description: 'Department Manager review and recommend team member requests.',
+        allowedScopes: ['team', 'all'],
+        defaultScope: 'team'
+      },
+      {
+        action: 'loan.approve',
+        label: 'Approve & Disburse Loans',
+        description: 'HR Manager and Super Admin final authorization and disbursement trigger.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'loan.prepay',
+        label: 'Record Early Repayment & Settle',
+        description: 'Record lump-sum cash/bank early prepayment to amortize loan early.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'loan.settings',
+        label: 'Configure Loan Limits & Policies',
+        description: 'Configure borrowing salary multipliers, interest, and maximum tenure.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      }
+    ]
   }
 ];
 

@@ -21,6 +21,7 @@ import { Attendance } from '../../models/attendance.model.js';
 import { Leave } from '../../models/leave.model.js';
 import { LeaveEncashment } from '../../models/leaveEncashment.model.js';
 import { MonthLock } from '../../models/monthLock.model.js';
+import { Loan } from '../../models/loan.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { calculateAnnualIncomeTax } from './taxCalculator.js';
 import { calculateStatutoryContributions } from './contributionsCalculator.js';
@@ -257,6 +258,34 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
         amount: statutory.providentFund.employee,
         description: `Employee contribution (${structure.providentFundRate || 8.33}%)`
       });
+    }
+
+    // --- F. M10 Loans & Salary Advances: Active Monthly Installment Deductions (Slice 10.5) ---
+    const activeLoans = await Loan.find({
+      employeeId: emp._id,
+      status: 'active',
+      'schedule.dueMonth': yearMonth,
+      'schedule.status': 'pending'
+    });
+
+    for (const loan of activeLoans) {
+      const scheduledInst = loan.schedule.find(
+        (inst) => inst.dueMonth === yearMonth && inst.status === 'pending'
+      );
+      if (scheduledInst && scheduledInst.amount > 0) {
+        const isAdvance = loan.type === 'advance';
+        const deductionAmount = Math.min(scheduledInst.amount, loan.remainingBalance);
+        if (deductionAmount > 0) {
+          deductions.push({
+            name: isAdvance
+              ? `Salary Advance Recovery (${loan.loanId})`
+              : `Loan Installment (${loan.loanId})`,
+            category: isAdvance ? 'advance' : 'loan_installment',
+            amount: deductionAmount,
+            description: `${isAdvance ? 'Advance recovery' : 'Installment'} ${scheduledInst.installmentNumber} of ${loan.repaymentTenureMonths} for ${loan.loanId}`
+          });
+        }
+      }
     }
 
     // Compute Net Pay

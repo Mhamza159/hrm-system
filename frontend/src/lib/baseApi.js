@@ -152,7 +152,9 @@ export const baseApi = createApi({
     'Announcement',
     'WFH',
     'Correction',
-    'AttendanceLock'
+    'AttendanceLock',
+    'Loan',
+    'Loans'
   ],
   endpoints: () => ({})
 });
