@@ -7,7 +7,7 @@
  * - Financial Invariant: All calculations performed in integer paisa (1 PKR = 100 paisa).
  */
 
-import { ApiError } from '../../utils/apiError.js';
+import { ApiError } from '../../utils/ApiError.js';
 import { SalaryStructure } from '../../models/salaryStructure.model.js';
 import { Employee } from '../../models/employee.model.js';
 import { Loan } from '../../models/loan.model.js';
