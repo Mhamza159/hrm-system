@@ -122,18 +122,48 @@ const attendanceSchema = new mongoose.Schema(
     },
     flags: {
       type: [String],
-      enum: ['earlyDeparture', 'graceApplied', 'wfh', 'manualAdjustment', 'flexible_executive'],
+      enum: ['earlyDeparture', 'graceApplied', 'wfh', 'field', 'manualAdjustment', 'flexible_executive'],
       default: []
     },
     source: {
       type: String,
-      enum: ['web', 'mobile', 'biometric', 'qr', 'system_auto_absent', 'manual_hr', 'wfh'],
+      enum: ['web', 'mobile', 'biometric', 'qr', 'field', 'system_auto_absent', 'manual_hr', 'wfh'],
       default: 'web'
     },
     location: {
       latitude: { type: Number, default: null },
       longitude: { type: Number, default: null },
-      address: { type: String, default: null }
+      accuracy: { type: Number, default: null },
+      address: { type: String, default: null },
+      isMock: { type: Boolean, default: false },
+      isClientVisit: { type: Boolean, default: false },
+      clientName: { type: String, default: '' },
+      clientRemarks: { type: String, default: '' }
+    },
+    isFlagged: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+    flagReason: {
+      type: String,
+      enum: ['geofence_violation', 'low_accuracy', 'mock_gps', 'none', null],
+      default: null
+    },
+    distanceFromOfficeMeters: {
+      type: Number,
+      default: null
+    },
+    flagResolved: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+    flagResolution: {
+      decision: { type: String, enum: ['approved', 'rejected', null], default: null },
+      actorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+      comments: { type: String, default: '' },
+      resolvedAt: { type: Date, default: null }
     },
     ipAddress: {
       type: String,
@@ -163,5 +193,6 @@ attendanceSchema.index({ employeeId: 1, date: 1 }, { unique: true });
 attendanceSchema.index({ date: 1, status: 1 });
 attendanceSchema.index({ shiftId: 1, date: 1 });
 attendanceSchema.index({ status: 1 });
+attendanceSchema.index({ isFlagged: 1, flagResolved: 1 });
 
 export const Attendance = mongoose.model('Attendance', attendanceSchema);

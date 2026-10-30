@@ -22,6 +22,8 @@ import { ApiError } from '../../utils/ApiError.js';
 import { evaluateAttendanceStatus, calculateWorkMetrics } from './services/statusEngine.service.js';
 import { emitToCompany, emitToDepartment } from '../../services/socket.service.js';
 import { notify } from '../../services/notify.service.js';
+import { calculateHaversineDistance, isWithinGeofence } from '../../utils/haversine.js';
+import { WfhLocation } from '../../models/wfhLocation.model.js';
 
 /**
  * Normalizes any Date or date string to UTC Midnight (00:00:00.000Z)
@@ -138,6 +140,83 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
     punchSource = 'wfh';
   }
 
+  // --- M14 GPS / Geo-fencing Evaluation (Slices 14.2, 14.3, 14.4, 14.5) ---
+  let isFlagged = false;
+  let flagReason = null;
+  let minDistanceMeters = null;
+
+  if (location && typeof location.latitude === 'number' && typeof location.longitude === 'number') {
+    const punchLat = location.latitude;
+    const punchLon = location.longitude;
+    const punchAccuracy = location.accuracy || 0;
+    const isMock = Boolean(location.isMock);
+
+    // 14.3 Accuracy & Mock GPS Detection
+    if (isMock) {
+      isFlagged = true;
+      flagReason = 'mock_gps';
+    } else if (punchAccuracy > 100) {
+      isFlagged = true;
+      flagReason = 'low_accuracy';
+    }
+
+    // 14.2 Office Geofences Distance Evaluation
+    const geoFencesDoc = await Setting.findOne({ key: 'geoFences' }).lean();
+    const officeGeoFences = (Array.isArray(geoFencesDoc?.value) ? geoFencesDoc.value : []).filter((gf) => gf.isActive !== false);
+
+    let insideOffice = false;
+    if (officeGeoFences.length > 0) {
+      for (const fence of officeGeoFences) {
+        const dist = calculateHaversineDistance(punchLat, punchLon, fence.latitude, fence.longitude);
+        if (minDistanceMeters === null || dist < minDistanceMeters) {
+          minDistanceMeters = dist;
+        }
+        if (dist <= fence.radiusMeters) {
+          insideOffice = true;
+        }
+      }
+    }
+
+    // 14.5 Client-Site / Field Visit Check
+    const allPermissions = [
+      ...(user?.permissions || []),
+      ...(user?.roles?.flatMap((r) => (typeof r === 'object' && r?.permissions ? r.permissions : [])) || [])
+    ];
+    const hasFieldPermission = allPermissions.some((p) => p.action === 'attendance.fieldCheckIn') || isSuperAdmin;
+
+    if (location.isClientVisit && hasFieldPermission) {
+      flags.push('field');
+      punchSource = 'field';
+    } else {
+      // 14.4 Approved WFH Location Check
+      let insideApprovedWfh = false;
+      if (!insideOffice) {
+        const approvedWfhLocs = await WfhLocation.find({
+          employeeId,
+          status: 'approved',
+          isActive: true,
+          isDeleted: false
+        }).lean();
+
+        for (const loc of approvedWfhLocs) {
+          const dist = calculateHaversineDistance(punchLat, punchLon, loc.latitude, loc.longitude);
+          if (dist <= (loc.radiusMeters || 100)) {
+            insideApprovedWfh = true;
+            flags.push('wfh');
+            punchSource = 'wfh';
+            break;
+          }
+        }
+      }
+
+      // If outside all office geofences and approved WFH locations
+      if (!insideOffice && !insideApprovedWfh && !isSuperAdmin) {
+        isFlagged = true;
+        flagReason = flagReason || 'geofence_violation';
+      }
+    }
+  }
+
   if (!attendance) {
     attendance = new Attendance({
       employeeId,
@@ -148,6 +227,9 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
       flags,
       source: punchSource,
       location: location || {},
+      isFlagged,
+      flagReason,
+      distanceFromOfficeMeters: minDistanceMeters,
       ipAddress: ipAddress || null,
       userAgent: userAgent || null
     });
@@ -157,6 +239,9 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
     attendance.flags = flags;
     attendance.source = punchSource;
     attendance.location = location || attendance.location;
+    attendance.isFlagged = isFlagged;
+    attendance.flagReason = flagReason;
+    attendance.distanceFromOfficeMeters = minDistanceMeters;
     attendance.ipAddress = ipAddress || attendance.ipAddress;
     attendance.userAgent = userAgent || attendance.userAgent;
   }
@@ -1658,3 +1743,223 @@ export const getTeamOvertimeRecords = async (user, query = {}) => {
 };
 
 
+
+// ============================================================================
+// Module M14: GPS / Geo-fencing Smart Attendance Services (Rows 14.4 - 14.7)
+// ============================================================================
+
+/**
+ * 14.6-BE: Get flagged attendance punches for managerial review
+ */
+export const getFlaggedPunches = async ({ user, page = 1, limit = 20, status = 'pending' }) => {
+  const isSuperAdmin = user.role === 'Super Admin' || user.roles?.some((r) => r.name === 'Super Admin');
+  const isHR = user.role === 'HR Manager' || user.roles?.some((r) => r.name === 'HR Manager');
+
+  const filter = { isFlagged: true };
+  if (status === 'pending') {
+    filter.flagResolved = false;
+  } else if (status === 'resolved') {
+    filter.flagResolved = true;
+  }
+
+  if (!isSuperAdmin && !isHR) {
+    const employeeId = user.employeeId?._id || user.employeeId;
+    const teamEmployees = await Employee.find({ managerId: employeeId, isDeleted: false }).select('_id');
+    const teamIds = teamEmployees.map((e) => e._id);
+    filter.employeeId = { $in: teamIds };
+  }
+
+  const skip = (page - 1) * limit;
+  const [punches, total] = await Promise.all([
+    Attendance.find(filter)
+      .populate('employeeId', 'name firstName lastName employeeCode departmentId avatar')
+      .sort({ date: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Attendance.countDocuments(filter)
+  ]);
+
+  return {
+    punches,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit) || 1
+    }
+  };
+};
+
+/**
+ * 14.6-BE: Review and regularize or reject a flagged punch
+ */
+export const reviewFlaggedPunch = async (id, { decision, comments }, actor) => {
+  const attendance = await Attendance.findById(id).populate('employeeId');
+  if (!attendance) {
+    throw new ApiError(404, 'Attendance punch record not found');
+  }
+
+  if (!attendance.isFlagged) {
+    throw new ApiError(400, 'This attendance record is not flagged.');
+  }
+
+  const isSuperAdmin = actor.role === 'Super Admin' || actor.roles?.some((r) => r.name === 'Super Admin');
+  const isHR = actor.role === 'HR Manager' || actor.roles?.some((r) => r.name === 'HR Manager');
+  const actorEmployeeId = actor.employeeId?._id?.toString() || actor.employeeId?.toString();
+
+  // Separation of duties / team check
+  if (!isSuperAdmin && !isHR) {
+    const emp = attendance.employeeId;
+    if (!emp || emp.managerId?.toString() !== actorEmployeeId) {
+      throw new ApiError(403, 'You do not have permission to review flagged punches outside your direct team.');
+    }
+  }
+
+  attendance.flagResolved = true;
+  attendance.flagResolution = {
+    decision,
+    actorId: actor._id,
+    comments: comments.trim(),
+    resolvedAt: new Date()
+  };
+
+  if (decision === 'rejected') {
+    attendance.status = 'absent';
+  }
+
+  await attendance.save();
+
+  // Notify employee
+  const applicantUserId = attendance.employeeId?.userId;
+  if (applicantUserId) {
+    await notify(applicantUserId, {
+      type: 'attendance',
+      title: `Flagged Punch ${decision.toUpperCase()}`,
+      body: `Your flagged attendance on ${new Date(attendance.date).toLocaleDateString()} was ${decision} by management. Remarks: ${comments.trim()}`,
+      link: '/attendance'
+    }).catch(() => {});
+  }
+
+  return attendance;
+};
+
+/**
+ * 14.7-BE: Punch Locations Aggregation for Interactive Leaflet Map
+ */
+export const getPunchLocations = async ({ user, date, departmentId, onlyFlagged }) => {
+  const queryDate = date ? normalizeToUtcMidnight(new Date(date)) : normalizeToUtcMidnight(new Date());
+
+  const filter = {
+    date: queryDate,
+    'location.latitude': { $ne: null },
+    'location.longitude': { $ne: null }
+  };
+
+  if (onlyFlagged) {
+    filter.isFlagged = true;
+  }
+
+  const isSuperAdmin = user.role === 'Super Admin' || user.roles?.some((r) => r.name === 'Super Admin');
+  const isHR = user.role === 'HR Manager' || user.roles?.some((r) => r.name === 'HR Manager');
+
+  if (!isSuperAdmin && !isHR) {
+    const employeeId = user.employeeId?._id || user.employeeId;
+    const teamEmployees = await Employee.find({ managerId: employeeId, isDeleted: false }).select('_id');
+    const teamIds = teamEmployees.map((e) => e._id);
+    filter.employeeId = { $in: teamIds };
+  } else if (departmentId) {
+    const deptEmployees = await Employee.find({ departmentId, isDeleted: false }).select('_id');
+    filter.employeeId = { $in: deptEmployees.map((e) => e._id) };
+  }
+
+  const [attendances, settingsDoc] = await Promise.all([
+    Attendance.find(filter)
+      .populate('employeeId', 'name employeeCode avatar departmentId designationId')
+      .lean(),
+    Setting.findOne({ key: 'geoFences' }).lean()
+  ]);
+
+  const activeGeofences = (Array.isArray(settingsDoc?.value) ? settingsDoc.value : []).filter((gf) => gf.isActive !== false);
+
+  return {
+    date: queryDate.toISOString().slice(0, 10),
+    officeGeofences: activeGeofences,
+    punches: attendances.map((a) => ({
+      _id: a._id,
+      employeeName: a.employeeId?.name || 'Employee',
+      employeeCode: a.employeeId?.employeeCode || '',
+      avatar: a.employeeId?.avatar || null,
+      latitude: a.location.latitude,
+      longitude: a.location.longitude,
+      accuracy: a.location.accuracy,
+      checkIn: a.checkIn,
+      checkOut: a.checkOut,
+      status: a.status,
+      isFlagged: a.isFlagged,
+      flagReason: a.flagReason,
+      isClientVisit: a.location.isClientVisit,
+      clientName: a.location.clientName,
+      distanceFromOfficeMeters: a.distanceFromOfficeMeters
+    }))
+  };
+};
+
+/**
+ * 14.4-BE: WFH Locations Management Services
+ */
+export const createWfhLocation = async (user, data) => {
+  const employeeId = await resolveEmployeeId(user);
+  const location = await WfhLocation.create({
+    employeeId,
+    name: data.name,
+    address: data.address,
+    latitude: data.latitude,
+    longitude: data.longitude,
+    radiusMeters: data.radiusMeters || 100,
+    status: 'pending'
+  });
+  return location;
+};
+
+export const getWfhLocations = async (user) => {
+  const isSuperAdmin = user.role === 'Super Admin' || user.roles?.some((r) => r.name === 'Super Admin');
+  const isHR = user.role === 'HR Manager' || user.roles?.some((r) => r.name === 'HR Manager');
+
+  const filter = { isDeleted: false };
+  if (!isSuperAdmin && !isHR) {
+    const employeeId = await resolveEmployeeId(user);
+    filter.employeeId = employeeId;
+  }
+
+  return WfhLocation.find(filter)
+    .populate('employeeId', 'name employeeCode email')
+    .sort({ createdAt: -1 })
+    .lean();
+};
+
+export const updateWfhLocationStatus = async (id, { status, remarks }, actor) => {
+  const location = await WfhLocation.findOne({ _id: id, isDeleted: false });
+  if (!location) {
+    throw new ApiError(404, 'WFH location not found');
+  }
+
+  location.status = status;
+  location.decisionBy = actor._id;
+  location.decisionAt = new Date();
+  location.decisionRemarks = remarks || '';
+  await location.save();
+
+  // Notify employee
+  const emp = await Employee.findById(location.employeeId);
+  if (emp?.userId) {
+    await notify(emp.userId, {
+      type: 'attendance',
+      title: `WFH Location ${status.toUpperCase()}`,
+      body: `Your WFH remote location '${location.name}' was ${status} by HR.`,
+      link: '/attendance'
+    }).catch(() => {});
+  }
+
+  return location;
+};

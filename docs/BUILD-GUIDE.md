@@ -304,14 +304,14 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 14.1 | Haversine faasla | `utils/haversine.js` | — | Unit test (do known points) | ☐ |
-| 14.2 | Location ke saath check-in | check-in mein lat, lng, accuracy; geoFences (2.8) se check | `useGeolocation.js` → check-in ke saath bhejna | Fence se bahar reject | ☐ |
-| 14.3 | Accuracy / fake-GPS check | accuracy > had, mock location ishare → flagged | Location na mile to message | Kam accuracy flagged | ☐ |
-| 14.4 | WFH approved locations | `wfhLocation.model.js`, CRUD + approve | `WfhLocationsPage.jsx` (map par pin) | Approved ghar se check-in | ☐ |
-| 14.5 | Client-site check-in (sales) | role/permission `attendance.fieldCheckIn` + note | "Client visit" option | Field staff ko ijazat | ☐ |
-| 14.6 | Flagged punches review | `GET /attendance/flagged`, `PATCH /:id/review` | `FlaggedPunchesPage.jsx` | Approve/reject | ☐ |
-| 14.7 | Punch map | `GET /attendance/locations?date=` (scoped) | `PunchMap.jsx` (Leaflet) | Manager ko sirf check-in point | ☐ |
-| 14.8 | Privacy | location sirf punch par; koi live tracking API nahi | Attendance policy notice | Background location na li jaye | ☐ |
+| 14.1 | Haversine faasla | `utils/haversine.js` | — | Unit test (do known points) | ☑ |
+| 14.2 | Location ke saath check-in | check-in mein lat, lng, accuracy; geoFences (2.8) se check | `useGeolocation.js` → check-in ke saath bhejna | Fence se bahar reject | ☑ |
+| 14.3 | Accuracy / fake-GPS check | accuracy > had, mock location ishare → flagged | Location na mile to message | Kam accuracy flagged | ☑ |
+| 14.4 | WFH approved locations | `wfhLocation.model.js`, CRUD + approve | `WfhLocationsPage.jsx` (map par pin) | Approved ghar se check-in | ☑ |
+| 14.5 | Client-site check-in (sales) | role/permission `attendance.fieldCheckIn` + note | "Client visit" option | Field staff ko ijazat | ☑ |
+| 14.6 | Flagged punches review | `GET /attendance/flagged`, `PATCH /:id/review` | `FlaggedPunchesPage.jsx` | Approve/reject | ☑ |
+| 14.7 | Punch map | `GET /attendance/locations?date=` (scoped) | `PunchMap.jsx` (Leaflet) | Manager ko sirf check-in point | ☑ |
+| 14.8 | Privacy | location sirf punch par; koi live tracking API nahi | Attendance policy notice | Background location na li jaye | ☑ |
 
 ## 18. M13 — QR Code Attendance
 

@@ -192,6 +192,20 @@ export const PERMISSIONS_CATALOGUE = [
         description: 'Download attendance spreadsheets and monthly timesheets.',
         allowedScopes: ['team', 'department', 'all'],
         defaultScope: 'team'
+      },
+      {
+        action: 'attendance.fieldCheckIn',
+        label: 'Client-Site Field Visit Check-In',
+        description: 'Permit outdoor or client-site check-in without office geofence penalty.',
+        allowedScopes: ['own'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'attendance.geo.view',
+        label: 'View Spatial Punch Map',
+        description: 'View check-in locations and spatial punch map on Leaflet.',
+        allowedScopes: ['team', 'department', 'all'],
+        defaultScope: 'team'
       }
     ]
   },

@@ -30,7 +30,11 @@ import {
   exportAttendanceSchema,
   queryAttendanceHistorySchema,
   decideOvertimeSchema,
-  queryTeamOvertimeSchema
+  queryTeamOvertimeSchema,
+  createWfhLocationSchema,
+  updateWfhLocationStatusSchema,
+  reviewFlaggedPunchSchema,
+  queryPunchLocationsSchema
 } from './attendance.validation.js';
 
 const router = Router();
@@ -260,6 +264,56 @@ router.patch(
   checkPermission('attendance.approve', 'team'),
   validate(decideOvertimeSchema),
   attendanceController.decideOvertime
+);
+
+
+/**
+ * ============================================================================
+ * Module M14: GPS / Geo-fencing Attendance Routes (Rows 14.4 - 14.7)
+ * ============================================================================
+ */
+
+// 14.6: Flagged Punches Review Queue
+router.get(
+  '/flagged',
+  checkPermission('attendance.approve', 'Attendance'),
+  attendanceController.getFlaggedPunches
+);
+
+router.patch(
+  '/flagged/:id/review',
+  checkPermission('attendance.approve', 'Attendance'),
+  validate(reviewFlaggedPunchSchema),
+  attendanceController.reviewFlaggedPunch
+);
+
+// 14.7: Spatial Locations for Interactive Leaflet Map
+router.get(
+  '/locations',
+  checkPermission('attendance.view', 'Attendance'),
+  validate(queryPunchLocationsSchema),
+  attendanceController.getPunchLocations
+);
+
+// 14.4: Approved WFH Locations Management
+router.get(
+  '/wfh-locations',
+  checkPermission('attendance.wfh', 'Attendance'),
+  attendanceController.getWfhLocations
+);
+
+router.post(
+  '/wfh-locations',
+  checkPermission('attendance.wfh', 'Attendance'),
+  validate(createWfhLocationSchema),
+  attendanceController.createWfhLocation
+);
+
+router.patch(
+  '/wfh-locations/:id/status',
+  checkPermission('attendance.approve', 'Attendance'),
+  validate(updateWfhLocationStatusSchema),
+  attendanceController.updateWfhLocationStatus
 );
 
 /**

@@ -239,6 +239,66 @@ export const attendanceApi = baseApi.injectEndpoints({
         body: { approved, reason }
       }),
       invalidatesTags: ['Attendance', 'Dashboard', 'Payroll']
+    }),
+
+    // M14: GPS / Geo-fencing Endpoints
+    getFlaggedPunches: builder.query({
+      query: (params) => ({
+        url: '/attendance/flagged',
+        params
+      }),
+      providesTags: ['FlaggedAttendance']
+    }),
+
+    reviewFlaggedPunch: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/attendance/flagged/${id}/review`,
+        method: 'PATCH',
+        body
+      }),
+      invalidatesTags: ['FlaggedAttendance', 'Attendance']
+    }),
+
+    getPunchLocations: builder.query({
+      query: (params) => ({
+        url: '/attendance/locations',
+        params
+      }),
+      providesTags: ['AttendanceLocations']
+    }),
+
+    getWfhLocations: builder.query({
+      query: (params) => ({
+        url: '/attendance/wfh-locations',
+        params
+      }),
+      providesTags: ['WfhLocations']
+    }),
+
+    createWfhLocation: builder.mutation({
+      query: (body) => ({
+        url: '/attendance/wfh-locations',
+        method: 'POST',
+        body
+      }),
+      invalidatesTags: ['WfhLocations']
+    }),
+
+    updateWfhLocationStatus: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/attendance/wfh-locations/${id}/status`,
+        method: 'PATCH',
+        body
+      }),
+      invalidatesTags: ['WfhLocations']
+    }),
+
+    deleteWfhLocation: builder.mutation({
+      query: (id) => ({
+        url: `/attendance/wfh-locations/${id}`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: ['WfhLocations']
     })
   })
 });
@@ -270,5 +330,12 @@ export const {
   useUpdateShiftMutation,
   useDeleteShiftMutation,
   useGetTeamOvertimeRecordsQuery,
-  useDecideOvertimeMutation
+  useDecideOvertimeMutation,
+  useGetFlaggedPunchesQuery,
+  useReviewFlaggedPunchMutation,
+  useGetPunchLocationsQuery,
+  useGetWfhLocationsQuery,
+  useCreateWfhLocationMutation,
+  useUpdateWfhLocationStatusMutation,
+  useDeleteWfhLocationMutation
 } = attendanceApi;

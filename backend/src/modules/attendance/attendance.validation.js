@@ -9,14 +9,21 @@
 
 import { z } from 'zod';
 
+const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+
 export const checkInSchema = z.object({
   body: z.object({
-    source: z.enum(['web', 'mobile', 'biometric', 'qr', 'wfh']).optional().default('web'),
+    source: z.enum(['web', 'mobile', 'biometric', 'qr', 'wfh', 'field']).optional().default('web'),
     location: z
       .object({
         latitude: z.number().optional(),
         longitude: z.number().optional(),
-        address: z.string().optional()
+        accuracy: z.number().nonnegative().optional(),
+        address: z.string().optional(),
+        isMock: z.boolean().optional(),
+        isClientVisit: z.boolean().optional(),
+        clientName: z.string().optional(),
+        clientRemarks: z.string().optional()
       })
       .optional()
   })
@@ -28,7 +35,12 @@ export const checkOutSchema = z.object({
       .object({
         latitude: z.number().optional(),
         longitude: z.number().optional(),
-        address: z.string().optional()
+        accuracy: z.number().nonnegative().optional(),
+        address: z.string().optional(),
+        isMock: z.boolean().optional(),
+        isClientVisit: z.boolean().optional(),
+        clientName: z.string().optional(),
+        clientRemarks: z.string().optional()
       })
       .optional()
   })
@@ -170,3 +182,45 @@ export const queryTeamOvertimeSchema = z.object({
   }).optional()
 });
 
+
+// ----------------------------------------------------
+// M14: GPS Geo-fencing & WFH Locations Schemas
+// ----------------------------------------------------
+
+export const createWfhLocationSchema = z.object({
+  body: z.object({
+    name: z.string().trim().min(2, 'Location name must be at least 2 characters').max(100),
+    address: z.string().trim().min(5, 'Address must be at least 5 characters').max(250),
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    radiusMeters: z.number().int().min(10, 'Radius must be at least 10 meters').max(150, 'Max radius is 150m').default(100)
+  })
+});
+
+export const updateWfhLocationStatusSchema = z.object({
+  params: z.object({
+    id: z.string().regex(objectIdRegex, 'Invalid WFH location ID')
+  }),
+  body: z.object({
+    status: z.enum(['approved', 'rejected']),
+    remarks: z.string().trim().max(250).optional()
+  })
+});
+
+export const reviewFlaggedPunchSchema = z.object({
+  params: z.object({
+    id: z.string().regex(objectIdRegex, 'Invalid attendance ID')
+  }),
+  body: z.object({
+    decision: z.enum(['approved', 'rejected']),
+    comments: z.string().trim().min(5, 'Remarks must be at least 5 characters').max(300)
+  })
+});
+
+export const queryPunchLocationsSchema = z.object({
+  query: z.object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in format YYYY-MM-DD').optional(),
+    departmentId: z.string().regex(objectIdRegex).optional(),
+    onlyFlagged: z.preprocess((val) => val === 'true' || val === true, z.boolean()).optional()
+  }).optional()
+});
