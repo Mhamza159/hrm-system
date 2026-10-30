@@ -301,3 +301,4 @@ export const generateSignedQrToken = (kiosk, intervalSeconds = 30) => {
 - **SC-004**: 100% of punch attempts from a secondary mismatched phone are rejected with HTTP 403.
 - **SC-005**: HR Manager can reset device binding in under 3 clicks from User Directory.
 - **SC-006**: Unit and integration test suite achieves 100% pass rate across all 6 BUILD-GUIDE rows.
+
