@@ -568,6 +568,42 @@ export class PayrollService {
       console.warn(`[payroll.service] Non-fatal loan deduction update failure: ${loanErr.message}`);
     }
 
+    // Slice 11.4: Settle approved expense claims paid via payroll
+    try {
+      const { Expense } = await import('../../models/expense.model.js');
+      const padMonth = String(run.month).padStart(2, '0');
+      const yearMonth = `${run.year}-${padMonth}`;
+      const payslips = await Payslip.find({ payrollRunId: run._id }).lean();
+      for (const slip of payslips) {
+        const expenseEarnings = (slip.earnings || []).filter((e) =>
+          e.name?.startsWith('Expense Reimbursement')
+        );
+        for (const item of expenseEarnings) {
+          const match = item.name?.match(/\(([^)]+)\)/);
+          if (match && match[1]) {
+            const exp = await Expense.findOne({
+              claimNumber: match[1],
+              employeeId: slip.employeeId,
+              status: 'approved'
+            });
+            if (exp) {
+              exp.status = 'reimbursed';
+              exp.reimbursement = {
+                method: 'payroll',
+                paymentReference: `PAYROLL-${yearMonth}-${slip._id.toString().slice(-6)}`,
+                disbursedAt: run.paidAt || new Date(),
+                disbursedBy: actor._id,
+                remarks: `Disbursed via Payroll ${yearMonth}`
+              };
+              await exp.save();
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[PayrollService] Expense reimbursement settlement warning:', err?.message);
+    }
+
     // Multi-Channel Notification: Alert employees of disbursed payslips (BUILD-GUIDE Row 9.11)
     try {
       const { notify } = await import('../../services/notify.service.js');

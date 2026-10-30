@@ -294,11 +294,11 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 11.1 | Categories aur limits | `expenseCategory.model.js`, CRUD (expense.settings) | `ExpenseCategoriesPage.jsx` | Limit set | ☐ |
-| 11.2 | Claim + raseed | `expense.model.js`, `POST /expenses` (upload) | `MyExpensesPage.jsx`, `ExpenseForm.jsx` | Bina raseed reject | ☐ |
-| 11.3 | Approval chain | `PATCH /expenses/:id/decide` (limit check) | `ExpenseApprovalsPage.jsx` | Bari raqam Super Admin tak | ☐ |
-| 11.4 | Reimbursement (payroll ya alag) | `PATCH /expenses/:id/reimburse` (method) | HR "Mark reimbursed" | Payroll mein earning | ☐ |
-| 11.5 | Mahana expense report | `GET /reports/expenses` | Reports page | Totals sahi | ☐ |
+| 11.1 | Categories aur limits | `expenseCategory.model.js`, CRUD (expense.settings) | `ExpenseCategoriesPage.jsx` | Limit set | ☑ |
+| 11.2 | Claim + raseed | `expense.model.js`, `POST /expenses` (upload) | `MyExpensesPage.jsx`, `ExpenseForm.jsx` | Bina raseed reject | ☑ |
+| 11.3 | Approval chain | `PATCH /expenses/:id/decide` (limit check) | `ExpenseApprovalsPage.jsx` | Bari raqam Super Admin tak | ☑ |
+| 11.4 | Reimbursement (payroll ya alag) | `PATCH /expenses/:id/reimburse` (method) | HR "Mark reimbursed" | Payroll mein earning | ☑ |
+| 11.5 | Mahana expense report | `GET /reports/expenses` | Reports page | Totals sahi | ☑ |
 
 ## 17. M14 — GPS / Geo-fencing
 

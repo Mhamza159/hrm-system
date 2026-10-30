@@ -27,7 +27,7 @@ const notificationSchema = new mongoose.Schema(
     type: {
       type: String,
       enum: {
-        values: ['system', 'attendance', 'leave', 'payroll', 'announcement', 'security', 'profile'],
+        values: ['system', 'attendance', 'leave', 'payroll', 'loan', 'expense', 'announcement', 'security', 'profile'],
         message: '{VALUE} is not a valid notification category'
       },
       default: 'system',

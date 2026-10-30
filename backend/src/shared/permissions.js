@@ -506,6 +506,49 @@ export const PERMISSIONS_CATALOGUE = [
         defaultScope: 'all'
       }
     ]
+  },
+  {
+    module: 'expenses',
+    label: 'Expense Claims',
+    subject: 'Expense',
+    description: 'Corporate out-of-pocket expense reimbursement, receipt audit, multi-tier approvals, and payroll settlements.',
+    actions: [
+      {
+        action: 'expense.view',
+        label: 'View Expense Claims',
+        description: 'View personal, team, or organization-wide expense claims and receipts.',
+        allowedScopes: ['own', 'team', 'department', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'expense.create',
+        label: 'Submit Expense Claim',
+        description: 'Submit legitimate business expenses with mandatory receipts.',
+        allowedScopes: ['own'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'expense.approve',
+        label: 'Approve & Review Expenses',
+        description: 'Review, recommend, or approve expense claims within authorized monetary limits.',
+        allowedScopes: ['team', 'department', 'all'],
+        defaultScope: 'team'
+      },
+      {
+        action: 'expense.reimburse',
+        label: 'Execute Expense Reimbursement',
+        description: 'Process and disburse verified expense reimbursements via direct transfer or payroll.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'expense.settings',
+        label: 'Manage Expense Categories & Limits',
+        description: 'Create and configure corporate expense categories, policy limits, and receipt mandates.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      }
+    ]
   }
 ];
 

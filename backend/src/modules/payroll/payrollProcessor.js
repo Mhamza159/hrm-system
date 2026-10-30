@@ -22,6 +22,7 @@ import { Leave } from '../../models/leave.model.js';
 import { LeaveEncashment } from '../../models/leaveEncashment.model.js';
 import { MonthLock } from '../../models/monthLock.model.js';
 import { Loan } from '../../models/loan.model.js';
+import { Expense } from '../../models/expense.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { calculateAnnualIncomeTax } from './taxCalculator.js';
 import { calculateStatutoryContributions } from './contributionsCalculator.js';
@@ -259,6 +260,27 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
         description: `Employee contribution (${structure.providentFundRate || 8.33}%)`
       });
     }
+
+    // --- G. M11 Expense Claims: Approved Expense Reimbursements via Payroll (Slice 11.4) ---
+    const approvedExpenses = await Expense.find({
+      employeeId: emp._id,
+      status: 'approved',
+      'reimbursement.method': 'payroll'
+    });
+
+    let expenseReimbursementTotal = 0;
+    for (const exp of approvedExpenses) {
+      const payableAmount = exp.approvedAmount || exp.amount;
+      if (payableAmount > 0) {
+        earnings.push({
+          name: `Expense Reimbursement (${exp.claimNumber})`,
+          amount: payableAmount,
+          isTaxable: false
+        });
+        expenseReimbursementTotal += payableAmount;
+      }
+    }
+    grossPay += expenseReimbursementTotal;
 
     // --- F. M10 Loans & Salary Advances: Active Monthly Installment Deductions (Slice 10.5) ---
     const activeLoans = await Loan.find({

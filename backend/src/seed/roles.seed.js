@@ -80,7 +80,12 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'loan.recommend', subject: 'Loan', scope: 'all' },
       { action: 'loan.approve', subject: 'Loan', scope: 'all' },
       { action: 'loan.prepay', subject: 'Loan', scope: 'all' },
-      { action: 'loan.settings', subject: 'Loan', scope: 'all' }
+      { action: 'loan.settings', subject: 'Loan', scope: 'all' },
+      { action: 'expense.view', subject: 'Expense', scope: 'all' },
+      { action: 'expense.create', subject: 'Expense', scope: 'own' },
+      { action: 'expense.approve', subject: 'Expense', scope: 'all' },
+      { action: 'expense.reimburse', subject: 'Expense', scope: 'all' },
+      { action: 'expense.settings', subject: 'ExpenseCategory', scope: 'all' }
     ]
   },
   {
@@ -106,6 +111,9 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'loan.view', subject: 'Loan', scope: 'team' },
       { action: 'loan.create', subject: 'Loan', scope: 'own' },
       { action: 'loan.recommend', subject: 'Loan', scope: 'team' },
+      { action: 'expense.view', subject: 'Expense', scope: 'team' },
+      { action: 'expense.create', subject: 'Expense', scope: 'own' },
+      { action: 'expense.approve', subject: 'Expense', scope: 'team', limit: 1500000 },
       { action: 'settings.view', subject: 'Setting', scope: 'all' },
       { action: 'org.view', subject: 'Organization', scope: 'all' },
       { action: 'report.view', subject: 'Report', scope: 'team' },
@@ -135,6 +143,8 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'payroll.view', subject: 'Payroll', scope: 'own' },
       { action: 'loan.view', subject: 'Loan', scope: 'own' },
       { action: 'loan.create', subject: 'Loan', scope: 'own' },
+      { action: 'expense.view', subject: 'Expense', scope: 'own' },
+      { action: 'expense.create', subject: 'Expense', scope: 'own' },
       { action: 'settings.view', subject: 'Setting', scope: 'all' },
       { action: 'notification.view', subject: 'Notification', scope: 'own' },
       { action: 'announcement.view', subject: 'Announcement', scope: 'own' },
