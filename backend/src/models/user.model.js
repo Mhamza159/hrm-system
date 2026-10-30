@@ -85,7 +85,42 @@ const userSchema = new mongoose.Schema(
       default: null
     },
 
-    // Hardware device binding for QR Code attendance (M13)
+    // Face Recognition Biometric Attendance Enrollment (M12)
+    faceEnrollment: {
+      status: {
+        type: String,
+        enum: ['none', 'pending', 'approved', 'rejected'],
+        default: 'none',
+        index: true
+      },
+      descriptors: {
+        type: [[Number]],
+        default: []
+      },
+      enrollmentPhotoUrl: {
+        type: String,
+        default: null
+      },
+      enrolledAt: {
+        type: Date,
+        default: null
+      },
+      approvedAt: {
+        type: Date,
+        default: null
+      },
+      approvedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
+      },
+      rejectionReason: {
+        type: String,
+        default: null
+      }
+    },
+
+        // Hardware device binding for QR Code attendance (M13)
     deviceId: {
       type: String,
       default: null,

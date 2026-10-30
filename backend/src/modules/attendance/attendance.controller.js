@@ -20,6 +20,8 @@ export const checkIn = asyncHandler(async (req, res) => {
     deviceId: req.body.deviceId,
     deviceModel: req.body.deviceModel,
     location: req.body.location,
+    liveDescriptor: req.body.liveDescriptor,
+    snapshot: req.body.snapshot,
     ipAddress: req.ip,
     userAgent: req.headers['user-agent']
   });
@@ -33,7 +35,9 @@ export const checkOut = asyncHandler(async (req, res) => {
     qrToken: req.body.qrToken,
     deviceId: req.body.deviceId,
     deviceModel: req.body.deviceModel,
-    location: req.body.location
+    location: req.body.location,
+    liveDescriptor: req.body.liveDescriptor,
+    snapshot: req.body.snapshot
   });
   return res.status(200).json(apiResponse(200, result, 'Clock-out successful'));
 });
@@ -321,4 +325,34 @@ export const getCurrentKioskQr = asyncHandler(async (req, res) => {
 export const resetDeviceBinding = asyncHandler(async (req, res) => {
   const result = await attendanceService.resetDeviceBinding(req.params.id, req.body.reason, req.user);
   return res.status(200).json(apiResponse(200, result, 'Device binding reset successfully'));
+});
+
+export const enrollFace = asyncHandler(async (req, res) => {
+  const result = await attendanceService.enrollFace(req.user._id, req.body);
+  return res.status(200).json(apiResponse(200, result, 'Face enrollment submitted successfully for HR approval'));
+});
+
+export const getFaceEnrollmentStatus = asyncHandler(async (req, res) => {
+  const result = await attendanceService.getFaceEnrollmentStatus(req.user._id);
+  return res.status(200).json(apiResponse(200, result, 'Face enrollment status retrieved'));
+});
+
+export const getFaceEnrollments = asyncHandler(async (req, res) => {
+  const result = await attendanceService.getFaceEnrollments(req.query);
+  return res.status(200).json(apiResponse(200, result.users, 'Face enrollments retrieved successfully', result.meta));
+});
+
+export const approveFaceEnrollment = asyncHandler(async (req, res) => {
+  const result = await attendanceService.approveFaceEnrollment(req.params.userId, req.user);
+  return res.status(200).json(apiResponse(200, result, 'Face enrollment approved successfully'));
+});
+
+export const rejectFaceEnrollment = asyncHandler(async (req, res) => {
+  const result = await attendanceService.rejectFaceEnrollment(req.params.userId, req.user, req.body.reason);
+  return res.status(200).json(apiResponse(200, result, 'Face enrollment rejected successfully'));
+});
+
+export const resetFaceEnrollment = asyncHandler(async (req, res) => {
+  const result = await attendanceService.resetFaceEnrollment(req.params.userId, req.user, req.body?.reason);
+  return res.status(200).json(apiResponse(200, result, 'Face enrollment reset successfully'));
 });

@@ -32,6 +32,7 @@ import {
 } from '../attendanceApi.js';
 import { AttendanceStatusBadge } from './AttendanceStatusBadge.jsx';
 import { QrScannerModal } from './QrScannerModal.jsx';
+import { FaceCheckInModal } from './FaceCheckInModal.jsx';
 import { GeoLocationBadge } from './GeoLocationBadge.jsx';
 import { useGeolocation } from '../../../hooks/useGeolocation.js';
 import { usePermission } from '../../../hooks/usePermission.js';
@@ -51,6 +52,9 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
   const [qrDefaultAction, setQrDefaultAction] = useState('in');
   const { data: qrSettingRes } = useGetSettingByKeyQuery('qrAttendance');
   const isQrEnabled = qrSettingRes?.data?.value?.isEnabled !== false;
+  const [faceModalOpen, setFaceModalOpen] = useState(false);
+  const { data: faceSettingRes } = useGetSettingByKeyQuery('faceAttendance');
+  const isFaceEnabled = faceSettingRes?.data?.value?.isEnabled !== false;
 
   // Field check-in state (14.5)
   const canFieldCheckIn = can('attendance.fieldCheckIn') || isSuperAdmin;

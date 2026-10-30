@@ -158,7 +158,9 @@ export const baseApi = createApi({
     'FlaggedAttendance',
     'AttendanceLocations',
     'WfhLocations',
-    'Kiosks'
+    'Kiosks',
+    'FaceEnrollment',
+    'FaceEnrollments'
   ],
   endpoints: () => ({})
 });

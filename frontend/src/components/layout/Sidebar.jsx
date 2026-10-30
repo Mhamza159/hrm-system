@@ -99,7 +99,9 @@ export function Sidebar({ isOpen = false, onClose }) {
         { name: 'Flagged Punches', path: '/attendance/flagged', permission: 'attendance.approve' },
         { name: 'WFH Locations', path: '/attendance/wfh-locations', permission: 'attendance.wfh' },
         { name: 'Punch Map', path: '/attendance/map', permission: 'attendance.view' },
-        { name: 'Kiosk Terminals', path: '/attendance/kiosks', permission: 'attendance.kiosk.manage' }
+        { name: 'Kiosk Terminals', path: '/attendance/kiosks', permission: 'attendance.kiosk.manage' },
+        { name: 'Face Enrollment', path: '/attendance/face/enroll', permission: 'attendance.mark' },
+        { name: 'Face Approvals', path: '/attendance/face/enrollments', permission: 'attendance.face.manage' }
       ]
     },
     {

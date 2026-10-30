@@ -13,7 +13,9 @@ const objectIdRegex = /^[0-9a-fA-F]{24}$/;
 
 export const checkInSchema = z.object({
   body: z.object({
-    source: z.enum(['web', 'mobile', 'biometric', 'qr', 'wfh', 'field']).optional().default('web'),
+    source: z.enum(['web', 'mobile', 'biometric', 'qr', 'face', 'wfh', 'field']).optional().default('web'),
+    liveDescriptor: z.array(z.number()).length(128, 'Face descriptor must have 128 coordinates').optional(),
+    snapshot: z.string().trim().optional(),
     qrToken: z.string().trim().optional(),
     deviceId: z.string().trim().optional(),
     deviceModel: z.string().trim().max(100).optional(),
@@ -34,7 +36,9 @@ export const checkInSchema = z.object({
 
 export const checkOutSchema = z.object({
   body: z.object({
-    source: z.enum(['web', 'mobile', 'biometric', 'qr', 'wfh', 'field']).optional().default('web'),
+    source: z.enum(['web', 'mobile', 'biometric', 'qr', 'face', 'wfh', 'field']).optional().default('web'),
+    liveDescriptor: z.array(z.number()).length(128, 'Face descriptor must have 128 coordinates').optional(),
+    snapshot: z.string().trim().optional(),
     qrToken: z.string().trim().optional(),
     deviceId: z.string().trim().optional(),
     deviceModel: z.string().trim().max(100).optional(),
@@ -294,5 +298,27 @@ export const resetDeviceSchema = z.object({
   }),
   body: z.object({
     reason: z.string().trim().min(3, 'Reset reason must be at least 3 characters').max(200)
+  })
+});
+
+export const enrollFaceSchema = z.object({
+  body: z.object({
+    descriptors: z
+      .array(z.array(z.number()).length(128, 'Each face descriptor must contain exactly 128 float coordinates'))
+      .min(3, 'At least 3 face captures required for reliable enrollment')
+      .max(5, 'Maximum 5 face captures allowed'),
+    photo: z.string().trim().optional()
+  })
+});
+
+export const faceApprovalSchema = z.object({
+  body: z.object({
+    reason: z.string().trim().max(500).optional()
+  }).optional().default({})
+});
+
+export const faceRejectSchema = z.object({
+  body: z.object({
+    reason: z.string().trim().min(3, 'Rejection reason is mandatory').max(500)
   })
 });

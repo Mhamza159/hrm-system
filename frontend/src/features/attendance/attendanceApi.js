@@ -362,6 +362,61 @@ export const attendanceApi = baseApi.injectEndpoints({
       invalidatesTags: ['Users', 'Attendance']
     }),
 
+
+    // ========================================================================
+    // Module M12: Face Recognition Attendance Endpoints
+    // ========================================================================
+
+    enrollFace: builder.mutation({
+      query: (body) => ({
+        url: '/attendance/face/enroll',
+        method: 'POST',
+        body
+      }),
+      invalidatesTags: ['FaceEnrollment', 'Users']
+    }),
+
+    getFaceStatus: builder.query({
+      query: () => ({
+        url: '/attendance/face/status'
+      }),
+      providesTags: ['FaceEnrollment']
+    }),
+
+    getFaceEnrollments: builder.query({
+      query: (params) => ({
+        url: '/attendance/face/enrollments',
+        params
+      }),
+      providesTags: ['FaceEnrollments']
+    }),
+
+    approveFaceEnrollment: builder.mutation({
+      query: ({ id, reason }) => ({
+        url: `/attendance/face/enrollments/${id}/approve`,
+        method: 'POST',
+        body: { reason }
+      }),
+      invalidatesTags: ['FaceEnrollments', 'FaceEnrollment']
+    }),
+
+    rejectFaceEnrollment: builder.mutation({
+      query: ({ id, reason }) => ({
+        url: `/attendance/face/enrollments/${id}/reject`,
+        method: 'POST',
+        body: { reason }
+      }),
+      invalidatesTags: ['FaceEnrollments', 'FaceEnrollment']
+    }),
+
+    resetFaceEnrollment: builder.mutation({
+      query: ({ id, reason }) => ({
+        url: `/attendance/face/enrollments/${id}/reset`,
+        method: 'POST',
+        body: { reason }
+      }),
+      invalidatesTags: ['FaceEnrollments', 'FaceEnrollment']
+    }),
   })
 });
 
@@ -407,4 +462,10 @@ export const {
   useDeleteKioskMutation,
   useGetCurrentKioskQrQuery,
   useResetDeviceBindingMutation,
+  useEnrollFaceMutation,
+  useGetFaceStatusQuery,
+  useGetFaceEnrollmentsQuery,
+  useApproveFaceEnrollmentMutation,
+  useRejectFaceEnrollmentMutation,
+  useResetFaceEnrollmentMutation,
 } = attendanceApi;

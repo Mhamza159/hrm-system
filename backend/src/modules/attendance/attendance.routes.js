@@ -41,7 +41,10 @@ import {
   queryKiosksSchema,
   getKioskQrSchema,
   kioskIdParamSchema,
-  resetDeviceSchema
+  resetDeviceSchema,
+  enrollFaceSchema,
+  faceApprovalSchema,
+  faceRejectSchema
 } from './attendance.validation.js';
 
 const router = Router();
@@ -407,6 +410,58 @@ router.post(
  * 5.11: Manual Attendance Override with Mandatory Audit Reason
  * (Keep at bottom so /:id doesn't collide with static subpaths)
  */
+/**
+ * -------------------------------------------------------------
+ * M12: Face Recognition Attendance Routes (Rows 12.2, 12.3)
+ * -------------------------------------------------------------
+ */
+
+// 12.2: Face Enrollment submission (3-5 photos)
+router.post(
+  '/face/enroll',
+  requestsLimiter,
+  checkPermission('attendance.mark', 'own'),
+  validate(enrollFaceSchema),
+  attendanceController.enrollFace
+);
+
+// 12.2: Check current user's enrollment status
+router.get(
+  '/face/status',
+  checkPermission('attendance.mark', 'own'),
+  attendanceController.getFaceEnrollmentStatus
+);
+
+// 12.3: HR list of face enrollments
+router.get(
+  '/face/enrollments',
+  checkPermission('attendance.face.manage', 'all'),
+  attendanceController.getFaceEnrollments
+);
+
+// 12.3: HR approve face enrollment
+router.patch(
+  '/face/:userId/approve',
+  checkPermission('attendance.face.manage', 'all'),
+  validate(faceApprovalSchema),
+  attendanceController.approveFaceEnrollment
+);
+
+// 12.3: HR reject face enrollment with reason
+router.patch(
+  '/face/:userId/reject',
+  checkPermission('attendance.face.manage', 'all'),
+  validate(faceRejectSchema),
+  attendanceController.rejectFaceEnrollment
+);
+
+// 12.3: HR reset / delete face enrollment
+router.delete(
+  '/face/:userId',
+  checkPermission('attendance.face.manage', 'all'),
+  attendanceController.resetFaceEnrollment
+);
+
 router.patch(
   '/:id',
   checkPermission('attendance.edit', 'all'),

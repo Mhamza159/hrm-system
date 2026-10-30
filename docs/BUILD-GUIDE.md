@@ -326,17 +326,17 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 ## 19. M12 — Face Recognition Attendance
 
-| ID | Feature | Backend | Frontend | Test | ☐ |
+| ID | Feature | Backend | Frontend | Test | ☑ |
 | --- | --- | --- | --- | --- | --- |
-| 12.1 | Models load | — | `public/models/`, `useFaceApi.js` | Models load hon | ☐ |
-| 12.2 | Enrollment (3–5 photos) | `POST /attendance/face/enroll` (descriptors save, status pending) | `FaceEnrollPage.jsx` | Descriptors save | ☐ |
-| 12.3 | HR approval / re-enroll | `PATCH /face/:userId/approve`, `DELETE /face/:userId` | `FaceEnrollmentsPage.jsx` | Approve ke baad hi istemal | ☐ |
-| 12.4 | Liveness check | — | `FaceCheckIn.jsx`: aankh jhapakna detect | Photo dikhane par fail | ☐ |
-| 12.5 | Face se check-in | check-in: descriptor distance < threshold, snapshot save | Camera + check-in | Sahi chehra pass, ghalat fail | ☐ |
-| 12.6 | Threshold aur on/off | settings `faceAttendance` (Super Admin) | Settings tab | Threshold badle | ☐ |
-| 12.7 | Nakam/mashkook koshishein | failed attempts log, flagged | `FlaggedPunchesPage.jsx` mein photo | HR ko nazar aaye | ☐ |
-| 12.8 | Fallback manual request | nakami par correction request (5.12) | "Request manual attendance" | Request bane | ☐ |
-| 12.9 | Manager: flagged snapshots | scoped | Team page par flagged | Sirf team | ☐ |
+| 12.1 | Models load | — | `public/models/`, `useFaceApi.js` | Models load hon | ☑ |
+| 12.2 | Enrollment (3–5 photos) | `POST /attendance/face/enroll` (descriptors save, status pending) | `FaceEnrollPage.jsx` | Descriptors save | ☑ |
+| 12.3 | HR approval / re-enroll | `PATCH /face/:userId/approve`, `DELETE /face/:userId` | `FaceEnrollmentsPage.jsx` | Approve ke baad hi istemal | ☑ |
+| 12.4 | Liveness check | — | `FaceCheckIn.jsx`: aankh jhapakna detect | Photo dikhane par fail | ☑ |
+| 12.5 | Face se check-in | check-in: descriptor distance < threshold, snapshot save | Camera + check-in | Sahi chehra pass, ghalat fail | ☑ |
+| 12.6 | Threshold aur on/off | settings `faceAttendance` (Super Admin) | Settings tab | Threshold badle | ☑ |
+| 12.7 | Nakam/mashkook koshishein | failed attempts log, flagged | `FlaggedPunchesPage.jsx` mein photo | HR ko nazar aaye | ☑ |
+| 12.8 | Fallback manual request | nakami par correction request (5.12) | "Request manual attendance" | Request bane | ☑ |
+| 12.9 | Manager: flagged snapshots | scoped | Team page par flagged | Sirf team | ☑ |
 
 ## 20. M23 — Asset Management
 

@@ -237,14 +237,27 @@ export const verifyQrTokenAndDevice = async ({ qrToken, deviceId, deviceModel, u
 /**
  * 5.3: Web Clock-In
  */
-export const checkIn = async ({ user, source = 'web', location, ipAddress, userAgent, qrToken, deviceId, deviceModel }) => {
+export const checkIn = async ({ user, source = 'web', location, ipAddress, userAgent, qrToken, deviceId, deviceModel, liveDescriptor, snapshot }) => {
   const employeeId = await resolveEmployeeId(user);
   const todayUtc = normalizeToUtcMidnight(new Date());
 
   await assertMonthNotLocked(todayUtc);
   let kioskId = null;
   let punchSource = source;
-  if (source === 'qr' || qrToken) {
+  let faceConfidenceDistance = null;
+  let faceSnapshotUrl = null;
+  if (source === 'face' || (liveDescriptor && Array.isArray(liveDescriptor))) {
+    const faceResult = await verifyFacePunch({
+      user,
+      liveDescriptor,
+      snapshot
+    });
+    punchSource = 'face';
+    faceConfidenceDistance = faceResult.distance;
+    faceSnapshotUrl = faceResult.snapshotUrl;
+  }
+
+    if (source === 'qr' || qrToken) {
     const kiosk = await verifyQrTokenAndDevice({
       qrToken,
       deviceId,
@@ -371,6 +384,8 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
       location: location || {},
       isFlagged,
       flagReason,
+      confidenceDistance: faceConfidenceDistance,
+      snapshotUrl: faceSnapshotUrl,
       distanceFromOfficeMeters: minDistanceMeters,
       ipAddress: ipAddress || null,
       userAgent: userAgent || null
@@ -384,6 +399,8 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
     attendance.location = location || attendance.location;
     attendance.isFlagged = isFlagged;
     attendance.flagReason = flagReason;
+    if (faceConfidenceDistance !== null) attendance.confidenceDistance = faceConfidenceDistance;
+    if (faceSnapshotUrl !== null) attendance.snapshotUrl = faceSnapshotUrl;
     attendance.distanceFromOfficeMeters = minDistanceMeters;
     attendance.ipAddress = ipAddress || attendance.ipAddress;
     attendance.userAgent = userAgent || attendance.userAgent;
@@ -413,13 +430,27 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
 /**
  * 5.4: Web Clock-Out
  */
-export const checkOut = async ({ user, location, source = 'web', qrToken, deviceId, deviceModel }) => {
+export const checkOut = async ({ user, location, source = 'web', qrToken, deviceId, deviceModel, liveDescriptor, snapshot }) => {
   const employeeId = await resolveEmployeeId(user);
   const todayUtc = normalizeToUtcMidnight(new Date());
 
   await assertMonthNotLocked(todayUtc);
   let qrKiosk = null;
-  if (source === 'qr' || qrToken) {
+  let punchSource = source;
+  let faceConfidenceDistance = null;
+  let faceSnapshotUrl = null;
+  if (source === 'face' || (liveDescriptor && Array.isArray(liveDescriptor))) {
+    const faceResult = await verifyFacePunch({
+      user,
+      liveDescriptor,
+      snapshot
+    });
+    punchSource = 'face';
+    faceConfidenceDistance = faceResult.distance;
+    faceSnapshotUrl = faceResult.snapshotUrl;
+  }
+
+    if (source === 'qr' || qrToken) {
     qrKiosk = await verifyQrTokenAndDevice({
       qrToken,
       deviceId,
@@ -453,6 +484,10 @@ export const checkOut = async ({ user, location, source = 'web', qrToken, device
   if (qrKiosk) {
     attendance.kioskId = qrKiosk._id;
     attendance.source = 'qr';
+  } else if (punchSource === 'face') {
+    attendance.source = 'face';
+    if (faceConfidenceDistance !== null) attendance.confidenceDistance = faceConfidenceDistance;
+    if (faceSnapshotUrl !== null) attendance.snapshotUrl = faceSnapshotUrl;
   }
   attendance.workDurationMinutes = metrics.workDurationMinutes;
   attendance.overtimeMinutes = metrics.overtimeMinutes;
@@ -2412,5 +2447,255 @@ export const resetDeviceBinding = async (userId, reason, actor) => {
   return {
     success: true,
     message: `Hardware device binding for user ${user.name} has been reset successfully.`
+  };
+};
+
+
+/**
+ * -------------------------------------------------------------
+ * M12 Face Recognition Attendance Services
+ * -------------------------------------------------------------
+ */
+
+export const calculateEuclideanDistance = (vecA, vecB) => {
+  if (!vecA || !vecB || vecA.length !== vecB.length) return Infinity;
+  let sum = 0;
+  for (let i = 0; i < vecA.length; i++) {
+    const diff = vecA[i] - vecB[i];
+    sum += diff * diff;
+  }
+  return Math.sqrt(sum);
+};
+
+export const verifyFacePunch = async ({ user, liveDescriptor, snapshot }) => {
+  const setting = await Setting.findOne({ key: 'faceAttendance' }).lean();
+  const faceSettings = setting?.value || { isEnabled: true, matchThreshold: 0.50 };
+
+  if (faceSettings.isEnabled === false) {
+    throw new ApiError(400, 'Face recognition attendance is currently disabled by administrator');
+  }
+
+  const dbUser = await User.findById(user._id);
+  if (!dbUser || !dbUser.faceEnrollment || dbUser.faceEnrollment.status !== 'approved' || !dbUser.faceEnrollment.descriptors?.length) {
+    throw new ApiError(400, 'Face enrollment is not approved. Please enroll your face and await HR approval before clocking in.');
+  }
+
+  if (!liveDescriptor || !Array.isArray(liveDescriptor) || liveDescriptor.length !== 128) {
+    throw new ApiError(400, 'A valid 128-dimensional live face descriptor is required for face attendance');
+  }
+
+  const matchThreshold = faceSettings.matchThreshold ?? 0.50;
+  let minDistance = Infinity;
+  for (const enrolledVec of dbUser.faceEnrollment.descriptors) {
+    const dist = calculateEuclideanDistance(liveDescriptor, enrolledVec);
+    if (dist < minDistance) minDistance = dist;
+  }
+
+  const isMatch = minDistance < matchThreshold;
+  if (!isMatch) {
+    const employeeId = await resolveEmployeeId(user);
+    const todayUtc = normalizeToUtcMidnight(new Date());
+    const existing = await Attendance.findOne({ employeeId, date: todayUtc });
+    if (!existing) {
+      await Attendance.create({
+        employeeId,
+        date: todayUtc,
+        source: 'face',
+        isFlagged: true,
+        flagReason: 'face_match_failed',
+        snapshotUrl: snapshot || null,
+        confidenceDistance: minDistance
+      });
+    } else {
+      existing.isFlagged = true;
+      existing.flagReason = 'face_match_failed';
+      existing.snapshotUrl = snapshot || existing.snapshotUrl;
+      existing.confidenceDistance = minDistance;
+      await existing.save();
+    }
+
+    throw new ApiError(400, `Face verification failed: confidence score (${minDistance.toFixed(3)}) is above threshold (${matchThreshold.toFixed(2)})`);
+  }
+
+  return {
+    isMatch: true,
+    distance: minDistance,
+    snapshotUrl: snapshot || null
+  };
+};
+
+export const enrollFace = async (userId, { descriptors, photo }) => {
+  const user = await User.findById(userId);
+  if (!user || user.isDeleted) {
+    throw new ApiError(404, 'User account not found');
+  }
+
+  user.faceEnrollment = {
+    status: 'pending',
+    descriptors,
+    enrollmentPhotoUrl: photo || null,
+    enrolledAt: new Date(),
+    approvedAt: null,
+    approvedBy: null,
+    rejectionReason: null
+  };
+
+  await user.save();
+
+  await recordAuditLog({
+    actor: { _id: user._id, name: user.name, email: user.email },
+    action: 'FACE_ENROLLMENT_SUBMITTED',
+    entity: 'User',
+    entityId: user._id,
+    details: {
+      descriptorsCount: descriptors.length,
+      hasPhoto: Boolean(photo)
+    }
+  });
+
+  return {
+    status: 'pending',
+    enrolledAt: user.faceEnrollment.enrolledAt,
+    descriptorsCount: descriptors.length
+  };
+};
+
+export const getFaceEnrollmentStatus = async (userId) => {
+  const user = await User.findById(userId).select('faceEnrollment name email employeeId').lean();
+  if (!user) throw new ApiError(404, 'User not found');
+  return {
+    status: user.faceEnrollment?.status || 'none',
+    enrolledAt: user.faceEnrollment?.enrolledAt || null,
+    approvedAt: user.faceEnrollment?.approvedAt || null,
+    rejectionReason: user.faceEnrollment?.rejectionReason || null,
+    enrollmentPhotoUrl: user.faceEnrollment?.enrollmentPhotoUrl || null,
+    descriptorsCount: user.faceEnrollment?.descriptors?.length || 0
+  };
+};
+
+export const getFaceEnrollments = async ({ status, search, page = 1, limit = 20 }) => {
+  const query = {};
+  if (status && status !== 'all') {
+    query['faceEnrollment.status'] = status;
+  } else {
+    query['faceEnrollment.status'] = { $in: ['pending', 'approved', 'rejected'] };
+  }
+
+  if (search) {
+    const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    query.$or = [
+      { name: new RegExp(escaped, 'i') },
+      { email: new RegExp(escaped, 'i') }
+    ];
+  }
+
+  const pageNum = Math.max(1, Number(page) || 1);
+  const limitNum = Math.max(1, Number(limit) || 20);
+  const skip = (pageNum - 1) * limitNum;
+
+  const [users, total] = await Promise.all([
+    User.find(query)
+      .select('name email employeeId faceEnrollment roles createdAt')
+      .populate('employeeId', 'name employeeCode departmentId designationId')
+      .sort({ 'faceEnrollment.enrolledAt': -1, createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .lean(),
+    User.countDocuments(query)
+  ]);
+
+  return {
+    users,
+    meta: {
+      page: pageNum,
+      limit: limitNum,
+      total,
+      pages: Math.ceil(total / limitNum)
+    }
+  };
+};
+
+export const approveFaceEnrollment = async (targetUserId, actor) => {
+  const user = await User.findById(targetUserId);
+  if (!user || user.isDeleted) throw new ApiError(404, 'User not found');
+
+  if (!user.faceEnrollment || user.faceEnrollment.status === 'none') {
+    throw new ApiError(400, 'User does not have an active face enrollment');
+  }
+
+  user.faceEnrollment.status = 'approved';
+  user.faceEnrollment.approvedAt = new Date();
+  user.faceEnrollment.approvedBy = actor._id;
+  user.faceEnrollment.rejectionReason = null;
+  await user.save();
+
+  await recordAuditLog({
+    actor,
+    action: 'FACE_ENROLLMENT_APPROVED',
+    entity: 'User',
+    entityId: user._id,
+    details: { approvedUserId: user._id, approvedBy: actor._id }
+  });
+
+  return {
+    success: true,
+    message: `Face enrollment for ${user.name} has been approved successfully.`,
+    faceEnrollment: user.faceEnrollment
+  };
+};
+
+export const rejectFaceEnrollment = async (targetUserId, actor, reason) => {
+  const user = await User.findById(targetUserId);
+  if (!user || user.isDeleted) throw new ApiError(404, 'User not found');
+
+  if (!user.faceEnrollment || user.faceEnrollment.status === 'none') {
+    throw new ApiError(400, 'User does not have an active face enrollment');
+  }
+
+  user.faceEnrollment.status = 'rejected';
+  user.faceEnrollment.rejectionReason = reason;
+  await user.save();
+
+  await recordAuditLog({
+    actor,
+    action: 'FACE_ENROLLMENT_REJECTED',
+    entity: 'User',
+    entityId: user._id,
+    details: { rejectedUserId: user._id, reason, rejectedBy: actor._id }
+  });
+
+  return {
+    success: true,
+    message: `Face enrollment for ${user.name} has been rejected.`,
+    faceEnrollment: user.faceEnrollment
+  };
+};
+
+export const resetFaceEnrollment = async (targetUserId, actor, reason) => {
+  const user = await User.findById(targetUserId);
+  if (!user || user.isDeleted) throw new ApiError(404, 'User not found');
+
+  user.faceEnrollment = {
+    status: 'none',
+    descriptors: [],
+    enrollmentPhotoUrl: null,
+    enrolledAt: null,
+    approvedAt: null,
+    approvedBy: null,
+    rejectionReason: reason || 'Reset by administrator'
+  };
+  await user.save();
+
+  await recordAuditLog({
+    actor,
+    action: 'FACE_ENROLLMENT_RESET',
+    entity: 'User',
+    entityId: user._id,
+    details: { resetUserId: user._id, reason, resetBy: actor._id }
+  });
+
+  return {
+    success: true,
+    message: `Face enrollment for ${user.name} has been reset. User can now re-enroll.`
   };
 };

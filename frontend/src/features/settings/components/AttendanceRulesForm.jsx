@@ -4,11 +4,16 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, Timer, Award, Banknote, QrCode } from 'lucide-react';
+import { AlertCircle, Timer, Award, Banknote, QrCode, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUpdateSettingMutation } from '../settingsApi.js';
 
-export function AttendanceRulesForm({ initialData = {}, qrData = {}, onSaved }) {
+export function AttendanceRulesForm({ initialData = {}, qrData = {}, faceData = {}, onSaved }) {
+  const [faceSettings, setFaceSettings] = useState({
+    isEnabled: faceData?.isEnabled ?? true,
+    matchThreshold: faceData?.matchThreshold ?? 0.50,
+    requireLiveness: faceData?.requireLiveness ?? true
+  });
   const [qrSettings, setQrSettings] = useState({
     isEnabled: qrData?.isEnabled ?? true,
     rotationSeconds: qrData?.rotationSeconds ?? 30
@@ -37,7 +42,14 @@ export function AttendanceRulesForm({ initialData = {}, qrData = {}, onSaved }) 
         penaltyPerLatePKR: ((initialData.penaltyPerLatePaisa || 0) / 100).toString()
       });
     }
-  }, [initialData, qrData]);
+    if (faceData) {
+      setFaceSettings({
+        isEnabled: faceData.isEnabled ?? true,
+        matchThreshold: faceData.matchThreshold ?? 0.50,
+        requireLiveness: faceData.requireLiveness ?? true
+      });
+    }
+  }, [initialData, qrData, faceData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

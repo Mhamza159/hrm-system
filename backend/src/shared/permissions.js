@@ -201,6 +201,13 @@ export const PERMISSIONS_CATALOGUE = [
         defaultScope: 'own'
       },
       {
+        action: 'attendance.face.manage',
+        label: 'Manage Face Recognition Attendance',
+        description: 'Review pending face enrollments, approve/reject photo embeddings, and inspect flagged face punch snapshots.',
+        allowedScopes: ['all', 'department'],
+        defaultScope: 'all'
+      },
+      {
         action: 'attendance.kiosk.manage',
         label: 'Manage Attendance Kiosks',
         description: 'Register, configure, and manage dynamic QR code kiosk devices and secret keys.',
