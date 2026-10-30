@@ -110,6 +110,43 @@ export const generateReportData = async ({
       result = await generateDepartmentCostReport({ from, to });
       break;
 
+    case 'expenses': {
+      const { getExpenseMonthlyReport } = await import('../expenses/expense.service.js');
+      const monthStr = from ? from.slice(0, 7) : undefined;
+      const report = await getExpenseMonthlyReport({ month: monthStr });
+      const items = (report.breakdown || []).map((b) => ({
+        category: b._id,
+        categoryCode: b.categoryCode,
+        totalClaims: b.totalClaims,
+        totalPkr: Math.round(b.totalAmountPaisa / 100).toLocaleString('en-PK'),
+        approvedPkr: Math.round(b.approvedAmountPaisa / 100).toLocaleString('en-PK'),
+        reimbursedPkr: Math.round(b.reimbursedAmountPaisa / 100).toLocaleString('en-PK'),
+        pendingPkr: Math.round(b.pendingAmountPaisa / 100).toLocaleString('en-PK')
+      }));
+      result = {
+        columns: [
+          { header: 'Category', key: 'category' },
+          { header: 'Code', key: 'categoryCode' },
+          { header: 'Total Claims', key: 'totalClaims' },
+          { header: 'Total Amount (PKR)', key: 'totalPkr' },
+          { header: 'Approved (PKR)', key: 'approvedPkr' },
+          { header: 'Reimbursed (PKR)', key: 'reimbursedPkr' },
+          { header: 'Pending (PKR)', key: 'pendingPkr' }
+        ],
+        items,
+        total: items.length,
+        page: 1,
+        limit: Math.max(items.length, 1),
+        summary: {
+          grandTotals: report.grandTotals,
+          totalClaims: report.grandTotals.totalClaims,
+          totalAmountPkr: Math.round(report.grandTotals.totalAmountPaisa / 100).toLocaleString('en-PK'),
+          reimbursedPkr: Math.round(report.grandTotals.reimbursedAmountPaisa / 100).toLocaleString('en-PK')
+        }
+      };
+      break;
+    }
+
     default:
       throw new ApiError(400, `Unsupported report type: ${type}`);
   }

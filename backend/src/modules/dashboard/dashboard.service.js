@@ -25,6 +25,7 @@ import { LeaveBalance } from '../../models/leaveBalance.model.js';
 import { Announcement } from '../../models/announcement.model.js';
 import { Designation } from '../../models/designation.model.js';
 import { LeaveType } from '../../models/leaveType.model.js';
+import { Expense } from '../../models/expense.model.js';
 import { getEmployeeLeaveBalance } from '../leaves/leave.service.js';
 
 dayjs.extend(utc);
@@ -536,7 +537,7 @@ export const getManagerDashboardData = async (user) => {
 
   const teamMemberIds = teamMembers.map((m) => m._id);
 
-  const [todayAttendanceRaw, pendingLeaves, pendingCorrections, pendingWFH, overtimeData, attendanceTrend] = await Promise.all([
+  const [todayAttendanceRaw, pendingLeaves, pendingCorrections, pendingWFH, pendingExpenses, overtimeData, attendanceTrend] = await Promise.all([
     Attendance.aggregate([
       {
         $match: {
@@ -574,6 +575,11 @@ export const getManagerDashboardData = async (user) => {
           { path: 'designationId', select: 'title' }
         ]
       })
+      .sort({ createdAt: -1 })
+      .lean(),
+    Expense.find({ employeeId: { $in: teamMemberIds }, status: 'pending_manager' })
+      .populate('employeeId', 'name employeeCode avatar')
+      .populate('categoryId', 'name')
       .sort({ createdAt: -1 })
       .lean(),
     Attendance.aggregate([
@@ -621,7 +627,7 @@ export const getManagerDashboardData = async (user) => {
       todayLate: todayStatus.late,
       todayAbsent: todayStatus.absent,
       todayOnLeave: todayStatus.on_leave,
-      pendingApprovals: pendingLeaves.length + pendingCorrections.length + pendingWFH.length,
+      pendingApprovals: pendingLeaves.length + pendingCorrections.length + pendingWFH.length + (pendingExpenses?.length || 0),
       teamOvertimeHours
     },
     todayBreakdown: todayStatus,

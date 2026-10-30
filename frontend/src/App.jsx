@@ -47,6 +47,10 @@ import { PayrollReportsPage } from './features/payroll/pages/PayrollReportsPage.
 import { MyLoansPage } from './features/loans/pages/MyLoansPage.jsx';
 import { LoanApprovalsPage } from './features/loans/pages/LoanApprovalsPage.jsx';
 import { LoanLedgerPage } from './features/loans/pages/LoanLedgerPage.jsx';
+import MyExpensesPage from './features/expenses/pages/MyExpensesPage.jsx';
+import ExpenseApprovalsPage from './features/expenses/pages/ExpenseApprovalsPage.jsx';
+import ExpenseCategoriesPage from './features/expenses/pages/ExpenseCategoriesPage.jsx';
+import ExpenseReportsPage from './features/expenses/pages/ExpenseReportsPage.jsx';
 import ReportsPage from './features/reports/pages/ReportsPage.jsx';
 import AuditLogsPage from './features/audit/pages/AuditLogsPage.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
@@ -484,6 +488,40 @@ export default function App() {
             element={
               <ProtectedRoute requiredPermission="loan.prepay">
                 <LoanLedgerPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Module M11: Expense Claims */}
+          <Route
+            path="expenses"
+            element={
+              <ProtectedRoute requiredPermission="expense.view">
+                <MyExpensesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="expenses/approvals"
+            element={
+              <ProtectedRoute requiredPermission="expense.approve">
+                <ExpenseApprovalsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="expenses/categories"
+            element={
+              <ProtectedRoute requiredPermission="expense.settings">
+                <ExpenseCategoriesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="expenses/reports"
+            element={
+              <ProtectedRoute requiredPermission="report.view">
+                <ExpenseReportsPage />
               </ProtectedRoute>
             }
           />

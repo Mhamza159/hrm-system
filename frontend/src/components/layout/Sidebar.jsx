@@ -38,6 +38,7 @@ import {
   FileCheck,
   Megaphone,
   Coins,
+  Receipt,
   BarChart3,
   ShieldCheck,
   ChevronDown,
@@ -133,6 +134,17 @@ export function Sidebar({ isOpen = false, onClose }) {
         { name: 'Company Ledger', path: '/loans/ledger', permission: 'loan.prepay' }
       ]
     },
+    {
+      type: 'group',
+      name: 'Expenses',
+      icon: Receipt,
+      children: [
+        { name: 'My Expenses', path: '/expenses', permission: 'expense.view', excludeSuperAdmin: true },
+        { name: 'Expense Approvals', path: '/expenses/approvals', permission: 'expense.approve' },
+        { name: 'Categories & Limits', path: '/expenses/categories', permission: 'expense.settings' },
+        { name: 'Expense Reports', path: '/expenses/reports', permission: 'report.view' }
+      ]
+    },
     { type: 'link', name: 'Reports', path: '/reports', icon: BarChart3, permission: 'report.view' },
     { type: 'link', name: 'Company Policies', path: '/policies', icon: BookOpen, permission: 'settings.view' },
     { type: 'link', name: 'Announcements', path: '/announcements', icon: Megaphone, permission: 'announcement.view' },
@@ -157,7 +169,8 @@ export function Sidebar({ isOpen = false, onClose }) {
     Attendance: false,
     'Leaves & Holidays': false,
     Payroll: false,
-    'Loans & Advances': false
+    'Loans & Advances': false,
+    Expenses: false
   });
 
   // Auto-expand group if the active route is within its children
