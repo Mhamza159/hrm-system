@@ -148,3 +148,4 @@ export const PunchMap = ({ punches = [], officeGeofences = [], height = '500px' 
     />
   );
 };
+

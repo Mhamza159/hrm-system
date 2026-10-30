@@ -51,3 +51,4 @@ describe('Module M14 — Haversine Distance Engine (BUILD-GUIDE Row 14.1)', () =
     expect(dist).toBeLessThan(20025000);
   });
 });
+

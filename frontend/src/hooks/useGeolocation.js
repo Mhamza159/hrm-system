@@ -83,3 +83,4 @@ export const useGeolocation = (options = {}) => {
     clearError: () => setError(null)
   };
 };
+

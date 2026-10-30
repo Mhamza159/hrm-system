@@ -65,3 +65,4 @@ export const isWithinGeofence = (userLat, userLon, targetLat, targetLon, radiusM
     distanceMeters
   };
 };
+

@@ -87,3 +87,4 @@ wfhLocationSchema.index({ employeeId: 1, status: 1 });
 wfhLocationSchema.index({ employeeId: 1, isDeleted: 1 });
 
 export const WfhLocation = mongoose.model('WfhLocation', wfhLocationSchema);
+
