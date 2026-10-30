@@ -391,6 +391,14 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
       userAgent: userAgent || null
     });
   } else {
+    const updated = await Attendance.findOneAndUpdate(
+      { _id: attendance._id, checkIn: null },
+      { $set: { checkIn: now } },
+      { new: true }
+    );
+    if (!updated) {
+      throw new ApiError(400, 'Already clocked in for today');
+    }
     attendance.checkIn = now;
     if (kioskId) attendance.kioskId = kioskId;
     attendance.status = status;
@@ -2458,10 +2466,13 @@ export const resetDeviceBinding = async (userId, reason, actor) => {
  */
 
 export const calculateEuclideanDistance = (vecA, vecB) => {
-  if (!vecA || !vecB || vecA.length !== vecB.length) return Infinity;
+  if (!Array.isArray(vecA) || !Array.isArray(vecB) || vecA.length !== vecB.length) return Infinity;
   let sum = 0;
   for (let i = 0; i < vecA.length; i++) {
-    const diff = vecA[i] - vecB[i];
+    const valA = Number(vecA[i]);
+    const valB = Number(vecB[i]);
+    if (!Number.isFinite(valA) || !Number.isFinite(valB)) return Infinity;
+    const diff = valA - valB;
     sum += diff * diff;
   }
   return Math.sqrt(sum);

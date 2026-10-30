@@ -343,16 +343,19 @@ export const getFaceEnrollments = asyncHandler(async (req, res) => {
 });
 
 export const approveFaceEnrollment = asyncHandler(async (req, res) => {
-  const result = await attendanceService.approveFaceEnrollment(req.params.userId, req.user);
+  const targetUserId = req.params.userId || req.params.id;
+  const result = await attendanceService.approveFaceEnrollment(targetUserId, req.user);
   return res.status(200).json(apiResponse(200, result, 'Face enrollment approved successfully'));
 });
 
 export const rejectFaceEnrollment = asyncHandler(async (req, res) => {
-  const result = await attendanceService.rejectFaceEnrollment(req.params.userId, req.user, req.body.reason);
+  const targetUserId = req.params.userId || req.params.id;
+  const result = await attendanceService.rejectFaceEnrollment(targetUserId, req.user, req.body.reason);
   return res.status(200).json(apiResponse(200, result, 'Face enrollment rejected successfully'));
 });
 
 export const resetFaceEnrollment = asyncHandler(async (req, res) => {
-  const result = await attendanceService.resetFaceEnrollment(req.params.userId, req.user, req.body?.reason);
+  const targetUserId = req.params.userId || req.params.id;
+  const result = await attendanceService.resetFaceEnrollment(targetUserId, req.user, req.body?.reason);
   return res.status(200).json(apiResponse(200, result, 'Face enrollment reset successfully'));
 });

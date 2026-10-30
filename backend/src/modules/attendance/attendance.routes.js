@@ -44,7 +44,8 @@ import {
   resetDeviceSchema,
   enrollFaceSchema,
   faceApprovalSchema,
-  faceRejectSchema
+  faceRejectSchema,
+  faceResetSchema
 } from './attendance.validation.js';
 
 const router = Router();
@@ -446,10 +447,22 @@ router.patch(
   validate(faceApprovalSchema),
   attendanceController.approveFaceEnrollment
 );
+router.post(
+  '/face/enrollments/:userId/approve',
+  checkPermission('attendance.face.manage', 'all'),
+  validate(faceApprovalSchema),
+  attendanceController.approveFaceEnrollment
+);
 
 // 12.3: HR reject face enrollment with reason
 router.patch(
   '/face/:userId/reject',
+  checkPermission('attendance.face.manage', 'all'),
+  validate(faceRejectSchema),
+  attendanceController.rejectFaceEnrollment
+);
+router.post(
+  '/face/enrollments/:userId/reject',
   checkPermission('attendance.face.manage', 'all'),
   validate(faceRejectSchema),
   attendanceController.rejectFaceEnrollment
@@ -459,6 +472,13 @@ router.patch(
 router.delete(
   '/face/:userId',
   checkPermission('attendance.face.manage', 'all'),
+  validate(faceResetSchema),
+  attendanceController.resetFaceEnrollment
+);
+router.post(
+  '/face/enrollments/:userId/reset',
+  checkPermission('attendance.face.manage', 'all'),
+  validate(faceResetSchema),
   attendanceController.resetFaceEnrollment
 );
 
