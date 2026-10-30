@@ -40,6 +40,7 @@ import {
   updateKioskSchema,
   queryKiosksSchema,
   getKioskQrSchema,
+  kioskIdParamSchema,
   resetDeviceSchema
 } from './attendance.validation.js';
 
@@ -353,6 +354,7 @@ router.post(
 router.get(
   '/kiosks/:id',
   checkPermission('attendance.kiosk.manage', 'all'),
+  validate(kioskIdParamSchema),
   attendanceController.getKioskById
 );
 
@@ -366,12 +368,27 @@ router.patch(
 router.delete(
   '/kiosks/:id',
   checkPermission('attendance.kiosk.manage', 'all'),
+  validate(kioskIdParamSchema),
   attendanceController.deleteKiosk
 );
+
+// Rate limiter for Kiosk QR Code dynamic stream (max 60 queries/min per IP)
+const qrStreamLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: {
+    success: false,
+    statusCode: 429,
+    message: 'Too many QR requests from this IP. Please wait before refreshing.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 // 13.2: Rotating Dynamic QR Code Vector Stream
 router.get(
   '/qr/current',
+  qrStreamLimiter,
   checkPermission('attendance.mark', 'own'),
   validate(getKioskQrSchema),
   attendanceController.getCurrentKioskQr

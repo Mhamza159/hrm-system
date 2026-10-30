@@ -244,6 +244,12 @@ export const queryFlaggedPunchesSchema = z.object({
 // M13: QR Code Attendance & Kiosks Schemas
 // ----------------------------------------------------
 
+export const kioskIdParamSchema = z.object({
+  params: z.object({
+    id: z.string().regex(objectIdRegex, 'Invalid kiosk ID')
+  })
+});
+
 export const createKioskSchema = z.object({
   body: z.object({
     name: z.string().trim().min(2, 'Kiosk name must be at least 2 characters').max(100),

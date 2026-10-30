@@ -120,9 +120,36 @@ export const resolveEmployeeId = async (user) => {
  * @param {string} [params.expectedDirection] - 'entry' | 'exit'
  * @returns {Promise<Object>} The authenticated Kiosk document
  */
+// Anti-replay cache for dynamic QR tokens (prevents token reuse / double-punch within validity window)
+const consumedQrTokens = new Map();
+
+export const checkAndConsumeQrToken = (nonce, userId) => {
+  const key = `${userId}:${nonce}`;
+  const now = Date.now();
+  // Cleanup tokens older than 60 seconds
+  for (const [k, exp] of consumedQrTokens.entries()) {
+    if (now > exp) consumedQrTokens.delete(k);
+  }
+  if (consumedQrTokens.has(key)) {
+    return false; // Replayed!
+  }
+  consumedQrTokens.set(key, now + 60 * 1000);
+  return true;
+};
+
 export const verifyQrTokenAndDevice = async ({ qrToken, deviceId, deviceModel, user, expectedDirection }) => {
+  // 13.6 System-level governance: Check if QR attendance is enabled globally
+  const qrSetting = await Setting.findOne({ key: 'qrAttendance' }).lean();
+  if (qrSetting && qrSetting.value?.isEnabled === false) {
+    throw new ApiError(400, 'Dynamic QR Code attendance is currently disabled by administrator.');
+  }
   if (!qrToken) {
     throw new ApiError(400, 'QR token is required for QR attendance punch.');
+  }
+
+  // Mandatory hardware device validation when punching via QR (Anti-Bypass)
+  if (!deviceId || typeof deviceId !== 'string' || !deviceId.trim()) {
+    throw new ApiError(400, 'Hardware device ID is mandatory for QR code attendance verification.');
   }
 
   const parts = qrToken.split('.');
@@ -138,13 +165,23 @@ export const verifyQrTokenAndDevice = async ({ qrToken, deviceId, deviceModel, u
     throw new ApiError(400, 'Malformed QR code payload.');
   }
 
-  const { kId, kType, ts, ttl } = payload;
-  if (!kId || !ts || !ttl) {
+  const { kId, kType, ts, ttl, nonce } = payload;
+  if (!kId || !ts || !ttl || !nonce) {
     throw new ApiError(400, 'Incomplete QR code payload.');
   }
 
-  // 13.2 Expiration validation (10-second grace window for mobile network/clock drift)
+  // Future timestamp defense (clock skew ceiling of 10s)
   const nowSec = Math.floor(Date.now() / 1000);
+  if (ts > nowSec + 10) {
+    throw new ApiError(400, 'QR Code timestamp is in the future. Please synchronize kiosk clock.');
+  }
+
+  // Token bounds check
+  if (typeof ttl !== 'number' || ttl <= 0 || ttl > 300) {
+    throw new ApiError(400, 'Invalid QR code token expiration parameter.');
+  }
+
+  // 13.2 Expiration validation (10-second grace window for mobile network/clock drift)
   if (nowSec > ts + ttl + 10) {
     throw new ApiError(400, 'QR Code has expired. Please scan the current live code.');
   }
@@ -155,10 +192,18 @@ export const verifyQrTokenAndDevice = async ({ qrToken, deviceId, deviceModel, u
     throw new ApiError(400, 'Kiosk is inactive or not registered in the system.');
   }
 
-  // HMAC SHA-256 Signature verification
+  // HMAC SHA-256 Signature verification with constant-time comparison (timing attack defense)
   const expectedSig = crypto.createHmac('sha256', kiosk.secretKey).update(payloadB64).digest('base64url');
-  if (expectedSig !== signature) {
+  const sigBuffer = Buffer.from(signature);
+  const expectedBuffer = Buffer.from(expectedSig);
+  if (sigBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(sigBuffer, expectedBuffer)) {
     throw new ApiError(400, 'Tampered or invalid QR code signature.');
+  }
+
+  // Anti-Token-Replay validation: ensure this specific nonce has not already been punched by this user
+  const userIdStr = (user?._id || user?.id || '').toString();
+  if (userIdStr && !checkAndConsumeQrToken(nonce, userIdStr)) {
+    throw new ApiError(400, 'This QR code token has already been consumed for attendance punch. Please scan a fresh QR code.');
   }
 
   // 13.1 Directionality enforcement
@@ -169,22 +214,20 @@ export const verifyQrTokenAndDevice = async ({ qrToken, deviceId, deviceModel, u
   }
 
   // 13.4 Hardware Device Binding enforcement
-  if (deviceId) {
-    const userDoc = await User.findById(user._id || user.id);
-    if (userDoc) {
-      if (!userDoc.deviceId) {
-        // First-time scan: automatically bind hardware device ID
-        userDoc.deviceId = deviceId;
-        userDoc.deviceBoundAt = new Date();
-        if (deviceModel) userDoc.deviceModel = deviceModel;
-        await userDoc.save();
-      } else if (userDoc.deviceId !== deviceId) {
-        // Mismatched device ID: Reject punch with 403 Forbidden
-        throw new ApiError(
-          403,
-          'Device binding mismatch. Your account is bound to another registered device. Please contact HR to reset your device binding.'
-        );
-      }
+  const userDoc = await User.findById(user._id || user.id);
+  if (userDoc) {
+    if (!userDoc.deviceId) {
+      // First-time scan: automatically bind hardware device ID
+      userDoc.deviceId = deviceId;
+      userDoc.deviceBoundAt = new Date();
+      if (deviceModel) userDoc.deviceModel = deviceModel;
+      await userDoc.save();
+    } else if (userDoc.deviceId !== deviceId) {
+      // Mismatched device ID: Reject punch with 403 Forbidden
+      throw new ApiError(
+        403,
+        'Device binding mismatch. Your account is bound to another registered device. Please contact HR to reset your device binding.'
+      );
     }
   }
 
@@ -533,7 +576,7 @@ export const getMyAttendance = async ({ user, month, date }) => {
     filter.date = { $gte: start, $lte: end };
   }
 
-  const records = await Attendance.find(filter).sort({ date: 1 }).lean();
+  const records = await Attendance.find(filter).populate('kioskId', 'name code locationDescription').sort({ date: 1 }).lean();
 
   // Compute monthly stats
   let presentCount = 0;
@@ -660,7 +703,7 @@ export const getTeamAttendance = async ({ user, date, departmentId, status, page
     attendanceFilter.status = status;
   }
 
-  const attendances = await Attendance.find(attendanceFilter).lean();
+  const attendances = await Attendance.find(attendanceFilter).populate('kioskId', 'name code locationDescription').lean();
   const attMap = new Map();
   attendances.forEach((a) => attMap.set(String(a.employeeId), a));
 
@@ -2177,8 +2220,9 @@ export const createKiosk = async (data, actor) => {
  */
 export const getKiosks = async ({ search, type, isActive, page = 1, limit = 50 }) => {
   const filter = { isDeleted: false };
-  if (search) {
-    const regex = new RegExp(search, 'i');
+  if (search && typeof search === 'string') {
+    const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, (m) => '\\' + m);
+    const regex = new RegExp(escaped, 'i');
     filter.$or = [{ name: regex }, { code: regex }, { locationDescription: regex }];
   }
   if (type && type !== 'all') {

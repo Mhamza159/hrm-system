@@ -34,7 +34,8 @@ export const ResetDeviceModal = ({ isOpen, onClose, user = null, onSuccess }) =>
         reason: reason.trim()
       }).unwrap();
 
-      toast.success(`Hardware device binding for ${user.name} has been reset successfully.`);
+      const targetUserLabel = user.name || user.email || "Employee";
+      toast.success(`Hardware device binding for ${targetUserLabel} has been reset successfully.`);
       if (onSuccess) onSuccess();
       onClose();
     } catch (err) {
@@ -56,7 +57,7 @@ export const ResetDeviceModal = ({ isOpen, onClose, user = null, onSuccess }) =>
                 Reset Bound Hardware Device
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                User: <span className="font-semibold text-slate-700 dark:text-slate-300">{user.name}</span>
+                User: <span className="font-semibold text-slate-700 dark:text-slate-300">{user.name || user.email}</span>
               </p>
             </div>
           </div>
@@ -122,3 +123,4 @@ export const ResetDeviceModal = ({ isOpen, onClose, user = null, onSuccess }) =>
     </div>
   );
 };
+

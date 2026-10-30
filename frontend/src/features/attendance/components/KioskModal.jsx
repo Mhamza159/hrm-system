@@ -229,3 +229,4 @@ export const KioskModal = ({ isOpen, onClose, kiosk = null, onSuccess }) => {
     </div>
   );
 };
+

@@ -73,3 +73,4 @@ kioskSchema.index({ code: 1, isDeleted: 1 });
 kioskSchema.index({ isActive: 1, isDeleted: 1 });
 
 export const Kiosk = mongoose.models.Kiosk || mongoose.model('Kiosk', kioskSchema);
+

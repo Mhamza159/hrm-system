@@ -36,6 +36,7 @@ import { GeoLocationBadge } from './GeoLocationBadge.jsx';
 import { useGeolocation } from '../../../hooks/useGeolocation.js';
 import { usePermission } from '../../../hooks/usePermission.js';
 import { useAuth } from '../../../hooks/useAuth.js';
+import { useGetSettingByKeyQuery } from '../../settings/settingsApi.js';
 
 export const PunchCardWidget = ({ onActionSuccess }) => {
   const { can } = usePermission();
@@ -48,6 +49,8 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
   const [actionError, setActionError] = useState('');
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [qrDefaultAction, setQrDefaultAction] = useState('in');
+  const { data: qrSettingRes } = useGetSettingByKeyQuery('qrAttendance');
+  const isQrEnabled = qrSettingRes?.data?.value?.isEnabled !== false;
 
   // Field check-in state (14.5)
   const canFieldCheckIn = can('attendance.fieldCheckIn') || isSuperAdmin;
@@ -281,7 +284,8 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
               </div>
             ) : !isClockedIn ? (
                             <div className="flex items-center gap-2">
-                <button
+                {isQrEnabled && (
+<button
                   type="button"
                   onClick={() => {
                     setQrDefaultAction('in');
@@ -292,7 +296,8 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
                 >
                   <QrCode className="w-4 h-4" />
                   <span>Scan QR</span>
-                </button>
+                </button> 
+                )}
                 <button
                   onClick={handleCheckIn}
                 disabled={isPunchLoading || isLoading}
@@ -324,7 +329,8 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
                   </button>
                 )}
 
-                                <button
+                                {isQrEnabled && (
+<button
                   type="button"
                   onClick={() => {
                     setQrDefaultAction('out');
@@ -335,7 +341,8 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
                 >
                   <QrCode className="w-4 h-4" />
                   <span>Scan QR</span>
-                </button>
+                </button> 
+                  )}
                 <button
                   onClick={handleCheckOut}
                   disabled={isPunchLoading || isOnBreak}

@@ -63,3 +63,4 @@ test.describe('Module M13 — Dynamic QR Code Attendance E2E Verification', () =
     await expect(page.getByText(/Next Code Rotation/i)).toBeVisible();
   });
 });
+

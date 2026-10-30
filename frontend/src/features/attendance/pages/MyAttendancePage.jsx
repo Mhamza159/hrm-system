@@ -54,9 +54,12 @@ import { RequestCorrectionModal } from '../components/RequestCorrectionModal.jsx
 import { ApplyWFHModal } from '../components/ApplyWFHModal.jsx';
 import { MyRequestsView } from '../components/MyRequestsView.jsx';
 import { GeoLocationBadge } from '../components/GeoLocationBadge.jsx';
+import { QrScannerModal } from '../components/QrScannerModal.jsx';
+import { QrCode } from 'lucide-react';
 import { useGeolocation } from '../../../hooks/useGeolocation.js';
 import { usePermission } from '../../../hooks/usePermission.js';
 import { useAuth } from '../../../hooks/useAuth.js';
+import { useGetSettingByKeyQuery } from '../../settings/settingsApi.js';
 
 export const MyAttendancePage = () => {
   const navigate = useNavigate();
@@ -67,6 +70,10 @@ export const MyAttendancePage = () => {
   const [isFieldVisit, setIsFieldVisit] = useState(false);
   const [clientName, setClientName] = useState('');
   const [clientRemarks, setClientRemarks] = useState('');
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [qrDefaultAction, setQrDefaultAction] = useState('in');
+  const { data: qrSettingRes } = useGetSettingByKeyQuery('qrAttendance');
+  const isQrEnabled = qrSettingRes?.data?.value?.isEnabled !== false;
 
   // Navigation & View State
   const [activeTab, setActiveTab] = useState('daily'); // 'daily' | 'monthly' | 'employee_wise' | 'history'
@@ -819,14 +826,30 @@ export const MyAttendancePage = () => {
                       Punch Actions Disabled
                     </div>
                   ) : !isClockedIn ? (
-                    <button
-                      onClick={handleCheckIn}
+                    <div className="flex items-center gap-2">
+                      {isQrEnabled && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQrDefaultAction('in');
+                            setQrModalOpen(true);
+                          }}
+                          className="px-3.5 py-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 rounded-xl flex items-center gap-2 font-semibold text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
+                          title="Scan office kiosk QR code to clock in"
+                        >
+                          <QrCode className="w-4 h-4" />
+                          <span>Scan QR</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={handleCheckIn}
                       disabled={isCheckingIn || isLoading || isMonthLocked}
                       className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold rounded-xl text-sm flex items-center gap-2 shadow-xs transition-all transform active:scale-95"
                     >
                       <Play className="w-4 h-4 fill-current" />
                       <span>{isLocating ? 'Acquiring GPS...' : isCheckingIn ? 'Clocking In...' : 'Clock In'}</span>
                     </button>
+                    </div>
                   ) : !isClockedOut ? (
                     <>
                       {isOnBreak ? (
@@ -849,6 +872,20 @@ export const MyAttendancePage = () => {
                         </button>
                       )}
 
+                      {isQrEnabled && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQrDefaultAction('out');
+                            setQrModalOpen(true);
+                          }}
+                          className="px-3.5 py-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 rounded-xl flex items-center gap-2 font-semibold text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
+                          title="Scan office kiosk QR code to clock out"
+                        >
+                          <QrCode className="w-4 h-4" />
+                          <span>Scan QR</span>
+                        </button>
+                      )}
                       <button
                         onClick={handleCheckOut}
                         disabled={isCheckingOut || isOnBreak || isMonthLocked}
@@ -1988,6 +2025,15 @@ export const MyAttendancePage = () => {
         onSuccess={() => {
           refetch();
           refetchWFH();
+        }}
+      />
+
+      <QrScannerModal
+        isOpen={qrModalOpen}
+        onClose={() => setQrModalOpen(false)}
+        defaultAction={qrDefaultAction}
+        onSuccess={() => {
+          refetch();
         }}
       />
     </div>

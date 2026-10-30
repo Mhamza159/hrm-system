@@ -287,3 +287,4 @@ export const QrScannerModal = ({ isOpen, onClose, defaultAction = 'in', onSucces
     </div>
   );
 };
+
