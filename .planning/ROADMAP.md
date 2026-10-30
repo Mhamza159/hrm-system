@@ -41,9 +41,9 @@ Governed strictly by [`docs/BUILD-GUIDE.md`](file:///c:/Users/hamih/OneDrive/Des
 
 - [x] **13. M10 Loans & Advances** · *BUILD-GUIDE Section 15* · **6 Features (10.1 to 10.6)**
   - Employee loan/advance application, policy limit validation, multi-tier approval workflow, installment repayment schedule, automatic monthly payroll deduction, outstanding balance tracking & early settlement.
-- [ ] **14. M11 Expense Claims** · *BUILD-GUIDE Section 16* · **5 Features (11.1 to 11.5)**
+- [x] **14. M11 Expense Claims** · *BUILD-GUIDE Section 16* · **5 Features (11.1 to 11.5)**
   - Expense categories & monetary caps, claim submission with receipt image upload, multi-tier approval workflow, reimbursement processing (via payroll or direct), monthly expense analytics.
-- [ ] **15. M14 GPS / Geo-fencing Attendance** · *BUILD-GUIDE Section 17* · **8 Features (14.1 to 14.8)**
+- [x] **15. M14 GPS / Geo-fencing Attendance** · *BUILD-GUIDE Section 17* · **8 Features (14.1 to 14.8)**
   - Server-side Haversine distance validation, location-verified check-in against office geo-fence, accuracy & mock-GPS detection, manager-approved remote/WFH locations, client-site check-in for sales staff, flagged-punch review queue, punch location map view, privacy protection (punch-time-only location capture).
 - [ ] **16. M13 QR Code Attendance** · *BUILD-GUIDE Section 18* · **6 Features (13.1 to 13.6)**
   - Office kiosk device registration, dynamic rotating QR code (auto-refreshed every 30–60s with signed token), mobile scanner check-in, device binding to employee phone, HR device binding reset, kiosk interval & toggle settings.
