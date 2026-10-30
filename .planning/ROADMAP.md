@@ -45,7 +45,7 @@ Governed strictly by [`docs/BUILD-GUIDE.md`](file:///c:/Users/hamih/OneDrive/Des
   - Expense categories & monetary caps, claim submission with receipt image upload, multi-tier approval workflow, reimbursement processing (via payroll or direct), monthly expense analytics.
 - [x] **15. M14 GPS / Geo-fencing Attendance** · *BUILD-GUIDE Section 17* · **8 Features (14.1 to 14.8)**
   - Server-side Haversine distance validation, location-verified check-in against office geo-fence, accuracy & mock-GPS detection, manager-approved remote/WFH locations, client-site check-in for sales staff, flagged-punch review queue, punch location map view, privacy protection (punch-time-only location capture).
-- [ ] **16. M13 QR Code Attendance** · *BUILD-GUIDE Section 18* · **6 Features (13.1 to 13.6)**
+- [x] **16. M13 QR Code Attendance** · *BUILD-GUIDE Section 18* · **6 Features (13.1 to 13.6)**
   - Office kiosk device registration, dynamic rotating QR code (auto-refreshed every 30–60s with signed token), mobile scanner check-in, device binding to employee phone, HR device binding reset, kiosk interval & toggle settings.
 - [ ] **17. M12 Face Recognition Attendance** · *BUILD-GUIDE Section 19* · **9 Features (12.1 to 12.9)**
   - Client-side `@vladmandic/face-api` model loader, one-time face descriptor enrollment (3–5 captures), HR enrollment approval/re-enrollment, anti-spoofing liveness detection (blink/turn), camera-based face check-in, confidence threshold & toggle settings, suspicious attempt logging with photo capture, fallback manual correction request, manager flagged snapshot view.
