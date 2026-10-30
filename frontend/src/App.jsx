@@ -32,6 +32,9 @@ import { AnnouncementsPage } from './features/announcements/pages/AnnouncementsP
 import { MyAttendancePage } from './features/attendance/pages/MyAttendancePage.jsx';
 import { TeamAttendancePage } from './features/attendance/pages/TeamAttendancePage.jsx';
 import { AttendanceLockPage } from './features/attendance/pages/AttendanceLockPage.jsx';
+import FlaggedPunchesPage from './features/attendance/pages/FlaggedPunchesPage.jsx';
+import WfhLocationsPage from './features/attendance/pages/WfhLocationsPage.jsx';
+import PunchLocationsMapPage from './features/attendance/pages/PunchLocationsMapPage.jsx';
 import LeaveTypesPage from './features/leaves/pages/LeaveTypesPage.jsx';
 import HolidaysPage from './features/leaves/pages/HolidaysPage.jsx';
 import MyLeavesPage from './features/leaves/pages/MyLeavesPage.jsx';
@@ -344,6 +347,30 @@ export default function App() {
             element={
               <ProtectedRoute requiredPermission="attendance.lock">
                 <AttendanceLockPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="attendance/flagged"
+            element={
+              <ProtectedRoute requiredPermission="attendance.approve">
+                <FlaggedPunchesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="attendance/wfh-locations"
+            element={
+              <ProtectedRoute requiredPermission="attendance.wfh">
+                <WfhLocationsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="attendance/map"
+            element={
+              <ProtectedRoute requiredPermission="attendance.view">
+                <PunchLocationsMapPage />
               </ProtectedRoute>
             }
           />

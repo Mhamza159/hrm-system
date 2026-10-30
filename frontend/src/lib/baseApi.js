@@ -154,7 +154,10 @@ export const baseApi = createApi({
     'Correction',
     'AttendanceLock',
     'Loan',
-    'Loans'
+    'Loans',
+    'FlaggedAttendance',
+    'AttendanceLocations',
+    'WfhLocations'
   ],
   endpoints: () => ({})
 });

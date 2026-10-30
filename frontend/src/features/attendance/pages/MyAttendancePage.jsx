@@ -53,6 +53,8 @@ import { AttendanceStatusBadge } from '../components/AttendanceStatusBadge.jsx';
 import { RequestCorrectionModal } from '../components/RequestCorrectionModal.jsx';
 import { ApplyWFHModal } from '../components/ApplyWFHModal.jsx';
 import { MyRequestsView } from '../components/MyRequestsView.jsx';
+import { GeoLocationBadge } from '../components/GeoLocationBadge.jsx';
+import { useGeolocation } from '../../../hooks/useGeolocation.js';
 import { usePermission } from '../../../hooks/usePermission.js';
 import { useAuth } from '../../../hooks/useAuth.js';
 
@@ -60,6 +62,11 @@ export const MyAttendancePage = () => {
   const navigate = useNavigate();
   const { can } = usePermission();
   const { user, isSuperAdmin, isDeptManager, isHR } = useAuth();
+  const { getLocation, loading: isLocating, error: geoError, clearError: clearGeoError } = useGeolocation();
+  const canFieldCheckIn = can('attendance.fieldCheckIn') || isSuperAdmin;
+  const [isFieldVisit, setIsFieldVisit] = useState(false);
+  const [clientName, setClientName] = useState('');
+  const [clientRemarks, setClientRemarks] = useState('');
 
   // Navigation & View State
   const [activeTab, setActiveTab] = useState('daily'); // 'daily' | 'monthly' | 'employee_wise' | 'history'
@@ -204,8 +211,39 @@ export const MyAttendancePage = () => {
   // Handle Clock Actions
   const handleCheckIn = async () => {
     setActionError('');
+    clearGeoError();
+
+    let punchLocation = null;
     try {
-      await checkIn({ source: 'web' }).unwrap();
+      const coords = await getLocation();
+      punchLocation = {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        accuracy: coords.accuracy,
+        isMock: false
+      };
+    } catch (locErr) {
+      console.warn('Geolocation capture skipped or denied:', locErr.message);
+    }
+
+    if (isFieldVisit) {
+      if (!clientName.trim()) {
+        setActionError('Please enter the client / site name for field punch.');
+        return;
+      }
+      punchLocation = {
+        ...(punchLocation || {}),
+        isClientVisit: true,
+        clientName: clientName.trim(),
+        clientRemarks: clientRemarks.trim()
+      };
+    }
+
+    try {
+      await checkIn({
+        source: isFieldVisit ? 'field' : 'web',
+        location: punchLocation
+      }).unwrap();
       refetch();
     } catch (err) {
       setActionError(err.data?.message || err.message || 'Failed to clock in');
@@ -214,8 +252,23 @@ export const MyAttendancePage = () => {
 
   const handleCheckOut = async () => {
     setActionError('');
+    clearGeoError();
+
+    let punchLocation = null;
     try {
-      await checkOut({}).unwrap();
+      const coords = await getLocation();
+      punchLocation = {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        accuracy: coords.accuracy,
+        isMock: false
+      };
+    } catch (locErr) {
+      console.warn('Geolocation capture skipped or denied on checkout:', locErr.message);
+    }
+
+    try {
+      await checkOut({ location: punchLocation }).unwrap();
       refetch();
     } catch (err) {
       setActionError(err.data?.message || err.message || 'Failed to clock out');
@@ -772,7 +825,7 @@ export const MyAttendancePage = () => {
                       className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold rounded-xl text-sm flex items-center gap-2 shadow-xs transition-all transform active:scale-95"
                     >
                       <Play className="w-4 h-4 fill-current" />
-                      <span>{isCheckingIn ? 'Clocking In...' : 'Clock In'}</span>
+                      <span>{isLocating ? 'Acquiring GPS...' : isCheckingIn ? 'Clocking In...' : 'Clock In'}</span>
                     </button>
                   ) : !isClockedOut ? (
                     <>
@@ -812,6 +865,17 @@ export const MyAttendancePage = () => {
                       <span>Shift Completed</span>
                     </div>
                   )}
+                </div>
+              </div>
+
+                            {/* Privacy Notice Banner (BUILD-GUIDE 14.8) */}
+              <div className="pt-3 mt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Privacy Guaranteed: GPS is captured only at the exact instant of punch. Zero continuous tracking.</span>
+                </div>
+                <div className="hidden sm:flex items-center gap-1 font-medium text-slate-500">
+                  <span>Geofence Enforced</span>
                 </div>
               </div>
 

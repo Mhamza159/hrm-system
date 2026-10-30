@@ -226,3 +226,52 @@ export const getAttendanceHistory = asyncHandler(async (req, res) => {
   return res.status(200).json(apiResponse(200, result, 'Attendance history retrieved successfully'));
 });
 
+
+// ============================================================================
+// Module M14: GPS / Geo-fencing Controller Handlers
+// ============================================================================
+
+export const getFlaggedPunches = asyncHandler(async (req, res) => {
+  const result = await attendanceService.getFlaggedPunches({
+    user: req.user,
+    page: parseInt(req.query.page, 10) || 1,
+    limit: parseInt(req.query.limit, 10) || 20,
+    status: req.query.status || 'pending'
+  });
+  return res.status(200).json(apiResponse(200, result.punches, 'Flagged punches retrieved successfully', result.meta));
+});
+
+export const reviewFlaggedPunch = asyncHandler(async (req, res) => {
+  const result = await attendanceService.reviewFlaggedPunch(req.params.id, req.body, req.user);
+  return res.status(200).json(apiResponse(200, result, 'Flagged punch reviewed successfully'));
+});
+
+export const getPunchLocations = asyncHandler(async (req, res) => {
+  const result = await attendanceService.getPunchLocations({
+    user: req.user,
+    date: req.query.date,
+    departmentId: req.query.departmentId,
+    onlyFlagged: req.query.onlyFlagged
+  });
+  return res.status(200).json(apiResponse(200, result, 'Punch locations retrieved successfully'));
+});
+
+export const createWfhLocation = asyncHandler(async (req, res) => {
+  const result = await attendanceService.createWfhLocation(req.user, req.body);
+  return res.status(201).json(apiResponse(201, result, 'WFH remote location registered successfully'));
+});
+
+export const getWfhLocations = asyncHandler(async (req, res) => {
+  const result = await attendanceService.getWfhLocations(req.user);
+  return res.status(200).json(apiResponse(200, result, 'WFH locations retrieved successfully'));
+});
+
+export const updateWfhLocationStatus = asyncHandler(async (req, res) => {
+  const result = await attendanceService.updateWfhLocationStatus(req.params.id, req.body, req.user);
+  return res.status(200).json(apiResponse(200, result, 'WFH location status updated successfully'));
+});
+
+export const deleteWfhLocation = asyncHandler(async (req, res) => {
+  const result = await attendanceService.deleteWfhLocation(req.params.id, req.user);
+  return res.status(200).json(apiResponse(200, result, 'WFH location deleted successfully'));
+});

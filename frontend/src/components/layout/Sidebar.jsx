@@ -95,7 +95,10 @@ export function Sidebar({ isOpen = false, onClose }) {
       children: [
         { name: 'My Attendance', path: '/attendance/my', permission: 'attendance.view' },
         { name: 'Team Attendance', path: '/attendance/team', permission: 'attendance.approve' },
-        { name: 'Attendance Lock', path: '/attendance/lock', permission: 'attendance.lock' }
+        { name: 'Attendance Lock', path: '/attendance/lock', permission: 'attendance.lock' },
+        { name: 'Flagged Punches', path: '/attendance/flagged', permission: 'attendance.approve' },
+        { name: 'WFH Locations', path: '/attendance/wfh-locations', permission: 'attendance.wfh' },
+        { name: 'Punch Map', path: '/attendance/map', permission: 'attendance.view' }
       ]
     },
     {
