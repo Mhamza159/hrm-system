@@ -271,3 +271,4 @@ frontend/src/
 
 - **Frontend**: `html5-qrcode` (v2.3.8) for fast, responsive cross-browser camera video stream scanning.
 - **Backend**: `qrcode` (v1.5.4) for high-performance SVG vector QR generation. Standard Node.js `crypto` module for HMAC-SHA256 signatures.
+
