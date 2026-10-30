@@ -1,3 +1,5 @@
+import * as attendanceService from '../attendance/attendance.service.js';
+import { resetDeviceSchema } from '../attendance/attendance.validation.js';
 /**
  * @file user.routes.js
  * @description Express Router configuration for Module M1 User Administration endpoints.
@@ -99,5 +101,33 @@ router.get(
   })
 );
 
+/**
+ * @route   POST /api/v1/users/:id/reset-device
+ * @desc    Reset physical hardware device binding (Module M13 Slice 13.5)
+ * @access  Protected (Requires 'user.manage' or 'attendance.kiosk.manage')
+ */
+router.post(
+  '/:id/reset-device',
+  authenticate,
+  validate(resetDeviceSchema),
+  asyncHandler(async (req, res) => {
+    const perms = [
+      ...(req.user.permissions || []),
+      ...(req.user.roles?.flatMap((r) => (typeof r === 'object' && r.permissions ? r.permissions : [])) || [])
+    ];
+    const isSuperAdmin = req.user.role === 'Super Admin' || req.user.roles?.some((r) => (typeof r === 'string' ? r : r.name) === 'Super Admin');
+    const hasPerm = isSuperAdmin || perms.some((p) => p.action === 'user.manage' || p.action === 'attendance.kiosk.manage');
+    if (!hasPerm) {
+      return res.status(403).json(new ApiResponse(403, null, 'Forbidden: Insufficient permissions to reset hardware device binding.'));
+    }
+
+    const result = await attendanceService.resetDeviceBinding(req.params.id, req.body.reason, req.user);
+    return res.status(200).json(
+      new ApiResponse(200, result, 'Device binding reset successfully.')
+    );
+  })
+);
+
 export default router;
+
 

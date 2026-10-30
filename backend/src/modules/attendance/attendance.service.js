@@ -24,6 +24,10 @@ import { emitToCompany, emitToDepartment } from '../../services/socket.service.j
 import { notify } from '../../services/notify.service.js';
 import { calculateHaversineDistance, isWithinGeofence } from '../../utils/haversine.js';
 import { WfhLocation } from '../../models/wfhLocation.model.js';
+import crypto from 'crypto';
+import QRCode from 'qrcode';
+import { Kiosk } from '../../models/kiosk.model.js';
+import { recordAuditLog } from '../../services/audit.service.js';
 
 /**
  * Normalizes any Date or date string to UTC Midnight (00:00:00.000Z)
@@ -105,14 +109,109 @@ export const resolveEmployeeId = async (user) => {
   return emp._id;
 };
 
+
+/**
+ * 13.3 & 13.4: Verify Dynamic QR Token Signature, Expiry, Direction, and Hardware Device Binding
+ * @param {Object} params
+ * @param {string} params.qrToken
+ * @param {string} [params.deviceId]
+ * @param {string} [params.deviceModel]
+ * @param {Object} params.user
+ * @param {string} [params.expectedDirection] - 'entry' | 'exit'
+ * @returns {Promise<Object>} The authenticated Kiosk document
+ */
+export const verifyQrTokenAndDevice = async ({ qrToken, deviceId, deviceModel, user, expectedDirection }) => {
+  if (!qrToken) {
+    throw new ApiError(400, 'QR token is required for QR attendance punch.');
+  }
+
+  const parts = qrToken.split('.');
+  if (parts.length !== 2) {
+    throw new ApiError(400, 'Invalid QR code token format.');
+  }
+
+  const [payloadB64, signature] = parts;
+  let payload;
+  try {
+    payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
+  } catch (err) {
+    throw new ApiError(400, 'Malformed QR code payload.');
+  }
+
+  const { kId, kType, ts, ttl } = payload;
+  if (!kId || !ts || !ttl) {
+    throw new ApiError(400, 'Incomplete QR code payload.');
+  }
+
+  // 13.2 Expiration validation (10-second grace window for mobile network/clock drift)
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (nowSec > ts + ttl + 10) {
+    throw new ApiError(400, 'QR Code has expired. Please scan the current live code.');
+  }
+
+  // Find kiosk with secretKey
+  const kiosk = await Kiosk.findOne({ _id: kId, isDeleted: false }).select('+secretKey');
+  if (!kiosk || !kiosk.isActive) {
+    throw new ApiError(400, 'Kiosk is inactive or not registered in the system.');
+  }
+
+  // HMAC SHA-256 Signature verification
+  const expectedSig = crypto.createHmac('sha256', kiosk.secretKey).update(payloadB64).digest('base64url');
+  if (expectedSig !== signature) {
+    throw new ApiError(400, 'Tampered or invalid QR code signature.');
+  }
+
+  // 13.1 Directionality enforcement
+  if (kiosk.type !== 'both') {
+    if (expectedDirection && kiosk.type !== expectedDirection) {
+      throw new ApiError(400, `This kiosk is designated for ${kiosk.type} only. Cannot record ${expectedDirection}.`);
+    }
+  }
+
+  // 13.4 Hardware Device Binding enforcement
+  if (deviceId) {
+    const userDoc = await User.findById(user._id || user.id);
+    if (userDoc) {
+      if (!userDoc.deviceId) {
+        // First-time scan: automatically bind hardware device ID
+        userDoc.deviceId = deviceId;
+        userDoc.deviceBoundAt = new Date();
+        if (deviceModel) userDoc.deviceModel = deviceModel;
+        await userDoc.save();
+      } else if (userDoc.deviceId !== deviceId) {
+        // Mismatched device ID: Reject punch with 403 Forbidden
+        throw new ApiError(
+          403,
+          'Device binding mismatch. Your account is bound to another registered device. Please contact HR to reset your device binding.'
+        );
+      }
+    }
+  }
+
+  return kiosk;
+};
+
 /**
  * 5.3: Web Clock-In
  */
-export const checkIn = async ({ user, source = 'web', location, ipAddress, userAgent }) => {
+export const checkIn = async ({ user, source = 'web', location, ipAddress, userAgent, qrToken, deviceId, deviceModel }) => {
   const employeeId = await resolveEmployeeId(user);
   const todayUtc = normalizeToUtcMidnight(new Date());
 
   await assertMonthNotLocked(todayUtc);
+  let kioskId = null;
+  let punchSource = source;
+  if (source === 'qr' || qrToken) {
+    const kiosk = await verifyQrTokenAndDevice({
+      qrToken,
+      deviceId,
+      deviceModel,
+      user,
+      expectedDirection: 'entry'
+    });
+    punchSource = 'qr';
+    kioskId = kiosk._id;
+  }
 
   // Check for existing attendance record
   let attendance = await Attendance.findOne({ employeeId, date: todayUtc });
@@ -134,7 +233,6 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
 
   // Check if approved WFH exists for today
   const wfh = await WFHRequest.findOne({ employeeId, date: todayUtc, status: 'approved' }).lean();
-  let punchSource = source;
   if (wfh) {
     flags.push('wfh');
     punchSource = 'wfh';
@@ -222,6 +320,7 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
       employeeId,
       date: todayUtc,
       shiftId: shift?._id || null,
+      kioskId: kioskId || null,
       checkIn: now,
       status,
       flags,
@@ -235,6 +334,7 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
     });
   } else {
     attendance.checkIn = now;
+    if (kioskId) attendance.kioskId = kioskId;
     attendance.status = status;
     attendance.flags = flags;
     attendance.source = punchSource;
@@ -270,11 +370,21 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
 /**
  * 5.4: Web Clock-Out
  */
-export const checkOut = async ({ user, location }) => {
+export const checkOut = async ({ user, location, source = 'web', qrToken, deviceId, deviceModel }) => {
   const employeeId = await resolveEmployeeId(user);
   const todayUtc = normalizeToUtcMidnight(new Date());
 
   await assertMonthNotLocked(todayUtc);
+  let qrKiosk = null;
+  if (source === 'qr' || qrToken) {
+    qrKiosk = await verifyQrTokenAndDevice({
+      qrToken,
+      deviceId,
+      deviceModel,
+      user,
+      expectedDirection: 'exit'
+    });
+  }
 
   const attendance = await Attendance.findOne({ employeeId, date: todayUtc });
   if (!attendance || !attendance.checkIn) {
@@ -297,6 +407,10 @@ export const checkOut = async ({ user, location }) => {
   });
 
   attendance.checkOut = now;
+  if (qrKiosk) {
+    attendance.kioskId = qrKiosk._id;
+    attendance.source = 'qr';
+  }
   attendance.workDurationMinutes = metrics.workDurationMinutes;
   attendance.overtimeMinutes = metrics.overtimeMinutes;
 
@@ -2016,4 +2130,243 @@ export const deleteWfhLocation = async (id, user) => {
   location.isDeleted = true;
   await location.save();
   return { success: true, message: 'WFH location deleted successfully' };
+};
+
+// ============================================================================
+// Module M13: Dynamic QR Code Attendance & Kiosks Service Functions
+// ============================================================================
+
+/**
+ * 13.1-BE: Create a new physical office attendance Kiosk
+ */
+export const createKiosk = async (data, actor) => {
+  const existing = await Kiosk.findOne({ code: data.code.toUpperCase(), isDeleted: false });
+  if (existing) {
+    throw new ApiError(400, `Kiosk with code '${data.code}' already exists`);
+  }
+
+  const secretKey = crypto.randomBytes(16).toString('hex'); // 32-char crypto random string
+  const kiosk = new Kiosk({
+    name: data.name,
+    code: data.code.toUpperCase(),
+    type: data.type || 'both',
+    locationDescription: data.locationDescription || '',
+    secretKey,
+    isActive: data.isActive !== undefined ? data.isActive : true,
+    createdBy: actor?._id || null
+  });
+
+  await kiosk.save();
+
+  const kioskObj = kiosk.toObject();
+  delete kioskObj.secretKey;
+
+  await recordAuditLog({
+    actor: actor,
+    action: 'CREATE',
+    entity: 'Kiosk',
+    entityId: kiosk._id,
+    details: { name: kiosk.name, code: kiosk.code, type: kiosk.type }
+  });
+
+  return kioskObj;
+};
+
+/**
+ * 13.1-BE: Query paginated kiosks
+ */
+export const getKiosks = async ({ search, type, isActive, page = 1, limit = 50 }) => {
+  const filter = { isDeleted: false };
+  if (search) {
+    const regex = new RegExp(search, 'i');
+    filter.$or = [{ name: regex }, { code: regex }, { locationDescription: regex }];
+  }
+  if (type && type !== 'all') {
+    filter.type = type;
+  }
+  if (typeof isActive === 'boolean') {
+    filter.isActive = isActive;
+  }
+
+  const skip = (page - 1) * limit;
+  const [kiosks, total] = await Promise.all([
+    Kiosk.find(filter)
+      .populate('createdBy', 'name email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Kiosk.countDocuments(filter)
+  ]);
+
+  return {
+    kiosks,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1
+    }
+  };
+};
+
+/**
+ * 13.1-BE: Get Kiosk by ID
+ */
+export const getKioskById = async (id) => {
+  const kiosk = await Kiosk.findOne({ _id: id, isDeleted: false });
+  if (!kiosk) {
+    throw new ApiError(404, 'Kiosk not found');
+  }
+  return kiosk;
+};
+
+/**
+ * 13.1-BE: Update Kiosk details or active status
+ */
+export const updateKiosk = async (id, data, actor) => {
+  const kiosk = await Kiosk.findOne({ _id: id, isDeleted: false });
+  if (!kiosk) {
+    throw new ApiError(404, 'Kiosk not found');
+  }
+
+  if (data.name !== undefined) kiosk.name = data.name;
+  if (data.type !== undefined) kiosk.type = data.type;
+  if (data.locationDescription !== undefined) kiosk.locationDescription = data.locationDescription;
+  if (data.isActive !== undefined) kiosk.isActive = data.isActive;
+
+  await kiosk.save();
+
+  await recordAuditLog({
+    actor: actor,
+    action: 'UPDATE',
+    entity: 'Kiosk',
+    entityId: kiosk._id,
+    details: { updatedFields: data }
+  });
+
+  return kiosk;
+};
+
+/**
+ * 13.1-BE: Soft delete a Kiosk
+ */
+export const deleteKiosk = async (id, actor) => {
+  const kiosk = await Kiosk.findOne({ _id: id, isDeleted: false });
+  if (!kiosk) {
+    throw new ApiError(404, 'Kiosk not found');
+  }
+
+  kiosk.isDeleted = true;
+  kiosk.isActive = false;
+  await kiosk.save();
+
+  await recordAuditLog({
+    actor: actor,
+    action: 'DELETE',
+    entity: 'Kiosk',
+    entityId: kiosk._id,
+    details: { name: kiosk.name, code: kiosk.code }
+  });
+
+  return { success: true, message: 'Kiosk device removed successfully' };
+};
+
+/**
+ * 13.2-BE: Generate dynamic HMAC-signed rotating QR code token with SVG payload
+ */
+export const getCurrentKioskQr = async (kioskId) => {
+  // Check global setting toggle (13.6)
+  const qrSetting = await Setting.findOne({ key: 'qrAttendance' }).lean();
+  if (qrSetting && qrSetting.value?.isEnabled === false) {
+    throw new ApiError(400, 'Dynamic QR Code attendance is currently disabled by administrator.');
+  }
+
+  const kiosk = await Kiosk.findOne({ _id: kioskId, isDeleted: false }).select('+secretKey');
+  if (!kiosk) {
+    throw new ApiError(404, 'Kiosk not found');
+  }
+  if (!kiosk.isActive) {
+    throw new ApiError(400, 'Kiosk is marked inactive and cannot generate QR codes.');
+  }
+
+  const ttl = qrSetting?.value?.rotationSeconds || 30;
+  const nowSec = Math.floor(Date.now() / 1000);
+  const nonce = crypto.randomBytes(8).toString('hex');
+
+  const payload = {
+    kId: kiosk._id.toString(),
+    kType: kiosk.type,
+    ts: nowSec,
+    ttl,
+    nonce
+  };
+
+  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const signature = crypto.createHmac('sha256', kiosk.secretKey).update(payloadB64).digest('base64url');
+  const token = `${payloadB64}.${signature}`;
+
+  // Render vector SVG string
+  const svg = await QRCode.toString(token, {
+    type: 'svg',
+    margin: 2,
+    errorCorrectionLevel: 'M',
+    color: {
+      dark: '#000000',
+      light: '#ffffff'
+    }
+  });
+
+  // Update kiosk heartbeat
+  kiosk.lastHeartbeatAt = new Date();
+  await kiosk.save();
+
+  return {
+    token,
+    svg,
+    kiosk: {
+      _id: kiosk._id,
+      name: kiosk.name,
+      code: kiosk.code,
+      type: kiosk.type,
+      locationDescription: kiosk.locationDescription
+    },
+    expiresIn: ttl,
+    issuedAt: nowSec
+  };
+};
+
+/**
+ * 13.5-BE: Reset User Hardware Device Binding
+ */
+export const resetDeviceBinding = async (userId, reason, actor) => {
+  const user = await User.findById(userId);
+  if (!user || user.isDeleted) {
+    throw new ApiError(404, 'User account not found');
+  }
+
+  const prevDeviceId = user.deviceId;
+  user.deviceId = null;
+  user.deviceBoundAt = null;
+  user.deviceModel = null;
+  await user.save();
+
+  await recordAuditLog({
+    actor: actor,
+    action: 'RESET_DEVICE_BINDING',
+    entity: 'User',
+    entityId: user._id,
+    details: {
+      targetUserId: user._id,
+      targetUserName: user.name,
+      previousDeviceId: prevDeviceId,
+      reason,
+      resetBy: actor?._id
+    }
+  });
+
+  return {
+    success: true,
+    message: `Hardware device binding for user ${user.name} has been reset successfully.`
+  };
 };

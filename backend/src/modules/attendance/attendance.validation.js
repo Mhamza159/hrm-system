@@ -14,6 +14,9 @@ const objectIdRegex = /^[0-9a-fA-F]{24}$/;
 export const checkInSchema = z.object({
   body: z.object({
     source: z.enum(['web', 'mobile', 'biometric', 'qr', 'wfh', 'field']).optional().default('web'),
+    qrToken: z.string().trim().optional(),
+    deviceId: z.string().trim().optional(),
+    deviceModel: z.string().trim().max(100).optional(),
     location: z
       .object({
         latitude: z.number().min(-90, 'Latitude must be between -90 and 90').max(90, 'Latitude must be between -90 and 90').optional(),
@@ -31,6 +34,10 @@ export const checkInSchema = z.object({
 
 export const checkOutSchema = z.object({
   body: z.object({
+    source: z.enum(['web', 'mobile', 'biometric', 'qr', 'wfh', 'field']).optional().default('web'),
+    qrToken: z.string().trim().optional(),
+    deviceId: z.string().trim().optional(),
+    deviceModel: z.string().trim().max(100).optional(),
     location: z
       .object({
         latitude: z.number().min(-90, 'Latitude must be between -90 and 90').max(90, 'Latitude must be between -90 and 90').optional(),
@@ -230,4 +237,56 @@ export const queryFlaggedPunchesSchema = z.object({
     limit: z.coerce.number().int().positive().max(100).optional().default(20),
     status: z.enum(['pending', 'resolved', 'all']).optional().default('pending')
   }).optional()
+});
+
+
+// ----------------------------------------------------
+// M13: QR Code Attendance & Kiosks Schemas
+// ----------------------------------------------------
+
+export const createKioskSchema = z.object({
+  body: z.object({
+    name: z.string().trim().min(2, 'Kiosk name must be at least 2 characters').max(100),
+    code: z.string().trim().min(2, 'Kiosk code must be at least 2 characters').max(50).toUpperCase(),
+    type: z.enum(['entry', 'exit', 'both']).default('both'),
+    locationDescription: z.string().trim().max(200).optional().default(''),
+    isActive: z.boolean().optional().default(true)
+  })
+});
+
+export const updateKioskSchema = z.object({
+  params: z.object({
+    id: z.string().regex(objectIdRegex, 'Invalid kiosk ID')
+  }),
+  body: z.object({
+    name: z.string().trim().min(2).max(100).optional(),
+    type: z.enum(['entry', 'exit', 'both']).optional(),
+    locationDescription: z.string().trim().max(200).optional(),
+    isActive: z.boolean().optional()
+  })
+});
+
+export const queryKiosksSchema = z.object({
+  query: z.object({
+    search: z.string().trim().optional(),
+    type: z.enum(['entry', 'exit', 'both', 'all']).optional().default('all'),
+    isActive: z.preprocess((val) => val === 'true' ? true : val === 'false' ? false : undefined, z.boolean().optional()),
+    page: z.coerce.number().int().positive().optional().default(1),
+    limit: z.coerce.number().int().positive().max(100).optional().default(50)
+  }).optional()
+});
+
+export const getKioskQrSchema = z.object({
+  query: z.object({
+    kioskId: z.string().regex(objectIdRegex, 'Invalid kiosk ID')
+  })
+});
+
+export const resetDeviceSchema = z.object({
+  params: z.object({
+    id: z.string().regex(objectIdRegex, 'Invalid user ID')
+  }),
+  body: z.object({
+    reason: z.string().trim().min(3, 'Reset reason must be at least 3 characters').max(200)
+  })
 });

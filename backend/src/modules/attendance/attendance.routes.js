@@ -35,7 +35,12 @@ import {
   updateWfhLocationStatusSchema,
   reviewFlaggedPunchSchema,
   queryFlaggedPunchesSchema,
-  queryPunchLocationsSchema
+  queryPunchLocationsSchema,
+  createKioskSchema,
+  updateKioskSchema,
+  queryKiosksSchema,
+  getKioskQrSchema,
+  resetDeviceSchema
 } from './attendance.validation.js';
 
 const router = Router();
@@ -325,6 +330,61 @@ router.patch(
   validate(updateWfhLocationStatusSchema),
   attendanceController.updateWfhLocationStatus
 );
+
+// ============================================================================
+// Module M13: Dynamic QR Code Attendance & Kiosks Routes
+// ============================================================================
+
+// 13.1: Kiosks CRUD
+router.get(
+  '/kiosks',
+  checkPermission('attendance.kiosk.manage', 'all'),
+  validate(queryKiosksSchema),
+  attendanceController.getKiosks
+);
+
+router.post(
+  '/kiosks',
+  checkPermission('attendance.kiosk.manage', 'all'),
+  validate(createKioskSchema),
+  attendanceController.createKiosk
+);
+
+router.get(
+  '/kiosks/:id',
+  checkPermission('attendance.kiosk.manage', 'all'),
+  attendanceController.getKioskById
+);
+
+router.patch(
+  '/kiosks/:id',
+  checkPermission('attendance.kiosk.manage', 'all'),
+  validate(updateKioskSchema),
+  attendanceController.updateKiosk
+);
+
+router.delete(
+  '/kiosks/:id',
+  checkPermission('attendance.kiosk.manage', 'all'),
+  attendanceController.deleteKiosk
+);
+
+// 13.2: Rotating Dynamic QR Code Vector Stream
+router.get(
+  '/qr/current',
+  checkPermission('attendance.mark', 'own'),
+  validate(getKioskQrSchema),
+  attendanceController.getCurrentKioskQr
+);
+
+// 13.5: User Hardware Device Binding Reset
+router.post(
+  '/users/:id/reset-device',
+  checkPermission('attendance.kiosk.manage', 'all'),
+  validate(resetDeviceSchema),
+  attendanceController.resetDeviceBinding
+);
+
 
 /**
  * 5.11: Manual Attendance Override with Mandatory Audit Reason

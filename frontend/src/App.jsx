@@ -35,6 +35,8 @@ import { AttendanceLockPage } from './features/attendance/pages/AttendanceLockPa
 import FlaggedPunchesPage from './features/attendance/pages/FlaggedPunchesPage.jsx';
 import WfhLocationsPage from './features/attendance/pages/WfhLocationsPage.jsx';
 import PunchLocationsMapPage from './features/attendance/pages/PunchLocationsMapPage.jsx';
+import { KiosksPage } from './features/attendance/pages/KiosksPage.jsx';
+import { KioskQrPage } from './features/attendance/pages/KioskQrPage.jsx';
 import LeaveTypesPage from './features/leaves/pages/LeaveTypesPage.jsx';
 import HolidaysPage from './features/leaves/pages/HolidaysPage.jsx';
 import MyLeavesPage from './features/leaves/pages/MyLeavesPage.jsx';
@@ -111,6 +113,15 @@ export default function App() {
           }
         />
 
+                {/* Dedicated Fullscreen Kiosk Attendance Display Terminal (M13) */}
+        <Route
+          path="/attendance/kiosks/:id/display"
+          element={
+            <ProtectedRoute>
+              <KioskQrPage />
+            </ProtectedRoute>
+          }
+        />
         {/* Protected App Routes */}
         <Route
           path="/"
@@ -371,6 +382,14 @@ export default function App() {
             element={
               <ProtectedRoute requiredPermission="attendance.view">
                 <PunchLocationsMapPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="attendance/kiosks"
+            element={
+              <ProtectedRoute requiredPermission="attendance.kiosk.manage">
+                <KiosksPage />
               </ProtectedRoute>
             }
           />

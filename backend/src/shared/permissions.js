@@ -201,6 +201,13 @@ export const PERMISSIONS_CATALOGUE = [
         defaultScope: 'own'
       },
       {
+        action: 'attendance.kiosk.manage',
+        label: 'Manage Attendance Kiosks',
+        description: 'Register, configure, and manage dynamic QR code kiosk devices and secret keys.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
         action: 'attendance.geo.view',
         label: 'View Spatial Punch Map',
         description: 'View check-in locations and spatial punch map on Leaflet.',

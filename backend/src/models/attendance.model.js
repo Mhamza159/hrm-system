@@ -81,6 +81,13 @@ const attendanceSchema = new mongoose.Schema(
       ref: 'Shift',
       default: null
     },
+
+    kioskId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Kiosk',
+      default: null
+    },
+
     checkIn: {
       type: Date,
       default: null

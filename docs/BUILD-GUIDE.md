@@ -317,12 +317,12 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 13.1 | Kiosk devices | `kiosk.model.js` (naam, type entry/exit, secret), CRUD (attendance.kiosk.manage) | `KiosksPage.jsx` | Kiosk register | ☐ |
-| 13.2 | Dynamic QR | `GET /attendance/qr/current` (signed token, interval settings se) | `KioskQrPage.jsx` (khud refresh) | Har 30 sec naya | ☐ |
-| 13.3 | Scan se check-in | check-in: token signature + expiry + kiosk type | `QrScanner.jsx` (html5-qrcode) | Purana screenshot reject | ☐ |
-| 13.4 | Device binding | user.deviceId; pehli scan par bind | — | Doosre phone se reject | ☐ |
-| 13.5 | Binding reset | `POST /users/:id/reset-device` (HR) | Users page button | Naya phone bind ho | ☐ |
-| 13.6 | On/off aur interval | settings `qrAttendance` (Super Admin) | Settings tab | Off par QR option chhup jaye | ☐ |
+| 13.1 | Kiosk devices | `kiosk.model.js` (naam, type entry/exit, secret), CRUD (attendance.kiosk.manage) | `KiosksPage.jsx` | Kiosk register | ☑ |
+| 13.2 | Dynamic QR | `GET /attendance/qr/current` (signed token, interval settings se) | `KioskQrPage.jsx` (khud refresh) | Har 30 sec naya | ☑ |
+| 13.3 | Scan se check-in | check-in: token signature + expiry + kiosk type | `QrScanner.jsx` (html5-qrcode) | Purana screenshot reject | ☑ |
+| 13.4 | Device binding | user.deviceId; pehli scan par bind | — | Doosre phone se reject | ☑ |
+| 13.5 | Binding reset | `POST /users/:id/reset-device` (HR) | Users page button | Naya phone bind ho | ☑ |
+| 13.6 | On/off aur interval | settings `qrAttendance` (Super Admin) | Settings tab | Off par QR option chhup jaye | ☑ |
 
 ## 19. M12 — Face Recognition Attendance
 

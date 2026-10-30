@@ -20,7 +20,8 @@ import {
   MapPin,
   ShieldCheck,
   Navigation,
-  Info
+  Info,
+  QrCode
 } from 'lucide-react';
 import {
   useGetMyAttendanceQuery,
@@ -30,6 +31,7 @@ import {
   useEndBreakMutation
 } from '../attendanceApi.js';
 import { AttendanceStatusBadge } from './AttendanceStatusBadge.jsx';
+import { QrScannerModal } from './QrScannerModal.jsx';
 import { GeoLocationBadge } from './GeoLocationBadge.jsx';
 import { useGeolocation } from '../../../hooks/useGeolocation.js';
 import { usePermission } from '../../../hooks/usePermission.js';
@@ -44,6 +46,8 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
   const [breakModalOpen, setBreakModalOpen] = useState(false);
   const [selectedBreakType, setSelectedBreakType] = useState('meal');
   const [actionError, setActionError] = useState('');
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [qrDefaultAction, setQrDefaultAction] = useState('in');
 
   // Field check-in state (14.5)
   const canFieldCheckIn = can('attendance.fieldCheckIn') || isSuperAdmin;
@@ -276,14 +280,28 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
                 Punch Actions Disabled
               </div>
             ) : !isClockedIn ? (
-              <button
-                onClick={handleCheckIn}
+                            <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQrDefaultAction('in');
+                    setQrModalOpen(true);
+                  }}
+                  className="px-4 py-3 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 rounded-xl flex items-center gap-2 font-semibold text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
+                  title="Scan office kiosk QR code to clock in"
+                >
+                  <QrCode className="w-4 h-4" />
+                  <span>Scan QR</span>
+                </button>
+                <button
+                  onClick={handleCheckIn}
                 disabled={isPunchLoading || isLoading}
                 className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold rounded-xl flex items-center gap-2 shadow-sm transition-all transform active:scale-95 cursor-pointer"
               >
                 <Play className="w-5 h-5 fill-current" />
                 <span>{isLocating ? 'Acquiring GPS...' : isCheckingIn ? 'Clocking In...' : 'Clock In'}</span>
               </button>
+              </div>
             ) : !isClockedOut ? (
               <>
                 {isOnBreak ? (
@@ -306,6 +324,18 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
                   </button>
                 )}
 
+                                <button
+                  type="button"
+                  onClick={() => {
+                    setQrDefaultAction('out');
+                    setQrModalOpen(true);
+                  }}
+                  className="px-3.5 py-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 rounded-xl flex items-center gap-1.5 font-semibold text-xs transition-all active:scale-95 cursor-pointer"
+                  title="Scan office kiosk QR code to clock out"
+                >
+                  <QrCode className="w-4 h-4" />
+                  <span>Scan QR</span>
+                </button>
                 <button
                   onClick={handleCheckOut}
                   disabled={isPunchLoading || isOnBreak}
@@ -452,6 +482,15 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
           </div>
         </div>
       )}
+      <QrScannerModal
+        isOpen={qrModalOpen}
+        defaultAction={qrDefaultAction}
+        onClose={() => setQrModalOpen(false)}
+        onSuccess={() => {
+          refetch();
+          onActionSuccess?.();
+        }}
+      />
     </div>
   );
 };

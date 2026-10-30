@@ -16,6 +16,9 @@ export const checkIn = asyncHandler(async (req, res) => {
   const result = await attendanceService.checkIn({
     user: req.user,
     source: req.body.source,
+    qrToken: req.body.qrToken,
+    deviceId: req.body.deviceId,
+    deviceModel: req.body.deviceModel,
     location: req.body.location,
     ipAddress: req.ip,
     userAgent: req.headers['user-agent']
@@ -26,6 +29,10 @@ export const checkIn = asyncHandler(async (req, res) => {
 export const checkOut = asyncHandler(async (req, res) => {
   const result = await attendanceService.checkOut({
     user: req.user,
+    source: req.body.source,
+    qrToken: req.body.qrToken,
+    deviceId: req.body.deviceId,
+    deviceModel: req.body.deviceModel,
     location: req.body.location
   });
   return res.status(200).json(apiResponse(200, result, 'Clock-out successful'));
@@ -274,4 +281,44 @@ export const updateWfhLocationStatus = asyncHandler(async (req, res) => {
 export const deleteWfhLocation = asyncHandler(async (req, res) => {
   const result = await attendanceService.deleteWfhLocation(req.params.id, req.user);
   return res.status(200).json(apiResponse(200, result, 'WFH location deleted successfully'));
+});
+
+
+// ============================================================================
+// Module M13: Dynamic QR Code Attendance & Kiosks Controller Handlers
+// ============================================================================
+
+export const createKiosk = asyncHandler(async (req, res) => {
+  const result = await attendanceService.createKiosk(req.body, req.user);
+  return res.status(201).json(apiResponse(201, result, 'Kiosk registered successfully'));
+});
+
+export const getKiosks = asyncHandler(async (req, res) => {
+  const result = await attendanceService.getKiosks(req.query || {});
+  return res.status(200).json(apiResponse(200, result.kiosks, 'Kiosks retrieved successfully', result.pagination));
+});
+
+export const getKioskById = asyncHandler(async (req, res) => {
+  const result = await attendanceService.getKioskById(req.params.id);
+  return res.status(200).json(apiResponse(200, result, 'Kiosk retrieved successfully'));
+});
+
+export const updateKiosk = asyncHandler(async (req, res) => {
+  const result = await attendanceService.updateKiosk(req.params.id, req.body, req.user);
+  return res.status(200).json(apiResponse(200, result, 'Kiosk updated successfully'));
+});
+
+export const deleteKiosk = asyncHandler(async (req, res) => {
+  const result = await attendanceService.deleteKiosk(req.params.id, req.user);
+  return res.status(200).json(apiResponse(200, result, 'Kiosk deleted successfully'));
+});
+
+export const getCurrentKioskQr = asyncHandler(async (req, res) => {
+  const result = await attendanceService.getCurrentKioskQr(req.query.kioskId);
+  return res.status(200).json(apiResponse(200, result, 'Current QR token generated successfully'));
+});
+
+export const resetDeviceBinding = asyncHandler(async (req, res) => {
+  const result = await attendanceService.resetDeviceBinding(req.params.id, req.body.reason, req.user);
+  return res.status(200).json(apiResponse(200, result, 'Device binding reset successfully'));
 });

@@ -299,7 +299,69 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'DELETE'
       }),
       invalidatesTags: ['WfhLocations']
-    })
+    }),
+
+    // ========================================================================
+    // Module M13: Dynamic QR Code Attendance & Kiosks Endpoints
+    // ========================================================================
+
+    getKiosks: builder.query({
+      query: (params) => ({
+        url: '/attendance/kiosks',
+        params
+      }),
+      providesTags: ['Kiosks']
+    }),
+
+    getKioskById: builder.query({
+      query: (id) => ({
+        url: `/attendance/kiosks/${id}`
+      }),
+      providesTags: ['Kiosks']
+    }),
+
+    createKiosk: builder.mutation({
+      query: (body) => ({
+        url: '/attendance/kiosks',
+        method: 'POST',
+        body
+      }),
+      invalidatesTags: ['Kiosks']
+    }),
+
+    updateKiosk: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/attendance/kiosks/${id}`,
+        method: 'PATCH',
+        body
+      }),
+      invalidatesTags: ['Kiosks']
+    }),
+
+    deleteKiosk: builder.mutation({
+      query: (id) => ({
+        url: `/attendance/kiosks/${id}`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: ['Kiosks']
+    }),
+
+    getCurrentKioskQr: builder.query({
+      query: (kioskId) => ({
+        url: '/attendance/qr/current',
+        params: { kioskId }
+      })
+    }),
+
+    resetDeviceBinding: builder.mutation({
+      query: ({ userId, reason }) => ({
+        url: `/users/${userId}/reset-device`,
+        method: 'POST',
+        body: { reason }
+      }),
+      invalidatesTags: ['Users', 'Attendance']
+    }),
+
   })
 });
 
@@ -337,5 +399,12 @@ export const {
   useGetWfhLocationsQuery,
   useCreateWfhLocationMutation,
   useUpdateWfhLocationStatusMutation,
-  useDeleteWfhLocationMutation
+  useDeleteWfhLocationMutation,
+  useGetKiosksQuery,
+  useGetKioskByIdQuery,
+  useCreateKioskMutation,
+  useUpdateKioskMutation,
+  useDeleteKioskMutation,
+  useGetCurrentKioskQrQuery,
+  useResetDeviceBindingMutation,
 } = attendanceApi;

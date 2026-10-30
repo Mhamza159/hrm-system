@@ -98,7 +98,8 @@ export function Sidebar({ isOpen = false, onClose }) {
         { name: 'Attendance Lock', path: '/attendance/lock', permission: 'attendance.lock' },
         { name: 'Flagged Punches', path: '/attendance/flagged', permission: 'attendance.approve' },
         { name: 'WFH Locations', path: '/attendance/wfh-locations', permission: 'attendance.wfh' },
-        { name: 'Punch Map', path: '/attendance/map', permission: 'attendance.view' }
+        { name: 'Punch Map', path: '/attendance/map', permission: 'attendance.view' },
+        { name: 'Kiosk Terminals', path: '/attendance/kiosks', permission: 'attendance.kiosk.manage' }
       ]
     },
     {

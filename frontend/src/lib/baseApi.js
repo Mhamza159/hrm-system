@@ -157,7 +157,8 @@ export const baseApi = createApi({
     'Loans',
     'FlaggedAttendance',
     'AttendanceLocations',
-    'WfhLocations'
+    'WfhLocations',
+    'Kiosks'
   ],
   endpoints: () => ({})
 });

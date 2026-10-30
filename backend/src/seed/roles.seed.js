@@ -55,6 +55,7 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'attendance.export', subject: 'Attendance', scope: 'all' },
       { action: 'attendance.fieldCheckIn', subject: 'Attendance', scope: 'own' },
       { action: 'attendance.geo.view', subject: 'Attendance', scope: 'all' },
+      { action: 'attendance.kiosk.manage', subject: 'Attendance', scope: 'all' },
       { action: 'leave.apply', subject: 'Leave', scope: 'own' },
       { action: 'leave.view', subject: 'Leave', scope: 'all' },
       { action: 'leave.approve', subject: 'Leave', scope: 'all' },

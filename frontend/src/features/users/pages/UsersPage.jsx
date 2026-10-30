@@ -14,7 +14,8 @@
  */
 
 import React, { useState } from 'react';
-import { Shield, UserCheck, UserX, AlertCircle, RefreshCw, KeyRound, UserCog, Eye, Loader2 } from 'lucide-react';
+import { Shield, UserCheck, UserX, AlertCircle, RefreshCw, KeyRound, UserCog, Eye, Loader2, Smartphone } from 'lucide-react';
+import { ResetDeviceModal } from '../components/ResetDeviceModal.jsx';
 import { toast } from 'sonner';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { DataTable } from '../../../components/common/DataTable.jsx';
@@ -48,6 +49,7 @@ export default function UsersPage() {
 
   // 5. State for deactivation confirmation modal dialog
   const [targetUser, setTargetUser] = useState(null);
+  const [deviceResetUser, setDeviceResetUser] = useState(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   // 6. State for emergency password reset confirmation modal dialog (Slice 1.14)
@@ -318,6 +320,19 @@ export default function UsersPage() {
               <span>Reset Pass</span>
             </button>
 
+                        <button
+              type="button"
+              title={row.deviceId ? `Device bound: ${row.deviceModel || 'Unknown'}. Click to reset.` : 'No device bound'}
+              onClick={(e) => {
+                e.stopPropagation();
+                setDeviceResetUser(row);
+              }}
+              className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold transition-all border border-amber-200 dark:border-amber-900/60 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400 cursor-pointer"
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>Reset Device</span>
+            </button>
+
             <button
               type="button"
               disabled={isUpdating}
@@ -515,6 +530,12 @@ export default function UsersPage() {
         onClose={() => setInspectorUser(null)}
         userId={inspectorUser?._id}
         userEmail={inspectorUser?.email}
+      />
+      <ResetDeviceModal
+        isOpen={Boolean(deviceResetUser)}
+        user={deviceResetUser}
+        onClose={() => setDeviceResetUser(null)}
+        onSuccess={refetch}
       />
     </div>
   );

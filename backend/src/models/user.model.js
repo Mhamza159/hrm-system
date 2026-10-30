@@ -85,6 +85,22 @@ const userSchema = new mongoose.Schema(
       default: null
     },
 
+    // Hardware device binding for QR Code attendance (M13)
+    deviceId: {
+      type: String,
+      default: null,
+      index: true
+    },
+    deviceBoundAt: {
+      type: Date,
+      default: null
+    },
+    deviceModel: {
+      type: String,
+      default: null
+    },
+
+
     // Salted bcrypt hash of 6-digit OTP for 2FA login/enrollment verification (Slice 1.10)
     twoFactorOtpHash: {
       type: String,
