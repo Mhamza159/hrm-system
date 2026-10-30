@@ -69,13 +69,25 @@ export function AttendanceRulesForm({ initialData = {}, qrData = {}, faceData = 
         penaltyPerLatePaisa: penaltyPaisa
       };
 
-      await updateSetting({
-        key: 'lateRules',
-        value: payload,
-        description: 'Updated late-arrival and penalty rules'
-      }).unwrap();
+      await Promise.all([
+        updateSetting({
+          key: 'lateRules',
+          value: payload,
+          description: 'Updated late-arrival and penalty rules'
+        }).unwrap(),
+        updateSetting({
+          key: 'qrAttendance',
+          value: qrSettings,
+          description: 'Updated QR code attendance kiosk settings'
+        }).unwrap(),
+        updateSetting({
+          key: 'faceAttendance',
+          value: faceSettings,
+          description: 'Updated Face recognition attendance rules and matching threshold'
+        }).unwrap()
+      ]);
 
-      toast.success('Late arrival rules updated successfully');
+      toast.success('Attendance rules & biometric policies updated successfully');
       if (onSaved) onSaved();
     } catch (err) {
       toast.error(err.data?.message || 'Failed to update late rules');
@@ -221,6 +233,72 @@ export function AttendanceRulesForm({ initialData = {}, qrData = {}, faceData = 
             </select>
             <span className="text-[11px] text-slate-400 mt-1 block">
               Kiosks automatically generate a new signed HMAC vector QR every cycle, invalidating stale photos.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 12.6: Facial Recognition Attendance Governance Card */}
+      <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-6 shadow-2xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h3 className="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+              <Camera className="w-4 h-4 text-purple-500" />
+              Facial Recognition Attendance
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Enable AI face verification attendance and configure matching sensitivity threshold.
+            </p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={faceSettings.isEnabled}
+              onChange={(e) => setFaceSettings((prev) => ({ ...prev, isEnabled: e.target.checked }))}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-purple-600"></div>
+            <span className="ml-3 text-xs font-semibold text-slate-700 dark:text-slate-300">
+              {faceSettings.isEnabled ? 'Active' : 'Disabled'}
+            </span>
+          </label>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Matching Threshold Distance: {faceSettings.matchThreshold}
+            </label>
+            <input
+              type="range"
+              min="0.30"
+              max="0.70"
+              step="0.05"
+              value={faceSettings.matchThreshold}
+              disabled={!faceSettings.isEnabled}
+              onChange={(e) => setFaceSettings((prev) => ({ ...prev, matchThreshold: parseFloat(e.target.value) }))}
+              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700"
+            />
+            <span className="text-[11px] text-slate-400 mt-1 block">
+              Lower distance = stricter matching (0.40 recommended for high security, 0.50 standard).
+            </span>
+          </div>
+
+          <div>
+            <label className="flex items-center gap-2 pt-4 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={faceSettings.requireLiveness}
+                disabled={!faceSettings.isEnabled}
+                onChange={(e) => setFaceSettings((prev) => ({ ...prev, requireLiveness: e.target.checked }))}
+                className="rounded border-slate-300 text-purple-600 focus:ring-purple-500"
+              />
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Active Blink Liveness Anti-Spoofing
+              </span>
+            </label>
+            <span className="text-[11px] text-slate-400 mt-1 block">
+              Requires physical blinking cycle before capturing embedding to reject printed photos or phone screen replays.
             </span>
           </div>
         </div>

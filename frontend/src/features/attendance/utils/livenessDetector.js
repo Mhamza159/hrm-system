@@ -103,3 +103,4 @@ export class BlinkTracker {
     return this.isBlinkCompleted;
   }
 }
+

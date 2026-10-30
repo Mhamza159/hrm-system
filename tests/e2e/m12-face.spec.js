@@ -92,3 +92,4 @@ test.describe('Module M12 — Face Recognition Attendance E2E Verification', () 
     await expect(page.getByRole('button', { name: /Pending Review/i })).toBeVisible();
   });
 });
+

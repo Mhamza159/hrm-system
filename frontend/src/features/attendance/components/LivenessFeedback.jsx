@@ -43,3 +43,4 @@ export const LivenessFeedback = ({ isLive, currentEAR = 0, isFaceDetected = fals
 };
 
 export default LivenessFeedback;
+

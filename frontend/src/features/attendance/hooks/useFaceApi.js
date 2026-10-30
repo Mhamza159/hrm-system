@@ -111,3 +111,4 @@ export const useFaceApi = (modelsUri = '/models') => {
 };
 
 export default useFaceApi;
+

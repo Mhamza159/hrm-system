@@ -21,7 +21,8 @@ import {
   ShieldCheck,
   Navigation,
   Info,
-  QrCode
+  QrCode,
+  Camera
 } from 'lucide-react';
 import {
   useGetMyAttendanceQuery,
@@ -302,6 +303,17 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
                   <span>Scan QR</span>
                 </button> 
                 )}
+                {isFaceEnabled && (
+                  <button
+                    type="button"
+                    onClick={() => setFaceModalOpen(true)}
+                    className="px-4 py-3 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 rounded-xl flex items-center gap-2 font-semibold text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
+                    title="Face recognition camera clock in"
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span>Face Punch</span>
+                  </button>
+                )}
                 <button
                   onClick={handleCheckIn}
                 disabled={isPunchLoading || isLoading}
@@ -347,6 +359,17 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
                   <span>Scan QR</span>
                 </button> 
                   )}
+                {isFaceEnabled && (
+                  <button
+                    type="button"
+                    onClick={() => setFaceModalOpen(true)}
+                    className="px-3.5 py-2.5 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 rounded-xl flex items-center gap-1.5 font-semibold text-xs transition-all active:scale-95 cursor-pointer"
+                    title="Face recognition camera clock out"
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span>Face Punch</span>
+                  </button>
+                )}
                 <button
                   onClick={handleCheckOut}
                   disabled={isPunchLoading || isOnBreak}
@@ -493,6 +516,15 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
           </div>
         </div>
       )}
+      <FaceCheckInModal
+        isOpen={faceModalOpen}
+        isClockedIn={isClockedIn}
+        onClose={() => {
+          setFaceModalOpen(false);
+          refetch();
+          onActionSuccess?.();
+        }}
+      />
       <QrScannerModal
         isOpen={qrModalOpen}
         defaultAction={qrDefaultAction}

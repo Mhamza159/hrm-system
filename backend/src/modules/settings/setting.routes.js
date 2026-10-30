@@ -86,7 +86,7 @@ router.get(
 router.get(
   '/:key',
   authenticate,
-  checkPermission('settings.manage'),
+  checkPermission('settings.view'),
   settingController.getSettingByKey
 );
 

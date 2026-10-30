@@ -37,8 +37,8 @@ import WfhLocationsPage from './features/attendance/pages/WfhLocationsPage.jsx';
 import PunchLocationsMapPage from './features/attendance/pages/PunchLocationsMapPage.jsx';
 import { KiosksPage } from './features/attendance/pages/KiosksPage.jsx';
 import { KioskQrPage } from './features/attendance/pages/KioskQrPage.jsx';
-import { FaceEnrollPage } from './features/attendance/pages/FaceEnrollPage.jsx';
-import { FaceEnrollmentsPage } from './features/attendance/pages/FaceEnrollmentsPage.jsx';
+import FaceEnrollPage from './features/attendance/pages/FaceEnrollPage.jsx';
+import FaceEnrollmentsPage from './features/attendance/pages/FaceEnrollmentsPage.jsx';
 import LeaveTypesPage from './features/leaves/pages/LeaveTypesPage.jsx';
 import HolidaysPage from './features/leaves/pages/HolidaysPage.jsx';
 import MyLeavesPage from './features/leaves/pages/MyLeavesPage.jsx';
@@ -392,6 +392,22 @@ export default function App() {
             element={
               <ProtectedRoute requiredPermission="attendance.kiosk.manage">
                 <KiosksPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="attendance/face/enroll"
+            element={
+              <ProtectedRoute requiredPermission="attendance.mark">
+                <FaceEnrollPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="attendance/face/enrollments"
+            element={
+              <ProtectedRoute requiredPermission="attendance.face.manage">
+                <FaceEnrollmentsPage />
               </ProtectedRoute>
             }
           />
