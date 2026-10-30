@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 export const FaceEnrollPage = () => {
   const { data: statusData, isLoading, refetch } = useGetFaceStatusQuery();
   const [resetEnrollment, { isLoading: isResetting }] = useResetFaceEnrollmentMutation();
+  const [isReEnrolling, setIsReEnrolling] = React.useState(false);
 
   const faceStatus = statusData?.data?.status || 'none';
   const enrolledAt = statusData?.data?.enrolledAt;
@@ -14,17 +15,8 @@ export const FaceEnrollPage = () => {
   const rejectionReason = statusData?.data?.rejectionReason;
   const photoUrl = statusData?.data?.enrollmentPhotoUrl;
 
-  const handleRequestReEnrollment = async () => {
-    if (!window.confirm('Are you sure you want to reset your face biometric enrollment and capture new photos?')) {
-      return;
-    }
-    try {
-      await resetEnrollment({ userId: 'me', reason: 'Employee requested biometric re-enrollment' }).unwrap();
-      toast.success('Previous enrollment cleared. You can now capture new photos.');
-      refetch();
-    } catch (err) {
-      toast.error(err?.data?.message || 'Failed to reset enrollment');
-    }
+  const handleRequestReEnrollment = () => {
+    setIsReEnrolling(true);
   };
 
   if (isLoading) {
@@ -147,9 +139,28 @@ export const FaceEnrollPage = () => {
         </div>
       )}
 
-      {/* Render Capture Wizard if None or Rejected */}
-      {(faceStatus === 'none' || faceStatus === 'rejected') && (
-        <EnrollmentCaptureWizard onEnrollmentComplete={refetch} />
+      {/* Render Capture Wizard if None, Rejected, or Re-enrolling */}
+      {(faceStatus === 'none' || faceStatus === 'rejected' || isReEnrolling) && (
+        <div className="space-y-4">
+          {isReEnrolling && (
+            <div className="flex items-center justify-between p-3.5 bg-muted/60 border rounded-2xl">
+              <span className="text-xs text-muted-foreground font-medium">Re-capturing new face biometric photos for HR re-approval</span>
+              <button
+                type="button"
+                onClick={() => setIsReEnrolling(false)}
+                className="text-xs text-rose-500 hover:text-rose-600 font-semibold cursor-pointer"
+              >
+                Cancel Re-enrollment
+              </button>
+            </div>
+          )}
+          <EnrollmentCaptureWizard
+            onEnrollmentComplete={() => {
+              setIsReEnrolling(false);
+              refetch();
+            }}
+          />
+        </div>
       )}
     </div>
   );

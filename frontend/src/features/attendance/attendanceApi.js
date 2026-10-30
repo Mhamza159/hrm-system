@@ -354,10 +354,10 @@ export const attendanceApi = baseApi.injectEndpoints({
     }),
 
     resetDeviceBinding: builder.mutation({
-      query: ({ userId, reason }) => ({
-        url: `/users/${userId}/reset-device`,
+      query: (arg) => ({
+        url: `/users/${typeof arg === 'string' ? arg : arg?.userId || arg?.id}/reset-device`,
         method: 'POST',
-        body: { reason }
+        body: typeof arg === 'object' && arg?.reason ? { reason: arg.reason } : {}
       }),
       invalidatesTags: ['Users', 'Attendance']
     }),
@@ -392,28 +392,28 @@ export const attendanceApi = baseApi.injectEndpoints({
     }),
 
     approveFaceEnrollment: builder.mutation({
-      query: ({ id, reason }) => ({
-        url: `/attendance/face/enrollments/${id}/approve`,
+      query: (arg) => ({
+        url: `/attendance/face/enrollments/${typeof arg === 'string' ? arg : arg?.id || arg?.userId}/approve`,
         method: 'POST',
-        body: { reason }
+        body: typeof arg === 'object' && arg?.reason ? { reason: arg.reason } : {}
       }),
       invalidatesTags: ['FaceEnrollments', 'FaceEnrollment']
     }),
 
     rejectFaceEnrollment: builder.mutation({
-      query: ({ id, reason }) => ({
-        url: `/attendance/face/enrollments/${id}/reject`,
+      query: (arg) => ({
+        url: `/attendance/face/enrollments/${typeof arg === 'string' ? arg : arg?.id || arg?.userId}/reject`,
         method: 'POST',
-        body: { reason }
+        body: typeof arg === 'object' && arg?.reason ? { reason: arg.reason } : {}
       }),
       invalidatesTags: ['FaceEnrollments', 'FaceEnrollment']
     }),
 
     resetFaceEnrollment: builder.mutation({
-      query: ({ id, reason }) => ({
-        url: `/attendance/face/enrollments/${id}/reset`,
+      query: (arg) => ({
+        url: `/attendance/face/enrollments/${typeof arg === 'string' ? arg : arg?.id || arg?.userId}/reset`,
         method: 'POST',
-        body: { reason }
+        body: typeof arg === 'object' && arg?.reason ? { reason: arg.reason } : {}
       }),
       invalidatesTags: ['FaceEnrollments', 'FaceEnrollment']
     }),

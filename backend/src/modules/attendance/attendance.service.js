@@ -2035,6 +2035,11 @@ export const reviewFlaggedPunch = async (id, { decision, comments }, actor) => {
   const previousStatus = attendance.status;
   if (decision === 'rejected') {
     attendance.status = 'absent';
+  } else if (decision === 'approved' && attendance.status === 'absent') {
+    attendance.status = 'present';
+    if (!attendance.checkIn) {
+      attendance.checkIn = attendance.createdAt || new Date();
+    }
   }
 
   attendance.auditLogs.push({
@@ -2512,6 +2517,8 @@ export const verifyFacePunch = async ({ user, liveDescriptor, snapshot }) => {
         employeeId,
         date: todayUtc,
         source: 'face',
+        status: 'absent',
+        checkIn: null,
         isFlagged: true,
         flagReason: 'face_match_failed',
         snapshotUrl: snapshot || null,
@@ -2520,6 +2527,9 @@ export const verifyFacePunch = async ({ user, liveDescriptor, snapshot }) => {
     } else {
       existing.isFlagged = true;
       existing.flagReason = 'face_match_failed';
+      if (!existing.checkIn) {
+        existing.status = 'absent';
+      }
       existing.snapshotUrl = snapshot || existing.snapshotUrl;
       existing.confidenceDistance = minDistance;
       await existing.save();
