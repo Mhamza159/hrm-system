@@ -270,3 +270,8 @@ export const updateWfhLocationStatus = asyncHandler(async (req, res) => {
   const result = await attendanceService.updateWfhLocationStatus(req.params.id, req.body, req.user);
   return res.status(200).json(apiResponse(200, result, 'WFH location status updated successfully'));
 });
+
+export const deleteWfhLocation = asyncHandler(async (req, res) => {
+  const result = await attendanceService.deleteWfhLocation(req.params.id, req.user);
+  return res.status(200).json(apiResponse(200, result, 'WFH location deleted successfully'));
+});

@@ -34,6 +34,7 @@ import {
   createWfhLocationSchema,
   updateWfhLocationStatusSchema,
   reviewFlaggedPunchSchema,
+  queryFlaggedPunchesSchema,
   queryPunchLocationsSchema
 } from './attendance.validation.js';
 
@@ -277,6 +278,7 @@ router.patch(
 router.get(
   '/flagged',
   checkPermission('attendance.approve', 'Attendance'),
+  validate(queryFlaggedPunchesSchema),
   attendanceController.getFlaggedPunches
 );
 
@@ -304,9 +306,17 @@ router.get(
 
 router.post(
   '/wfh-locations',
+  requestsLimiter,
   checkPermission('attendance.wfh', 'Attendance'),
   validate(createWfhLocationSchema),
   attendanceController.createWfhLocation
+);
+
+
+router.delete(
+  '/wfh-locations/:id',
+  checkPermission('attendance.wfh', 'Attendance'),
+  attendanceController.deleteWfhLocation
 );
 
 router.patch(

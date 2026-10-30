@@ -16,14 +16,14 @@ export const checkInSchema = z.object({
     source: z.enum(['web', 'mobile', 'biometric', 'qr', 'wfh', 'field']).optional().default('web'),
     location: z
       .object({
-        latitude: z.number().optional(),
-        longitude: z.number().optional(),
-        accuracy: z.number().nonnegative().optional(),
+        latitude: z.number().min(-90, 'Latitude must be between -90 and 90').max(90, 'Latitude must be between -90 and 90').optional(),
+        longitude: z.number().min(-180, 'Longitude must be between -180 and 180').max(180, 'Longitude must be between -180 and 180').optional(),
+        accuracy: z.number().min(0, 'Accuracy cannot be negative').max(10000, 'Accuracy out of range').optional(),
         address: z.string().optional(),
         isMock: z.boolean().optional(),
         isClientVisit: z.boolean().optional(),
-        clientName: z.string().optional(),
-        clientRemarks: z.string().optional()
+        clientName: z.string().trim().max(100).optional(),
+        clientRemarks: z.string().trim().max(300).optional()
       })
       .optional()
   })
@@ -33,14 +33,14 @@ export const checkOutSchema = z.object({
   body: z.object({
     location: z
       .object({
-        latitude: z.number().optional(),
-        longitude: z.number().optional(),
-        accuracy: z.number().nonnegative().optional(),
+        latitude: z.number().min(-90, 'Latitude must be between -90 and 90').max(90, 'Latitude must be between -90 and 90').optional(),
+        longitude: z.number().min(-180, 'Longitude must be between -180 and 180').max(180, 'Longitude must be between -180 and 180').optional(),
+        accuracy: z.number().min(0, 'Accuracy cannot be negative').max(10000, 'Accuracy out of range').optional(),
         address: z.string().optional(),
         isMock: z.boolean().optional(),
         isClientVisit: z.boolean().optional(),
-        clientName: z.string().optional(),
-        clientRemarks: z.string().optional()
+        clientName: z.string().trim().max(100).optional(),
+        clientRemarks: z.string().trim().max(300).optional()
       })
       .optional()
   })
@@ -222,5 +222,12 @@ export const queryPunchLocationsSchema = z.object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in format YYYY-MM-DD').optional(),
     departmentId: z.string().regex(objectIdRegex).optional(),
     onlyFlagged: z.preprocess((val) => val === 'true' || val === true, z.boolean()).optional()
+  }).optional()
+});
+export const queryFlaggedPunchesSchema = z.object({
+  query: z.object({
+    page: z.coerce.number().int().positive().optional().default(1),
+    limit: z.coerce.number().int().positive().max(100).optional().default(20),
+    status: z.enum(['pending', 'resolved', 'all']).optional().default('pending')
   }).optional()
 });

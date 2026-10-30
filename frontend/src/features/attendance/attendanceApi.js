@@ -41,7 +41,7 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'POST',
         body
       }),
-      invalidatesTags: ['Attendance', 'Dashboard']
+      invalidatesTags: ['Attendance', 'Dashboard', 'FlaggedAttendance', 'AttendanceLocations']
     }),
 
     // 5.4: Clock out
@@ -51,7 +51,7 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'POST',
         body
       }),
-      invalidatesTags: ['Attendance', 'Dashboard']
+      invalidatesTags: ['Attendance', 'Dashboard', 'FlaggedAttendance', 'AttendanceLocations']
     }),
 
     // 5.5: Start break
@@ -256,7 +256,7 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'PATCH',
         body
       }),
-      invalidatesTags: ['FlaggedAttendance', 'Attendance']
+      invalidatesTags: ['FlaggedAttendance', 'Attendance', 'AttendanceLocations']
     }),
 
     getPunchLocations: builder.query({

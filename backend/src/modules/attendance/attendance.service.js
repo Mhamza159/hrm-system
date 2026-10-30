@@ -152,9 +152,9 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
     const isMock = Boolean(location.isMock);
 
     // 14.3 Accuracy & Mock GPS Detection
-    if (isMock) {
+    if (isMock || punchAccuracy <= 0) {
       isFlagged = true;
-      flagReason = 'mock_gps';
+      flagReason = isMock ? 'mock_gps' : 'mock_gps';
     } else if (punchAccuracy > 100) {
       isFlagged = true;
       flagReason = 'low_accuracy';
@@ -717,11 +717,12 @@ export const getMonthLockStatus = async (yearMonth) => {
   const startOfMonth = new Date(Date.UTC(year, month - 1, 1));
   const endOfMonth = new Date(Date.UTC(year, month, 1));
 
-  const [lock, recentHistory, pendingCorrections, pendingWFH, totalRecords] = await Promise.all([
+  const [lock, recentHistory, pendingCorrections, pendingWFH, pendingFlaggedPunches, totalRecords] = await Promise.all([
     MonthLock.findOne({ yearMonth }).populate('lockedBy unlockedBy', 'name email').lean(),
     MonthLock.find().sort({ yearMonth: -1 }).limit(10).populate('lockedBy unlockedBy', 'name email').lean(),
     AttendanceCorrection.countDocuments({ date: { $gte: startOfMonth, $lt: endOfMonth }, status: 'pending' }),
     WFHRequest.countDocuments({ date: { $gte: startOfMonth, $lt: endOfMonth }, status: 'pending' }),
+    Attendance.countDocuments({ date: { $gte: startOfMonth, $lt: endOfMonth }, isFlagged: true, flagResolved: false }),
     Attendance.countDocuments({ date: { $gte: startOfMonth, $lt: endOfMonth } })
   ]);
 
@@ -730,6 +731,7 @@ export const getMonthLockStatus = async (yearMonth) => {
     metrics: {
       pendingCorrections,
       pendingWFH,
+      pendingFlaggedPunches,
       totalRecords
     },
     recentHistory: recentHistory || []
@@ -1808,6 +1810,12 @@ export const reviewFlaggedPunch = async (id, { decision, comments }, actor) => {
   const isHR = actor.role === 'HR Manager' || actor.roles?.some((r) => r.name === 'HR Manager');
   const actorEmployeeId = actor.employeeId?._id?.toString() || actor.employeeId?.toString();
 
+  // Prevent self-approval (Separation of Duties)
+  const targetEmployeeId = attendance.employeeId?._id?.toString() || attendance.employeeId?.toString();
+  if (targetEmployeeId && targetEmployeeId === actorEmployeeId) {
+    throw new ApiError(403, 'Separation of duties violation: You cannot review or approve your own flagged attendance.');
+  }
+
   // Separation of duties / team check
   if (!isSuperAdmin && !isHR) {
     const emp = attendance.employeeId;
@@ -1824,9 +1832,18 @@ export const reviewFlaggedPunch = async (id, { decision, comments }, actor) => {
     resolvedAt: new Date()
   };
 
+  const previousStatus = attendance.status;
   if (decision === 'rejected') {
     attendance.status = 'absent';
   }
+
+  attendance.auditLogs.push({
+    modifiedBy: actor._id,
+    modifiedAt: new Date(),
+    previousValues: { status: previousStatus, isFlagged: true, flagResolved: false },
+    newValues: { status: attendance.status, isFlagged: true, flagResolved: true, decision },
+    reason: `Flagged Punch Review (${decision}): ${comments.trim()}`
+  });
 
   await attendance.save();
 
@@ -1944,6 +1961,21 @@ export const updateWfhLocationStatus = async (id, { status, remarks }, actor) =>
     throw new ApiError(404, 'WFH location not found');
   }
 
+  const isSuperAdmin = actor.role === 'Super Admin' || actor.roles?.some((r) => r.name === 'Super Admin');
+  const isHR = actor.role === 'HR Manager' || actor.roles?.some((r) => r.name === 'HR Manager');
+  const actorEmployeeId = actor.employeeId?._id?.toString() || actor.employeeId?.toString();
+
+  if (location.employeeId?.toString() === actorEmployeeId) {
+    throw new ApiError(403, 'Separation of duties violation: You cannot approve your own WFH location request.');
+  }
+
+  if (!isSuperAdmin && !isHR) {
+    const emp = await Employee.findById(location.employeeId);
+    if (!emp || emp.managerId?.toString() !== actorEmployeeId) {
+      throw new ApiError(403, 'You can only approve WFH locations for employees within your direct team.');
+    }
+  }
+
   location.status = status;
   location.decisionBy = actor._id;
   location.decisionAt = new Date();
@@ -1962,4 +1994,26 @@ export const updateWfhLocationStatus = async (id, { status, remarks }, actor) =>
   }
 
   return location;
+};
+
+/**
+ * 14.4-BE: Delete / Revoke Registered WFH Location (Soft delete)
+ */
+export const deleteWfhLocation = async (id, user) => {
+  const location = await WfhLocation.findOne({ _id: id, isDeleted: false });
+  if (!location) {
+    throw new ApiError(404, 'WFH location not found');
+  }
+
+  const isSuperAdmin = user.role === 'Super Admin' || user.roles?.some((r) => r.name === 'Super Admin');
+  const isHR = user.role === 'HR Manager' || user.roles?.some((r) => r.name === 'HR Manager');
+  const userEmployeeId = user.employeeId?._id?.toString() || user.employeeId?.toString();
+
+  if (!isSuperAdmin && !isHR && location.employeeId?.toString() !== userEmployeeId) {
+    throw new ApiError(403, 'You do not have permission to delete this WFH location.');
+  }
+
+  location.isDeleted = true;
+  await location.save();
+  return { success: true, message: 'WFH location deleted successfully' };
 };
