@@ -21,7 +21,8 @@ import {
   ShieldCheck,
   Navigation,
   Info,
-  QrCode
+  QrCode,
+  Camera
 } from 'lucide-react';
 import {
   useGetMyAttendanceQuery,
@@ -32,6 +33,7 @@ import {
 } from '../attendanceApi.js';
 import { AttendanceStatusBadge } from './AttendanceStatusBadge.jsx';
 import { QrScannerModal } from './QrScannerModal.jsx';
+import { FaceCheckInModal } from './FaceCheckInModal.jsx';
 import { GeoLocationBadge } from './GeoLocationBadge.jsx';
 import { useGeolocation } from '../../../hooks/useGeolocation.js';
 import { usePermission } from '../../../hooks/usePermission.js';
@@ -51,6 +53,9 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
   const [qrDefaultAction, setQrDefaultAction] = useState('in');
   const { data: qrSettingRes } = useGetSettingByKeyQuery('qrAttendance');
   const isQrEnabled = qrSettingRes?.data?.value?.isEnabled !== false;
+  const [faceModalOpen, setFaceModalOpen] = useState(false);
+  const { data: faceSettingRes } = useGetSettingByKeyQuery('faceAttendance');
+  const isFaceEnabled = faceSettingRes?.data?.value?.isEnabled !== false;
 
   // Field check-in state (14.5)
   const canFieldCheckIn = can('attendance.fieldCheckIn') || isSuperAdmin;
@@ -298,6 +303,17 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
                   <span>Scan QR</span>
                 </button> 
                 )}
+                {isFaceEnabled && (
+                  <button
+                    type="button"
+                    onClick={() => setFaceModalOpen(true)}
+                    className="px-4 py-3 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 rounded-xl flex items-center gap-2 font-semibold text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
+                    title="Face recognition camera clock in"
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span>Face Punch</span>
+                  </button>
+                )}
                 <button
                   onClick={handleCheckIn}
                 disabled={isPunchLoading || isLoading}
@@ -343,6 +359,17 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
                   <span>Scan QR</span>
                 </button> 
                   )}
+                {isFaceEnabled && (
+                  <button
+                    type="button"
+                    onClick={() => setFaceModalOpen(true)}
+                    className="px-3.5 py-2.5 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 rounded-xl flex items-center gap-1.5 font-semibold text-xs transition-all active:scale-95 cursor-pointer"
+                    title="Face recognition camera clock out"
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span>Face Punch</span>
+                  </button>
+                )}
                 <button
                   onClick={handleCheckOut}
                   disabled={isPunchLoading || isOnBreak}
@@ -489,6 +516,15 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
           </div>
         </div>
       )}
+      <FaceCheckInModal
+        isOpen={faceModalOpen}
+        isClockedIn={isClockedIn}
+        onClose={() => {
+          setFaceModalOpen(false);
+          refetch();
+          onActionSuccess?.();
+        }}
+      />
       <QrScannerModal
         isOpen={qrModalOpen}
         defaultAction={qrDefaultAction}

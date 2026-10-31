@@ -55,7 +55,8 @@ import { ApplyWFHModal } from '../components/ApplyWFHModal.jsx';
 import { MyRequestsView } from '../components/MyRequestsView.jsx';
 import { GeoLocationBadge } from '../components/GeoLocationBadge.jsx';
 import { QrScannerModal } from '../components/QrScannerModal.jsx';
-import { QrCode } from 'lucide-react';
+import { FaceCheckInModal } from '../components/FaceCheckInModal.jsx';
+import { QrCode, Camera } from 'lucide-react';
 import { useGeolocation } from '../../../hooks/useGeolocation.js';
 import { usePermission } from '../../../hooks/usePermission.js';
 import { useAuth } from '../../../hooks/useAuth.js';
@@ -74,6 +75,9 @@ export const MyAttendancePage = () => {
   const [qrDefaultAction, setQrDefaultAction] = useState('in');
   const { data: qrSettingRes } = useGetSettingByKeyQuery('qrAttendance');
   const isQrEnabled = qrSettingRes?.data?.value?.isEnabled !== false;
+  const [faceModalOpen, setFaceModalOpen] = useState(false);
+  const { data: faceSettingRes } = useGetSettingByKeyQuery('faceAttendance');
+  const isFaceEnabled = faceSettingRes?.data?.value?.isEnabled !== false;
 
   // Navigation & View State
   const [activeTab, setActiveTab] = useState('daily'); // 'daily' | 'monthly' | 'employee_wise' | 'history'
@@ -841,6 +845,17 @@ export const MyAttendancePage = () => {
                           <span>Scan QR</span>
                         </button>
                       )}
+                      {isFaceEnabled && (
+                        <button
+                          type="button"
+                          onClick={() => setFaceModalOpen(true)}
+                          className="px-3.5 py-2.5 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 rounded-xl flex items-center gap-2 font-semibold text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
+                          title="Face recognition camera clock in"
+                        >
+                          <Camera className="w-4 h-4" />
+                          <span>Face Punch</span>
+                        </button>
+                      )}
                       <button
                         onClick={handleCheckIn}
                       disabled={isCheckingIn || isLoading || isMonthLocked}
@@ -884,6 +899,17 @@ export const MyAttendancePage = () => {
                         >
                           <QrCode className="w-4 h-4" />
                           <span>Scan QR</span>
+                        </button>
+                      )}
+                      {isFaceEnabled && (
+                        <button
+                          type="button"
+                          onClick={() => setFaceModalOpen(true)}
+                          className="px-3.5 py-2.5 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 rounded-xl flex items-center gap-2 font-semibold text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
+                          title="Face recognition camera clock out"
+                        >
+                          <Camera className="w-4 h-4" />
+                          <span>Face Punch</span>
                         </button>
                       )}
                       <button
@@ -2028,6 +2054,14 @@ export const MyAttendancePage = () => {
         }}
       />
 
+      <FaceCheckInModal
+        isOpen={faceModalOpen}
+        isClockedIn={isClockedIn}
+        onClose={() => {
+          setFaceModalOpen(false);
+          refetch();
+        }}
+      />
       <QrScannerModal
         isOpen={qrModalOpen}
         onClose={() => setQrModalOpen(false)}

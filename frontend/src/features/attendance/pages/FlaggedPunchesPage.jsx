@@ -94,6 +94,45 @@ export const FlaggedPunchesPage = () => {
     }
   };
 
+  const renderPunchMetrics = (p) => {
+    if (p.flagReason === 'face_match_failed' || (p.confidenceDistance !== null && p.confidenceDistance !== undefined)) {
+      return (
+        <div className="flex items-center gap-2">
+          {p.snapshotUrl && (
+            <img
+              src={p.snapshotUrl}
+              alt="Face Snapshot"
+              className="w-8 h-8 rounded-lg object-cover border border-purple-300 dark:border-purple-800"
+            />
+          )}
+          <div className="font-mono text-xs text-purple-700 dark:text-purple-300">
+            <div className="flex items-center gap-1">
+              <Camera className="w-3 h-3 text-purple-500" />
+              <span>Dist: {p.confidenceDistance ? p.confidenceDistance.toFixed(3) : 'N/A'}</span>
+            </div>
+            <div className="text-[10px] text-slate-400">Threshold: 0.500</div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <>
+        <div className="flex items-center gap-1 font-mono">
+          <MapPin className="w-3 h-3 text-rose-500" />
+          <span>
+            {p.distanceFromOfficeMeters ? `${Math.round(p.distanceFromOfficeMeters)}m from office` : 'N/A'}
+          </span>
+        </div>
+        {p.location?.accuracy && (
+          <div className="text-[10px] text-slate-400">
+            Accuracy: ±${Math.round(p.location.accuracy)}m
+          </div>
+        )}
+      </>
+    );
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}

@@ -13,7 +13,17 @@ const objectIdRegex = /^[0-9a-fA-F]{24}$/;
 
 export const checkInSchema = z.object({
   body: z.object({
-    source: z.enum(['web', 'mobile', 'biometric', 'qr', 'wfh', 'field']).optional().default('web'),
+    source: z.enum(['web', 'mobile', 'biometric', 'qr', 'face', 'wfh', 'field']).optional().default('web'),
+    liveDescriptor: z
+      .array(z.number().finite('Face descriptor coordinates must be finite numbers'))
+      .length(128, 'Face descriptor must have 128 coordinates')
+      .optional(),
+    snapshot: z
+      .string()
+      .trim()
+      .max(1500000, 'Snapshot payload exceeds 1.5MB limit')
+      .regex(/^data:image\/(jpeg|jpg|png|webp);base64,/, 'Snapshot must be a valid base64 image data URI')
+      .optional(),
     qrToken: z.string().trim().optional(),
     deviceId: z.string().trim().optional(),
     deviceModel: z.string().trim().max(100).optional(),
@@ -34,7 +44,17 @@ export const checkInSchema = z.object({
 
 export const checkOutSchema = z.object({
   body: z.object({
-    source: z.enum(['web', 'mobile', 'biometric', 'qr', 'wfh', 'field']).optional().default('web'),
+    source: z.enum(['web', 'mobile', 'biometric', 'qr', 'face', 'wfh', 'field']).optional().default('web'),
+    liveDescriptor: z
+      .array(z.number().finite('Face descriptor coordinates must be finite numbers'))
+      .length(128, 'Face descriptor must have 128 coordinates')
+      .optional(),
+    snapshot: z
+      .string()
+      .trim()
+      .max(1500000, 'Snapshot payload exceeds 1.5MB limit')
+      .regex(/^data:image\/(jpeg|jpg|png|webp);base64,/, 'Snapshot must be a valid base64 image data URI')
+      .optional(),
     qrToken: z.string().trim().optional(),
     deviceId: z.string().trim().optional(),
     deviceModel: z.string().trim().max(100).optional(),
@@ -295,4 +315,65 @@ export const resetDeviceSchema = z.object({
   body: z.object({
     reason: z.string().trim().min(3, 'Reset reason must be at least 3 characters').max(200)
   })
+});
+
+export const enrollFaceSchema = z.object({
+  body: z.object({
+    descriptors: z
+      .array(
+        z
+          .array(z.number().finite('Descriptor coordinate must be a finite number'))
+          .length(128, 'Each face descriptor must contain exactly 128 float coordinates')
+      )
+      .min(3, 'At least 3 face captures required for reliable enrollment')
+      .max(5, 'Maximum 5 face captures allowed'),
+    photo: z
+      .string()
+      .trim()
+      .max(1500000, 'Enrollment photo exceeds maximum size limit (1.5MB)')
+      .regex(/^data:image\/(jpeg|jpg|png|webp);base64,/, 'Enrollment photo must be a valid base64 image data URI')
+      .optional()
+  })
+});
+
+export const faceApprovalSchema = z.object({
+  params: z
+    .object({
+      userId: z.string().regex(objectIdRegex, 'Invalid user ID').optional(),
+      id: z.string().regex(objectIdRegex, 'Invalid user ID').optional()
+    })
+    .optional(),
+  body: z
+    .object({
+      reason: z.string().trim().max(500).optional()
+    })
+    .optional()
+    .default({})
+});
+
+export const faceRejectSchema = z.object({
+  params: z
+    .object({
+      userId: z.string().regex(objectIdRegex, 'Invalid user ID').optional(),
+      id: z.string().regex(objectIdRegex, 'Invalid user ID').optional()
+    })
+    .optional(),
+  body: z.object({
+    reason: z.string().trim().min(3, 'Rejection reason is mandatory').max(500)
+  })
+});
+
+export const faceResetSchema = z.object({
+  params: z
+    .object({
+      userId: z.string().regex(objectIdRegex, 'Invalid user ID').optional(),
+      id: z.string().regex(objectIdRegex, 'Invalid user ID').optional()
+    })
+    .optional(),
+  body: z
+    .object({
+      reason: z.string().trim().max(500).optional()
+    })
+    .optional()
+    .default({})
 });

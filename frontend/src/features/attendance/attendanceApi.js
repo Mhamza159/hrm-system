@@ -354,14 +354,69 @@ export const attendanceApi = baseApi.injectEndpoints({
     }),
 
     resetDeviceBinding: builder.mutation({
-      query: ({ userId, reason }) => ({
-        url: `/users/${userId}/reset-device`,
+      query: (arg) => ({
+        url: `/users/${typeof arg === 'string' ? arg : arg?.userId || arg?.id}/reset-device`,
         method: 'POST',
-        body: { reason }
+        body: typeof arg === 'object' && arg?.reason ? { reason: arg.reason } : {}
       }),
       invalidatesTags: ['Users', 'Attendance']
     }),
 
+
+    // ========================================================================
+    // Module M12: Face Recognition Attendance Endpoints
+    // ========================================================================
+
+    enrollFace: builder.mutation({
+      query: (body) => ({
+        url: '/attendance/face/enroll',
+        method: 'POST',
+        body
+      }),
+      invalidatesTags: ['FaceEnrollment', 'Users']
+    }),
+
+    getFaceStatus: builder.query({
+      query: () => ({
+        url: '/attendance/face/status'
+      }),
+      providesTags: ['FaceEnrollment']
+    }),
+
+    getFaceEnrollments: builder.query({
+      query: (params) => ({
+        url: '/attendance/face/enrollments',
+        params
+      }),
+      providesTags: ['FaceEnrollments']
+    }),
+
+    approveFaceEnrollment: builder.mutation({
+      query: (arg) => ({
+        url: `/attendance/face/enrollments/${typeof arg === 'string' ? arg : arg?.id || arg?.userId}/approve`,
+        method: 'POST',
+        body: typeof arg === 'object' && arg?.reason ? { reason: arg.reason } : {}
+      }),
+      invalidatesTags: ['FaceEnrollments', 'FaceEnrollment']
+    }),
+
+    rejectFaceEnrollment: builder.mutation({
+      query: (arg) => ({
+        url: `/attendance/face/enrollments/${typeof arg === 'string' ? arg : arg?.id || arg?.userId}/reject`,
+        method: 'POST',
+        body: typeof arg === 'object' && arg?.reason ? { reason: arg.reason } : {}
+      }),
+      invalidatesTags: ['FaceEnrollments', 'FaceEnrollment']
+    }),
+
+    resetFaceEnrollment: builder.mutation({
+      query: (arg) => ({
+        url: `/attendance/face/enrollments/${typeof arg === 'string' ? arg : arg?.id || arg?.userId}/reset`,
+        method: 'POST',
+        body: typeof arg === 'object' && arg?.reason ? { reason: arg.reason } : {}
+      }),
+      invalidatesTags: ['FaceEnrollments', 'FaceEnrollment']
+    }),
   })
 });
 
@@ -407,4 +462,10 @@ export const {
   useDeleteKioskMutation,
   useGetCurrentKioskQrQuery,
   useResetDeviceBindingMutation,
+  useEnrollFaceMutation,
+  useGetFaceStatusQuery,
+  useGetFaceEnrollmentsQuery,
+  useApproveFaceEnrollmentMutation,
+  useRejectFaceEnrollmentMutation,
+  useResetFaceEnrollmentMutation,
 } = attendanceApi;

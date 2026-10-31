@@ -134,7 +134,7 @@ const attendanceSchema = new mongoose.Schema(
     },
     source: {
       type: String,
-      enum: ['web', 'mobile', 'biometric', 'qr', 'field', 'system_auto_absent', 'manual_hr', 'wfh'],
+      enum: ['web', 'mobile', 'biometric', 'qr', 'face', 'field', 'system_auto_absent', 'manual_hr', 'wfh'],
       default: 'web'
     },
     location: {
@@ -154,7 +154,16 @@ const attendanceSchema = new mongoose.Schema(
     },
     flagReason: {
       type: String,
-      enum: ['geofence_violation', 'low_accuracy', 'mock_gps', 'none', null],
+      enum: ['geofence_violation', 'low_accuracy', 'mock_gps', 'face_match_failed', 'liveness_failed', 'face_not_enrolled', 'none', null],
+      default: null
+    },
+    // Face recognition attendance tracking (M12)
+    snapshotUrl: {
+      type: String,
+      default: null
+    },
+    confidenceDistance: {
+      type: Number,
       default: null
     },
     distanceFromOfficeMeters: {

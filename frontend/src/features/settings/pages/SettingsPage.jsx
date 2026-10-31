@@ -109,7 +109,7 @@ export default function SettingsPage() {
           )}
 
           {activeTab === 'lateRules' && (
-            <AttendanceRulesForm initialData={settings.lateRules} qrData={settings.qrAttendance} onSaved={refetch} />
+            <AttendanceRulesForm initialData={settings.lateRules} qrData={settings.qrAttendance} faceData={settings.faceAttendance} onSaved={refetch} />
           )}
 
           {activeTab === 'leavePolicy' && (
