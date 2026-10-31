@@ -1,17 +1,17 @@
-# Graph Report - HRM  (2026-10-29)
+# Graph Report - HRM  (2026-10-31)
 
 ## Corpus Check
-- 565 files · ~912,080 words
+- 643 files · ~1,451,082 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 10 file(s) not represented in the graph (top: (none) 7, .css 2, .toml 1)
+- Unclassified: 17 file(s) not represented in the graph (top: (none) 7, .bin 7, .css 2)
 
 ## Summary
-- 3350 nodes · 8389 edges · 215 communities (178 shown, 37 thin omitted)
-- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 323 edges (avg confidence: 0.95)
+- 3894 nodes · 9596 edges · 230 communities (196 shown, 34 thin omitted)
+- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 377 edges (avg confidence: 0.95)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `327827bf`
+- Built from commit: `0b1c8594`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -34,7 +34,7 @@
 - Intake an Idea
 - Assess Bug
 - Bug Triage Workflow Extension
-- mongoose
+- app.js
 - Intake an Idea
 - Assess Bug
 - Implementation Plan: [FEATURE]
@@ -48,7 +48,7 @@
 - Shape a Concept
 - speckit-clarify/SKILL.md
 - speckit-implement/SKILL.md
-- TeamAttendancePage.jsx
+- react
 - Research an Idea
 - Fix Bug
 - Test Bug Fix
@@ -62,57 +62,57 @@
 - speckit-taskstoissues/SKILL.md
 - [CHECKLIST TYPE] Checklist: [FEATURE NAME]
 - HRM System — Technology Stack
-- App.jsx
+- Can
 - pakistan_compliance.md
 - sources_of_truth.md
 - checkPermission
-- sonner
+- App.jsx
 - formatters.js
 - baseApi.js
-- SettingsPage.jsx
-- Communities (122 total, 18 thin omitted)
+- lucide-react
+- Communities (215 total, 37 thin omitted)
 - department.service.js
 - frontend/package.json
 - 3. Detailed User Stories & Acceptance Criteria
 - 2. User Scenarios & Acceptance Criteria (17 User Stories)
-- Feature Specification: Module M2 — Company Settings
-- role.service.js
-- employee.service.js
+- 3. User Scenarios & Acceptance Criteria (11 User Stories)
+- Phase 1: Core RBAC & Permission Matrix Foundation (Priority P1)
+- m3.employees.e2e.test.js
 - 3. Prioritized User Stories & Acceptance Criteria
 - setting.validation.js
 - ApiError
-- setting.controller.js
+- PageHeader
 - employee.controller.js
 - department.controller.js
 - Phase 1: Core Master & Personal Records (Priority P1)
-- validate.js
+- StatusBadge
 - dependencies
-- Phase 1: Core Authentication & Session Foundation (Priority P1)
+- AuthService
 - 3. Prioritized User Stories & Acceptance Criteria
 - recordAuditLog
 - HRM System — Current State & Progress Tracker
 - employee.routes.js
-- lucide-react
+- ScreenSkeleton
 - Technical Architecture & Implementation Plan: Module M26 — Roles & Permissions (RBAC & CASL)
-- Phase 1: Core Company Settings & Statutory Foundation (Priority P1)
+- Graph Report - HRM  (2026-10-29)
 - Architectural Plan: Module M3 — Employee Management
 - Technical Architecture & Implementation Plan: Module M4 — Departments, Designations, Shifts & Org Chart
-- checkPermission.js
-- authenticate.js
-- Graph Report - HRM  (2026-10-16)
+- Feature Specification: Module M11 — Expense Claims
+- user.routes.js
+- 2. User Scenarios & Prioritized User Stories
 - 2. Functional Requirements by Group
-- leave.service.js
+- employee.model.js
 - role.controller.js
 - HRM System — Design System Specification (DESIGN.md)
 - Official UI Reference Specification — HRM System
 - baseQueryWithReauth
 - Architecture Implementation Plan: M1 Authentication & Access Control
 - HRM System — 5-Phase Master Implementation Roadmap
-- role.routes.js
-- setting.routes.js
+- 3. Prioritized User Stories (BUILD-GUIDE Rows 12.1 to 12.9)
+- connectDB
 - emailService
 - Module M26: Roles & Permissions (RBAC & CASL) Architecture
-- Module M2: Company Settings Architecture
+- UsersPage.jsx
 - Feature Specification: M1 Authentication & Access Control
 - scripts
 - .oxlintrc.json
@@ -122,8 +122,8 @@
 - Module M3 — Employee Management Architecture & Implementation Summary
 - Phase 1: Core HR & Payroll — Execution Status & Roadmap Tracking
 - 3. MongoDB Schema & Index Verification (via `mongodb` MCP)
-- notify.service.js
-- scopeFilter.js
+- mongoose
+- Implementation Plan: Module M11 — Expense Claims
 - React + Vite
 - client_parameters.md
 - {
@@ -188,12 +188,12 @@
   useTriggerBackupMutation,
   useGetPublicPoliciesQuery
 }
-- react
+- DashboardPage.jsx
 - usePermission
 - 4. Prioritized User Stories & Acceptance Criteria
 - 4. User Stories & Acceptance Criteria (Rows 8.1 to 8.8)
-- app.js
-- setting.service.js
+- authenticate.js
+- leave.service.js
 - 3. Prioritized User Stories
 - payroll.controller.js
 - 3. Prioritized User Stories & Acceptance Criteria
@@ -208,40 +208,40 @@
 - Implementation Tasks: Module M9 — Payroll (+ Pakistan Statutory Compliance)
 - Architectural Implementation Plan: Module M6 — Leave & Holidays
 - Architectural Implementation Plan: Module M9 — Payroll (+ Pakistan Statutory Compliance)
-- dashboard.service.js
+- 3. User Stories & Acceptance Criteria (BUILD-GUIDE Section 17)
 - Tasks: Module M6 — Leave & Holidays
 - 4. User Stories & Acceptance Criteria (Given-When-Then)
 - EmployeeFormPage.jsx
 - Architectural Implementation Plan: Module M7 — Dashboard & Reports
 - announcement.routes.js
-- announcementService
-- contributionsCalculator.js
-- AnnouncementsPage.jsx
-- .markPayrollPaid
+- notification.service.js
+- Technical Architecture Plan: Module M13 — QR Code Attendance
+- EmployeeDashboard.jsx
+- expense.controller.js
 - payroll.routes.js
 - Architectural Implementation Plan: Module M5 — Attendance & Shifts
 - Technical Architecture Blueprint: M10 — Loans & Salary Advances
-- Phase 4: Exit Settlement, Statutory Certificates & Governance (P2)
+- expense.routes.js
 - Technical Architecture & Implementation Plan: Module M2 — Company Settings
 - Architectural Implementation Plan: Module X1 — Security, Audit & Quality Gate
 - Spec: Pre-Payroll Attendance & Leave Audit Console
 - Feature Specification: Module M9 — Payroll (+ Pakistan Statutory Compliance)
 - Development Tasks: Module X1 — Security, Audit & Quality Gate
-- notification.service.js
+- ReportsPage.jsx
 - Development Tasks: Module M7 — Dashboard & Reports
-- apiResponse.js
-- 3. User Scenarios & Acceptance Criteria (11 User Stories)
-- runAutoAbsentSweep
-- .processFinalSettlement
+- audit.controller.js
+- Task Execution Checklist (Vertical Slice Order)
+- 2. Technical Architecture Blueprint
+- Module M9: Payroll & Pakistan Statutory Compliance
 - Phase 3: P2 Advanced Slices (Breaks, Overtime, WFH, Corrections, Reports)
 - Phase 2: P1 Core Slices (Foundational & Essential Operations)
-- isCloudinaryConfigured
-- auth.service.js
+- employee.service.js
+- department.model.js
 - loan.controller.js
 - reports.service.js
-- NotificationSettingsForm.jsx
+- Quick Task Summary: Admin Notification & Announcement Delivery Method Selection
 - Quick Task: Add Refresh Action to Organizational Chart Module
-- loan.routes.js
+- ref_zod
 - 2. Technical Implementation
 - Implementation Plan: Pre-Payroll Attendance & Leave Audit Console
 - queueService
@@ -252,7 +252,7 @@
 - notification.controller.js
 - 1. What was Accomplished
 - Module M6: Leave & Holidays (Fully Verified)
-- Quick Task: Admin Notifications & Announcements Channel Settings Tab
+- Task Execution Checklist (Vertical Slice Order)
 - Quick Task: Fix Color Scheme in Organizational Chart Page
 - Quick Task Summary: Org Chart Color Scheme Harmonization
 - Quick Task Summary: Org Chart Module Refresh Action
@@ -260,17 +260,17 @@
 - Quick Task Summary: Fix UI Scrollbar in Sidebar Navigation
 - Architecture Decision Record: Module M7 (Dashboard & Reports)
 - Module M5: Attendance & Shifts Architecture & Decisions Record
-- BackupTab.jsx
+- Technical Architecture Plan: Module M12 — Face Recognition Attendance
 - Module M5 — Attendance & Shifts
 - Deployment & Git Branch Policy
-- seedPakistanHolidays
-- Quick Task: WFH Audit Context & Complete Attendance Integration
+- HrDashboard.jsx
+- BlinkTracker
 - todo.md
 - vercel.json
-- adjustLeaveBalance
-- createHoliday
-- getLeaveCalendar
-- getLeaveTypes
+- Architecture Plan: Module M14 — GPS / Geo-fencing Smart Attendance
+- Tasks Checklist: M14 — GPS / Geo-fencing Attendance
+- DashboardSkeleton
+- Feature Specification: Module M7 — Dashboard & Reports
 - {
   useGetAnnouncementsQuery,
   useCreateAnnouncementMutation,
@@ -280,35 +280,7 @@
   useRecordReadReceiptMutation,
   useGetReadReceiptsQuery
 }
-- {
-  useGetMyAttendanceQuery,
-  useGetTeamAttendanceQuery,
-  useGetAttendanceHistoryQuery,
-  useCheckInMutation,
-  useCheckOutMutation,
-  useStartBreakMutation,
-  useEndBreakMutation,
-  useUpdateAttendanceMutation,
-  useGetLockStatusQuery,
-  useLockMonthMutation,
-  useUnlockMonthMutation,
-  useApplyWFHMutation,
-  useGetMyWFHRequestsQuery,
-  useGetTeamWFHRequestsQuery,
-  useDecideWFHMutation,
-  useGetWFHAuditContextQuery,
-  useApplyCorrectionMutation,
-  useGetMyCorrectionsQuery,
-  useGetTeamCorrectionsQuery,
-  useDecideCorrectionMutation,
-  useGetCorrectionAuditContextQuery,
-  useGetShiftsQuery,
-  useCreateShiftMutation,
-  useUpdateShiftMutation,
-  useDeleteShiftMutation,
-  useGetTeamOvertimeRecordsQuery,
-  useDecideOvertimeMutation
-}
+- Module M13: Dynamic QR Code Attendance Architecture & Decisions
 - { useGetAuditLogsQuery, useGetAuditLogByIdQuery }
 - {
   useGetAdminDashboardQuery,
@@ -398,43 +370,116 @@
   useGetDepartmentPayrollCostQuery,
   useGetPrePayrollAuditQuery
 }
+- Module M12: Face Recognition Attendance
+- Feature Specification: Module M14 — GPS / Geo-Fencing Attendance
+- Module M14: GPS / Geo-fencing Attendance
+- Module M11: Expense Claims Knowledge & Architectural Ledger
+- yearlyLeave.job.js
+- express-rate-limit
+- perimeter.test.js
+- Phase 2: Smart Operations — Implementation Status & Architecture Summary
+- devDependencies
+- Quick Plan: Leaves Module Complete UI/UX Overhaul & Enterprise RBAC/PBAC Alignment
+- m10_ship_release_summary.md
+- {
+  useGetMyAttendanceQuery,
+  useGetTeamAttendanceQuery,
+  useGetAttendanceHistoryQuery,
+  useCheckInMutation,
+  useCheckOutMutation,
+  useStartBreakMutation,
+  useEndBreakMutation,
+  useUpdateAttendanceMutation,
+  useGetLockStatusQuery,
+  useLockMonthMutation,
+  useUnlockMonthMutation,
+  useApplyWFHMutation,
+  useGetMyWFHRequestsQuery,
+  useGetTeamWFHRequestsQuery,
+  useDecideWFHMutation,
+  useGetWFHAuditContextQuery,
+  useApplyCorrectionMutation,
+  useGetMyCorrectionsQuery,
+  useGetTeamCorrectionsQuery,
+  useDecideCorrectionMutation,
+  useGetCorrectionAuditContextQuery,
+  useGetShiftsQuery,
+  useCreateShiftMutation,
+  useUpdateShiftMutation,
+  useDeleteShiftMutation,
+  useGetTeamOvertimeRecordsQuery,
+  useDecideOvertimeMutation,
+  useGetFlaggedPunchesQuery,
+  useReviewFlaggedPunchMutation,
+  useGetPunchLocationsQuery,
+  useGetWfhLocationsQuery,
+  useCreateWfhLocationMutation,
+  useUpdateWfhLocationStatusMutation,
+  useDeleteWfhLocationMutation,
+  useGetKiosksQuery,
+  useGetKioskByIdQuery,
+  useCreateKioskMutation,
+  useUpdateKioskMutation,
+  useDeleteKioskMutation,
+  useGetCurrentKioskQrQuery,
+  useResetDeviceBindingMutation,
+  useEnrollFaceMutation,
+  useGetFaceStatusQuery,
+  useGetFaceEnrollmentsQuery,
+  useApproveFaceEnrollmentMutation,
+  useRejectFaceEnrollmentMutation,
+  useResetFaceEnrollmentMutation,
+}
+- {
+  useGetExpenseCategoriesQuery,
+  useCreateExpenseCategoryMutation,
+  useUpdateExpenseCategoryMutation,
+  useDeleteExpenseCategoryMutation,
+  useGetMyExpensesQuery,
+  useGetExpenseByIdQuery,
+  useApplyExpenseMutation,
+  useGetPendingExpenseApprovalsQuery,
+  useDecideExpenseMutation,
+  useReimburseExpenseMutation,
+  useGetExpenseMonthlyReportQuery,
+}
 
 ## God Nodes (most connected - your core abstractions)
-1. `ApiError` - 173 edges
-2. `react` - 149 edges
-3. `mongoose` - 139 edges
-4. `lucide-react` - 135 edges
-5. `apiResponse` - 119 edges
-6. `User` - 108 edges
-7. `Communities (122 total, 18 thin omitted)` - 105 edges
-8. `env` - 104 edges
-9. `vitest` - 91 edges
-10. `Role` - 79 edges
+1. `ApiError` - 204 edges
+2. `Communities (215 total, 37 thin omitted)` - 179 edges
+3. `react` - 175 edges
+4. `lucide-react` - 158 edges
+5. `mongoose` - 152 edges
+6. `apiResponse` - 152 edges
+7. `User` - 118 edges
+8. `env` - 113 edges
+9. `vitest` - 101 edges
+10. `Role` - 88 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `5. Architectural Decisions & Fixes` --references--> `executeBackup()`  [INFERRED]
-  .serena/memories/architecture/m2-company-settings.md → backend/src/jobs/backup.job.js
-- `Slice 2.10: Automated Database Backup Job & Manual Trigger (BUILD-GUIDE ID 2.10)` --references--> `executeBackup()`  [INFERRED]
-  .specify/specs/04-company-settings/tasks.md → backend/src/jobs/backup.job.js
 - `10. Step-by-Step Development Plan` --references--> `checkPermission()`  [INFERRED]
   docs/TECH-SPEC.md → backend/src/middlewares/checkPermission.js
 - `4. Functional Requirements Checklist` --references--> `checkPermission()`  [INFERRED]
   .specify/specs/03-roles-permissions/spec.md → backend/src/middlewares/checkPermission.js
 - `Slice 26.3: CASL checkPermission Middleware (BUILD-GUIDE ID 26.3)` --references--> `checkPermission()`  [INFERRED]
   .specify/specs/03-roles-permissions/tasks.md → backend/src/middlewares/checkPermission.js
+- `Core Architecture Pillars` --references--> `checkPermission()`  [INFERRED]
+  .specify/specs/12-security/plan.md → backend/src/middlewares/checkPermission.js
+- `1. Executive Summary & Architecture Integration` --references--> `checkPermission()`  [INFERRED]
+  .specify/specs/12-security/spec.md → backend/src/middlewares/checkPermission.js
 
 ## Import Cycles
 - None detected.
 
-## Communities (215 total, 37 thin omitted)
+## Communities (230 total, 34 thin omitted)
 
 ### Community 0 - "4. Core HR Modules"
 Cohesion: 0.05
-Nodes (36): 1. Ye Document Kaise Parhein, 2. Modules Banane ki Tarteeb, 3. M0 — Project Foundation (Common Setup), 4. Core HR Modules, 5. Payroll & Finance Modules, 6. Smart Attendance Modules, 7. AI Modules, 8. Employee Experience Modules (+28 more)
+Nodes (37): 10. Har Module ke Liye Kaam ki Checklist, 1. Ye Document Kaise Parhein, 2. Modules Banane ki Tarteeb, 3. M0 — Project Foundation (Common Setup), 4. Core HR Modules, 5. Payroll & Finance Modules, 6. Smart Attendance Modules, 7. AI Modules (+29 more)
 
 ### Community 1 - "HRM System — Full-Stack Build Guide (Backend + Frontend Saath Saath)"
-Cohesion: 0.07
-Nodes (29): 10. M5 — Attendance & Shifts, 12. M9 — Payroll (Pakistan Compliance Samait), 13. M7 — Dashboard & Reports, 14. X1 — Security, Audit & Quality (Phase 1 ka aakhri check), 15. M10 — Loans & Advances, 16. M11 — Expense Claims, 17. M14 — GPS / Geo-fencing, 18. M13 — QR Code Attendance (+21 more)
+Cohesion: 0.06
+Nodes (32): 10. M5 — Attendance & Shifts, 11. M6 — Leave & Holidays, 12. M9 — Payroll (Pakistan Compliance Samait), 13. M7 — Dashboard & Reports, 14. X1 — Security, Audit & Quality (Phase 1 ka aakhri check), 15. M10 — Loans & Advances, 16. M11 — Expense Claims, 17. M14 — GPS / Geo-fencing (+24 more)
 
 ### Community 2 - "HRM System — Functional Requirements Document"
 Cohesion: 0.05
@@ -500,9 +545,9 @@ Nodes (9): Assess Bug, Bug Assess Skill, Execution, Guardrails, Prerequisites, S
 Cohesion: 0.20
 Nodes (9): Bug Triage Workflow Extension, Commands, Disabling, Guardrails, Hooks, Installation, Overview, Slug Conventions (+1 more)
 
-### Community 18 - "mongoose"
-Cohesion: 0.21
-Nodes (12): app, env, Role, roleSchema, User, userSchema, verifyRestorePipeline(), bcrypt (+4 more)
+### Community 18 - "app.js"
+Cohesion: 0.23
+Nodes (12): app, env, ExpenseCategory, expenseCategorySchema, Role, roleSchema, User, userSchema (+4 more)
 
 ### Community 19 - "Intake an Idea"
 Cohesion: 0.22
@@ -556,9 +601,9 @@ Nodes (6): Completion Report, Done When, Mandatory Post-Execution Hooks, Outline
 Cohesion: 0.29
 Nodes (6): Completion Report, Done When, Mandatory Post-Execution Hooks, Outline, Pre-Execution Checks, User Input
 
-### Community 32 - "TeamAttendancePage.jsx"
-Cohesion: 0.07
-Nodes (18): attendanceApi, ApplyWFHModal(), AttendanceStatusBadge(), STATUS_CONFIG, EditAttendanceModal(), ExportAttendanceModal(), MyRequestsView(), PunchCardWidget() (+10 more)
+### Community 32 - "react"
+Cohesion: 0.05
+Nodes (32): attendanceApi, ApplyWFHModal(), AttendanceStatusBadge(), STATUS_CONFIG, EditAttendanceModal(), EnrollmentCaptureWizard(), STEPS, ExportAttendanceModal() (+24 more)
 
 ### Community 33 - "Research an Idea"
 Cohesion: 0.29
@@ -608,41 +653,41 @@ Nodes (4): [Category 1], [Category 2], [CHECKLIST TYPE] Checklist: [FEATURE NAME
 Cohesion: 0.50
 Nodes (3): Backend Stack, Frontend Stack, HRM System — Technology Stack
 
-### Community 46 - "App.jsx"
+### Community 46 - "Can"
 Cohesion: 0.06
-Nodes (57): App(), Can(), ConfirmDialog(), DataTable(), PageHeader(), StatCard(), STATUS_STYLES, StatusBadge() (+49 more)
+Nodes (30): Can(), Card(), ConfirmDialog(), DataTable(), StatCard(), LoginHistoryPage(), DepartmentModal(), DesignationModal() (+22 more)
 
 ### Community 49 - "checkPermission"
-Cohesion: 0.11
-Nodes (23): checkPermission(), validate(), 1. Kaam Karne ka Usool (Vertical Slice), 10. Har Module ke Liye Kaam ki Checklist, 1. Project Profile & Operational Scope, 2. Core Architectural & Code Invariants (Non-Negotiable), 3. User Roles Hierarchy, 4. Documentation Sources of Truth (+15 more)
+Cohesion: 0.09
+Nodes (24): buildAbilityForUser(), checkPermission(), getEffectiveScopeForAction(), validate(), sanitizeFields(), SENSITIVE_FIELDS, 1. Project Profile & Operational Scope, 2. Core Architectural & Code Invariants (Non-Negotiable) (+16 more)
 
-### Community 54 - "sonner"
-Cohesion: 0.06
-Nodes (34): store, ErrorBoundary, AppLayout(), Sidebar(), Topbar(), authApi, authSlice, initialState (+26 more)
+### Community 54 - "App.jsx"
+Cohesion: 0.05
+Nodes (55): App(), store, ErrorBoundary, AppLayout(), Sidebar(), Topbar(), ProtectedRoute(), KioskModal() (+47 more)
 
 ### Community 55 - "formatters.js"
-Cohesion: 0.08
-Nodes (24): Card(), AuditLogDiffModal(), AuditLogFilterToolbar(), MODULE_OPTIONS, AuditLogsPage(), DocumentUploadModal(), ProfileDocumentsTab(), ProfileHistoryTab() (+16 more)
+Cohesion: 0.31
+Nodes (8): AuditLogDiffModal(), AuditLogFilterToolbar(), MODULE_OPTIONS, AuditLogsPage(), ProfileOverviewTab(), formatDate(), maskCNIC(), maskIBAN()
 
 ### Community 56 - "baseApi.js"
-Cohesion: 0.05
-Nodes (24): appReducer, rootReducer(), announcementsApi, auditApi, GRADE_TIERS, DAYS_OF_WEEK, departmentsApi, leavesApi (+16 more)
+Cohesion: 0.07
+Nodes (22): appReducer, rootReducer(), announcementsApi, AnnouncementCard(), PRIORITY_STYLES, AnnouncementFormModal(), ReadReceiptsModal(), AnnouncementsPage() (+14 more)
 
-### Community 57 - "SettingsPage.jsx"
-Cohesion: 0.16
-Nodes (16): AttendanceRulesForm(), CompanyForm(), GeoFenceMapEditor(), LeavePolicyForm(), PayrollSettingsForm(), TaxSlabsForm(), AVAILABLE_PLACEHOLDERS, TEMPLATE_KEYS (+8 more)
+### Community 57 - "lucide-react"
+Cohesion: 0.11
+Nodes (19): AttendanceRulesForm(), BackupTab(), CompanyForm(), GeoFenceMapEditor(), LeavePolicyForm(), NotificationSettingsForm(), PayrollSettingsForm(), TaxSlabsForm() (+11 more)
 
-### Community 58 - "Communities (122 total, 18 thin omitted)"
-Cohesion: 0.02
-Nodes (105): Communities (122 total, 18 thin omitted), Community 0 - "4. Core HR Modules", Community 100 - "Module M2: Company Settings Architecture", Community 101 - "Feature Specification: M1 Authentication & Access Control", Community 102 - "scripts", Community 103 - ".oxlintrc.json", Community 104 - "Module M1: Authentication & Access Control Architecture", Community 105 - "delegation.controller.js" (+97 more)
+### Community 58 - "Communities (215 total, 37 thin omitted)"
+Cohesion: 0.01
+Nodes (179): Communities (215 total, 37 thin omitted), Community 0 - "4. Core HR Modules", Community 100 - "Module M2: Company Settings Architecture", Community 101 - "Feature Specification: M1 Authentication & Access Control", Community 102 - "scripts", Community 103 - ".oxlintrc.json", Community 104 - "Module M1: Authentication & Access Control Architecture", Community 105 - "delegation.controller.js" (+171 more)
 
 ### Community 59 - "department.service.js"
 Cohesion: 0.08
-Nodes (40): assignDepartmentHead(), calculateShiftTiming(), createDepartment(), createDesignation(), createShift(), deleteDepartment(), deleteDesignation(), deleteShift() (+32 more)
+Nodes (41): assignDepartmentHead(), calculateShiftTiming(), createDepartment(), createDesignation(), createShift(), deleteDepartment(), deleteDesignation(), deleteShift() (+33 more)
 
 ### Community 60 - "frontend/package.json"
 Cohesion: 0.04
-Nodes (44): dependencies, @casl/ability, @casl/react, clsx, @hookform/resolvers, leaflet, lucide-react, react (+36 more)
+Nodes (47): dependencies, @casl/ability, @casl/react, clsx, @hookform/resolvers, html5-qrcode, leaflet, lucide-react (+39 more)
 
 ### Community 61 - "3. Detailed User Stories & Acceptance Criteria"
 Cohesion: 0.05
@@ -652,17 +697,17 @@ Nodes (42): 1. Executive Summary & Architecture Integration, 2.1 AES-256-GCM Fie
 Cohesion: 0.07
 Nodes (26): 1. Executive Summary & Architecture Integration, 2. User Scenarios & Acceptance Criteria (17 User Stories), 3. Edge Cases & Boundary Handling, 4. Functional Requirements Checklist, 5. Success Criteria & Verification Metrics, Backend Authorization (`@casl/ability` v6.7+), Context7 Verified Library Syntax Patterns, Feature Specification: Module M26 — Roles & Permissions (RBAC & CASL) (+18 more)
 
-### Community 63 - "Feature Specification: Module M2 — Company Settings"
-Cohesion: 0.13
-Nodes (14): 1. Executive Summary & Architecture Integration, 2.1 Backend Form-Data & Logo Upload (`multer` v1.4+), 2.2 Geo-Fence Map Editor (`leaflet` v1.9+), 2. Context7 Verified Library Syntax Patterns, 4. Edge Cases & Failure Modes, 5. Functional Requirements (FR) Traceability, 6. Key Data Entities & Schemas, 7. Success Criteria & Quality Metrics (+6 more)
+### Community 63 - "3. User Scenarios & Acceptance Criteria (11 User Stories)"
+Cohesion: 0.07
+Nodes (26): 1. Executive Summary & Architecture Integration, 2.1 Backend Form-Data & Logo Upload (`multer` v1.4+), 2.2 Geo-Fence Map Editor (`leaflet` v1.9+), 2. Context7 Verified Library Syntax Patterns, 3. User Scenarios & Acceptance Criteria (11 User Stories), 4. Edge Cases & Failure Modes, 5. Functional Requirements (FR) Traceability, 6. Key Data Entities & Schemas (+18 more)
 
-### Community 64 - "role.service.js"
-Cohesion: 0.06
-Nodes (34): assignUserRoles(), cloneRole(), createRole(), deleteRole(), getRoleById(), updateRole(), ALL_ACTION_IDS, PERMISSIONS_CATALOGUE (+26 more)
+### Community 64 - "Phase 1: Core RBAC & Permission Matrix Foundation (Priority P1)"
+Cohesion: 0.11
+Nodes (18): Phase 1: Core RBAC & Permission Matrix Foundation (Priority P1), Phase 2: Advanced Governance, Delegation & Transparency (Priority P2), Phase 3: Multi-Role End-to-End Verification (`E2E-M26`), Slice 26.10: Role Cloning Engine (BUILD-GUIDE ID 26.10), Slice 26.12: Privilege Escalation Guard & Safe Granting Boundaries (BUILD-GUIDE ID 26.12), Slice 26.15: Effective Permissions Inspector ("View As User") (BUILD-GUIDE ID 26.15), Slice 26.16: Role & Permission Change Audit Logging (BUILD-GUIDE ID 26.16), Slice 26.17: Employee Self-Service "My Access" Tab (BUILD-GUIDE ID 26.17) (+10 more)
 
-### Community 65 - "employee.service.js"
-Cohesion: 0.09
-Nodes (30): connectDB(), Department, departmentSchema, Designation, designationSchema, EmployeeHistory, employeeHistorySchema, ProfileChangeRequest (+22 more)
+### Community 65 - "m3.employees.e2e.test.js"
+Cohesion: 0.32
+Nodes (5): EmployeeHistory, employeeHistorySchema, ProfileChangeRequest, profileChangeRequestSchema, decrypt()
 
 ### Community 66 - "3. Prioritized User Stories & Acceptance Criteria"
 Cohesion: 0.08
@@ -673,12 +718,12 @@ Cohesion: 0.11
 Nodes (18): companyProfileSchema, eobiSchema, geoFenceItemSchema, geoFencesSchema, lateRulesSchema, leavePolicySchema, notificationsSettingSchema, officeHoursSchema (+10 more)
 
 ### Community 68 - "ApiError"
-Cohesion: 0.08
-Nodes (27): errorHandler(), unlockAttendanceMonth(), getAuditLogById(), AuthService, inferDeviceType(), getSalaryHistory(), submitChangeRequest(), getHolidayById() (+19 more)
+Cohesion: 0.06
+Nodes (39): errorHandler(), deleteWfhLocation(), getFaceEnrollmentStatus(), getKioskById(), unlockAttendanceMonth(), getAuditLogById(), getHolidayById(), getLeaveApplicantAudit() (+31 more)
 
-### Community 69 - "setting.controller.js"
-Cohesion: 0.23
-Nodes (10): BACKUP_DIR, cleanOldBackups(), ensureBackupDir(), executeBackup(), getBackupStatus(), getAllSettings, getBackupStatus, getPublicPolicies (+2 more)
+### Community 69 - "PageHeader"
+Cohesion: 0.09
+Nodes (12): PageHeader(), ExpenseCategoryModal(), ExpenseDecisionModal(), ExpenseFormModal(), ExpenseReimburseModal(), expensesApi, ExpenseApprovalsPage(), ExpenseCategoriesPage() (+4 more)
 
 ### Community 70 - "employee.controller.js"
 Cohesion: 0.08
@@ -689,76 +734,76 @@ Cohesion: 0.10
 Nodes (19): assignDepartmentHead, createDepartment, createDesignation, createShift, deleteDepartment, deleteDesignation, deleteShift, getDepartmentById (+11 more)
 
 ### Community 72 - "Phase 1: Core Master & Personal Records (Priority P1)"
-Cohesion: 0.07
-Nodes (28): decryptEmployeeFields(), deleteEmployee(), getEmployeeById(), getJobHistory(), getMyProfile(), recordJobHistory(), updateEmployee(), updateEmployeeStatus() (+20 more)
+Cohesion: 0.09
+Nodes (21): Phase 1: Core Master & Personal Records (Priority P1), Phase 2: Career History & Advanced Workflows (Priority P2), Phase 3: Multi-Role End-to-End Verification (`E2E-M3`), Slice 3.11: Salary Revision History (Permission Guarded) (BUILD-GUIDE ID 3.11), Slice 3.12: Skills Taxonomy & Tech Stack Tagging (BUILD-GUIDE ID 3.12), Slice 3.13: Excel Bulk Employee Ingestion with Row-Level Error Reports (BUILD-GUIDE ID 3.13), Slice 3.14: Employee Directory Excel Export (BUILD-GUIDE ID 3.14), Slice 3.15: Self-Service "My Profile" Portal (BUILD-GUIDE ID 3.15) (+13 more)
 
-### Community 73 - "validate.js"
-Cohesion: 0.18
-Nodes (11): router, assignHeadSchema, createDepartmentSchema, createDesignationSchema, createShiftSchema, objectIdSchema, updateDepartmentSchema, updateDesignationSchema (+3 more)
+### Community 73 - "StatusBadge"
+Cohesion: 0.16
+Nodes (10): STATUS_STYLES, StatusBadge(), EarlyPrepaymentModal(), LoanApplyModal(), LoanDecisionModal(), LoanScheduleDrawer(), loansApi, LoanApprovalsPage() (+2 more)
 
 ### Community 74 - "dependencies"
-Cohesion: 0.11
-Nodes (19): dependencies, bcrypt, @casl/ability, cloudinary, cookie-parser, cors, dotenv, exceljs (+11 more)
+Cohesion: 0.10
+Nodes (20): dependencies, bcrypt, @casl/ability, cloudinary, cookie-parser, cors, dotenv, exceljs (+12 more)
 
-### Community 75 - "Phase 1: Core Authentication & Session Foundation (Priority P1)"
-Cohesion: 0.11
-Nodes (15): Module M1 Multi-Role End-to-End Verification, Phase 1: Core Authentication & Session Foundation (Priority P1), Phase 2: Enhanced Security, Auditing & Administration (Priority P2), Phase 3: Module M1 Verification & End-to-End Testing, Slice 1.10: Two-Factor Authentication (2FA OTP) (BUILD-GUIDE ID 1.10), Slice 1.11: Client-Side Inactivity Auto-Logout (BUILD-GUIDE ID 1.11), Slice 1.12: Login History Tracking & Audit Records (BUILD-GUIDE ID 1.12), Slice 1.13: User Account Activation / Deactivation (BUILD-GUIDE ID 1.13) (+7 more)
+### Community 75 - "AuthService"
+Cohesion: 0.07
+Nodes (23): AuthService, inferDeviceType(), assignUserRoles(), AuditService, Module M1 Multi-Role End-to-End Verification, Phase 1: Core Authentication & Session Foundation (Priority P1), Phase 2: Enhanced Security, Auditing & Administration (Priority P2), Phase 3: Module M1 Verification & End-to-End Testing (+15 more)
 
 ### Community 76 - "3. Prioritized User Stories & Acceptance Criteria"
 Cohesion: 0.14
 Nodes (15): 5. Complete API Route Contract, Permissions & Scopes, 3. Prioritized User Stories & Acceptance Criteria, User Story 10 — Two-Factor Authentication (2FA) via OTP (Priority: P2), User Story 12 — Login Audit History Tracking (Priority: P2), User Story 13 — User Account Activation & Deactivation (Priority: P1), User Story 14 — HR-Initiated Emergency Password Reset (Priority: P2), User Story 1 — User Model & Credential Security Foundation (Priority: P1), User Story 2 — User Login with Access & Refresh Tokens (Priority: P1) (+7 more)
 
 ### Community 77 - "recordAuditLog"
-Cohesion: 0.10
-Nodes (25): decideChangeRequest(), updateSkills(), adjustLeaveBalance(), createHoliday(), createLeaveType(), decideLeaveEncashment(), deleteHoliday(), deleteLeaveType() (+17 more)
+Cohesion: 0.07
+Nodes (41): Kiosk, approveFaceEnrollment(), createKiosk(), deleteKiosk(), enrollFace(), getFaceEnrollments(), getKiosks(), rejectFaceEnrollment() (+33 more)
 
 ### Community 78 - "HRM System — Current State & Progress Tracker"
-Cohesion: 0.14
-Nodes (13): HRM System — Current State & Progress Tracker, Module M1 Progress Summary (14 / 14 Slices Implemented & Passing), Module M2 Progress Summary (11 / 11 Slices Implemented & Passing), Phase 1: Core Authentication & Session Foundation (Priority P1) — 100% Complete, Phase 1: Core Company Settings & Statutory Foundation (Priority P1) — 100% Complete, Phase 2: Advanced Spatial, Templates & Disaster Recovery (Priority P2) — 100% Complete, Phase 2: Enhanced Security, Auditing & Administration (Priority P2) — 100% Complete, Phase 3: Multi-Role End-to-End Verification (`E2E-M1`) — 100% Complete (+5 more)
+Cohesion: 0.11
+Nodes (18): Architecture & System Invariants (Strictly Enforced), HRM System — Current State & Progress Tracker, Module M1 Progress Summary (14 / 14 Slices Implemented & Passing), Module M26 Progress Summary (17 / 17 Slices Implemented & Passing), Module M2 Progress Summary (11 / 11 Slices Implemented & Passing), Phase 1: Core Authentication & Session Foundation (Priority P1) — 100% Complete, Phase 1: Core Company Settings & Statutory Foundation (Priority P1) — 100% Complete, Phase 1: Core RBAC & CASL Infrastructure (Priority P1) — 100% Complete (+10 more)
 
 ### Community 79 - "employee.routes.js"
 Cohesion: 0.18
 Nodes (14): router, avatarUpload, router, uploadDoc, uploadMemory, changeRequestSchema, CNIC_REGEX, createEmployeeSchema (+6 more)
 
-### Community 80 - "lucide-react"
+### Community 80 - "ScreenSkeleton"
 Cohesion: 0.06
-Nodes (27): CardGridSkeletonContent(), MatrixSkeletonContent(), OrgChartSkeletonContent(), ProfileSkeletonContent(), ScreenSkeleton(), TablePageSkeletonContent(), OrgChartNode(), BankAdviceExportModal() (+19 more)
+Nodes (25): CardGridSkeletonContent(), MatrixSkeletonContent(), OrgChartSkeletonContent(), ProfileSkeletonContent(), ScreenSkeleton(), TablePageSkeletonContent(), OrgChartNode(), TeamMemberCard() (+17 more)
 
 ### Community 81 - "Technical Architecture & Implementation Plan: Module M26 — Roles & Permissions (RBAC & CASL)"
-Cohesion: 0.13
-Nodes (14): 1. Architecture Summary, 2. Technical Context & Database Verification, 3. Visual System Architecture & Data Flow (Archify Mermaid Engine), 4. Exact File Blueprint & Deliverables, 5. Endpoints, Permissions & Scope Contract, 6. Shared Permission Catalogue Injection (`shared/permissions.js`), 7. Next Steps & Task Breakdown, Backend Architecture (`backend/src/`) (+6 more)
+Cohesion: 0.14
+Nodes (13): 2. Technical Context & Database Verification, 3. Visual System Architecture & Data Flow (Archify Mermaid Engine), 4. Exact File Blueprint & Deliverables, 5. Endpoints, Permissions & Scope Contract, 6. Shared Permission Catalogue Injection (`shared/permissions.js`), 7. Next Steps & Task Breakdown, Backend Architecture (`backend/src/`), Diagram 1: Request & Authorization Flow Architecture (+5 more)
 
-### Community 82 - "Phase 1: Core Company Settings & Statutory Foundation (Priority P1)"
-Cohesion: 0.13
-Nodes (14): Phase 1: Core Company Settings & Statutory Foundation (Priority P1), Phase 2: Advanced Spatial, Templates & Disaster Recovery (Priority P2), Phase 3: Multi-Role End-to-End Verification (`E2E-M2`), Slice 2.10: Automated Database Backup Job & Manual Trigger (BUILD-GUIDE ID 2.10), Slice 2.2: Company Profile & Logo Asset Upload (BUILD-GUIDE ID 2.2), Slice 2.3: Working Days & Standard Office Hours (BUILD-GUIDE ID 2.3), Slice 2.4: Late Arrival Rules & Penalty Deductions (BUILD-GUIDE ID 2.4), Slice 2.5: Leave Policy Definitions (BUILD-GUIDE ID 2.5) (+6 more)
+### Community 82 - "Graph Report - HRM  (2026-10-29)"
+Cohesion: 0.06
+Nodes (35): BACKUP_DIR, cleanOldBackups(), ensureBackupDir(), executeBackup(), getBackupStatus(), Community Hubs (Navigation), Corpus Check, God Nodes (most connected - your core abstractions) (+27 more)
 
 ### Community 83 - "Architectural Plan: Module M3 — Employee Management"
 Cohesion: 0.14
 Nodes (13): 1.1 Invariants & Security Guardrails, 1. Architectural Blueprint & Request Flow, 2.1 Backend Files (`backend/src/`), 2.2 Frontend Files (`frontend/src/`), 2. Exact Files Manifest, 3.1 Diagram 1: System Component Flow (Client $\rightarrow$ Middleware $\rightarrow$ Service $\rightarrow$ Storage / Infra), 3.2 Diagram 2: Entity Relationship Diagram (ERD & Indexes), 3.3 Diagram 3: Main Sequence Diagram (Employee Onboarding & Account Provisioning Flow) (+5 more)
 
 ### Community 84 - "Technical Architecture & Implementation Plan: Module M4 — Departments, Designations, Shifts & Org Chart"
-Cohesion: 0.14
-Nodes (13): 1. Architecture Summary, 2. Technical Context & Database Verification, 3. Visual System Architecture & Data Flow (Archify Mermaid Engine), 4. Exact File Artifacts to Implement, 5.1 Endpoint Authorization Matrix, 5.2 Permission Catalogue Registration Step, 5. API Contracts, Permissions & Scopes Specification, 6. Implementation Phasing Strategy (+5 more)
+Cohesion: 0.17
+Nodes (11): 2. Technical Context & Database Verification, 3. Visual System Architecture & Data Flow (Archify Mermaid Engine), 5.1 Endpoint Authorization Matrix, 5.2 Permission Catalogue Registration Step, 5. API Contracts, Permissions & Scopes Specification, 6. Implementation Phasing Strategy, Diagram 1: Request & Architecture Flow Architecture, Diagram 2: Entity Relationship Diagram (ERD) (+3 more)
 
-### Community 85 - "checkPermission.js"
-Cohesion: 0.36
-Nodes (4): buildAbilityForUser(), getEffectiveScopeForAction(), sanitizeFields(), SENSITIVE_FIELDS
+### Community 85 - "Feature Specification: Module M11 — Expense Claims"
+Cohesion: 0.08
+Nodes (23): 1. Executive Summary & Architectural Scope, 2. User Scenarios & Acceptance Criteria (By BUILD-GUIDE Row), 3.1 Expense Category Model (`backend/src/models/expenseCategory.model.js`), 3.2 Expense Claim Model (`backend/src/models/expense.model.js`), 3. Data Models & Schemas, 4. API Endpoints Contract & Authorization, 5.1 Multer Memory Storage & File Validation, 5.2 Zod Validation Schemas (`backend/src/modules/expenses/expense.validation.js`) (+15 more)
 
-### Community 86 - "authenticate.js"
-Cohesion: 0.19
-Nodes (14): AuthController, forgotPasswordLimiter, loginLimiter, router, changePasswordSchema, disable2faSchema, forgotPasswordSchema, loginSchema (+6 more)
+### Community 86 - "user.routes.js"
+Cohesion: 0.13
+Nodes (19): AuthController, forgotPasswordLimiter, loginLimiter, router, changePasswordSchema, disable2faSchema, forgotPasswordSchema, loginSchema (+11 more)
 
-### Community 87 - "Graph Report - HRM  (2026-10-16)"
-Cohesion: 0.18
-Nodes (10): Community Hubs (Navigation), Corpus Check, God Nodes (most connected - your core abstractions), Graph Freshness, Graph Report - HRM  (2026-10-16), Import Cycles, Knowledge Gaps, Suggested Questions (+2 more)
+### Community 87 - "2. User Scenarios & Prioritized User Stories"
+Cohesion: 0.10
+Nodes (20): 1. Executive Summary & Architecture Overview, 1. `Kiosk` (`backend/src/models/kiosk.model.js`), 2. User Scenarios & Prioritized User Stories, 2. `User` Schema Extension (`backend/src/models/user.model.js`), 3. `Attendance` Schema Integration (`attendance.model.js`), 3. Official Library Syntax & Patterns (from Context7), 4. Key Entities & Database Schemas, 5. Security & Risk Analysis (+12 more)
 
 ### Community 88 - "2. Functional Requirements by Group"
-Cohesion: 0.20
-Nodes (9): 1. Scope Baseline, 2. Functional Requirements by Group, Group 1: Core HR (Launch Priority P1), Group 2: Payroll & Finance (P1 & P2), Group 3: Smart Attendance (P2), Group 4: AI Modules (P2 & P3), Group 5: Employee Experience (P2 & P3), Group 6: Office Management (P2 & P3) (+1 more)
+Cohesion: 0.18
+Nodes (10): 1. Scope Baseline, 2. Functional Requirements by Group, 3. Non-Functional & Security Requirements, Group 1: Core HR (Launch Priority P1), Group 2: Payroll & Finance (P1 & P2), Group 3: Smart Attendance (P2), Group 4: AI Modules (P2 & P3), Group 5: Employee Experience (P2 & P3) (+2 more)
 
-### Community 89 - "leave.service.js"
-Cohesion: 0.16
-Nodes (23): Attendance, attendanceAuditSchema, attendanceSchema, breakItemSchema, Delegation, delegationSchema, documentSchema, Employee (+15 more)
+### Community 89 - "employee.model.js"
+Cohesion: 0.13
+Nodes (32): Attendance, attendanceAuditSchema, attendanceSchema, breakItemSchema, documentSchema, Employee, employeeSchema, Holiday (+24 more)
 
 ### Community 90 - "role.controller.js"
 Cohesion: 0.22
@@ -773,8 +818,8 @@ Cohesion: 0.22
 Nodes (8): 1. Overall Architectural Layout, 2. Color Palette & Semantic Tokens, 3. Sidebar Specification (`docs/ui-reference.png`), 4. Topbar Specification (`docs/ui-reference.png`), 5. Page Header & Cards Specification, 6. Shared Component Guidelines, Official UI Reference Specification — HRM System, Semantic Tinted Status Pills
 
 ### Community 93 - "baseQueryWithReauth"
-Cohesion: 0.33
-Nodes (5): baseQuery, baseQueryWithReauth(), Mutex, 2. Technical Architecture & Library Invariants, Slice 1.4: Automatic Token Rotation & Transparent Session Refresh (BUILD-GUIDE ID 1.4)
+Cohesion: 0.25
+Nodes (7): baseQuery, baseQueryWithReauth(), Mutex, 2. Technical Architecture & Library Invariants, Slice 1.4: Automatic Token Rotation & Transparent Session Refresh (BUILD-GUIDE ID 1.4), Vertical Slice 5.14: Monthly Attendance Lock Pre-Payroll (P1), 3.2 `PayrollRun` Model (`payrollRun.model.js`)
 
 ### Community 94 - "Architecture Implementation Plan: M1 Authentication & Access Control"
 Cohesion: 0.12
@@ -784,21 +829,21 @@ Nodes (16): 4. M1 — Authentication, useIdleTimer(), 1. Architectural Summary &
 Cohesion: 0.25
 Nodes (7): HRM System — 5-Phase Master Implementation Roadmap, Phase 1: Core HR & Payroll (Launch Scope P1), Phase 2: Smart Operations (P2 Scope), Phase 3: AI Features (Intelligence Scope), Phase 4: Engagement & Polish (P3 Scope), Phase 5: Release, Deployment & Handover, Summary of Master Roadmap Metrics
 
-### Community 96 - "role.routes.js"
-Cohesion: 0.36
-Nodes (6): router, assignRolesSchema, cloneRoleSchema, createRoleSchema, permissionRuleSchema, updateRoleSchema
+### Community 96 - "3. Prioritized User Stories (BUILD-GUIDE Rows 12.1 to 12.9)"
+Cohesion: 0.10
+Nodes (20): 1. Executive Summary & Architecture Overview, 2. Official Library Patterns (`@vladmandic/face-api` via Context7), 3. Prioritized User Stories (BUILD-GUIDE Rows 12.1 to 12.9), 4. API Endpoints & RBAC Matrix, 5. Coverage Matrix: BUILD-GUIDE ID to User Story, A. Model Loading from `/public/models`, B. Face Detection with 68 Landmarks & Descriptor Extraction, C. Client-Side Eye Aspect Ratio (EAR) Liveness Detection (+12 more)
 
-### Community 97 - "setting.routes.js"
-Cohesion: 0.22
-Nodes (8): downloadFile, getSignedUrl, generateSignedFileUrl(), normalizeFilePath(), UPLOADS_ROOT, verifySignedFileUrl(), router, multer
+### Community 97 - "connectDB"
+Cohesion: 0.16
+Nodes (15): connectDB(), initAutoAbsentJob(), resetDb(), seedAugustPayroll(), seedE2E(), runFullSystemSeed(), seedJulyPayrollData(), seedM4() (+7 more)
 
 ### Community 99 - "Module M26: Roles & Permissions (RBAC & CASL) Architecture"
 Cohesion: 0.29
 Nodes (6): 1. Overview & Verification Status, 2. Data Models, 3. Seeded Core Roles, 4. Endpoints & API Surface, 5. Security & Architectural Invariants, Module M26: Roles & Permissions (RBAC & CASL) Architecture
 
-### Community 100 - "Module M2: Company Settings Architecture"
-Cohesion: 0.29
-Nodes (6): 1. Overview & Verification Status, 2. Data Model, 3. Configuration Domains & Zod Schemas, 4. Endpoints & API Surface, 5. Architectural Decisions & Fixes, Module M2: Company Settings Architecture
+### Community 100 - "UsersPage.jsx"
+Cohesion: 0.16
+Nodes (4): EffectivePermissionsModal(), rolesApi, ResetDeviceModal(), UsersPage()
 
 ### Community 101 - "Feature Specification: M1 Authentication & Access Control"
 Cohesion: 0.29
@@ -821,8 +866,8 @@ Cohesion: 0.50
 Nodes (3): cancelDelegation, createDelegation, getDelegations
 
 ### Community 106 - "attendance.service.js"
-Cohesion: 0.11
-Nodes (42): applyCorrection(), applyWFH(), assertMonthNotLocked(), checkIn(), checkOut(), decideCorrection(), decideOvertime(), decideWFH() (+34 more)
+Cohesion: 0.07
+Nodes (67): applyCorrection(), applyWFH(), assertMonthNotLocked(), calculateEuclideanDistance(), checkAndConsumeQrToken(), checkIn(), checkOut(), consumedQrTokens (+59 more)
 
 ### Community 107 - "Module M3 — Employee Management Architecture & Implementation Summary"
 Cohesion: 0.40
@@ -836,25 +881,29 @@ Nodes (3): Completed & Verified Modules (11 / 12), Next Up, Phase 1: Core HR & P
 Cohesion: 0.40
 Nodes (5): 1. `models/user.model.js` Indexes, 2. `models/loginHistory.model.js` Indexes, 3. MongoDB Schema & Index Verification (via `mongodb` MCP), Investigation Findings, Required Database Schema & Index Specifications
 
-### Community 110 - "notify.service.js"
-Cohesion: 0.08
-Nodes (18): initYearlyLeaveCron(), runYearlyLeaveRollover(), Announcement, announcementSchema, readReceiptSchema, Notification, notificationSchema, initAutoAbsentJob() (+10 more)
+### Community 110 - "mongoose"
+Cohesion: 0.10
+Nodes (13): Announcement, announcementSchema, readReceiptSchema, Delegation, delegationSchema, LoginHistory, loginHistorySchema, Notification (+5 more)
+
+### Community 111 - "Implementation Plan: Module M11 — Expense Claims"
+Cohesion: 0.12
+Nodes (16): 1. Executive Summary & Architecture Blueprint, 3. Concrete File Layout & Implementation Directory Tree, 4. Visual Architecture & Flow Diagrams (Archify Engine), 5. API Contracts & CASL Authorization Matrix, 6. Detailed API Route Signatures, 7. Quality Gates & Test Verification Plan, 8. Next Step, Architectural Invariants: (+8 more)
 
 ### Community 112 - "React + Vite"
 Cohesion: 0.50
 Nodes (3): Expanding the Oxlint configuration, React Compiler, React + Vite
 
 ### Community 118 - "cleanProductionDb.js"
-Cohesion: 0.13
-Nodes (20): LeaveEncashment, leaveEncashmentSchema, installmentScheduleSchema, Loan, loanSchema, repaymentRecordSchema, MonthLock, monthLockSchema (+12 more)
+Cohesion: 0.10
+Nodes (26): AttendanceCorrection, attendanceCorrectionSchema, approvalHistorySchema, Expense, expenseSchema, reimbursementSchema, LeaveEncashment, leaveEncashmentSchema (+18 more)
 
-### Community 122 - "react"
-Cohesion: 0.14
-Nodes (24): PinnedNoticeBoard(), AdminDashboard(), BirthdaysSkeleton(), BottomSectionSkeleton(), DashboardSkeleton(), DeptDistributionSkeleton(), EmployeeTopCardsSkeleton(), RecentActivitySkeleton() (+16 more)
+### Community 122 - "DashboardPage.jsx"
+Cohesion: 0.24
+Nodes (9): AdminDashboard(), ManagerDashboard(), AttendanceChart(), DepartmentCostChart(), StatCard(), dashboardApi, DashboardPage(), getUserDisplayName() (+1 more)
 
 ### Community 123 - "usePermission"
-Cohesion: 0.10
-Nodes (14): FileUpload(), ProtectedRoute(), AttendanceLockPage(), ProfileSalaryTab(), StatusChangeModal(), EmployeeProfilePage(), ApplyLeaveModal(), ExportLeaveModal() (+6 more)
+Cohesion: 0.07
+Nodes (22): FileUpload(), ApplyLeaveModal(), ExportLeaveModal(), HolidayModal(), CATEGORY_COLORS, LeaveDecideModal(), leavesApi, STATUS_CONFIG (+14 more)
 
 ### Community 124 - "4. Prioritized User Stories & Acceptance Criteria"
 Cohesion: 0.06
@@ -864,85 +913,85 @@ Nodes (33): 1. Executive Summary & Architecture Integration, 2.1 ExcelJS Formatt
 Cohesion: 0.06
 Nodes (30): 1. Executive Summary & Architecture Integration, 2.1 Socket.io v4 Room-Based Push & Auth Middleware, 2.2 BullMQ Queue & Worker Architecture for Async Notifications, 2. Context7 Verified Library Syntax Patterns, 3. Role-Based Permissions & Access Matrix, 4. User Stories & Acceptance Criteria (Rows 8.1 to 8.8), 5.1 Notification Model (`backend/src/models/notification.model.js`), 5.2 Announcement Model (`backend/src/models/announcement.model.js`) (+22 more)
 
-### Community 126 - "app.js"
-Cohesion: 0.14
-Nodes (19): authenticate, apiLimiter, authLimiter, exportLimiter, sanitize(), sanitizeData(), router, router (+11 more)
-
-### Community 127 - "setting.service.js"
+### Community 126 - "authenticate.js"
 Cohesion: 0.10
-Nodes (25): applyLeave(), buildApprovalChain(), cancelLeave(), decideLeave(), generateLeaveExcel(), getLeaveCalendar(), getLeaveEncashments(), getPendingApprovals() (+17 more)
+Nodes (23): authenticate, router, router, router, assignHeadSchema, createDepartmentSchema, createDesignationSchema, createShiftSchema (+15 more)
+
+### Community 127 - "leave.service.js"
+Cohesion: 0.08
+Nodes (37): applyLeave(), buildApprovalChain(), cancelLeave(), createHoliday(), createLeaveType(), decideLeave(), deleteHoliday(), deleteLeaveType() (+29 more)
 
 ### Community 128 - "3. Prioritized User Stories"
 Cohesion: 0.07
 Nodes (29): 1. Executive Summary & Architecture Integration, 2.1 Express Rate Limiting (`express-rate-limit` v7/v8), 2.2 Helmet Security Headers (`helmet` v8), 2.3 Ephemeral File Signing (Node.js `crypto` HMAC), 2. Context7 Verified Syntax Patterns, 3. Prioritized User Stories, 4. Permission Catalogue Updates (`permissions.js`), 5. Verification Checklist & Acceptance Gates (+21 more)
 
 ### Community 129 - "payroll.controller.js"
-Cohesion: 0.12
-Nodes (17): getEmployees(), approvePayrollRun, createSalaryStructure, exportBankAdvice, generatePayrollRun, getAnnualTaxCertificatePdf, getEmployeeSalaryStructure, getMyPayslips (+9 more)
+Cohesion: 0.05
+Nodes (47): getEmployees(), adjustPayslipLineItem, approvePayrollRun, createSalaryStructure, deletePayrollRun, exportBankAdvice, generatePayrollRun, getAnnualTaxCertificatePdf (+39 more)
 
 ### Community 130 - "3. Prioritized User Stories & Acceptance Criteria"
 Cohesion: 0.07
 Nodes (28): 1. Executive Summary & Architecture Integration, 2.1 Node-Cron Scheduled Task with Pakistan Timezone, 2.2 ExcelJS Streaming Workbook Generation, 2.3 Mongoose Unique Compound Constraint & Status Enum, 2. Context7 Verified Library Syntax Patterns, 3. Prioritized User Stories & Acceptance Criteria, 4.2 Attendance Correction Request (`AttendanceCorrection`), 4.3 Work-From-Home Request (`WFHRequest`) (+20 more)
 
 ### Community 131 - "apiResponse"
-Cohesion: 0.14
-Nodes (25): applyCorrection, applyWFH, checkIn, checkOut, decideCorrection, decideOvertime, decideWFH, endBreak (+17 more)
+Cohesion: 0.08
+Nodes (47): applyCorrection, applyWFH, approveFaceEnrollment, checkIn, checkOut, createKiosk, createWfhLocation, decideCorrection (+39 more)
 
 ### Community 132 - "backend/package.json"
-Cohesion: 0.09
-Nodes (22): description, devDependencies, nodemon, supertest, vitest, @casl/ability, zod, main (+14 more)
+Cohesion: 0.12
+Nodes (15): description, @casl/ability, zod, main, name, type, version, cloudinary (+7 more)
 
 ### Community 133 - "4. User Stories & Acceptance Criteria"
-Cohesion: 0.08
-Nodes (25): 1. Executive Summary & Architecture Integration, 2.1 Recharts (`/websites/recharts_github_io`), 2.2 ExcelJS (`/exceljs/exceljs`), 2. Context7 Official Library Syntax Patterns, 3. RBAC & Data Visibility Matrix, 4. User Stories & Acceptance Criteria, 5. Security & Data Protection Specifications, 6. Traceability Matrix: BUILD-GUIDE ID to User Story (+17 more)
+Cohesion: 0.12
+Nodes (16): 4. User Stories & Acceptance Criteria, Acceptance Criteria (Given -> When -> Then), Acceptance Criteria (Given -> When -> Then), Acceptance Criteria (Given -> When -> Then), Acceptance Criteria (Given -> When -> Then), Acceptance Criteria (Given -> When -> Then), Acceptance Criteria (Given -> When -> Then), Acceptance Criteria (Given -> When -> Then) (+8 more)
 
 ### Community 134 - "Feature Specification: M10 — Loans & Salary Advances"
 Cohesion: 0.08
 Nodes (24): 1. Executive Summary & Domain Scope, 2. Role-Based Access Control (RBAC) Matrix, 3. Prioritized User Stories & Acceptance Criteria, 4.1 Mongoose Schema Pattern (`loan.model.js`), 4.2 Zod Validation Schemas (`loan.validation.js`), 4. Technical Specifications & Syntax Patterns (Context7 Grounding), 5. Non-Functional Requirements & Security, 6. Measurable Success Criteria (+16 more)
 
 ### Community 135 - "attendance.routes.js"
-Cohesion: 0.16
-Nodes (20): punchLimiter, requestsLimiter, router, breakEndSchema, breakStartSchema, checkInSchema, checkOutSchema, correctionDecideSchema (+12 more)
+Cohesion: 0.10
+Nodes (36): punchLimiter, qrStreamLimiter, requestsLimiter, router, breakEndSchema, breakStartSchema, checkInSchema, checkOutSchema (+28 more)
 
 ### Community 136 - "leave.routes.js"
 Cohesion: 0.15
 Nodes (17): router, router, uploadAttachment, adjustBalanceSchema, applyLeaveSchema, cancelLeaveSchema, createHolidaySchema, createLeaveTypeSchema (+9 more)
 
 ### Community 137 - "5. Step-by-Step Implementation Slices"
-Cohesion: 0.10
-Nodes (20): 1.1 Invariants & Security Guardrails, 1. Architectural Blueprint & Request Flow, 2. Architecture & Flow Diagrams (Senior Architect & Archify Engine), 3.1 Backend Files (`backend/src/`), 3.2 Frontend Files (`frontend/src/`), 3. Exact Files Manifest, 4.1 New Permissions to Register in `backend/src/shared/permissions.js`, 4.2 Endpoint to Permission Matrix (+12 more)
+Cohesion: 0.09
+Nodes (21): 1.1 Invariants & Security Guardrails, 1. Architectural Blueprint & Request Flow, 2. Architecture & Flow Diagrams (Senior Architect & Archify Engine), 3.1 Backend Files (`backend/src/`), 3.2 Frontend Files (`frontend/src/`), 3. Exact Files Manifest, 4.1 New Permissions to Register in `backend/src/shared/permissions.js`, 4.2 Endpoint to Permission Matrix (+13 more)
 
 ### Community 138 - "leave.controller.js"
-Cohesion: 0.11
-Nodes (18): cancelLeave, createLeaveType, decideLeave, decideLeaveEncashment, deleteHoliday, deleteLeaveType, exportLeaveReport, getHolidayById (+10 more)
+Cohesion: 0.07
+Nodes (30): downloadFile, getSignedUrl, generateSignedFileUrl(), normalizeFilePath(), UPLOADS_ROOT, verifySignedFileUrl(), adjustLeaveBalance, cancelLeave (+22 more)
 
 ### Community 139 - "Implementation Tasks: Module M9 — Payroll (+ Pakistan Statutory Compliance)"
 Cohesion: 0.11
-Nodes (17): generateBankAdviceSheet(), reviseSalaryStructure, Implementation Tasks: Module M9 — Payroll (+ Pakistan Statutory Compliance), Phase 1: Foundational Compensation & Statutory Calculators (P1), Phase 2: Core Batch Payroll Engine & 4-Stage Release Lifecycle (P1), Phase 3: Disbursement, Distribution & Self-Service (P1), Phase 5: Multi-Role End-to-End Automated Verification, Slice 9.10: Branded Payslip PDF Generation Engine (BUILD-GUIDE 9.10) (+9 more)
+Nodes (18): generateBankAdviceSheet(), generatePayslipPdf(), numberToWords(), convertNumber(), Implementation Tasks: Module M9 — Payroll (+ Pakistan Statutory Compliance), Phase 2: Core Batch Payroll Engine & 4-Stage Release Lifecycle (P1), Phase 3: Disbursement, Distribution & Self-Service (P1), Phase 5: Multi-Role End-to-End Automated Verification (+10 more)
 
 ### Community 140 - "Architectural Implementation Plan: Module M6 — Leave & Holidays"
-Cohesion: 0.11
-Nodes (18): 2. Archify Architectural Diagrams, 3. Exact File Manifest, 4.1 Collection: `leaveTypes`, 4.2 Collection: `leaveBalances`, 4.3 Collection: `leaves`, 4.4 Collection: `holidays`, 4.5 Collection: `leaveEncashments`, 4. Database Schemas, Validation Rules & Indexes (+10 more)
+Cohesion: 0.10
+Nodes (19): 1. Architecture Summary & Technical Context, 2. Archify Architectural Diagrams, 3. Exact File Manifest, 4.1 Collection: `leaveTypes`, 4.2 Collection: `leaveBalances`, 4.3 Collection: `leaves`, 4.4 Collection: `holidays`, 4.5 Collection: `leaveEncashments` (+11 more)
 
 ### Community 141 - "Architectural Implementation Plan: Module M9 — Payroll (+ Pakistan Statutory Compliance)"
 Cohesion: 0.11
 Nodes (18): 1. Architecture Summary & Technical Context, 2.1 Backend Files (`backend/src/`), 2.2 Frontend Files (`frontend/src/features/payroll/`), 2. Exact Files Listing, 3. Archify Architectural Diagrams, 4.1 Schema Fields, Types, and Index Verification, 4. Database Verification & MongoDB Schema Specifications, 6.1 `shared/permissions.js` Verification (+10 more)
 
-### Community 142 - "dashboard.service.js"
-Cohesion: 0.21
-Nodes (14): AttendanceCorrection, attendanceCorrectionSchema, WFHRequest, wfhRequestSchema, getAdminDashboardData(), getAttendanceTrendData(), getDepartmentCostDistribution(), getEmployeeDashboardData() (+6 more)
+### Community 142 - "3. User Stories & Acceptance Criteria (BUILD-GUIDE Section 17)"
+Cohesion: 0.12
+Nodes (17): 3. User Stories & Acceptance Criteria (BUILD-GUIDE Section 17), Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria (+9 more)
 
 ### Community 143 - "Tasks: Module M6 — Leave & Holidays"
-Cohesion: 0.11
-Nodes (17): Phase 2: Leave Application, Validation & Medical Proof (Priority P1 & P2), Phase 3: Multi-Level Approval Chain & Governance (Priority P1), Phase 4: Cross-Module Integrations, Encashment & Reports (Priority P1 & P2), Phase 5: Multi-Role End-to-End Verification, Slice 6.10: Team Leave Conflict Calendar (BUILD-GUIDE Row 6.10 · Priority: P2), Slice 6.12: Attendance Linkage & Auto-Leave Synchronization (BUILD-GUIDE Row 6.12 · Priority: P1), Slice 6.13: Year-End Leave Encashment Engine (BUILD-GUIDE Row 6.13 · Priority: P2), Slice 6.14: HR Manual Leave Balance Adjustment & Audit Trail (BUILD-GUIDE Row 6.14 · Priority: P2) (+9 more)
+Cohesion: 0.09
+Nodes (21): Execution Philosophy (Strict Invariants), Phase 1: Foundational Master Data & Quota Infrastructure (Priority P1), Phase 2: Leave Application, Validation & Medical Proof (Priority P1 & P2), Phase 3: Multi-Level Approval Chain & Governance (Priority P1), Phase 4: Cross-Module Integrations, Encashment & Reports (Priority P1 & P2), Phase 5: Multi-Role End-to-End Verification, Slice 6.10: Team Leave Conflict Calendar (BUILD-GUIDE Row 6.10 · Priority: P2), Slice 6.12: Attendance Linkage & Auto-Leave Synchronization (BUILD-GUIDE Row 6.12 · Priority: P1) (+13 more)
 
 ### Community 144 - "4. User Stories & Acceptance Criteria (Given-When-Then)"
 Cohesion: 0.11
 Nodes (18): 4. User Stories & Acceptance Criteria (Given-When-Then), Story 10: Branded Payslip PDF Generation (BUILD-GUIDE Row 9.10 · Priority: P1), Story 11: Multi-Channel Payslip Delivery (BUILD-GUIDE Row 9.11 · Priority: P2), Story 12: Pakistani Corporate Bank Transfer Advice Sheet (BUILD-GUIDE Row 9.12 · Priority: P1), Story 13: Final Exit Settlement Engine (BUILD-GUIDE Row 9.13 · Priority: P2), Story 14: Annual Salaried Withholding Tax Certificate (BUILD-GUIDE Row 9.14 · Priority: P2), Story 15: Tax & EOBI Compliance Reports (BUILD-GUIDE Row 9.15 · Priority: P2), Story 16: Scoped Department Manager Team Overtime View (BUILD-GUIDE Row 9.16 · Priority: P2) (+10 more)
 
 ### Community 145 - "EmployeeFormPage.jsx"
-Cohesion: 0.18
-Nodes (5): RoleBadge(), getManagerAuthorityRole(), ManagerSelect(), RoleSelect(), STEPS
+Cohesion: 0.16
+Nodes (6): RoleBadge(), getManagerAuthorityRole(), ManagerSelect(), RoleSelect(), EmployeeFormPage(), STEPS
 
 ### Community 146 - "Architectural Implementation Plan: Module M7 — Dashboard & Reports"
 Cohesion: 0.12
@@ -952,21 +1001,21 @@ Nodes (16): 1. Architecture Summary & Technical Context, 2.1 Backend Files (`bac
 Cohesion: 0.22
 Nodes (13): createAnnouncement, deleteAnnouncement, getAnnouncements, getReadReceipts, recordReadReceipt, togglePinAnnouncement, updateAnnouncement, router (+5 more)
 
-### Community 148 - "announcementService"
+### Community 148 - "notification.service.js"
+Cohesion: 0.08
+Nodes (18): announcementService, getPreferences(), markAllAsRead(), markAsRead(), updatePreferences(), Phase 1: Core Real-Time In-App & Operational Alerts (Priority P1), Phase 2: Notice Board, Read Receipts, WhatsApp & E2E (Priority P2), Phase 3: Multi-Role End-to-End Verification (`E2E-M8`) (+10 more)
+
+### Community 149 - "Technical Architecture Plan: Module M13 — QR Code Attendance"
+Cohesion: 0.14
+Nodes (13): 1. Executive Architecture Summary, 2. Mermaid Diagrams (Archify Architecture Engine), 3. Exact Files Directory Structure, 4. API Endpoints, Permissions & Scope Specifications, 5. Security Architecture & Threat Mitigations, 6. Implementation Dependencies, Backend (`backend/src/`), Diagram 1: System Flow & Request Pipeline (+5 more)
+
+### Community 150 - "EmployeeDashboard.jsx"
+Cohesion: 0.31
+Nodes (5): PinnedNoticeBoard(), EmployeeDashboard(), formatTime(), Acceptance Criteria (Given -> When -> Then), US-7.1: Super Admin Executive Dashboard (P1 · BUILD-GUIDE Row 7.1)
+
+### Community 151 - "expense.controller.js"
 Cohesion: 0.15
-Nodes (8): announcementService, Phase 2: Notice Board, Read Receipts, WhatsApp & E2E (Priority P2), Phase 3: Multi-Role End-to-End Verification (`E2E-M8`), Slice 8.4: WhatsApp Notifications Gateway & Cloud API Adapter (BUILD-GUIDE ID 8.4), Slice 8.7: Executive Notice Board & Pinned Announcement Cards (BUILD-GUIDE ID 8.7), Slice 8.8: Live Read Receipts Tracking & Engagement Analytics (BUILD-GUIDE ID 8.8), Slice E2E-M8: Multi-Role Live End-to-End Playwright Verification (All 4 Default Roles), Tasks Breakdown: M8 Notifications & Announcements
-
-### Community 149 - "contributionsCalculator.js"
-Cohesion: 0.17
-Nodes (10): calculateGratuityPaisa(), calculateStatutoryContributions(), DEFAULT_STATUTORY_RATES, adjustPayslipLineItem, getPrePayrollAudit, executeBatchPayrollCalculation(), calculateAnnualIncomeTax(), DEFAULT_FBR_TAX_SLABS (+2 more)
-
-### Community 150 - "AnnouncementsPage.jsx"
-Cohesion: 0.17
-Nodes (5): AnnouncementCard(), PRIORITY_STYLES, AnnouncementFormModal(), ReadReceiptsModal(), AnnouncementsPage()
-
-### Community 151 - ".markPayrollPaid"
-Cohesion: 0.13
-Nodes (13): markPayrollPaid, 5.1 Payroll Batch Processing Hook (`payrollProcessor.js`), 5.2 Payroll Disbursement Clearance Hook (`payroll.service.js`), 5. Payroll Integration Blueprint (M9 Auto-Deduction Engine), Foundation & RBAC Setup, Module Verification & End-to-End System Tests, Slice 10.1: Loan / Advance Request Application (Priority: P1 · BUILD-GUIDE ID 10.1), Slice 10.2: Borrowing Limits & Policy Validation (Priority: P1 · BUILD-GUIDE ID 10.2) (+5 more)
+Nodes (12): createCategory, createExpense, decideExpense, deleteCategory, getAllCategories, getCategoryById, getExpenseById, getExpenseMonthlyReport (+4 more)
 
 ### Community 152 - "payroll.routes.js"
 Cohesion: 0.21
@@ -977,16 +1026,16 @@ Cohesion: 0.13
 Nodes (14): 1. Architecture Summary & Technical Context, 2. Archify Architectural Diagrams, 3. Exact File Manifest, 4.1 Master Endpoints Specification, 4.2 Updating `backend/src/shared/permissions.js`, 4. API Endpoints, Permission Taxonomy & Scopes, 5. Automated Verification & Test Strategy, Architectural Implementation Plan: Module M5 — Attendance & Shifts (+6 more)
 
 ### Community 154 - "Technical Architecture Blueprint: M10 — Loans & Salary Advances"
-Cohesion: 0.13
-Nodes (14): 1. System Architecture & Request Lifecycle, 2. Mermaid Visual Architecture Diagrams (Archify Engine), 3. Exact File Directory Structure, 4. API Endpoints, RBAC Permissions & Data Scopes, 6. Implementation Waves & Execution Steps, 7. Next Actions, Diagram 1: Module Flow & Request Lifecycle Architecture, Diagram 2: Entity-Relationship Diagram (ERD) (+6 more)
+Cohesion: 0.11
+Nodes (17): 1. System Architecture & Request Lifecycle, 2. Mermaid Visual Architecture Diagrams (Archify Engine), 3. Exact File Directory Structure, 4. API Endpoints, RBAC Permissions & Data Scopes, 5.1 Payroll Batch Processing Hook (`payrollProcessor.js`), 5.2 Payroll Disbursement Clearance Hook (`payroll.service.js`), 5. Payroll Integration Blueprint (M9 Auto-Deduction Engine), 6. Implementation Waves & Execution Steps (+9 more)
 
-### Community 155 - "Phase 4: Exit Settlement, Statutory Certificates & Governance (P2)"
-Cohesion: 0.14
-Nodes (10): getDepartmentPayrollCostAnalytics, getEobiComplianceReport, getTaxComplianceReport, getTeamOvertimeHours, Phase 4: Exit Settlement, Statutory Certificates & Governance (P2), Slice 9.13: Employee Final Exit Settlement (BUILD-GUIDE 9.13), Slice 9.14: Form IT-3 Annual Tax Withholding Certificate (BUILD-GUIDE 9.14), Slice 9.15: Statutory Withholding & EOBI Compliance Audit Reports (BUILD-GUIDE 9.15) (+2 more)
+### Community 155 - "expense.routes.js"
+Cohesion: 0.27
+Nodes (11): receiptUpload, router, categoryIdParamSchema, createExpenseCategorySchema, createExpenseSchema, decideExpenseSchema, expenseIdParamSchema, queryExpenseReportSchema (+3 more)
 
 ### Community 156 - "Technical Architecture & Implementation Plan: Module M2 — Company Settings"
-Cohesion: 0.14
-Nodes (13): 1. Architecture Summary, 2. Technical Context & Database Verification, 3. Visual System Architecture & Data Flow (Archify Mermaid Engine), 4. Exact File Blueprint & Deliverables, 5. Endpoints, Permissions & Scope Contract, Backend Architecture (`backend/src/`), Diagram 1: Request & Architecture Flow Architecture, Diagram 2: Entity Relationship Diagram (ERD) (+5 more)
+Cohesion: 0.15
+Nodes (12): 2. Technical Context & Database Verification, 3. Visual System Architecture & Data Flow (Archify Mermaid Engine), 4. Exact File Blueprint & Deliverables, 5. Endpoints, Permissions & Scope Contract, Backend Architecture (`backend/src/`), Diagram 1: Request & Architecture Flow Architecture, Diagram 2: Entity Relationship Diagram (ERD), Diagram 3: Main Settings Mutation & Cache Invalidation Lifecycle (+4 more)
 
 ### Community 157 - "Architectural Implementation Plan: Module X1 — Security, Audit & Quality Gate"
 Cohesion: 0.14
@@ -997,72 +1046,72 @@ Cohesion: 0.15
 Nodes (12): API Endpoint: `GET /api/v1/payroll/pre-audit?month=7&year=2026`, Assumptions, Boundaries, Code Style & API Contract, Commands, Objective, Project Structure & File Touch Points, Response Contract: (+4 more)
 
 ### Community 159 - "Feature Specification: Module M9 — Payroll (+ Pakistan Statutory Compliance)"
-Cohesion: 0.15
-Nodes (12): 1. Executive Summary & Architecture Integration, 2. Invariant Rules & Compliance Standards, 3.1 `SalaryStructure` Model (`salaryStructure.model.js`), 3.2 `PayrollRun` Model (`payrollRun.model.js`), 3.3 `Payslip` Model (`payslip.model.js`), 3. Data Models Specification, 5.1 BullMQ: Queue, Worker & Real-Time Progress Updates, 5.2 Mongoose Multi-Document ACID Transactions (+4 more)
+Cohesion: 0.17
+Nodes (11): 1. Executive Summary & Architecture Integration, 2. Invariant Rules & Compliance Standards, 3.1 `SalaryStructure` Model (`salaryStructure.model.js`), 3.3 `Payslip` Model (`payslip.model.js`), 3. Data Models Specification, 5.1 BullMQ: Queue, Worker & Real-Time Progress Updates, 5.2 Mongoose Multi-Document ACID Transactions, 5.3 ExcelJS Streaming Bank Transfer Sheet (+3 more)
 
 ### Community 160 - "Development Tasks: Module X1 — Security, Audit & Quality Gate"
 Cohesion: 0.15
 Nodes (12): Development Tasks: Module X1 — Security, Audit & Quality Gate, Phase 11: Consolidated Multi-Role Test Suite & Phase 1 Quality Gate Sign-Off (Row X1.10 · P1), Phase 1: RBAC Foundation & Permission Registration (Prerequisite), Phase 2: Audit Log Explorer & Visual Diff (Row X1.1 · P1), Phase 3: Universal Soft Deletes & Finalized Payroll Lock (Row X1.2 · P1), Phase 4: Multi-Tier Encryption at Rest for PII & Financial Data (Row X1.3 · P1), Phase 5: Universal Server-Side PBAC Route Enforcement & Automated 403 Audit (Row X1.4 · P1), Phase 6: Advanced Perimeter Defenses: Rate Limiting, NoSQL Sanitizer & Helmet (Row X1.5 · P1) (+4 more)
 
-### Community 161 - "notification.service.js"
-Cohesion: 0.21
-Nodes (10): getPreferences(), markAllAsRead(), markAsRead(), updatePreferences(), Phase 1: Core Real-Time In-App & Operational Alerts (Priority P1), Slice 8.1: Unified Multi-Channel `notify()` Service & Socket.io Room Engine (BUILD-GUIDE ID 8.1), Slice 8.2: Real-Time In-App Notification Bell, Slide-Out Drawer & Archive (BUILD-GUIDE ID 8.2), Slice 8.3: Asynchronous Transactional Email Notification Queue (BUILD-GUIDE ID 8.3) (+2 more)
+### Community 161 - "ReportsPage.jsx"
+Cohesion: 0.33
+Nodes (8): ExportButtons(), getInitials(), ReportDataTable(), StatusBadge(), ReportFilterToolbar(), ReportsPage(), { useGetReportDataQuery }, toDateInputString()
 
 ### Community 162 - "Development Tasks: Module M7 — Dashboard & Reports"
+Cohesion: 0.14
+Nodes (13): getDepartmentCostDistribution(), Development Tasks: Module M7 — Dashboard & Reports, Phase 10: Multi-Role End-to-End Verification (Row 7.9 · E2E), Phase 1: Foundation & RBAC Setup, Phase 2: Modular KPI Widgets & Interactive Charts (Row 7.5 · P1), Phase 3: Super Admin Executive Dashboard (Row 7.1 · P1), Phase 4: HR Manager Operational Dashboard (Row 7.2 · P1), Phase 5: Department Manager Team Dashboard (Row 7.3 · P1) (+5 more)
+
+### Community 163 - "audit.controller.js"
+Cohesion: 0.50
+Nodes (3): getAuditLog, getAuditLogs, auditQuerySchema
+
+### Community 164 - "Task Execution Checklist (Vertical Slice Order)"
 Cohesion: 0.17
-Nodes (11): Development Tasks: Module M7 — Dashboard & Reports, Phase 10: Multi-Role End-to-End Verification (Row 7.9 · E2E), Phase 1: Foundation & RBAC Setup, Phase 2: Modular KPI Widgets & Interactive Charts (Row 7.5 · P1), Phase 3: Super Admin Executive Dashboard (Row 7.1 · P1), Phase 4: HR Manager Operational Dashboard (Row 7.2 · P1), Phase 5: Department Manager Team Dashboard (Row 7.3 · P1), Phase 7: Multi-Axis Organizational Reports Console (Row 7.6 · P1) (+3 more)
+Nodes (11): Implementation Tasks: Module M12 — Face Recognition Attendance, Phase 0: Dependencies & Permission Setup, Slice 10: Multi-Role End-to-End Verification (BUILD-GUIDE End Gate), Slice 1: Neural Models Loading & Client Hook (BUILD-GUIDE Row 12.1 · Priority: P1), Slice 2: Multi-Angle Face Enrollment (BUILD-GUIDE Row 12.2 · Priority: P1), Slice 4: Anti-Spoofing Liveness Verification (BUILD-GUIDE Row 12.4 · Priority: P1), Slice 6: Threshold & On/Off Global Settings (BUILD-GUIDE Row 12.6 · Priority: P2), Slice 7: Failed & Suspicious Attempts Logging (BUILD-GUIDE Row 12.7 · Priority: P2) (+3 more)
 
-### Community 163 - "apiResponse.js"
-Cohesion: 0.20
-Nodes (7): getAuditLog, getAuditLogs, auditQuerySchema, getAdminDashboard, getEmployeeDashboard, getHrDashboard, getManagerDashboard
+### Community 165 - "2. Technical Architecture Blueprint"
+Cohesion: 0.25
+Nodes (7): 1. Context & Rationale, 2. Technical Architecture Blueprint, 3. Verification & Safety Criteria, A. Backend: Automated Absenteeism Exemption (`autoAbsent.job.js`), B. Backend: Leave Application Guard (`leave.service.js`), C. Frontend: Portal Self-Service State (`MyLeavesPage.jsx`), GSD Plan: Super Admin Leave & Attendance Exemption
 
-### Community 164 - "3. User Scenarios & Acceptance Criteria (11 User Stories)"
-Cohesion: 0.18
-Nodes (11): 3. User Scenarios & Acceptance Criteria (11 User Stories), User Story 10 — Automated Database Backup Job & Manual Trigger (BUILD-GUIDE Row 2.10), User Story 11 — Public Employee Policies Reader Page (BUILD-GUIDE Row 2.11), User Story 1 — Settings Key-Value Model & Dynamic Engine (BUILD-GUIDE Row 2.1), User Story 3 — Working Days & Standard Office Hours (BUILD-GUIDE Row 2.3), User Story 4 — Late Arrival Rules & Penalty Deductions (BUILD-GUIDE Row 2.4), User Story 5 — Leave Policy Definitions (BUILD-GUIDE Row 2.5), User Story 6 — Payroll Cycle & Pay Day Scheduling (BUILD-GUIDE Row 2.6) (+3 more)
-
-### Community 165 - "runAutoAbsentSweep"
-Cohesion: 0.22
-Nodes (9): triggerAutoAbsentSweep, runAutoAbsentSweep(), 1. Context & Rationale, 2. Technical Architecture Blueprint, 3. Verification & Safety Criteria, A. Backend: Automated Absenteeism Exemption (`autoAbsent.job.js`), B. Backend: Leave Application Guard (`leave.service.js`), C. Frontend: Portal Self-Service State (`MyLeavesPage.jsx`) (+1 more)
-
-### Community 166 - ".processFinalSettlement"
-Cohesion: 0.20
-Nodes (8): processFinalSettlement, APIs & Endpoints, Architectural Decisions & Bug Fixes, Data Models (Integer Paisa Storage), Module M9: Payroll & Pakistan Statutory Compliance, Pakistan Statutory Compliance (FBR, EOBI, PESSI, Gratuity), RBAC Permissions, Status & Overview
+### Community 166 - "Module M9: Payroll & Pakistan Statutory Compliance"
+Cohesion: 0.29
+Nodes (6): APIs & Endpoints, Data Models (Integer Paisa Storage), Module M9: Payroll & Pakistan Statutory Compliance, Pakistan Statutory Compliance (FBR, EOBI, PESSI, Gratuity), RBAC Permissions, Status & Overview
 
 ### Community 167 - "Phase 3: P2 Advanced Slices (Breaks, Overtime, WFH, Corrections, Reports)"
 Cohesion: 0.20
 Nodes (9): Phase 1: Foundational Setup & Permissions, Phase 3: P2 Advanced Slices (Breaks, Overtime, WFH, Corrections, Reports), Task Organization & Execution Rules, Tasks: Module M5 — Attendance & Shifts, Vertical Slice 5.12: Attendance Correction Requests (Missed Punch) (P2), Vertical Slice 5.15: Attendance Excel Export Reporting (P2), Vertical Slice 5.5: Break Tracking (Meal/Prayer) (P2), Vertical Slice 5.7: Overtime Calculation Engine (P2) (+1 more)
 
 ### Community 168 - "Phase 2: P1 Core Slices (Foundational & Essential Operations)"
-Cohesion: 0.20
-Nodes (10): Phase 2: P1 Core Slices (Foundational & Essential Operations), Vertical Slice 5.10: Manager Live Team Presence Grid (P1), Vertical Slice 5.11: HR Admin Manual Attendance Adjustment & Audit Log (P1), Vertical Slice 5.13: Nightly Auto-Absent Cron Engine (P1), Vertical Slice 5.14: Monthly Attendance Lock Pre-Payroll (P1), Vertical Slice 5.2: Shift Management & Shift Assignment (P1), Vertical Slice 5.3: Web Clock-In with Realtime Broadcast (P1), Vertical Slice 5.4: Web Clock-Out & Duration Engine (P1) (+2 more)
+Cohesion: 0.22
+Nodes (9): Phase 2: P1 Core Slices (Foundational & Essential Operations), Vertical Slice 5.10: Manager Live Team Presence Grid (P1), Vertical Slice 5.11: HR Admin Manual Attendance Adjustment & Audit Log (P1), Vertical Slice 5.13: Nightly Auto-Absent Cron Engine (P1), Vertical Slice 5.2: Shift Management & Shift Assignment (P1), Vertical Slice 5.3: Web Clock-In with Realtime Broadcast (P1), Vertical Slice 5.4: Web Clock-Out & Duration Engine (P1), Vertical Slice 5.6: Automated Status Engine (Late / Half-Day / Early Departure) (P1) (+1 more)
 
-### Community 169 - "isCloudinaryConfigured"
-Cohesion: 0.39
-Nodes (8): deleteFromCloudinary(), isCloudinaryConfigured(), uploadBufferToCloudinary(), deleteDocument(), uploadAvatar(), uploadDocument(), applyLeave, uploadCompanyLogo
+### Community 169 - "employee.service.js"
+Cohesion: 0.07
+Nodes (38): deleteFromCloudinary(), isCloudinaryConfigured(), uploadBufferToCloudinary(), createEmployee(), decideChangeRequest(), decryptEmployeeFields(), deleteDocument(), deleteEmployee() (+30 more)
 
-### Community 170 - "auth.service.js"
-Cohesion: 0.31
-Nodes (5): AuditLog, auditLogSchema, LoginHistory, loginHistorySchema, AuditService
+### Community 170 - "department.model.js"
+Cohesion: 0.14
+Nodes (14): AuditLog, auditLogSchema, Department, departmentSchema, Designation, designationSchema, kioskSchema, Setting (+6 more)
 
 ### Community 171 - "loan.controller.js"
-Cohesion: 0.22
-Nodes (8): createLoan, decideLoan, getLedgerSummary, getLoanById, getLoans, getLoanSchedule, getMyEligibility, prepayLoan
+Cohesion: 0.25
+Nodes (7): createLoan, decideLoan, getLedgerSummary, getLoanById, getLoans, getLoanSchedule, prepayLoan
 
 ### Community 172 - "reports.service.js"
 Cohesion: 0.42
 Nodes (8): generateAttendanceReport(), generateDepartmentCostReport(), generateHeadcountReport(), generateLeaveReport(), generatePayrollReport(), generateReportData(), generateTurnoverReport(), resolveTeamMemberIds()
 
-### Community 173 - "NotificationSettingsForm.jsx"
-Cohesion: 0.22
-Nodes (7): NotificationSettingsForm(), 1. Executive Summary, 2. Changes Delivered, 3. Automated Verification, Backend Architecture:, Frontend Architecture:, Quick Task Summary: Admin Notification & Announcement Delivery Method Selection
+### Community 173 - "Quick Task Summary: Admin Notification & Announcement Delivery Method Selection"
+Cohesion: 0.29
+Nodes (6): 1. Executive Summary, 2. Changes Delivered, 3. Automated Verification, Backend Architecture:, Frontend Architecture:, Quick Task Summary: Admin Notification & Announcement Delivery Method Selection
 
 ### Community 174 - "Quick Task: Add Refresh Action to Organizational Chart Module"
-Cohesion: 0.19
-Nodes (7): Goal, Implementation Slices, Quick Task: Add Refresh Action to Organizational Chart Module, User Requirements, Implementation Tasks, Quick Plan: Leaves Module Complete UI/UX Overhaul & Enterprise RBAC/PBAC Alignment, User Intent & Requirements
+Cohesion: 0.40
+Nodes (4): Goal, Implementation Slices, Quick Task: Add Refresh Action to Organizational Chart Module, User Requirements
 
-### Community 175 - "loan.routes.js"
-Cohesion: 0.43
-Nodes (6): router, approvalDecisionSchema, createLoanSchema, earlyPrepaymentSchema, loanIdParamSchema, queryLoansSchema
+### Community 175 - "ref_zod"
+Cohesion: 0.27
+Nodes (7): router, approvalDecisionSchema, createLoanSchema, earlyPrepaymentSchema, loanIdParamSchema, queryLoansSchema, reportQuerySchema
 
 ### Community 176 - "2. Technical Implementation"
 Cohesion: 0.25
@@ -1089,8 +1138,8 @@ Cohesion: 0.29
 Nodes (6): 1. Specification & Scope, 2. Models, 3. APIs & Perimeter Security, 4. Permissions Map, 5. Module Integrations, Module M10 — Loans & Salary Advances (Architecture & Decisions)
 
 ### Community 183 - "notification.controller.js"
-Cohesion: 0.33
-Nodes (5): getNotifications, getPreferences, markAllRead, markRead, updatePreferences
+Cohesion: 0.16
+Nodes (9): getAdminDashboard, getEmployeeDashboard, getHrDashboard, getManagerDashboard, getNotifications, getPreferences, markAllRead, markRead (+1 more)
 
 ### Community 184 - "1. What was Accomplished"
 Cohesion: 0.33
@@ -1100,9 +1149,9 @@ Nodes (5): 1. What was Accomplished, 2. Verification & Validation, A. Role-Based
 Cohesion: 0.33
 Nodes (5): Key APIs, Models, Module M6: Leave & Holidays (Fully Verified), Overview, Permissions & RBAC
 
-### Community 186 - "Quick Task: Admin Notifications & Announcements Channel Settings Tab"
-Cohesion: 0.40
-Nodes (4): Goal, Implementation Slices, Quick Task: Admin Notifications & Announcements Channel Settings Tab, User Requirements
+### Community 186 - "Task Execution Checklist (Vertical Slice Order)"
+Cohesion: 0.18
+Nodes (10): getCurrentKioskQr(), resetDeviceBinding(), Final Multi-Role End-to-End Verification, Implementation Tasks: Module M13 — QR Code Attendance, Phase 1: Dependencies & Permissions Setup, Slice 2: Dynamic Rotating QR Code Generation (BUILD-GUIDE Row 13.2 · Priority: P1), Slice 4: Hardware Device Binding (BUILD-GUIDE Row 13.4 · Priority: P1), Slice 5: Device Binding Reset (BUILD-GUIDE Row 13.5 · Priority: P2) (+2 more)
 
 ### Community 187 - "Quick Task: Fix Color Scheme in Organizational Chart Page"
 Cohesion: 0.40
@@ -1132,33 +1181,101 @@ Nodes (4): 1. Overview, 2. Components & Endpoints, 3. Security & Hardening Invar
 Cohesion: 0.40
 Nodes (4): 1. Domain Models, 2. API Endpoints & RBAC/PBAC Matrix, 3. Key Architecture & Security Decisions, Module M5: Attendance & Shifts Architecture & Decisions Record
 
+### Community 194 - "Technical Architecture Plan: Module M12 — Face Recognition Attendance"
+Cohesion: 0.18
+Nodes (10): 1. System Architecture & Component Responsibilities, 2. Exact Files & Directory Mapping, 3. Mermaid Visual Architecture Diagrams, 4. Endpoints, Permissions & Scope Specifications, Backend Layer (`backend/`), Diagram 1: System Flow (Client $\rightarrow$ API $\rightarrow$ Service $\rightarrow$ MongoDB), Diagram 2: Entity-Relationship Diagram (ERD), Diagram 3: Main Flow Sequence Diagram (Liveness $\rightarrow$ Vector Match $\rightarrow$ Punch) (+2 more)
+
 ### Community 195 - "Module M5 — Attendance & Shifts"
 Cohesion: 0.50
 Nodes (3): Endpoints, Module M5 — Attendance & Shifts, Services & Engines
 
-### Community 197 - "seedPakistanHolidays"
-Cohesion: 0.67
-Nodes (3): seedHolidays, getPakistanHolidaysData(), seedPakistanHolidays()
+### Community 197 - "HrDashboard.jsx"
+Cohesion: 0.36
+Nodes (6): PunchCorrectionReviewModal(), WFHReviewModal(), HrDashboard(), BirthdaysCard(), PendingList(), formatDateShort()
+
+### Community 198 - "BlinkTracker"
+Cohesion: 0.29
+Nodes (5): BlinkTracker, calculateMeanEAR(), calculatePointDistance(), computeEyeAspectRatio(), getEyeLandmarksFrom68()
+
+### Community 201 - "Architecture Plan: Module M14 — GPS / Geo-fencing Smart Attendance"
+Cohesion: 0.20
+Nodes (9): 1. Architectural Strategy & Design Principles, 2. Exact Files & Directory Structure, 3. Architecture Diagrams (Senior Architect & Archify), 4. API Endpoints, Permissions & Scopes Matrix, 5. Security & Verification Constraints, Architecture Plan: Module M14 — GPS / Geo-fencing Smart Attendance, Diagram 1: Geofenced Check-In & Request Lifecycle, Diagram 2: Entity Relationship Diagram (ERD) (+1 more)
+
+### Community 202 - "Tasks Checklist: M14 — GPS / Geo-fencing Attendance"
+Cohesion: 0.20
+Nodes (9): Foundation & RBAC Setup, Module Verification & End-to-End System Tests, Slice 14.1: Haversine Distance Engine (Priority: P1 · BUILD-GUIDE ID 14.1), Slice 14.3: Accuracy & Mock GPS Spoofing Detection (Priority: P1 · BUILD-GUIDE ID 14.3), Slice 14.4: Approved WFH Locations Management (Priority: P2 · BUILD-GUIDE ID 14.4), Slice 14.5: Client-Site Field Visit Check-In (Priority: P2 · BUILD-GUIDE ID 14.5), Slice 14.7: Interactive Punch Map (Priority: P2 · BUILD-GUIDE ID 14.7), Slice 14.8: Employee Privacy Guarantee & Zero Continuous Tracking (Priority: P1 · BUILD-GUIDE ID 14.8) (+1 more)
+
+### Community 203 - "DashboardSkeleton"
+Cohesion: 0.42
+Nodes (8): BirthdaysSkeleton(), BottomSectionSkeleton(), DashboardSkeleton(), DeptDistributionSkeleton(), EmployeeTopCardsSkeleton(), RecentActivitySkeleton(), StandardTopCardsSkeleton(), TeamRosterSkeleton()
+
+### Community 204 - "Feature Specification: Module M7 — Dashboard & Reports"
+Cohesion: 0.22
+Nodes (8): 1. Executive Summary & Architecture Integration, 2.1 Recharts (`/websites/recharts_github_io`), 2.2 ExcelJS (`/exceljs/exceljs`), 2. Context7 Official Library Syntax Patterns, 3. RBAC & Data Visibility Matrix, 5. Security & Data Protection Specifications, 6. Traceability Matrix: BUILD-GUIDE ID to User Story, Feature Specification: Module M7 — Dashboard & Reports
+
+### Community 206 - "Module M13: Dynamic QR Code Attendance Architecture & Decisions"
+Cohesion: 0.25
+Nodes (7): 1. Overview & Status, 2. Data Models, 3. API Surface & Security Hardening, 4. Permissions, 5. Security & Anti-Fraud Mitigations, 6. Frontend Surface, Module M13: Dynamic QR Code Attendance Architecture & Decisions
+
+### Community 215 - "Module M12: Face Recognition Attendance"
+Cohesion: 0.29
+Nodes (6): APIs & Endpoints, Architecture & Security Decisions, Data Models, Module M12: Face Recognition Attendance, Overview, Permissions
+
+### Community 216 - "Feature Specification: Module M14 — GPS / Geo-Fencing Attendance"
+Cohesion: 0.29
+Nodes (6): 1. Executive Summary & Domain Scope, 2. Role-Based Access Control (RBAC) Matrix (FRD Section 11), 4. Technical Architecture & Library Patterns (Context7 Fetch), 5. Definition of Done (DoD), Feature Specification: Module M14 — GPS / Geo-Fencing Attendance, Leaflet (v1.9.4) Syntax Standard:
+
+### Community 217 - "Module M14: GPS / Geo-fencing Attendance"
+Cohesion: 0.33
+Nodes (5): Key Architecture & Data Models, Module M14: GPS / Geo-fencing Attendance, New API Endpoints, Overview, Permissions & RBAC
+
+### Community 218 - "Module M11: Expense Claims Knowledge & Architectural Ledger"
+Cohesion: 0.33
+Nodes (5): API Endpoints, Core Business Decisions & Rules, Models, Module M11: Expense Claims Knowledge & Architectural Ledger, Overview
+
+### Community 219 - "yearlyLeave.job.js"
+Cohesion: 0.60
+Nodes (4): initYearlyLeaveCron(), runYearlyLeaveRollover(), rolloverYearlyBalances(), node-cron
+
+### Community 220 - "express-rate-limit"
+Cohesion: 0.40
+Nodes (4): apiLimiter, authLimiter, exportLimiter, express-rate-limit
+
+### Community 221 - "perimeter.test.js"
+Cohesion: 0.70
+Nodes (3): sanitize(), sanitizeData(), helmet
+
+### Community 223 - "Phase 2: Smart Operations — Implementation Status & Architecture Summary"
+Cohesion: 0.40
+Nodes (4): 1. Phase 2 Scope & Overall Progress, 2. Core Data Models in Phase 2 (Completed so far), 3. Key Cross-Module Decisions, Phase 2: Smart Operations — Implementation Status & Architecture Summary
+
+### Community 224 - "devDependencies"
+Cohesion: 0.50
+Nodes (4): devDependencies, nodemon, supertest, vitest
+
+### Community 225 - "Quick Plan: Leaves Module Complete UI/UX Overhaul & Enterprise RBAC/PBAC Alignment"
+Cohesion: 0.50
+Nodes (3): Implementation Tasks, Quick Plan: Leaves Module Complete UI/UX Overhaul & Enterprise RBAC/PBAC Alignment, User Intent & Requirements
 
 ## Knowledge Gaps
-- **1252 isolated node(s):** `name`, `version`, `type`, `description`, `main` (+1247 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1537 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **37 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **1466 isolated node(s):** `name`, `version`, `type`, `description`, `main` (+1461 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 1805 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **34 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `ApiError` connect `ApiError` to `payroll.controller.js`, `backend/package.json`, `leave.routes.js`, `leave.controller.js`, `Implementation Tasks: Module M9 — Payroll (+ Pakistan Statutory Compliance)`, `announcementService`, `contributionsCalculator.js`, `.markPayrollPaid`, `notification.service.js`, `.processFinalSettlement`, `isCloudinaryConfigured`, `auth.service.js`, `loan.controller.js`, `reports.service.js`, `App.jsx`, `checkPermission`, `department.service.js`, `role.service.js`, `employee.service.js`, `setting.controller.js`, `employee.controller.js`, `Phase 1: Core Master & Personal Records (Priority P1)`, `3. Prioritized User Stories & Acceptance Criteria`, `recordAuditLog`, `employee.routes.js`, `checkPermission.js`, `authenticate.js`, `Graph Report - HRM  (2026-10-16)`, `leave.service.js`, `HRM System — 5-Phase Master Implementation Roadmap`, `setting.routes.js`, `attendance.service.js`, `notify.service.js`, `cleanProductionDb.js`, `app.js`, `setting.service.js`?**
-  _High betweenness centrality (0.224) - this node is a cross-community bridge._
-- **Why does `checkPermission()` connect `checkPermission` to `3. Prioritized User Stories`, `HRM System — Technical Specification & Project Flow`, `attendance.routes.js`, `leave.routes.js`, `announcement.routes.js`, `payroll.routes.js`, `Architectural Implementation Plan: Module X1 — Security, Audit & Quality Gate`, `Development Tasks: Module X1 — Security, Audit & Quality Gate`, `.processFinalSettlement`, `App.jsx`, `loan.routes.js`, `2. User Scenarios & Acceptance Criteria (17 User Stories)`, `role.service.js`, `ApiError`, `validate.js`, `employee.routes.js`, `checkPermission.js`, `authenticate.js`, `Graph Report - HRM  (2026-10-16)`, `HRM System — 5-Phase Master Implementation Roadmap`, `role.routes.js`, `setting.routes.js`, `app.js`?**
-  _High betweenness centrality (0.103) - this node is a cross-community bridge._
-- **Why does `Architectural Invariants & Dependencies` connect `App.jsx` to `recordAuditLog`, `3. Detailed User Stories & Acceptance Criteria`, `authenticate.js`, `ApiError`?**
-  _High betweenness centrality (0.093) - this node is a cross-community bridge._
+- **Why does `ApiError` connect `ApiError` to `payroll.controller.js`, `leave.routes.js`, `leave.controller.js`, `Implementation Tasks: Module M9 — Payroll (+ Pakistan Statutory Compliance)`, `notification.service.js`, `expense.controller.js`, `expense.routes.js`, `employee.service.js`, `loan.controller.js`, `reports.service.js`, `checkPermission`, `Task Execution Checklist (Vertical Slice Order)`, `department.service.js`, `employee.controller.js`, `AuthService`, `3. Prioritized User Stories & Acceptance Criteria`, `recordAuditLog`, `employee.routes.js`, `Graph Report - HRM  (2026-10-29)`, `HRM System — 5-Phase Master Implementation Roadmap`, `attendance.service.js`, `mongoose`, `cleanProductionDb.js`, `authenticate.js`, `leave.service.js`?**
+  _High betweenness centrality (0.183) - this node is a cross-community bridge._
+- **Why does `checkPermission()` connect `checkPermission` to `4. Core HR Modules`, `payroll.controller.js`, `HRM System — Full-Stack Build Guide (Backend + Frontend Saath Saath)`, `3. Prioritized User Stories`, `HRM System — Technical Specification & Project Flow`, `attendance.routes.js`, `leave.routes.js`, `leave.controller.js`, `Implementation Tasks: Module M9 — Payroll (+ Pakistan Statutory Compliance)`, `Tasks: Module M6 — Leave & Holidays`, `app.js`, `announcement.routes.js`, `payroll.routes.js`, `expense.routes.js`, `Architectural Implementation Plan: Module X1 — Security, Audit & Quality Gate`, `Development Tasks: Module X1 — Security, Audit & Quality Gate`, `employee.service.js`, `ref_zod`, `2. User Scenarios & Acceptance Criteria (17 User Stories)`, `Phase 1: Core RBAC & Permission Matrix Foundation (Priority P1)`, `ApiError`, `HRM System — Current State & Progress Tracker`, `employee.routes.js`, `ScreenSkeleton`, `Graph Report - HRM  (2026-10-29)`, `user.routes.js`, `2. Functional Requirements by Group`, `Feature Specification: Module M14 — GPS / Geo-Fencing Attendance`, `HRM System — 5-Phase Master Implementation Roadmap`, `authenticate.js`?**
+  _High betweenness centrality (0.098) - this node is a cross-community bridge._
+- **Why does `Architectural Invariants & Dependencies` connect `payroll.controller.js` to `ApiError`, `PageHeader`, `recordAuditLog`, `Can`, `3. Detailed User Stories & Acceptance Criteria`?**
+  _High betweenness centrality (0.095) - this node is a cross-community bridge._
 - **Are the 7 inferred relationships involving `ApiError` (e.g. with `God Nodes (most connected - your core abstractions)` and `Suggested Questions`) actually correct?**
   _`ApiError` has 7 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `name`, `version`, `type` to the rest of the system?**
-  _1252 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _1466 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `4. Core HR Modules` be split into smaller, more focused modules?**
-  _Cohesion score 0.05405405405405406 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.05263157894736842 - nodes in this community are weakly interconnected._
 - **Should `HRM System — Full-Stack Build Guide (Backend + Frontend Saath Saath)` be split into smaller, more focused modules?**
-  _Cohesion score 0.06666666666666667 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06060606060606061 - nodes in this community are weakly interconnected._
