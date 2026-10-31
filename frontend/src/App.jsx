@@ -39,6 +39,10 @@ import { KiosksPage } from './features/attendance/pages/KiosksPage.jsx';
 import { KioskQrPage } from './features/attendance/pages/KioskQrPage.jsx';
 import FaceEnrollPage from './features/attendance/pages/FaceEnrollPage.jsx';
 import FaceEnrollmentsPage from './features/attendance/pages/FaceEnrollmentsPage.jsx';
+import AssetsPage from './features/assets/pages/AssetsPage.jsx';
+import AssetDetailPage from './features/assets/pages/AssetDetailPage.jsx';
+import AssetRequestsPage from './features/assets/pages/AssetRequestsPage.jsx';
+import MyAssetsPage from './features/assets/pages/MyAssetsPage.jsx';
 import LeaveTypesPage from './features/leaves/pages/LeaveTypesPage.jsx';
 import HolidaysPage from './features/leaves/pages/HolidaysPage.jsx';
 import MyLeavesPage from './features/leaves/pages/MyLeavesPage.jsx';
@@ -598,6 +602,41 @@ export default function App() {
             element={<Navigate to="/payroll/runs" replace />}
           />
         </Route>
+
+        {/* Fallback */}
+                  {/* Module M23: Asset Management (Slices 23.1 - 23.6) */}
+          <Route
+            path="assets"
+            element={
+              <ProtectedRoute requiredPermission="asset.view">
+                <AssetsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="assets/:id"
+            element={
+              <ProtectedRoute requiredPermission="asset.view">
+                <AssetDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="assets/requests"
+            element={
+              <ProtectedRoute requiredPermission="asset.request">
+                <AssetRequestsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="assets/my"
+            element={
+              <ProtectedRoute requiredPermission="asset.view">
+                <MyAssetsPage />
+              </ProtectedRoute>
+            }
+          />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" replace />} />

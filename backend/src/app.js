@@ -42,6 +42,7 @@ import payrollRoutes from './modules/payroll/payroll.routes.js';
 import loanRoutes from './modules/loans/loan.routes.js';
 import expenseRoutes from './modules/expenses/expense.routes.js';
 import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
+import assetRoutes from './modules/assets/asset.routes.js';
 import reportsRoutes from './modules/reports/reports.routes.js';
 import auditRoutes from './modules/audit/audit.routes.js';
 import fileRoutes from './modules/files/file.routes.js';
@@ -138,6 +139,11 @@ app.use('/api/v1/expense-categories', (req, res, next) => {
   return expenseRoutes(req, res, next);
 });
 app.use('/api/v1/dashboard', dashboardRoutes);
+app.use('/api/v1/assets', assetRoutes);
+app.use('/api/v1/asset-requests', (req, res, next) => {
+  req.url = '/requests' + (req.url === '/' ? '' : req.url);
+  return assetRoutes(req, res, next);
+});
 app.get('/api/v1/payslips/my', authenticate, checkPermission('payroll.view', 'own'), payrollController.getMyPayslips);
 app.get('/api/v1/payslips/annual-tax-certificate', authenticate, checkPermission('payroll.view', 'own'), payrollController.getAnnualTaxCertificatePdf);
 app.get('/api/v1/payslips/:id/pdf', authenticate, checkPermission('payroll.view', 'own'), payrollController.getPayslipPdf);

@@ -342,12 +342,12 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 23.1 | Asset register | `asset.model.js`, CRUD `/assets` (tag, type, serial, license) | `AssetsPage.jsx`, `AssetForm.jsx` | Asset bane | ☐ |
-| 23.2 | Assign / return + history | `POST /assets/:id/assign`, `/return`, history[] | `AssetDetailPage.jsx` | History sahi | ☐ |
-| 23.3 | Warranty / license alerts | `jobs/assetExpiry.job.js` | Notification | 30 din pehle alert | ☐ |
-| 23.4 | Kharabi / marammat | `POST /assets/:id/repairs` | Repair log | Record bane | ☐ |
-| 23.5 | Manager request | `assetRequest.model.js`, `POST /asset-requests` | Request form + HR list | Request se assign | ☐ |
-| 23.6 | Employee: mere assets + issue | `GET /assets/my`, `POST /assets/:id/issue` | `MyAssetsPage.jsx` | Issue HR tak | ☐ |
+| 23.1 | Asset register | `asset.model.js`, CRUD `/assets` (tag, type, serial, license) | `AssetsPage.jsx`, `AssetForm.jsx` | Asset bane | ☑ |
+| 23.2 | Assign / return + history | `POST /assets/:id/assign`, `/return`, history[] | `AssetDetailPage.jsx` | History sahi | ☑ |
+| 23.3 | Warranty / license alerts | `jobs/assetExpiry.job.js` | Notification | 30 din pehle alert | ☑ |
+| 23.4 | Kharabi / marammat | `POST /assets/:id/repairs` | Repair log | Record bane | ☑ |
+| 23.5 | Manager request | `assetRequest.model.js`, `POST /asset-requests` | Request form + HR list | Request se assign | ☑ |
+| 23.6 | Employee: mere assets + issue | `GET /assets/my`, `POST /assets/:id/issue` | `MyAssetsPage.jsx` | Issue HR tak | ☑ |
 
 ## 21. M18 — Onboarding & Offboarding
 

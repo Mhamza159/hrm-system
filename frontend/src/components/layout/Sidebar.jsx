@@ -42,6 +42,7 @@ import {
   BarChart3,
   ShieldCheck,
   ChevronDown,
+  Laptop,
   X
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -151,6 +152,16 @@ export function Sidebar({ isOpen = false, onClose }) {
         { name: 'Expense Reports', path: '/expenses/reports', permission: 'report.view' }
       ]
     },
+        {
+      type: 'group',
+      name: 'Assets',
+      icon: Laptop,
+      children: [
+        { name: 'My Assets', path: '/assets/my', permission: 'asset.view', excludeSuperAdmin: true },
+        { name: 'Asset Register', path: '/assets', permission: 'asset.view' },
+        { name: 'Requisitions', path: '/assets/requests', permission: 'asset.request' }
+      ]
+    },
     { type: 'link', name: 'Reports', path: '/reports', icon: BarChart3, permission: 'report.view' },
     { type: 'link', name: 'Company Policies', path: '/policies', icon: BookOpen, permission: 'settings.view' },
     { type: 'link', name: 'Announcements', path: '/announcements', icon: Megaphone, permission: 'announcement.view' },
@@ -176,7 +187,8 @@ export function Sidebar({ isOpen = false, onClose }) {
     'Leaves & Holidays': false,
     Payroll: false,
     'Loans & Advances': false,
-    Expenses: false
+    Expenses: false,
+    Assets: false
   });
 
   // Auto-expand group if the active route is within its children

@@ -90,7 +90,13 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'expense.create', subject: 'Expense', scope: 'own' },
       { action: 'expense.approve', subject: 'Expense', scope: 'all' },
       { action: 'expense.reimburse', subject: 'Expense', scope: 'all' },
-      { action: 'expense.settings', subject: 'ExpenseCategory', scope: 'all' }
+            { action: 'expense.settings', subject: 'ExpenseCategory', scope: 'all' },
+      { action: 'asset.view', subject: 'Asset', scope: 'all' },
+      { action: 'asset.create', subject: 'Asset', scope: 'all' },
+      { action: 'asset.manage', subject: 'Asset', scope: 'all' },
+      { action: 'asset.assign', subject: 'Asset', scope: 'all' },
+      { action: 'asset.request', subject: 'AssetRequest', scope: 'all' },
+      { action: 'asset.issue', subject: 'Asset', scope: 'own' }
     ]
   },
   {
@@ -129,7 +135,10 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'announcement.view', subject: 'Announcement', scope: 'department' },
       { action: 'announcement.create', subject: 'Announcement', scope: 'department' },
       { action: 'announcement.edit', subject: 'Announcement', scope: 'department' },
-      { action: 'announcement.pin', subject: 'Announcement', scope: 'department' }
+            { action: 'announcement.pin', subject: 'Announcement', scope: 'department' },
+      { action: 'asset.view', subject: 'Asset', scope: 'department' },
+      { action: 'asset.request', subject: 'AssetRequest', scope: 'department' },
+      { action: 'asset.issue', subject: 'Asset', scope: 'own' }
     ]
   },
   {
@@ -156,7 +165,9 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'announcement.view', subject: 'Announcement', scope: 'own' },
       { action: 'org.view', subject: 'Organization', scope: 'all' },
       { action: 'report.view', subject: 'Report', scope: 'own' },
-      { action: 'dashboard.view', subject: 'Dashboard', scope: 'own' }
+            { action: 'dashboard.view', subject: 'Dashboard', scope: 'own' },
+      { action: 'asset.view', subject: 'Asset', scope: 'own' },
+      { action: 'asset.issue', subject: 'Asset', scope: 'own' }
     ]
   }
 ];

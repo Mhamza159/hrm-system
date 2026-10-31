@@ -578,8 +578,58 @@ export const PERMISSIONS_CATALOGUE = [
       }
     ]
   }
+,
+  {
+    module: 'assets',
+    label: 'Asset Management',
+    subject: 'Asset',
+    description: 'Hardware inventory, custodian lifecycle, software licenses, maintenance and repair tracking.',
+    actions: [
+      {
+        action: 'asset.view',
+        label: 'View Assets',
+        description: 'View corporate asset registry, specs, and custody history.',
+        allowedScopes: ['own', 'department', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'asset.create',
+        label: 'Register New Asset',
+        description: 'Add physical hardware or software licenses to the company asset register.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'asset.manage',
+        label: 'Manage Assets & Repairs',
+        description: 'Update specs, manage repairs, retire equipment, and approve requisitions.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'asset.assign',
+        label: 'Assign & Recover Custody',
+        description: 'Assign company assets to employees and process returns with condition logging.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'asset.request',
+        label: 'Requisition Equipment',
+        description: 'Request hardware or software licenses for subordinates or team.',
+        allowedScopes: ['own', 'department', 'all'],
+        defaultScope: 'department'
+      },
+      {
+        action: 'asset.issue',
+        label: 'Report Defect / Damage',
+        description: 'Log malfunctions and maintenance requests for assigned equipment.',
+        allowedScopes: ['own'],
+        defaultScope: 'own'
+      }
+    ]
+  }
 ];
-
 
 /**
  * Helper to retrieve flattened list of all valid action identifiers
