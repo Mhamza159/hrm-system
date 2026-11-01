@@ -292,7 +292,7 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 ## 16. M11 — Expense Claims
 
-| ID | Feature | Backend | Frontend | Test | ☐ |
+| ID | Feature | Backend | Frontend | Test | ☑ |
 | --- | --- | --- | --- | --- | --- |
 | 11.1 | Categories aur limits | `expenseCategory.model.js`, CRUD (expense.settings) | `ExpenseCategoriesPage.jsx` | Limit set | ☑ |
 | 11.2 | Claim + raseed | `expense.model.js`, `POST /expenses` (upload) | `MyExpensesPage.jsx`, `ExpenseForm.jsx` | Bina raseed reject | ☑ |
@@ -302,7 +302,7 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 ## 17. M14 — GPS / Geo-fencing
 
-| ID | Feature | Backend | Frontend | Test | ☐ |
+| ID | Feature | Backend | Frontend | Test | ☑ |
 | --- | --- | --- | --- | --- | --- |
 | 14.1 | Haversine faasla | `utils/haversine.js` | — | Unit test (do known points) | ☑ |
 | 14.2 | Location ke saath check-in | check-in mein lat, lng, accuracy; geoFences (2.8) se check | `useGeolocation.js` → check-in ke saath bhejna | Fence se bahar reject | ☑ |
@@ -315,7 +315,7 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 ## 18. M13 — QR Code Attendance
 
-| ID | Feature | Backend | Frontend | Test | ☐ |
+| ID | Feature | Backend | Frontend | Test | ☑ |
 | --- | --- | --- | --- | --- | --- |
 | 13.1 | Kiosk devices | `kiosk.model.js` (naam, type entry/exit, secret), CRUD (attendance.kiosk.manage) | `KiosksPage.jsx` | Kiosk register | ☑ |
 | 13.2 | Dynamic QR | `GET /attendance/qr/current` (signed token, interval settings se) | `KioskQrPage.jsx` (khud refresh) | Har 30 sec naya | ☑ |
@@ -340,7 +340,7 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 ## 20. M23 — Asset Management
 
-| ID | Feature | Backend | Frontend | Test | ☐ |
+| ID | Feature | Backend | Frontend | Test | ☑ |
 | --- | --- | --- | --- | --- | --- |
 | 23.1 | Asset register | `asset.model.js`, CRUD `/assets` (tag, type, serial, license) | `AssetsPage.jsx`, `AssetForm.jsx` | Asset bane | ☑ |
 | 23.2 | Assign / return + history | `POST /assets/:id/assign`, `/return`, history[] | `AssetDetailPage.jsx` | History sahi | ☑ |
