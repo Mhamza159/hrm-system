@@ -351,7 +351,7 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 ## 21. M18 — Onboarding & Offboarding
 
-| ID | Feature | Backend | Frontend | Test | ☐ |
+| ID | Feature | Backend | Frontend | Test | ☑ |
 | --- | --- | --- | --- | --- | --- |
 | 18.1 | Checklist templates | `checklistTemplate.model.js`, CRUD (onboard.manage) | `ChecklistTemplatesPage.jsx` | Template bane | ☑ |
 | 18.2 | Onboarding auto checklist | employee create (3.2) par template se checklist | `OnboardingPage.jsx` | Naye employee ki list | ☑ |
