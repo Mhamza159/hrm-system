@@ -353,17 +353,17 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 18.1 | Checklist templates | `checklistTemplate.model.js`, CRUD (onboard.manage) | `ChecklistTemplatesPage.jsx` | Template bane | ☐ |
-| 18.2 | Onboarding auto checklist | employee create (3.2) par template se checklist | `OnboardingPage.jsx` | Naye employee ki list | ☐ |
-| 18.3 | Task owner aur due date | tasks[{ownerId, dueDate, done}], overdue alert | `MyTasksPage.jsx` | Owner ko notification | ☐ |
-| 18.4 | Welcome email | template 2.9 | — | Email jaye | ☐ |
-| 18.5 | Resignation submit | `resignation.model.js`, `POST /resignations` | `ResignationPage.jsx` | Request bane | ☐ |
-| 18.6 | Accept + notice period | `PATCH /resignations/:id/decide` (manager; senior par Super Admin) | Approval list | lastWorkingDay set | ☐ |
-| 18.7 | Exit checklist | offboarding template (assets 23.2 return, access band, handover) | `OffboardingPage.jsx` | Asset wapsi ke baghair close na ho | ☐ |
-| 18.8 | Exit interview | `exitInterview.model.js` | `ExitInterviewForm.jsx` | Form save | ☐ |
-| 18.9 | Final settlement | 9.13 | Link | Settlement ho | ☐ |
-| 18.10 | Experience / relieving letter | `GET /employees/:id/letters/:type` (PDF) | Download buttons | PDF sahi | ☐ |
-| 18.11 | Aakhri din account band | `jobs/deactivate.job.js` | — | Agle din login fail | ☐ |
+| 18.1 | Checklist templates | `checklistTemplate.model.js`, CRUD (onboard.manage) | `ChecklistTemplatesPage.jsx` | Template bane | ☑ |
+| 18.2 | Onboarding auto checklist | employee create (3.2) par template se checklist | `OnboardingPage.jsx` | Naye employee ki list | ☑ |
+| 18.3 | Task owner aur due date | tasks[{ownerId, dueDate, done}], overdue alert | `MyTasksPage.jsx` | Owner ko notification | ☑ |
+| 18.4 | Welcome email | template 2.9 | — | Email jaye | ☑ |
+| 18.5 | Resignation submit | `resignation.model.js`, `POST /resignations` | `ResignationPage.jsx` | Request bane | ☑ |
+| 18.6 | Accept + notice period | `PATCH /resignations/:id/decide` (manager; senior par Super Admin) | Approval list | lastWorkingDay set | ☑ |
+| 18.7 | Exit checklist | offboarding template (assets 23.2 return, access band, handover) | `OffboardingPage.jsx` | Asset wapsi ke baghair close na ho | ☑ |
+| 18.8 | Exit interview | `exitInterview.model.js` | `ExitInterviewForm.jsx` | Form save | ☑ |
+| 18.9 | Final settlement | 9.13 | Link | Settlement ho | ☑ |
+| 18.10 | Experience / relieving letter | `GET /employees/:id/letters/:type` (PDF) | Download buttons | PDF sahi | ☑ |
+| 18.11 | Aakhri din account band | `jobs/deactivate.job.js` | — | Agle din login fail | ☑ |
 
 ## 22. M19 — Performance & Appraisal
 

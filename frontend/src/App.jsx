@@ -43,6 +43,11 @@ import AssetsPage from './features/assets/pages/AssetsPage.jsx';
 import AssetDetailPage from './features/assets/pages/AssetDetailPage.jsx';
 import AssetRequestsPage from './features/assets/pages/AssetRequestsPage.jsx';
 import MyAssetsPage from './features/assets/pages/MyAssetsPage.jsx';
+import { ChecklistTemplatesPage } from './features/onboarding/pages/ChecklistTemplatesPage.jsx';
+import { OnboardingPage } from './features/onboarding/pages/OnboardingPage.jsx';
+import { MyTasksPage } from './features/onboarding/pages/MyTasksPage.jsx';
+import { ResignationPage } from './features/onboarding/pages/ResignationPage.jsx';
+import { OffboardingPage } from './features/onboarding/pages/OffboardingPage.jsx';
 import LeaveTypesPage from './features/leaves/pages/LeaveTypesPage.jsx';
 import HolidaysPage from './features/leaves/pages/HolidaysPage.jsx';
 import MyLeavesPage from './features/leaves/pages/MyLeavesPage.jsx';
@@ -626,6 +631,48 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          {/* Module M18: Onboarding & Offboarding Lifecycle */}
+          <Route
+            path="onboarding/templates"
+            element={
+              <ProtectedRoute requiredPermission="onboard.manage">
+                <ChecklistTemplatesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="onboarding"
+            element={
+              <ProtectedRoute requiredPermission="onboard.view">
+                <OnboardingPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="onboarding/my-tasks"
+            element={
+              <ProtectedRoute requiredPermission="onboard.view">
+                <MyTasksPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="resignations"
+            element={
+              <ProtectedRoute requiredPermission="resignation.submit">
+                <ResignationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="offboarding"
+            element={
+              <ProtectedRoute requiredPermission="offboard.view">
+                <OffboardingPage />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="assets/my"
             element={

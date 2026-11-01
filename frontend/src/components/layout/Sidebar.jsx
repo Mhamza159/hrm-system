@@ -43,6 +43,7 @@ import {
   ShieldCheck,
   ChevronDown,
   Laptop,
+  ListChecks,
   X
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -160,6 +161,18 @@ export function Sidebar({ isOpen = false, onClose }) {
         { name: 'My Assets', path: '/assets/my', permission: 'asset.view', excludeSuperAdmin: true },
         { name: 'Asset Register', path: '/assets', permission: 'asset.manage' },
         { name: 'Requisitions', path: '/assets/requests', permission: 'asset.request' }
+      ]
+    },
+    {
+      type: 'group',
+      name: 'Lifecycle',
+      icon: ListChecks,
+      children: [
+        { name: 'Onboarding', path: '/onboarding', permission: 'onboard.view' },
+        { name: 'My Lifecycle Tasks', path: '/onboarding/my-tasks', permission: 'onboard.view', excludeSuperAdmin: true },
+        { name: 'Resignation', path: '/resignations', permission: 'resignation.submit' },
+        { name: 'Exit Clearance', path: '/offboarding', permission: 'offboard.view' },
+        { name: 'Checklist Templates', path: '/onboarding/templates', permission: 'onboard.manage' }
       ]
     },
     { type: 'link', name: 'Reports', path: '/reports', icon: BarChart3, permission: 'report.view' },

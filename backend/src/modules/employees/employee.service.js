@@ -30,6 +30,7 @@ import { emailService } from '../../services/email.service.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary, isCloudinaryConfigured } from '../../config/cloudinary.js';
 import { initializeEmployeeLeaveBalances } from '../leaves/leave.service.js';
 import { assertEmployeeAssetClearance } from '../assets/asset.service.js';
+import { initOnboardingForEmployee } from '../onboarding/onboarding.service.js';
 
 /**
  * Decrypt sensitive fields (CNIC and IBAN) on an employee object
@@ -226,6 +227,13 @@ export const createEmployee = async (payload, actor) => {
     await initializeEmployeeLeaveBalances(employee._id);
   } catch (leaveErr) {
     console.error('Leave balance initialization failed:', leaveErr.message);
+  }
+
+  // 6c. Automatically initialize onboarding checklist (Module M18 Row 18.2)
+  try {
+    await initOnboardingForEmployee({ employee });
+  } catch (onboardErr) {
+    console.error('Onboarding checklist initialization failed:', onboardErr.message);
   }
 
   // 7. Audit Log

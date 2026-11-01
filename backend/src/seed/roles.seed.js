@@ -96,7 +96,12 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'asset.manage', subject: 'Asset', scope: 'all' },
       { action: 'asset.assign', subject: 'Asset', scope: 'all' },
       { action: 'asset.request', subject: 'AssetRequest', scope: 'all' },
-      { action: 'asset.issue', subject: 'Asset', scope: 'own' }
+      { action: 'asset.issue', subject: 'Asset', scope: 'own' },
+      { action: 'onboard.view', subject: 'Checklist', scope: 'all' },
+      { action: 'onboard.manage', subject: 'Checklist', scope: 'all' },
+      { action: 'resignation.submit', subject: 'Resignation', scope: 'own' },
+      { action: 'offboard.view', subject: 'Resignation', scope: 'all' },
+      { action: 'offboard.manage', subject: 'Resignation', scope: 'all' }
     ]
   },
   {
@@ -138,7 +143,11 @@ export const CORE_ROLES_DEFINITIONS = [
             { action: 'announcement.pin', subject: 'Announcement', scope: 'department' },
       { action: 'asset.view', subject: 'Asset', scope: 'department' },
       { action: 'asset.request', subject: 'AssetRequest', scope: 'department' },
-      { action: 'asset.issue', subject: 'Asset', scope: 'own' }
+      { action: 'asset.issue', subject: 'Asset', scope: 'own' },
+      { action: 'onboard.view', subject: 'Checklist', scope: 'team' },
+      { action: 'resignation.submit', subject: 'Resignation', scope: 'own' },
+      { action: 'offboard.view', subject: 'Resignation', scope: 'team' },
+      { action: 'offboard.manage', subject: 'Resignation', scope: 'department' }
     ]
   },
   {
@@ -167,7 +176,10 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'report.view', subject: 'Report', scope: 'own' },
             { action: 'dashboard.view', subject: 'Dashboard', scope: 'own' },
       { action: 'asset.view', subject: 'Asset', scope: 'own' },
-      { action: 'asset.issue', subject: 'Asset', scope: 'own' }
+      { action: 'asset.issue', subject: 'Asset', scope: 'own' },
+      { action: 'onboard.view', subject: 'Checklist', scope: 'own' },
+      { action: 'resignation.submit', subject: 'Resignation', scope: 'own' },
+      { action: 'offboard.view', subject: 'Resignation', scope: 'own' }
     ]
   }
 ];

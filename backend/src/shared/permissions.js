@@ -628,6 +628,49 @@ export const PERMISSIONS_CATALOGUE = [
         defaultScope: 'own'
       }
     ]
+  },
+  {
+    module: 'onboarding',
+    label: 'Onboarding & Offboarding Lifecycle',
+    subject: 'Checklist',
+    description: 'Employee onboarding checklists, task assignments, resignations, exit clearances, and service letters.',
+    actions: [
+      {
+        action: 'onboard.view',
+        label: 'View Onboarding Checklists',
+        description: 'View active onboarding workflows, checklist items, and assigned tasks.',
+        allowedScopes: ['own', 'team', 'department', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'onboard.manage',
+        label: 'Manage Onboarding Templates & Orchestration',
+        description: 'Create checklist templates, assign tasks, and trigger welcome emails.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'resignation.submit',
+        label: 'Submit Resignation',
+        description: 'Submit formal resignation with proposed last working day and transition notes.',
+        allowedScopes: ['own'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'offboard.view',
+        label: 'View Offboarding & Resignations',
+        description: 'Inspect employee resignations, exit checklists, and clearance status.',
+        allowedScopes: ['own', 'team', 'department', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'offboard.manage',
+        label: 'Manage Offboarding, Decisions & Letters',
+        description: 'Accept resignations, approve exit clearances, and generate relieving letters.',
+        allowedScopes: ['department', 'all'],
+        defaultScope: 'department'
+      }
+    ]
   }
 ];
 

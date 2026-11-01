@@ -17,6 +17,7 @@ import { initSocketIO } from './services/socket.service.js';
 import { initAutoAbsentJob } from './modules/attendance/jobs/autoAbsent.job.js';
 import { initYearlyLeaveCron } from './jobs/yearlyLeave.job.js';
 import { initAssetExpiryJob } from './jobs/assetExpiry.job.js';
+import { initDeactivationJob } from './jobs/deactivate.job.js';
 import { seedRolesAndAdmin } from './seed/roles.seed.js';
 
 const startServer = async () => {
@@ -37,6 +38,7 @@ const startServer = async () => {
     initAutoAbsentJob();
     initYearlyLeaveCron();
     initAssetExpiryJob();
+    initDeactivationJob();
 
     // 5. Start HTTP & WebSocket Listener
     httpServer.listen(env.PORT, () => {

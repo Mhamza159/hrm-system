@@ -163,7 +163,12 @@ export const baseApi = createApi({
     'FaceEnrollments',
     'Assets',
     'Asset',
-    'AssetRequests'
+    'AssetRequests',
+    'ChecklistTemplates',
+    'Checklists',
+    'ChecklistTasks',
+    'Resignations',
+    'ExitInterviews'
   ],
   endpoints: () => ({})
 });
