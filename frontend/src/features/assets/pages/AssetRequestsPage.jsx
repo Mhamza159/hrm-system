@@ -41,7 +41,8 @@ export const AssetRequestsPage = () => {
   const [rejectingRequest, setRejectingRequest] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
 
-  const { data: requests = [], isLoading } = useGetAssetRequestsQuery();
+  const { data: requestsRes, isLoading } = useGetAssetRequestsQuery();
+  const requests = Array.isArray(requestsRes?.data) ? requestsRes.data : (Array.isArray(requestsRes) ? requestsRes : []);
   const { data: availableAssetsRes } = useGetAssetsQuery(
     allocatingRequest ? { status: 'available', type: allocatingRequest.assetType } : { status: 'available' },
     { skip: !allocatingRequest }
@@ -183,7 +184,7 @@ export const AssetRequestsPage = () => {
 
                 <div className="mt-3 text-xs space-y-1">
                   <p className="font-semibold text-slate-800 dark:text-slate-200">
-                    Target Member: {req.employeeId?.firstName} {req.employeeId?.lastName} ({req.employeeId?.employeeCode})
+                    Target Member: {req.employeeId?.name || `${req.employeeId?.firstName || ''} ${req.employeeId?.lastName || ''}`.trim()} ({req.employeeId?.employeeCode})
                   </p>
                   <p className="text-[11px] text-slate-400">
                     Department: {req.departmentId?.name || 'Department'} · Requested by: {req.requestedBy?.name || 'Manager'}
@@ -245,7 +246,7 @@ export const AssetRequestsPage = () => {
               Allocate Available Asset
             </h3>
             <p className="text-xs text-slate-500">
-              Select an available {allocatingRequest.assetType} to assign to {allocatingRequest.employeeId?.firstName} {allocatingRequest.employeeId?.lastName}.
+              Select an available {allocatingRequest.assetType} to assign to {allocatingRequest.employeeId?.name || `${allocatingRequest.employeeId?.firstName || ''} ${allocatingRequest.employeeId?.lastName || ''}`.trim() || 'employee'}.
             </p>
 
             <div>

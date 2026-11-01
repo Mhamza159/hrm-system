@@ -360,5 +360,56 @@ describe('Module M23 Security & Hardening Suite (Doubt-Driven Stress Test)', () 
       expect(assignRes.status).toBe(404);
     });
   });
-});
+  // =========================================================================
+  // 6. Cross-Module Clearance & Hardened Invariants
+  // =========================================================================
+  describe('Cross-Module Clearance & Hardened Invariants', () => {
+    it('Blocks employee deletion when employee holds active company assets', async () => {
+      // 1. Create asset and assign to employeeEmp
+      const heldAsset = await Asset.create({
+        assetTag: 'AST-CLEAR-01',
+        name: 'Clearance Test Laptop',
+        type: 'laptop',
+        serialNumber: 'SN-CLEAR-001',
+        status: 'assigned',
+        assignedTo: employeeEmp._id,
+        history: [{ action: 'created', performedBy: superAdminUser._id, date: new Date() }]
+      });
 
+      // 2. Attempt deleting employee via API or deleteEmployee service
+      const delRes = await request(app)
+        .delete(`/api/v1/employees/${employeeEmp._id}`)
+        .set('Authorization', `Bearer ${superAdminToken}`);
+
+      expect(delRes.status).toBe(400);
+      expect(delRes.body.message).toMatch(/Active company assets.*must be returned first/i);
+
+      // Clean up asset
+      await Asset.findByIdAndDelete(heldAsset._id);
+    });
+
+    it('Rejects asset requisition when target employee has no assigned department (HTTP 400)', async () => {
+      // Create employee without department
+      const deptlessEmp = await Employee.create({
+        employeeCode: 'EMP-NODEPT',
+        name: 'No Department Staff',
+        email: 'nodept@hrm.company.pk',
+        departmentId: null
+      });
+
+      const reqRes = await request(app)
+        .post('/api/v1/assets/requests')
+        .set('Authorization', `Bearer ${superAdminToken}`)
+        .send({
+          employeeId: deptlessEmp._id.toString(),
+          assetType: 'laptop',
+          justification: 'Hardware for remote onboarding'
+        });
+
+      expect(reqRes.status).toBe(400);
+      expect(reqRes.body.message).toMatch(/not assigned to any department/i);
+
+      await Employee.findByIdAndDelete(deptlessEmp._id);
+    });
+  });
+});

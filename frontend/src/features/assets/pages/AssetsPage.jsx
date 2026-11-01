@@ -9,7 +9,7 @@
  */
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Laptop,
   Plus,
@@ -34,13 +34,14 @@ import { toast } from 'sonner';
 
 export const AssetsPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { can } = usePermission();
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
-  const [expiringSoon, setExpiringSoon] = useState(false);
+  const [expiringSoon, setExpiringSoon] = useState(() => searchParams.get('expiringSoon') === 'true');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
@@ -267,11 +268,11 @@ export const AssetsPage = () => {
                       {asset.assignedTo ? (
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-[10px] font-bold flex items-center justify-center">
-                            {asset.assignedTo.firstName?.[0]}
+                            {(asset.assignedTo.name?.[0] || asset.assignedTo.firstName?.[0] || asset.assignedTo.employeeCode?.[0] || 'U')}
                           </div>
                           <div>
                             <p className="font-medium text-slate-800 dark:text-slate-200 text-xs">
-                              {asset.assignedTo.firstName} {asset.assignedTo.lastName}
+                              {asset.assignedTo.name || `${asset.assignedTo.firstName || ''} ${asset.assignedTo.lastName || ''}`.trim() || asset.assignedTo.employeeCode}
                             </p>
                             <p className="text-[10px] text-slate-400 font-mono">
                               {asset.assignedTo.employeeCode}

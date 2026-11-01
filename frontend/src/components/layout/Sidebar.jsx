@@ -158,7 +158,7 @@ export function Sidebar({ isOpen = false, onClose }) {
       icon: Laptop,
       children: [
         { name: 'My Assets', path: '/assets/my', permission: 'asset.view', excludeSuperAdmin: true },
-        { name: 'Asset Register', path: '/assets', permission: 'asset.view' },
+        { name: 'Asset Register', path: '/assets', permission: 'asset.manage' },
         { name: 'Requisitions', path: '/assets/requests', permission: 'asset.request' }
       ]
     },

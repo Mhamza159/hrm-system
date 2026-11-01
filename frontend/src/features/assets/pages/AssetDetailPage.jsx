@@ -169,7 +169,7 @@ export const AssetDetailPage = () => {
             <p className="text-slate-400 font-medium">Current Custodian</p>
             <p className="font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
               {asset.assignedTo
-                ? `${asset.assignedTo.firstName} ${asset.assignedTo.lastName} (${asset.assignedTo.employeeCode})`
+                ? `${asset.assignedTo.name || `${asset.assignedTo.firstName || ''} ${asset.assignedTo.lastName || ''}`.trim() || 'Staff'} (${asset.assignedTo.employeeCode})`
                 : 'Available in Central Inventory'}
             </p>
           </div>
@@ -273,7 +273,7 @@ export const AssetDetailPage = () => {
                       </p>
                       <p className="text-[11px] text-slate-400 mt-0.5">
                         Action performed by: {event.performedBy?.name || 'System'}
-                        {event.employeeId && ` · Custodian: ${event.employeeId.firstName || ''} ${event.employeeId.lastName || ''}`}
+                        {event.employeeId && ` · Custodian: ${event.employeeId.name || `${event.employeeId.firstName || ''} ${event.employeeId.lastName || ''}`.trim() || event.employeeId.employeeCode}`}
                       </p>
                     </div>
                   </div>
@@ -350,7 +350,7 @@ export const AssetDetailPage = () => {
                   </div>
                   <p className="text-slate-600 dark:text-slate-400">{issue.description}</p>
                   <p className="text-[11px] text-slate-400">
-                    Reported by: {issue.reportedBy?.firstName || 'Employee'} {issue.reportedBy?.lastName || ''} on {new Date(issue.reportedAt).toLocaleDateString()}
+                    Reported by: {issue.reportedBy?.name || `${issue.reportedBy?.firstName || ''} ${issue.reportedBy?.lastName || ''}`.trim() || 'Employee'} on {new Date(issue.reportedAt).toLocaleDateString()}
                   </p>
                 </div>
               ))

@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 /**
  * @file asset.service.js
  * @description Core Domain Service for Module M23 Asset Management.
@@ -114,9 +115,35 @@ export const getAssets = async ({ query = {}, user }) => {
     ];
   }
 
+  if (user) {
+    const isSuperAdmin = user.roles?.some((r) => (typeof r === 'string' ? r : r?.name) === 'Super Admin');
+    const isHR = user.roles?.some((r) => (typeof r === 'string' ? r : r?.name) === 'HR Manager');
+    if (!isSuperAdmin && !isHR) {
+      const isDeptManager = user.roles?.some((r) => (typeof r === 'string' ? r : r?.name) === 'Department Manager');
+      if (isDeptManager) {
+        let deptId = user.departmentId;
+        if (!deptId) {
+          const emp = await Employee.findOne({ userId: user._id }).select('departmentId').lean();
+          deptId = emp?.departmentId;
+        }
+        if (deptId) {
+          const deptEmps = await Employee.find({ departmentId: deptId, isDeleted: false }).select('_id').lean();
+          const deptEmpIds = deptEmps.map((e) => e._id);
+          filter.$or = [
+            { assignedTo: { $in: deptEmpIds } },
+            { status: 'available' }
+          ];
+        }
+      } else {
+        const empId = user.employeeId || (await Employee.findOne({ userId: user._id }).select('_id').lean())?._id;
+        filter.assignedTo = empId || null;
+      }
+    }
+  }
+
   const [assets, total] = await Promise.all([
     Asset.find(filter)
-      .populate('assignedTo', 'firstName lastName employeeCode departmentId workEmail phone')
+      .populate('assignedTo', 'name employeeCode departmentId email phone')
       .populate('history.performedBy', 'name email')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -141,10 +168,10 @@ export const getAssets = async ({ query = {}, user }) => {
  */
 export const getAssetById = async (id) => {
   const asset = await Asset.findOne({ _id: id, isDeleted: false })
-    .populate('assignedTo', 'firstName lastName employeeCode departmentId workEmail phone designationId')
+    .populate('assignedTo', 'name employeeCode departmentId email phone designationId')
     .populate('history.performedBy', 'name email')
-    .populate('history.employeeId', 'firstName lastName employeeCode')
-    .populate('issues.reportedBy', 'firstName lastName employeeCode workEmail')
+    .populate('history.employeeId', 'name employeeCode')
+    .populate('issues.reportedBy', 'name employeeCode email')
     .lean();
 
   if (!asset) {
@@ -545,6 +572,10 @@ export const createAssetRequest = async ({ requestData, user, ipAddress, userAge
     throw new ApiError(404, 'Target employee not found');
   }
 
+  if (!targetEmployee.departmentId) {
+    throw new ApiError(400, `Target employee '${targetEmployee.name || targetEmployee.employeeCode}' is not assigned to any department.`);
+  }
+
   const isSuperAdmin = user.roles?.some((r) => (typeof r === 'string' ? r : r?.name) === 'Super Admin');
   const isHR = user.roles?.some((r) => (typeof r === 'string' ? r : r?.name) === 'HR Manager');
 
@@ -593,8 +624,8 @@ export const createAssetRequest = async ({ requestData, user, ipAddress, userAge
     if (hrUserIds.length > 0) {
       await notify(hrUserIds, {
         title: 'New Asset Requisition',
-        body: `Asset requisition submitted for ${targetEmployee.firstName} ${targetEmployee.lastName}.`,
-        message: `Asset requisition submitted for ${targetEmployee.firstName} ${targetEmployee.lastName}.`,
+        body: `Asset requisition submitted for ${targetEmployee.name || targetEmployee.employeeCode}.`,
+        message: `Asset requisition submitted for ${targetEmployee.name || targetEmployee.employeeCode}.`,
         type: 'system',
         link: '/assets/requests'
       }).catch((err) => console.error('[Notify Error]', err.message));
@@ -623,7 +654,7 @@ export const getAssetRequests = async ({ user }) => {
   const requests = await AssetRequest.find(filter)
     .populate('requestedBy', 'name email')
     .populate('departmentId', 'name code')
-    .populate('employeeId', 'firstName lastName employeeCode workEmail')
+    .populate('employeeId', 'name employeeCode email')
     .populate('allocatedAssetId', 'name assetTag serialNumber type status')
     .sort({ createdAt: -1 })
     .lean();
@@ -644,28 +675,36 @@ export const approveAssetRequest = async ({ id, allocatedAssetId, user, ipAddres
     throw new ApiError(400, `Requisition has already been processed (current status: '${request.status}').`);
   }
 
-  const asset = await Asset.findOne({ _id: allocatedAssetId, isDeleted: false });
-  if (!asset) {
-    throw new ApiError(404, 'Allocated asset not found');
-  }
-
-  if (asset.status !== 'available') {
-    throw new ApiError(400, `Selected asset is not available for allocation (current status: '${asset.status}').`);
-  }
-
   const prevReq = request.toObject();
 
-  // 1. Assign asset to employee
-  asset.assignedTo = request.employeeId;
-  asset.status = 'assigned';
-  asset.history.push({
-    action: 'assigned',
-    employeeId: request.employeeId,
-    performedBy: user._id,
-    date: new Date(),
-    notes: `Allocated via requisition #${request._id}`
-  });
-  await asset.save();
+  // 1. Atomically assign asset to employee guarded by status === 'available'
+  const asset = await Asset.findOneAndUpdate(
+    {
+      _id: allocatedAssetId,
+      isDeleted: false,
+      status: 'available'
+    },
+    {
+      $set: {
+        assignedTo: request.employeeId,
+        status: 'assigned'
+      },
+      $push: {
+        history: {
+          action: 'assigned',
+          employeeId: request.employeeId,
+          performedBy: user._id,
+          date: new Date(),
+          notes: `Allocated via requisition #${request._id}`
+        }
+      }
+    },
+    { new: true }
+  );
+
+  if (!asset) {
+    throw new ApiError(400, 'Selected asset is not available for allocation in inventory.');
+  }
 
   // 2. Mark request approved & allocated
   request.status = 'approved';
@@ -779,23 +818,57 @@ export const checkExpiringAssets = async () => {
     return { count: 0, assets: [] };
   }
 
-  const hrRole = await Role.findOne({ name: 'HR Manager' });
-  const adminRole = await Role.findOne({ name: 'Super Admin' });
-  const rolesList = [hrRole?._id, adminRole?._id].filter(Boolean);
+  // De-duplicate notifications: check if an alert was sent in the last 7 days
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const recentAlert = await mongoose.connection.collection('notifications').findOne({
+    link: '/assets?expiringSoon=true',
+    createdAt: { $gte: sevenDaysAgo }
+  });
 
-  const adminUsers = await User.find({ roles: { $in: rolesList }, isActive: true });
-  const recipientIds = adminUsers.map((u) => u._id);
+  if (!recentAlert) {
+    const hrRole = await Role.findOne({ name: 'HR Manager' });
+    const adminRole = await Role.findOne({ name: 'Super Admin' });
+    const rolesList = [hrRole?._id, adminRole?._id].filter(Boolean);
 
-  if (recipientIds.length > 0) {
-    await notify(recipientIds, {
-      title: 'Asset Expiry Notice (30-Day Window)',
-      body: `${expiringAssets.length} asset warranty/license(s) are approaching expiration within the next 30 days.`,
-      message: `${expiringAssets.length} asset warranty/license(s) are approaching expiration within the next 30 days.`,
-      type: 'system',
-      link: '/assets?expiringSoon=true'
-    }).catch((err) => console.error('[Notify Error]', err.message));
+    const adminUsers = await User.find({ roles: { $in: rolesList }, isActive: true });
+    const recipientIds = adminUsers.map((u) => u._id);
+
+    if (recipientIds.length > 0) {
+      await notify(recipientIds, {
+        title: 'Asset Expiry Notice (30-Day Window)',
+        body: `${expiringAssets.length} asset warranty/license(s) are approaching expiration within the next 30 days.`,
+        message: `${expiringAssets.length} asset warranty/license(s) are approaching expiration within the next 30 days.`,
+        type: 'system',
+        link: '/assets?expiringSoon=true'
+      }).catch((err) => console.error('[Notify Error]', err.message));
+    }
   }
 
   return { count: expiringAssets.length, assets: expiringAssets };
 };
+/**
+ * Cross-module hook for M07 (Employee Lifecycle) & M18 (Offboarding Exit Checklist):
+ * Check if an employee holds active company assets before deactivation or exit clearance.
+ * @param {string|mongoose.Types.ObjectId} employeeId
+ * @returns {Promise<Array>} List of actively assigned assets
+ */
+export const getEmployeeActiveAssets = async (employeeId) => {
+  return Asset.find({
+    assignedTo: employeeId,
+    isDeleted: false,
+    status: 'assigned'
+  }).select('assetTag name type serialNumber').lean();
+};
 
+/**
+ * Asserts employee has no active assigned assets; throws ApiError(400) if any exist.
+ * @param {string|mongoose.Types.ObjectId} employeeId
+ */
+export const assertEmployeeAssetClearance = async (employeeId) => {
+  const activeAssets = await getEmployeeActiveAssets(employeeId);
+  if (activeAssets.length > 0) {
+    const tags = activeAssets.map((a) => a.assetTag).join(', ');
+    throw new ApiError(400, `Cannot clear or delete employee: Active company assets (${tags}) must be returned first.`);
+  }
+  return true;
+};

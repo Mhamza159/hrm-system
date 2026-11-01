@@ -601,9 +601,6 @@ export default function App() {
             path="payroll"
             element={<Navigate to="/payroll/runs" replace />}
           />
-        </Route>
-
-        {/* Fallback */}
                   {/* Module M23: Asset Management (Slices 23.1 - 23.6) */}
           <Route
             path="assets"
@@ -637,6 +634,8 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
+        </Route>
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" replace />} />

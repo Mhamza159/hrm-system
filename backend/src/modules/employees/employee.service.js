@@ -29,6 +29,7 @@ import { recordAuditLog } from '../../services/audit.service.js';
 import { emailService } from '../../services/email.service.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary, isCloudinaryConfigured } from '../../config/cloudinary.js';
 import { initializeEmployeeLeaveBalances } from '../leaves/leave.service.js';
+import { assertEmployeeAssetClearance } from '../assets/asset.service.js';
 
 /**
  * Decrypt sensitive fields (CNIC and IBAN) on an employee object
@@ -568,6 +569,9 @@ export const updateEmployeeStatus = async (id, { status, reason }, actor) => {
     throw new ApiError(404, 'Employee record not found');
   }
 
+  // Check asset exit clearance: ensure all company equipment returned before deletion
+  await assertEmployeeAssetClearance(id);
+
   if (
     employee.email === 'mhamzaofficial159@gmail.com' ||
     employee.email === 'admin@hrm.company.pk' ||
@@ -615,6 +619,9 @@ export const deleteEmployee = async (id, actor) => {
   if (!employee) {
     throw new ApiError(404, 'Employee record not found');
   }
+
+  // Ensure all company equipment returned before employee deletion
+  await assertEmployeeAssetClearance(id);
 
   if (
     employee.email === 'mhamzaofficial159@gmail.com' ||

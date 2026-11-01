@@ -31,7 +31,7 @@ export const AssetRequestModal = ({ isOpen, onClose }) => {
   const [errorMsg, setErrorMsg] = useState('');
 
   const { data: employeesRes } = useGetEmployeesQuery({ limit: 100, status: 'Active' });
-  const employees = employeesRes?.data || [];
+  const employees = employeesRes?.data?.items || (Array.isArray(employeesRes?.data) ? employeesRes.data : []);
 
   const [createRequest, { isLoading }] = useCreateAssetRequestMutation();
 
@@ -103,7 +103,7 @@ export const AssetRequestModal = ({ isOpen, onClose }) => {
               <option value="">-- Select employee --</option>
               {employees.map((emp) => (
                 <option key={emp._id} value={emp._id}>
-                  {emp.firstName} {emp.lastName} ({emp.employeeCode}) {emp.departmentId?.name ? `· ${emp.departmentId.name}` : ''}
+                  {emp.name || `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || emp.employeeCode} ({emp.employeeCode}) {emp.departmentId?.name ? `· ${emp.departmentId.name}` : ''}
                 </option>
               ))}
             </select>

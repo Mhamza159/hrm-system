@@ -20,7 +20,7 @@ export const AssetAssignModal = ({ isOpen, onClose, asset }) => {
   const [errorMsg, setErrorMsg] = useState('');
 
   const { data: employeesRes, isLoading: isLoadingEmps } = useGetEmployeesQuery({ limit: 100, status: 'Active' });
-  const employees = employeesRes?.data || [];
+  const employees = employeesRes?.data?.items || (Array.isArray(employeesRes?.data) ? employeesRes.data : []);
 
   const [assignAsset, { isLoading }] = useAssignAssetMutation();
 
@@ -88,7 +88,7 @@ export const AssetAssignModal = ({ isOpen, onClose, asset }) => {
               <option value="">-- Choose employee --</option>
               {employees.map((emp) => (
                 <option key={emp._id} value={emp._id}>
-                  {emp.firstName} {emp.lastName} ({emp.employeeCode}) {emp.departmentId?.name ? `· ${emp.departmentId.name}` : ''}
+                  {emp.name || `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || emp.employeeCode} ({emp.employeeCode}) {emp.departmentId?.name ? `· ${emp.departmentId.name}` : ''}
                 </option>
               ))}
             </select>
