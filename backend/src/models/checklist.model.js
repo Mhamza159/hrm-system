@@ -129,3 +129,4 @@ ChecklistSchema.index({ 'tasks.dueDate': 1 });
 const Checklist = mongoose.model('Checklist', ChecklistSchema);
 
 export default Checklist;
+

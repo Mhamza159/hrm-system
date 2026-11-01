@@ -368,3 +368,4 @@ export const ChecklistTemplateModal = ({ isOpen, onClose, template }) => {
     </div>
   );
 };
+

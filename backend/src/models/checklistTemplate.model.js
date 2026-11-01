@@ -110,3 +110,4 @@ ChecklistTemplateSchema.index({ type: 1, departmentId: 1, isDeleted: 1 });
 const ChecklistTemplate = mongoose.model('ChecklistTemplate', ChecklistTemplateSchema);
 
 export default ChecklistTemplate;
+

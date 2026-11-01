@@ -14,12 +14,14 @@ import React from 'react';
 import { useAbility } from '../../lib/ability.js';
 
 export const Can = ({
-  I: action,
+  I,
+  perform,
   a: subject = 'all',
   field = undefined,
   children,
   fallback = null
 }) => {
+  const action = I || perform;
   const ability = useAbility();
 
   if (!ability) {

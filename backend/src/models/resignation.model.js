@@ -97,3 +97,4 @@ ResignationSchema.index({ officialLastWorkingDay: 1 });
 const Resignation = mongoose.model('Resignation', ResignationSchema);
 
 export default Resignation;
+

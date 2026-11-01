@@ -281,3 +281,4 @@ export const ChecklistTemplatesPage = () => {
     </div>
   );
 };
+

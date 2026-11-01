@@ -29,3 +29,4 @@ export const initDeactivationJob = () => {
 export default {
   initDeactivationJob
 };
+
