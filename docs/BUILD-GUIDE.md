@@ -62,20 +62,20 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 0.1 | Project setup | `backend/` Express app, `server.js`, `app.js`, nodemon, ESLint, Prettier, Husky | `frontend/` Vite + React, Tailwind, shadcn/ui | Dono `npm run dev` se chalein | ☐ |
-| 0.2 | Database aur Redis | `config/db.js`, `docker-compose.yml` (MongoDB replica set + Redis) | — | Server start par "DB connected" | ☐ |
-| 0.3 | Environment | `config/env.js`, `.env.example` | `frontend/.env.example` | Ghalat/khali env par server saaf error de | ☐ |
-| 0.4 | Common response aur errors | `utils/ApiError.js`, `asyncHandler.js`, `apiResponse.js`, `middlewares/errorHandler.js` | `lib/baseApi.js` (error ko toast mein dikhana) | Ghalat URL par 404 JSON, toast nazar aaye | ☐ |
-| 0.5 | Validation middleware | `middlewares/validate.js` (Zod) | Forms ke liye react-hook-form + zod setup | Ghalat data par 400 aur field messages | ☐ |
-| 0.6 | File upload | `middlewares/upload.js` (Multer), `services/storage.service.js` (Cloudinary private) | `components/common/FileUpload.jsx` | File upload ho aur signed link se khule | ☐ |
-| 0.7 | Pagination/search | `utils/paginate.js` | `components/common/DataTable.jsx` | 1000 records mein page, search, sort | ☐ |
-| 0.8 | Audit log | `models/auditLog.model.js`, `services/audit.service.js` | (screen X1 mein) | Har create/edit/delete ka record bane | ☐ |
-| 0.9 | Common services | `services/email.service.js`, `pdf.service.js`, `excel.service.js` | — | Test email, test PDF, test Excel ban jaye | ☐ |
-| 0.10 | Background jobs | `config/queue.js` (BullMQ), `jobs/` folder, node-cron | — | Test job queue mein jaye aur chale | ☐ |
-| 0.11 | Socket.io | `sockets/index.js` (JWT ke saath connect) | `hooks/useSocket.js` | Browser console mein "connected" | ☐ |
-| 0.12 | Layout | — | `AppLayout.jsx`, `Sidebar.jsx`, `Topbar.jsx`, `PageHeader.jsx`, `ConfirmDialog.jsx`, `StatusBadge.jsx` | Layout har screen size par theek | ☐ |
-| 0.13 | API docs aur health | `swagger-ui-express` at `/api/docs`, `GET /health` | — | Swagger khule, health "ok" de | ☐ |
-| 0.14 | Security base | helmet, cors (sirf CLIENT_URL), rate limit, mongo-sanitize, cookie-parser | — | Doosre origin se request block | ☐ |
+| 0.1 | Project setup | `backend/` Express app, `server.js`, `app.js`, nodemon, ESLint, Prettier, Husky | `frontend/` Vite + React, Tailwind, shadcn/ui | Dono `npm run dev` se chalein | ☑ |
+| 0.2 | Database aur Redis | `config/db.js`, `docker-compose.yml` (MongoDB replica set + Redis) | — | Server start par "DB connected" | ☑ |
+| 0.3 | Environment | `config/env.js`, `.env.example` | `frontend/.env.example` | Ghalat/khali env par server saaf error de | ☑ |
+| 0.4 | Common response aur errors | `utils/ApiError.js`, `asyncHandler.js`, `apiResponse.js`, `middlewares/errorHandler.js` | `lib/baseApi.js` (error ko toast mein dikhana) | Ghalat URL par 404 JSON, toast nazar aaye | ☑ |
+| 0.5 | Validation middleware | `middlewares/validate.js` (Zod) | Forms ke liye react-hook-form + zod setup | Ghalat data par 400 aur field messages | ☑ |
+| 0.6 | File upload | `middlewares/upload.js` (Multer), `services/storage.service.js` (Cloudinary private) | `components/common/FileUpload.jsx` | File upload ho aur signed link se khule | ☑ |
+| 0.7 | Pagination/search | `utils/paginate.js` | `components/common/DataTable.jsx` | 1000 records mein page, search, sort | ☑ |
+| 0.8 | Audit log | `models/auditLog.model.js`, `services/audit.service.js` | (screen X1 mein) | Har create/edit/delete ka record bane | ☑ |
+| 0.9 | Common services | `services/email.service.js`, `pdf.service.js`, `excel.service.js` | — | Test email, test PDF, test Excel ban jaye | ☑ |
+| 0.10 | Background jobs | `config/queue.js` (BullMQ), `jobs/` folder, node-cron | — | Test job queue mein jaye aur chale | ☑ |
+| 0.11 | Socket.io | `sockets/index.js` (JWT ke saath connect) | `hooks/useSocket.js` | Browser console mein "connected" | ☑ |
+| 0.12 | Layout | — | `AppLayout.jsx`, `Sidebar.jsx`, `Topbar.jsx`, `PageHeader.jsx`, `ConfirmDialog.jsx`, `StatusBadge.jsx` | Layout har screen size par theek | ☑ |
+| 0.13 | API docs aur health | `swagger-ui-express` at `/api/docs`, `GET /health` | — | Swagger khule, health "ok" de | ☑ |
+| 0.14 | Security base | helmet, cors (sirf CLIENT_URL), rate limit, mongo-sanitize, cookie-parser | — | Doosre origin se request block | ☑ |
 
 **Mukammal tab:** saari 14 rows ☑.
 
