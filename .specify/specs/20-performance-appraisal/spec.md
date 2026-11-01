@@ -318,3 +318,4 @@ export const performanceApi = baseApi.injectEndpoints({
 3. **Audit Trails**: All template edits, cycle state transitions, score submissions, and final approvals record immutable entries in `auditLogs`.
 4. **Soft Deletes**: Templates and cycles use `isDeleted: true` to preserve historical referential integrity.
 5. **NoSQL Sanitization & Rate Limiting**: All user input validated against Zod schemas; rate limiting enforced on creation and submission endpoints.
+

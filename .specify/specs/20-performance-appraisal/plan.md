@@ -388,3 +388,4 @@ sequenceDiagram
    - Finalizing with `approvedIncrementPercent > 0` directly instantiates a draft salary revision linked to the employee's existing base salary.
 4. **E2E Automated Test Suite**:
    - `backend/tests/m19.performance.e2e.test.js` validating all 9 BUILD-GUIDE rows across all 4 system roles.
+
