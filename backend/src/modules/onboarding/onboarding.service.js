@@ -9,6 +9,7 @@
  */
 
 import PDFDocument from 'pdfkit';
+import mongoose from 'mongoose';
 import ChecklistTemplate from '../../models/checklistTemplate.model.js';
 import Checklist from '../../models/checklist.model.js';
 import Resignation from '../../models/resignation.model.js';
@@ -647,6 +648,18 @@ export const decideResignation = async ({ id, decisionData, user, ipAddress, use
 
   await resignation.save();
 
+  // Notify employee of resignation decision (Module M18 -> M8)
+  const empRecord = await Employee.findById(resignation.employeeId).select('userId name');
+  if (empRecord?.userId) {
+    await notify([empRecord.userId], {
+      title: `Resignation ${decisionData.status === 'accepted' ? 'Accepted' : 'Rejected'}`,
+      body: decisionData.status === 'accepted'
+        ? `Your resignation has been accepted. Official last working day set to ${new Date(resignation.officialLastWorkingDay).toLocaleDateString()}.`
+        : `Your resignation request was rejected. Reason: ${resignation.rejectionReason || 'Please contact HR.'}`,
+      type: 'system'
+    }).catch((err) => console.error('[Notify Error]', err.message));
+  }
+
   await recordAuditLog({
     actorId: user._id,
     action: 'offboard.manage',
@@ -726,13 +739,49 @@ export const initOffboardingForEmployee = async ({ employeeId }) => {
         }
       ];
 
-  const tasks = defaultOffboardTasks.map((t) => ({
-    title: t.title,
-    description: t.description || '',
-    category: t.category,
-    roleAssignee: t.roleAssignee,
-    completed: false
-  }));
+  // Resolve Manager User
+  let managerUserId = null;
+  if (employee.managerId) {
+    const mgrEmp = await Employee.findById(employee.managerId).select('userId');
+    if (mgrEmp?.userId) managerUserId = mgrEmp.userId;
+  }
+  if (!managerUserId && employee.departmentId) {
+    const dept = await Department.findById(employee.departmentId).populate('departmentHead');
+    if (dept?.departmentHead?.userId) {
+      managerUserId = dept.departmentHead.userId;
+    }
+  }
+
+  // Resolve HR User
+  const hrRole = await Role.findOne({ name: 'HR Manager' });
+  const hrUser = hrRole ? await User.findOne({ roles: hrRole._id, isActive: true }) : null;
+
+  // Resolve IT Admin
+  const saRole = await Role.findOne({ name: 'Super Admin' });
+  const itUser = saRole ? await User.findOne({ roles: saRole._id, isActive: true }) : null;
+
+  const tasks = defaultOffboardTasks.map((t) => {
+    let ownerId = null;
+    if (t.roleAssignee === 'employee') {
+      ownerId = employee.userId || null;
+    } else if (t.roleAssignee === 'manager') {
+      ownerId = managerUserId;
+    } else if (t.roleAssignee === 'hr') {
+      ownerId = hrUser?._id || null;
+    } else if (t.roleAssignee === 'it_admin') {
+      ownerId = itUser?._id || hrUser?._id || null;
+    }
+
+    return {
+      title: t.title,
+      description: t.description || '',
+      category: t.category,
+      roleAssignee: t.roleAssignee,
+      ownerId,
+      dueDate: new Date(),
+      completed: false
+    };
+  });
 
   const offboardingChecklist = await Checklist.create({
     employeeId: employee._id,
@@ -885,18 +934,61 @@ export const getEmployeeSettlementSummary = async (checklistId) => {
   }
 
   const employee = checklist.employeeId;
+  if (!employee) {
+    throw new ApiError(404, 'Associated employee record not found');
+  }
 
-  // Compile settlement summary figures
+  // Compile settlement summary figures with live M10 Loans and M6 Leaves aggregation
+  let outstandingLoansPaisa = 0;
+  try {
+    const Loan = mongoose.models.Loan;
+    if (Loan) {
+      const activeLoans = await Loan.find({
+        employeeId: employee._id,
+        status: { $in: ['active', 'disbursed', 'approved'] },
+        isDeleted: false
+      });
+      outstandingLoansPaisa = activeLoans.reduce((acc, l) => acc + (l.remainingBalance || 0), 0);
+    }
+  } catch (err) {
+    console.error('[Settlement Loan Fetch Error]', err.message);
+  }
+
+  let encashableLeaveDays = 0;
+  try {
+    const LeaveBalance = mongoose.models.LeaveBalance;
+    if (LeaveBalance) {
+      const currentYear = new Date().getFullYear();
+      const lb = await LeaveBalance.findOne({ employeeId: employee._id, year: currentYear });
+      if (lb?.balances?.length) {
+        encashableLeaveDays = lb.balances.reduce((acc, b) => {
+          const avail = (b.allocatedDays || 0) + (b.carriedForwardDays || 0) - (b.usedDays || 0) - (b.encashedDays || 0);
+          return acc + Math.max(0, avail);
+        }, 0);
+      }
+    }
+  } catch (err) {
+    console.error('[Settlement Leave Fetch Error]', err.message);
+  }
+
+  const lastWorkingDay = checklist.completedDate || new Date();
+  let proRatedSalaryPaisa = 0;
+  if (employee.salary) {
+    const dailyRate = Math.round((Number(employee.salary) * 100) / 30);
+    const dayOfMonth = new Date(lastWorkingDay).getDate();
+    proRatedSalaryPaisa = Math.max(0, dailyRate * Math.min(30, dayOfMonth));
+  }
+
   const summary = {
     employeeId: employee._id,
     employeeName: employee.name,
     employeeCode: employee.employeeCode,
     joiningDate: employee.joiningDate,
-    lastWorkingDay: checklist.completedDate || new Date(),
+    lastWorkingDay,
     clearanceStatus: checklist.status,
-    encashableLeaveDays: 0,
-    outstandingLoansPaisa: 0,
-    proRatedSalaryPaisa: 0
+    encashableLeaveDays,
+    outstandingLoansPaisa,
+    proRatedSalaryPaisa
   };
 
   return summary;
