@@ -4,7 +4,8 @@
  * 
  * SPECIFICATION & SECURITY:
  * - Module: M23 Asset Management (BUILD-GUIDE Section 20 · Rows 23.1 to 23.6)
- * - Middleware: authenticate -> validate -> checkPermission
+ * - Middleware Defensive Hierarchy: authenticate -> checkPermission -> validate -> controller
+ * - IDOR & Scoping: Verified at perimeter by CASL checkPermission and enforced horizontally in domain service.
  */
 
 import { Router } from 'express';
@@ -14,7 +15,9 @@ import { validate } from '../../middlewares/validate.js';
 import * as assetController from './asset.controller.js';
 import {
   createAssetSchema,
+  getAssetByIdSchema,
   updateAssetSchema,
+  deleteAssetSchema,
   queryAssetsSchema,
   assignAssetSchema,
   returnAssetSchema,
@@ -42,22 +45,22 @@ router.get(
 
 router.post(
   '/requests',
-  validate(createAssetRequestSchema),
   checkPermission('asset.request'),
+  validate(createAssetRequestSchema),
   assetController.createAssetRequest
 );
 
 router.post(
   '/requests/:id/approve',
-  validate(approveAssetRequestSchema),
   checkPermission('asset.manage'),
+  validate(approveAssetRequestSchema),
   assetController.approveAssetRequest
 );
 
 router.post(
   '/requests/:id/reject',
-  validate(rejectAssetRequestSchema),
   checkPermission('asset.manage'),
+  validate(rejectAssetRequestSchema),
   assetController.rejectAssetRequest
 );
 
@@ -84,34 +87,36 @@ router.post(
 // ----------------------------------------------------
 router.get(
   '/',
-  validate(queryAssetsSchema),
   checkPermission('asset.view'),
+  validate(queryAssetsSchema),
   assetController.getAssets
 );
 
 router.post(
   '/',
-  validate(createAssetSchema),
   checkPermission('asset.create'),
+  validate(createAssetSchema),
   assetController.createAsset
 );
 
 router.get(
   '/:id',
   checkPermission('asset.view'),
+  validate(getAssetByIdSchema),
   assetController.getAssetById
 );
 
 router.put(
   '/:id',
-  validate(updateAssetSchema),
   checkPermission('asset.manage'),
+  validate(updateAssetSchema),
   assetController.updateAsset
 );
 
 router.delete(
   '/:id',
   checkPermission('asset.manage'),
+  validate(deleteAssetSchema),
   assetController.deleteAsset
 );
 
@@ -120,15 +125,15 @@ router.delete(
 // ----------------------------------------------------
 router.post(
   '/:id/assign',
-  validate(assignAssetSchema),
   checkPermission('asset.assign'),
+  validate(assignAssetSchema),
   assetController.assignAsset
 );
 
 router.post(
   '/:id/return',
-  validate(returnAssetSchema),
   checkPermission('asset.assign'),
+  validate(returnAssetSchema),
   assetController.returnAsset
 );
 
@@ -137,15 +142,15 @@ router.post(
 // ----------------------------------------------------
 router.post(
   '/:id/repairs',
-  validate(repairAssetSchema),
   checkPermission('asset.manage'),
+  validate(repairAssetSchema),
   assetController.sendAssetForRepair
 );
 
 router.patch(
   '/:id/repairs/:repairId',
-  validate(updateRepairSchema),
   checkPermission('asset.manage'),
+  validate(updateRepairSchema),
   assetController.completeAssetRepair
 );
 
@@ -154,10 +159,9 @@ router.patch(
 // ----------------------------------------------------
 router.post(
   '/:id/issue',
-  validate(reportIssueSchema),
   checkPermission('asset.issue', 'own'),
+  validate(reportIssueSchema),
   assetController.reportAssetIssue
 );
 
 export default router;
-

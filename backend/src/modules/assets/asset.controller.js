@@ -51,7 +51,7 @@ export const getAssets = asyncHandler(async (req, res) => {
  * 23.1: Retrieve single asset details
  */
 export const getAssetById = asyncHandler(async (req, res) => {
-  const asset = await assetService.getAssetById(req.params.id);
+  const asset = await assetService.getAssetById(req.params.id, req.user);
 
   res.status(200).json({
     success: true,

@@ -6,9 +6,12 @@
  * - Layer: Validation Pipeline (Zod)
  * - Financial Invariants: Monetary amounts must be non-negative integers (in minor units / paisa).
  * - Enums strictly match Mongoose schema enums.
+ * - Route Params: All resource IDs strictly validated against 24-character hexadecimal ObjectId regex.
  */
 
 import { z } from 'zod';
+
+export const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid ObjectId format');
 
 const assetTypeEnum = z.enum([
   'laptop',
@@ -60,7 +63,16 @@ export const createAssetSchema = z.object({
   })
 });
 
+export const getAssetByIdSchema = z.object({
+  params: z.object({
+    id: objectIdSchema
+  })
+});
+
 export const updateAssetSchema = z.object({
+  params: z.object({
+    id: objectIdSchema
+  }),
   body: z.object({
     name: z.string().trim().min(2).max(100).optional(),
     type: assetTypeEnum.optional(),
@@ -81,21 +93,30 @@ export const updateAssetSchema = z.object({
   })
 });
 
+export const deleteAssetSchema = z.object({
+  params: z.object({
+    id: objectIdSchema
+  })
+});
+
 export const queryAssetsSchema = z.object({
   query: z.object({
     page: z.coerce.number().int().positive().optional().default(1),
     limit: z.coerce.number().int().positive().max(100).optional().default(10),
     status: assetStatusEnum.or(z.literal('all')).optional(),
     type: assetTypeEnum.or(z.literal('all')).optional(),
-    search: z.string().trim().optional(),
-    assignedTo: z.string().trim().optional(),
+    search: z.string().trim().max(100).optional(),
+    assignedTo: objectIdSchema.optional(),
     expiringSoon: z.enum(['true', 'false', '1', '0']).optional()
   }).optional().default({})
 });
 
 export const assignAssetSchema = z.object({
+  params: z.object({
+    id: objectIdSchema
+  }),
   body: z.object({
-    employeeId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid employee ID format'),
+    employeeId: objectIdSchema,
     assignedDate: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}/)).optional(),
     condition: conditionEnum.optional().default('good'),
     notes: z.string().trim().max(500).optional().default('')
@@ -103,6 +124,9 @@ export const assignAssetSchema = z.object({
 });
 
 export const returnAssetSchema = z.object({
+  params: z.object({
+    id: objectIdSchema
+  }),
   body: z.object({
     returnDate: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}/)).optional(),
     condition: conditionEnum.optional().default('good'),
@@ -111,6 +135,9 @@ export const returnAssetSchema = z.object({
 });
 
 export const repairAssetSchema = z.object({
+  params: z.object({
+    id: objectIdSchema
+  }),
   body: z.object({
     issueDescription: z.string().trim().min(3, 'Issue description is required').max(500),
     vendorName: z.string().trim().min(2, 'Vendor name is required').max(100),
@@ -121,6 +148,10 @@ export const repairAssetSchema = z.object({
 });
 
 export const updateRepairSchema = z.object({
+  params: z.object({
+    id: objectIdSchema,
+    repairId: objectIdSchema
+  }),
   body: z.object({
     status: z.enum(['in_progress', 'completed', 'unrepairable']),
     actualReturnDate: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}/)).optional(),
@@ -130,6 +161,9 @@ export const updateRepairSchema = z.object({
 });
 
 export const reportIssueSchema = z.object({
+  params: z.object({
+    id: objectIdSchema
+  }),
   body: z.object({
     issueType: z.enum([
       'hardware_failure',
@@ -147,7 +181,7 @@ export const reportIssueSchema = z.object({
 
 export const createAssetRequestSchema = z.object({
   body: z.object({
-    employeeId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid employee ID format'),
+    employeeId: objectIdSchema,
     assetType: assetTypeEnum,
     priority: z.enum(['low', 'medium', 'high', 'urgent']).optional().default('medium'),
     specificationsRequired: z.string().trim().max(500).optional().default(''),
@@ -156,14 +190,19 @@ export const createAssetRequestSchema = z.object({
 });
 
 export const approveAssetRequestSchema = z.object({
+  params: z.object({
+    id: objectIdSchema
+  }),
   body: z.object({
-    allocatedAssetId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid asset ID format')
+    allocatedAssetId: objectIdSchema
   })
 });
 
 export const rejectAssetRequestSchema = z.object({
+  params: z.object({
+    id: objectIdSchema
+  }),
   body: z.object({
     rejectionReason: z.string().trim().min(3, 'Rejection reason is required').max(500)
   })
 });
-

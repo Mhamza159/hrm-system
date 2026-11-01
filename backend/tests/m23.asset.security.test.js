@@ -412,4 +412,120 @@ describe('Module M23 Security & Hardening Suite (Doubt-Driven Stress Test)', () 
       await Employee.findByIdAndDelete(deptlessEmp._id);
     });
   });
+  // =========================================================================
+  // 7. Defensive Hierarchy & Parameter Validation Stress Tests
+  // =========================================================================
+  describe('Defensive Hierarchy & Parameter Validation Stress Tests', () => {
+    it('Defensive order: Unauthorized employee sending completely invalid payload receives 403 Forbidden, not 400', async () => {
+      // Send completely bogus body to /api/v1/assets/requests/:id/approve
+      const res = await request(app)
+        .post('/api/v1/assets/requests/invalid-mongo-id/approve')
+        .set('Authorization', `Bearer ${employeeToken}`)
+        .send({ bogusKey: 12345 });
+
+      expect(res.status).toBe(403);
+    });
+
+    it('Rejects malformed non-ObjectId in route parameters with 400 validation error (not 500 CastError)', async () => {
+      const res = await request(app)
+        .get('/api/v1/assets/not-a-valid-hex-id-123')
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+
+      expect(res.status).toBe(400);
+      expect(res.body.success).toBe(false);
+      expect(res.body.errors.some((e) => e.field.includes('params.id'))).toBe(true);
+    });
+
+    it('IDOR Protection: Employee cannot view detailed specs of asset assigned to another employee (HTTP 403)', async () => {
+      // securedAssetId is currently assigned to employeeEmp
+      // hackerUser attempts to read it
+      const res = await request(app)
+        .get(`/api/v1/assets/${securedAssetId}`)
+        .set('Authorization', `Bearer ${hackerToken}`);
+
+      expect(res.status).toBe(403);
+      expect(res.body.message).toMatch(/Forbidden/i);
+    });
+  });
+
+  // =========================================================================
+  // 8. Advanced Concurrency Race Conditions & State Invariants
+  // =========================================================================
+  describe('Advanced Concurrency Race Conditions & State Invariants', () => {
+    it('Concurrent double-return safety: 5 simultaneous returns result in exactly 1 success and 4 rejections', async () => {
+      // 1. Create and assign asset
+      const doubleReturnAsset = await Asset.create({
+        assetTag: 'AST-RET-RACE',
+        name: 'Return Race Test Equipment',
+        type: 'laptop',
+        serialNumber: 'SN-RET-RACE-01',
+        status: 'assigned',
+        assignedTo: employeeEmp._id,
+        history: [{ action: 'created', performedBy: superAdminUser._id, date: new Date() }]
+      });
+
+      // 2. Fire 5 simultaneous return requests
+      const returnRequests = Array.from({ length: 5 }).map(() =>
+        request(app)
+          .post(`/api/v1/assets/${doubleReturnAsset._id}/return`)
+          .set('Authorization', `Bearer ${hrManagerToken}`)
+          .send({ condition: 'good', notes: 'Simultaneous check-in burst' })
+      );
+
+      const responses = await Promise.all(returnRequests);
+      const successes = responses.filter((r) => r.status === 200);
+      const rejections = responses.filter((r) => r.status === 400);
+
+      expect(successes).toHaveLength(1);
+      expect(rejections).toHaveLength(4);
+
+      // Verify DB state: exactly 1 returned entry in history
+      const updatedAsset = await Asset.findById(doubleReturnAsset._id);
+      expect(updatedAsset.status).toBe('available');
+      expect(updatedAsset.assignedTo).toBeNull();
+      const returnHistory = updatedAsset.history.filter((h) => h.action === 'returned');
+      expect(returnHistory).toHaveLength(1);
+
+      await Asset.findByIdAndDelete(doubleReturnAsset._id);
+    });
+
+    it('State Machine Invariant: Asset under repair cannot be dispatched for repair again or deleted', async () => {
+      const repairAsset = await Asset.create({
+        assetTag: 'AST-REPAIR-STATE',
+        name: 'Repair Invariant Laptop',
+        type: 'laptop',
+        serialNumber: 'SN-REP-INV-01',
+        status: 'under_repair',
+        repairs: [{
+          issueDescription: 'Blown capacitor',
+          vendorName: 'FixIt Tech',
+          repairCostPaisa: 500000,
+          status: 'in_progress'
+        }],
+        history: [{ action: 'created', performedBy: superAdminUser._id, date: new Date() }]
+      });
+
+      // Attempt sending again
+      const reSendRes = await request(app)
+        .post(`/api/v1/assets/${repairAsset._id}/repairs`)
+        .set('Authorization', `Bearer ${hrManagerToken}`)
+        .send({
+          issueDescription: 'Second repair attempt',
+          vendorName: 'Another Vendor'
+        });
+
+      expect(reSendRes.status).toBe(400);
+      expect(reSendRes.body.message).toMatch(/already marked as under repair/i);
+
+      // Attempt deleting asset under repair
+      const deleteRes = await request(app)
+        .delete(`/api/v1/assets/${repairAsset._id}`)
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+
+      expect(deleteRes.status).toBe(400);
+      expect(deleteRes.body.message).toMatch(/currently under repair/i);
+
+      await Asset.findByIdAndDelete(repairAsset._id);
+    });
+  });
 });

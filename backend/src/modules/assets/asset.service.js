@@ -166,7 +166,7 @@ export const getAssets = async ({ query = {}, user }) => {
 /**
  * 23.1: Retrieve single asset record with detailed history, repairs & issues
  */
-export const getAssetById = async (id) => {
+export const getAssetById = async (id, user) => {
   const asset = await Asset.findOne({ _id: id, isDeleted: false })
     .populate('assignedTo', 'name employeeCode departmentId email phone designationId')
     .populate('history.performedBy', 'name email')
@@ -176,6 +176,32 @@ export const getAssetById = async (id) => {
 
   if (!asset) {
     throw new ApiError(404, 'Asset not found');
+  }
+
+  // IDOR Horizontal Scope Verification
+  if (user) {
+    const isSuperAdmin = user.roles?.some((r) => (typeof r === 'string' ? r : r?.name) === 'Super Admin');
+    const isHR = user.roles?.some((r) => (typeof r === 'string' ? r : r?.name) === 'HR Manager');
+    if (!isSuperAdmin && !isHR) {
+      const isDeptManager = user.roles?.some((r) => (typeof r === 'string' ? r : r?.name) === 'Department Manager');
+      if (isDeptManager) {
+        let deptId = user.departmentId;
+        if (!deptId) {
+          const emp = await Employee.findOne({ userId: user._id }).select('departmentId').lean();
+          deptId = emp?.departmentId;
+        }
+        const isAssignedToDept = asset.assignedTo?.departmentId?.toString() === deptId?.toString();
+        const isAvailable = asset.status === 'available';
+        if (!isAssignedToDept && !isAvailable) {
+          throw new ApiError(403, 'Forbidden: You do not have permission to view assets outside your department.');
+        }
+      } else {
+        const empId = user.employeeId || (await Employee.findOne({ userId: user._id }).select('_id').lean())?._id;
+        if (!asset.assignedTo || asset.assignedTo._id.toString() !== empId?.toString()) {
+          throw new ApiError(403, 'Forbidden: You do not have permission to view this asset.');
+        }
+      }
+    }
   }
 
   return asset;
@@ -221,6 +247,10 @@ export const deleteAsset = async ({ id, user, ipAddress, userAgent }) => {
 
   if (asset.status === 'assigned') {
     throw new ApiError(400, 'Cannot delete an asset that is currently assigned to a custodian. Please return it first.');
+  }
+
+  if (asset.status === 'under_repair') {
+    throw new ApiError(400, 'Cannot delete an asset currently under repair.');
   }
 
   asset.isDeleted = true;
@@ -328,31 +358,48 @@ export const assignAsset = async ({ id, employeeId, assignedDate, notes = '', co
  * 23.2: Process return of asset from custodian back to inventory
  */
 export const returnAsset = async ({ id, returnDate, condition = 'good', notes = '', user, ipAddress, userAgent }) => {
-  const asset = await Asset.findOne({ _id: id, isDeleted: false });
-  if (!asset) {
+  const existingAsset = await Asset.findOne({ _id: id, isDeleted: false });
+  if (!existingAsset) {
     throw new ApiError(404, 'Asset not found');
   }
 
-  if (asset.status !== 'assigned') {
-    throw new ApiError(400, `Asset is not currently assigned (current status: '${asset.status}').`);
+  if (existingAsset.status !== 'assigned') {
+    throw new ApiError(400, `Asset is not currently assigned (current status: '${existingAsset.status}').`);
   }
 
-  const previousCustodianId = asset.assignedTo;
-  const prev = asset.toObject();
+  const previousCustodianId = existingAsset.assignedTo;
+  const prev = existingAsset.toObject();
 
-  asset.assignedTo = null;
-  asset.status = 'available';
-  asset.hasOpenIssue = false; // Close active issues on check-in
-  asset.history.push({
-    action: 'returned',
-    employeeId: previousCustodianId,
-    performedBy: user._id,
-    date: returnDate ? new Date(returnDate) : new Date(),
-    condition,
-    notes: notes.trim()
-  });
+  // Atomic conditional update to guard against parallel return races
+  const asset = await Asset.findOneAndUpdate(
+    {
+      _id: id,
+      isDeleted: false,
+      status: 'assigned'
+    },
+    {
+      $set: {
+        assignedTo: null,
+        status: 'available',
+        hasOpenIssue: false
+      },
+      $push: {
+        history: {
+          action: 'returned',
+          employeeId: previousCustodianId,
+          performedBy: user._id,
+          date: returnDate ? new Date(returnDate) : new Date(),
+          condition,
+          notes: notes.trim()
+        }
+      }
+    },
+    { new: true }
+  );
 
-  await asset.save();
+  if (!asset) {
+    throw new ApiError(400, 'Asset is not currently assigned or was already returned.');
+  }
 
   await recordAuditLog({
     actorId: user._id,
@@ -376,6 +423,20 @@ export const sendAssetForRepair = async ({ id, repairData, user, ipAddress, user
   const asset = await Asset.findOne({ _id: id, isDeleted: false });
   if (!asset) {
     throw new ApiError(404, 'Asset not found');
+  }
+
+  if (asset.status === 'under_repair') {
+    throw new ApiError(400, 'Asset is already marked as under repair.');
+  }
+  if (asset.status === 'retired' || asset.status === 'lost') {
+    throw new ApiError(400, `Cannot send asset for repair when status is '${asset.status}'.`);
+  }
+
+  if (asset.status === 'under_repair') {
+    throw new ApiError(400, 'Asset is already marked as under repair.');
+  }
+  if (asset.status === 'retired' || asset.status === 'lost') {
+    throw new ApiError(400, `Cannot send asset for repair when status is '${asset.status}'.`);
   }
 
   const prev = asset.toObject();
@@ -427,6 +488,10 @@ export const completeAssetRepair = async ({ id, repairId, updateData, user, ipAd
   const repair = asset.repairs.id(repairId);
   if (!repair) {
     throw new ApiError(404, 'Repair record not found on this asset');
+  }
+
+  if (repair.status !== 'in_progress') {
+    throw new ApiError(400, `Repair has already been finalized with status '${repair.status}'.`);
   }
 
   const prev = asset.toObject();
@@ -754,22 +819,35 @@ export const approveAssetRequest = async ({ id, allocatedAssetId, user, ipAddres
  * 23.5: HR Rejects Asset Requisition with mandatory reason
  */
 export const rejectAssetRequest = async ({ id, rejectionReason, user, ipAddress, userAgent }) => {
-  const request = await AssetRequest.findById(id);
-  if (!request) {
+  const prevReq = await AssetRequest.findById(id);
+  if (!prevReq) {
     throw new ApiError(404, 'Asset requisition not found');
   }
 
-  if (request.status !== 'pending') {
-    throw new ApiError(400, `Requisition has already been processed (current status: '${request.status}').`);
+  if (prevReq.status !== 'pending') {
+    throw new ApiError(400, `Requisition has already been processed (current status: '${prevReq.status}').`);
   }
 
-  const prevReq = request.toObject();
+  // Atomic conditional update to guard against concurrent decision races
+  const request = await AssetRequest.findOneAndUpdate(
+    {
+      _id: id,
+      status: 'pending'
+    },
+    {
+      $set: {
+        status: 'rejected',
+        approvedBy: user._id,
+        approvedAt: new Date(),
+        rejectionReason: rejectionReason.trim()
+      }
+    },
+    { new: true }
+  );
 
-  request.status = 'rejected';
-  request.approvedBy = user._id;
-  request.approvedAt = new Date();
-  request.rejectionReason = rejectionReason.trim();
-  await request.save();
+  if (!request) {
+    throw new ApiError(400, 'Requisition has already been processed.');
+  }
 
   await recordAuditLog({
     actorId: user._id,
@@ -777,7 +855,7 @@ export const rejectAssetRequest = async ({ id, rejectionReason, user, ipAddress,
     module: 'assets',
     resource: 'AssetRequest',
     resourceId: request._id,
-    before: prevReq,
+    before: prevReq.toObject(),
     after: request.toObject(),
     ipAddress,
     userAgent
