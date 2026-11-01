@@ -45,6 +45,7 @@ import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
 import assetRoutes from './modules/assets/asset.routes.js';
 import onboardingRoutes, { resignationRouter, offboardingRouter, exitInterviewRouter } from './modules/onboarding/onboarding.routes.js';
 import * as onboardingController from './modules/onboarding/onboarding.controller.js';
+import { streamServiceLetterSchema } from './modules/onboarding/onboarding.validation.js';
 import reportsRoutes from './modules/reports/reports.routes.js';
 import auditRoutes from './modules/audit/audit.routes.js';
 import fileRoutes from './modules/files/file.routes.js';
@@ -146,7 +147,7 @@ app.use('/api/v1/onboarding', onboardingRoutes);
 app.use('/api/v1/resignations', resignationRouter);
 app.use('/api/v1/offboarding', offboardingRouter);
 app.use('/api/v1/exit-interviews', exitInterviewRouter);
-app.get('/api/v1/employees/:id/letters/:type', authenticate, checkPermission('offboard.view'), onboardingController.streamServiceLetter);
+app.get('/api/v1/employees/:id/letters/:type', authenticate, checkPermission('offboard.view'), validate(streamServiceLetterSchema), onboardingController.streamServiceLetter);
 app.use('/api/v1/asset-requests', (req, res, next) => {
   req.url = '/requests' + (req.url === '/' ? '' : req.url);
   return assetRoutes(req, res, next);

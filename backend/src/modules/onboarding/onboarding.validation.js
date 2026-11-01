@@ -166,3 +166,10 @@ export const getExitInterviewSchema = z.object({
   })
 });
 
+
+export const streamServiceLetterSchema = z.object({
+  params: z.object({
+    id: objectIdSchema,
+    type: z.enum(['experience', 'relieving'])
+  })
+});

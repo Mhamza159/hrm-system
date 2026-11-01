@@ -91,6 +91,7 @@ const ResignationSchema = new mongoose.Schema(
 
 // Indexes
 ResignationSchema.index({ employeeId: 1, status: 1, isDeleted: 1 });
+ResignationSchema.index({ employeeId: 1 }, { unique: true, partialFilterExpression: { status: { $in: ['submitted', 'accepted'] }, isDeleted: false } });
 ResignationSchema.index({ submissionDate: -1 });
 ResignationSchema.index({ officialLastWorkingDay: 1 });
 

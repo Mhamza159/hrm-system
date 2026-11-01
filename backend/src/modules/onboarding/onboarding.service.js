@@ -330,7 +330,7 @@ export const getOnboardingById = async (id, user) => {
   const checklist = await Checklist.findOne({ _id: id, isDeleted: false })
     .populate({
       path: 'employeeId',
-      select: 'name firstName lastName employeeCode workEmail departmentId designationId',
+      select: 'name firstName lastName employeeCode workEmail departmentId designationId userId',
       populate: [
         { path: 'departmentId', select: 'name code' },
         { path: 'designationId', select: 'title' }
@@ -342,6 +342,25 @@ export const getOnboardingById = async (id, user) => {
 
   if (!checklist) {
     throw new ApiError(404, 'Checklist instance not found');
+  }
+
+  const userRoles = user?.roles?.map((r) => r.name || r) || [];
+  const isSuperAdmin = userRoles.includes('Super Admin');
+  const isHR = userRoles.includes('HR Manager');
+  const isDeptManager = userRoles.includes('Department Manager');
+
+  if (!isSuperAdmin && !isHR) {
+    if (isDeptManager) {
+      const mgrEmp = await Employee.findOne({ userId: user._id }).select('_id departmentId');
+      const empDept = checklist.employeeId?.departmentId?._id?.toString() || checklist.employeeId?.departmentId?.toString();
+      if (!mgrEmp?.departmentId || empDept !== mgrEmp.departmentId.toString()) {
+        throw new ApiError(403, 'Forbidden: You cannot access onboarding records outside your department');
+      }
+    } else {
+      if (checklist.employeeId?.userId?.toString() !== user._id?.toString()) {
+        throw new ApiError(403, 'Forbidden: You can only access your own onboarding record');
+      }
+    }
   }
 
   return checklist;
@@ -734,6 +753,30 @@ export const getOffboardings = async ({ query = {}, user }) => {
     filter.status = query.status;
   }
 
+  const userRoles = user?.roles?.map((r) => r.name || r) || [];
+  const isSuperAdmin = userRoles.includes('Super Admin');
+  const isHR = userRoles.includes('HR Manager');
+  const isDeptManager = userRoles.includes('Department Manager');
+
+  if (!isSuperAdmin && !isHR) {
+    if (isDeptManager) {
+      const mgrEmp = await Employee.findOne({ userId: user._id }).select('_id departmentId');
+      if (mgrEmp?.departmentId) {
+        const deptEmployees = await Employee.find({ departmentId: mgrEmp.departmentId, isDeleted: false }).select('_id');
+        filter.employeeId = { $in: deptEmployees.map((e) => e._id) };
+      } else {
+        return [];
+      }
+    } else {
+      const emp = await Employee.findOne({ userId: user._id }).select('_id');
+      if (emp) {
+        filter.employeeId = emp._id;
+      } else {
+        return [];
+      }
+    }
+  }
+
   const checklists = await Checklist.find(filter)
     .populate({
       path: 'employeeId',
@@ -752,6 +795,26 @@ export const signoffDepartmentClearance = async ({ id, departmentCategory, user,
   const checklist = await Checklist.findOne({ _id: id, type: 'offboarding', isDeleted: false });
   if (!checklist) {
     throw new ApiError(404, 'Offboarding checklist not found');
+  }
+
+  const userRoles = user?.roles?.map((r) => r.name || r) || [];
+  const isSuperAdmin = userRoles.includes('Super Admin');
+  const isHR = userRoles.includes('HR Manager');
+  const isDeptManager = userRoles.includes('Department Manager');
+
+  if (!isSuperAdmin && !isHR) {
+    if (isDeptManager) {
+      if (departmentCategory !== 'department') {
+        throw new ApiError(403, 'Department Managers can only sign off departmental clearance category.');
+      }
+      const mgrEmp = await Employee.findOne({ userId: user._id }).select('_id departmentId');
+      const targetEmp = await Employee.findById(checklist.employeeId).select('departmentId');
+      if (!mgrEmp?.departmentId || targetEmp?.departmentId?.toString() !== mgrEmp.departmentId.toString()) {
+        throw new ApiError(403, 'Forbidden: You cannot sign off clearance for employees outside your department.');
+      }
+    } else {
+      throw new ApiError(403, 'Employees cannot sign off clearance approvals.');
+    }
   }
 
   // 18.7: ASSET LOCK CHECK on final clearance (or when signing off IT / HR category)
@@ -928,6 +991,15 @@ export const submitExitInterview = async ({ interviewData, user, ipAddress, user
     throw new ApiError(404, 'Employee record not found');
   }
 
+  const resignation = await Resignation.findOne({
+    _id: interviewData.resignationId,
+    employeeId: employee._id,
+    isDeleted: false
+  });
+  if (!resignation) {
+    throw new ApiError(404, 'Resignation record not found or does not belong to you');
+  }
+
   const existing = await ExitInterview.findOne({ resignationId: interviewData.resignationId });
   if (existing) {
     throw new ApiError(400, 'An exit interview has already been submitted for this resignation');
@@ -988,6 +1060,25 @@ export const streamServiceLetterPdf = async ({ employeeId, type, user, res }) =>
     throw new ApiError(404, 'Employee not found');
   }
 
+  const userRoles = user?.roles?.map((r) => r.name || r) || [];
+  const isSuperAdmin = userRoles.includes('Super Admin');
+  const isHR = userRoles.includes('HR Manager');
+  const isDeptManager = userRoles.includes('Department Manager');
+
+  if (!isSuperAdmin && !isHR) {
+    if (isDeptManager) {
+      const mgrEmp = await Employee.findOne({ userId: user._id }).select('departmentId');
+      const empDept = employee.departmentId?._id?.toString() || employee.departmentId?.toString();
+      if (!mgrEmp?.departmentId || empDept !== mgrEmp.departmentId.toString()) {
+        throw new ApiError(403, 'Forbidden: You can only generate service letters for subordinates in your department.');
+      }
+    } else {
+      if (employee.userId?.toString() !== user._id?.toString()) {
+        throw new ApiError(403, 'Forbidden: You can only download your own service letters.');
+      }
+    }
+  }
+
   // Check exit clearance status
   const offboarding = await Checklist.findOne({
     employeeId,
@@ -1001,7 +1092,9 @@ export const streamServiceLetterPdf = async ({ employeeId, type, user, res }) =>
 
   const isRelieving = type === 'relieving';
   const letterTitle = isRelieving ? 'RELIEVING LETTER' : 'EXPERIENCE & SERVICE CERTIFICATE';
-  const filename = `${employee.employeeCode || 'EMP'}_${type}_letter.pdf`;
+  const safeCode = (employee.employeeCode || 'EMP').replace(/[^a-zA-Z0-9_-]/g, '');
+  const safeType = type === 'relieving' ? 'relieving' : 'experience';
+  const filename = `${safeCode}_${safeType}_letter.pdf`;
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
