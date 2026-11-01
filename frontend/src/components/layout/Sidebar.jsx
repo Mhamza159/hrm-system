@@ -165,6 +165,17 @@ export function Sidebar({ isOpen = false, onClose }) {
     },
     {
       type: 'group',
+      name: 'Performance',
+      icon: Award,
+      children: [
+        { name: 'My Appraisal', path: '/performance/my-review', permission: 'performance.review.view', excludeSuperAdmin: true },
+        { name: 'Team Reviews', path: '/performance/team-reviews', permission: 'performance.review.view' },
+        { name: 'Appraisal Cycles', path: '/performance/cycles', permission: 'performance.cycle.view' },
+        { name: 'KPI Templates', path: '/performance/templates', permission: 'performance.template.view' }
+      ]
+    },
+    {
+      type: 'group',
       name: 'Lifecycle',
       icon: ListChecks,
       children: [

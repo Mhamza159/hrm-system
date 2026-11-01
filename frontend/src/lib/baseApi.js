@@ -168,7 +168,11 @@ export const baseApi = createApi({
     'Checklists',
     'ChecklistTasks',
     'Resignations',
-    'ExitInterviews'
+    'ExitInterviews',
+    'KpiTemplates',
+    'ReviewCycles',
+    'Reviews',
+    'PerformanceProgress'
   ],
   endpoints: () => ({})
 });

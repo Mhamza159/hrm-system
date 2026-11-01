@@ -671,6 +671,70 @@ export const PERMISSIONS_CATALOGUE = [
         defaultScope: 'department'
       }
     ]
+  },
+  {
+    module: 'performance',
+    label: 'Performance & Appraisal',
+    subject: 'Performance',
+    description: 'KPI templates, review cycles, goals/OKRs, self/manager appraisals, 360 peer feedback, and salary revision linkage.',
+    actions: [
+      {
+        action: 'performance.template.view',
+        label: 'View KPI Templates',
+        description: 'View designation-wise KPI master templates.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'performance.template.manage',
+        label: 'Manage KPI Templates',
+        description: 'Author, modify, and delete KPI master templates.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'performance.cycle.view',
+        label: 'View Review Cycles',
+        description: 'View appraisal review cycles and deadlines.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'performance.cycle.manage',
+        label: 'Manage Review Cycles',
+        description: 'Create, launch, track, and close appraisal review cycles.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'performance.review.view',
+        label: 'View Performance Reviews',
+        description: 'Inspect appraisal review instances and historical scores.',
+        allowedScopes: ['own', 'team', 'department', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'performance.review.submit',
+        label: 'Submit Self / Manager Appraisal',
+        description: 'Submit self-reviews, goals/OKRs, and manager evaluation ratings.',
+        allowedScopes: ['own', 'team', 'department', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'performance.review.finalize',
+        label: 'Finalize Appraisal & Increment',
+        description: 'Approve final performance ratings and dispatch salary revision draft to M9 Payroll.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'performance.peer.manage',
+        label: 'Manage & Submit 360 Peer Feedback',
+        description: 'Request 360 degree peer feedback and submit confidential peer evaluations.',
+        allowedScopes: ['own', 'team', 'department', 'all'],
+        defaultScope: 'own'
+      }
+    ]
   }
 ];
 

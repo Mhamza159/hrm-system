@@ -48,6 +48,8 @@ import { ProfileHistoryTab } from '../components/ProfileHistoryTab.jsx';
 import { ProfileSalaryTab } from '../components/ProfileSalaryTab.jsx';
 import { StatusChangeModal } from '../components/StatusChangeModal.jsx';
 import { LeaveBalanceCards } from '../../leaves/components/LeaveBalanceCards.jsx';
+import { EmployeePerformanceTab } from '../../performance/components/EmployeePerformanceTab.jsx';
+import { Award } from 'lucide-react';
 import { cn } from '../../../lib/utils.js';
 
 export default function EmployeeProfilePage() {
@@ -325,6 +327,7 @@ export default function EmployeeProfilePage() {
             { id: 'leaves', label: 'Leaves & Quota', icon: Calendar },
             { id: 'documents', label: 'Document Vault', icon: FileText, count: employee.documents?.length || 0 },
             { id: 'history', label: 'Career History', icon: TrendingUp },
+            { id: 'performance', label: 'Performance', icon: Award },
             ...(canManage
               ? [{ id: 'salary', label: 'Salary Structure', icon: CreditCard }]
               : [])
@@ -393,6 +396,10 @@ export default function EmployeeProfilePage() {
             employeeId={id}
             canManage={canManage}
           />
+        )}
+
+        {activeTab === 'performance' && (
+          <EmployeePerformanceTab employeeId={id} />
         )}
 
         {activeTab === 'salary' && canManage && (

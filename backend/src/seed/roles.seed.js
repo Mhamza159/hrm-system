@@ -101,7 +101,15 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'onboard.manage', subject: 'Checklist', scope: 'all' },
       { action: 'resignation.submit', subject: 'Resignation', scope: 'own' },
       { action: 'offboard.view', subject: 'Resignation', scope: 'all' },
-      { action: 'offboard.manage', subject: 'Resignation', scope: 'all' }
+      { action: 'offboard.manage', subject: 'Resignation', scope: 'all' },
+      { action: 'performance.template.view', subject: 'Performance', scope: 'all' },
+      { action: 'performance.template.manage', subject: 'Performance', scope: 'all' },
+      { action: 'performance.cycle.view', subject: 'Performance', scope: 'all' },
+      { action: 'performance.cycle.manage', subject: 'Performance', scope: 'all' },
+      { action: 'performance.review.view', subject: 'Performance', scope: 'all' },
+      { action: 'performance.review.submit', subject: 'Performance', scope: 'all' },
+      { action: 'performance.review.finalize', subject: 'Performance', scope: 'all' },
+      { action: 'performance.peer.manage', subject: 'Performance', scope: 'all' }
     ]
   },
   {
@@ -147,7 +155,12 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'onboard.view', subject: 'Checklist', scope: 'team' },
       { action: 'resignation.submit', subject: 'Resignation', scope: 'own' },
       { action: 'offboard.view', subject: 'Resignation', scope: 'team' },
-      { action: 'offboard.manage', subject: 'Resignation', scope: 'department' }
+      { action: 'offboard.manage', subject: 'Resignation', scope: 'department' },
+      { action: 'performance.template.view', subject: 'Performance', scope: 'all' },
+      { action: 'performance.cycle.view', subject: 'Performance', scope: 'all' },
+      { action: 'performance.review.view', subject: 'Performance', scope: 'department' },
+      { action: 'performance.review.submit', subject: 'Performance', scope: 'department' },
+      { action: 'performance.peer.manage', subject: 'Performance', scope: 'department' }
     ]
   },
   {
@@ -179,7 +192,11 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'asset.issue', subject: 'Asset', scope: 'own' },
       { action: 'onboard.view', subject: 'Checklist', scope: 'own' },
       { action: 'resignation.submit', subject: 'Resignation', scope: 'own' },
-      { action: 'offboard.view', subject: 'Resignation', scope: 'own' }
+      { action: 'offboard.view', subject: 'Resignation', scope: 'own' },
+      { action: 'performance.cycle.view', subject: 'Performance', scope: 'all' },
+      { action: 'performance.review.view', subject: 'Performance', scope: 'own' },
+      { action: 'performance.review.submit', subject: 'Performance', scope: 'own' },
+      { action: 'performance.peer.manage', subject: 'Performance', scope: 'own' }
     ]
   }
 ];

@@ -48,6 +48,11 @@ import { OnboardingPage } from './features/onboarding/pages/OnboardingPage.jsx';
 import { MyTasksPage } from './features/onboarding/pages/MyTasksPage.jsx';
 import { ResignationPage } from './features/onboarding/pages/ResignationPage.jsx';
 import { OffboardingPage } from './features/onboarding/pages/OffboardingPage.jsx';
+import { KpiTemplatesPage } from './features/performance/pages/KpiTemplatesPage.jsx';
+import { ReviewCyclesPage } from './features/performance/pages/ReviewCyclesPage.jsx';
+import { CycleProgressPage } from './features/performance/pages/CycleProgressPage.jsx';
+import { MyReviewPage } from './features/performance/pages/MyReviewPage.jsx';
+import { TeamReviewsPage } from './features/performance/pages/TeamReviewsPage.jsx';
 import LeaveTypesPage from './features/leaves/pages/LeaveTypesPage.jsx';
 import HolidaysPage from './features/leaves/pages/HolidaysPage.jsx';
 import MyLeavesPage from './features/leaves/pages/MyLeavesPage.jsx';
@@ -669,6 +674,48 @@ export default function App() {
             element={
               <ProtectedRoute requiredPermission="offboard.view">
                 <OffboardingPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Module M19: Performance & Appraisal */}
+          <Route
+            path="performance/templates"
+            element={
+              <ProtectedRoute requiredPermission="performance.template.view">
+                <KpiTemplatesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="performance/cycles"
+            element={
+              <ProtectedRoute requiredPermission="performance.cycle.view">
+                <ReviewCyclesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="performance/cycles/:id/progress"
+            element={
+              <ProtectedRoute requiredPermission="performance.cycle.manage">
+                <CycleProgressPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="performance/my-review"
+            element={
+              <ProtectedRoute requiredPermission="performance.review.view">
+                <MyReviewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="performance/team-reviews"
+            element={
+              <ProtectedRoute requiredPermission="performance.review.view">
+                <TeamReviewsPage />
               </ProtectedRoute>
             }
           />

@@ -367,17 +367,17 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 ## 22. M19 — Performance & Appraisal
 
-| ID | Feature | Backend | Frontend | Test | ☐ |
+| ID | Feature | Backend | Frontend | Test | ☑ |
 | --- | --- | --- | --- | --- | --- |
-| 19.1 | KPI templates (designation wise) | `kpiTemplate.model.js`, CRUD | `KpiTemplatesPage.jsx` | Template bane | ☐ |
-| 19.2 | Review cycles (quarterly/annual) | `reviewCycle.model.js`, `POST /review-cycles` (sab ke reviews bana de) | `ReviewCyclesPage.jsx` | Cycle se reviews banein | ☐ |
-| 19.3 | Goals / OKRs | review.goals[], `PATCH /reviews/:id/goals` | `GoalsEditor.jsx` | Goals save | ☐ |
-| 19.4 | Self review | `PATCH /reviews/:id/self` | `MyReviewPage.jsx` | Deadline ke baad band | ☐ |
-| 19.5 | Manager review + rating | `PATCH /reviews/:id/manager` | `TeamReviewsPage.jsx` | Sirf apni team | ☐ |
-| 19.6 | 360° peer feedback (optional) | `POST /reviews/:id/peer` | Peer request + form | Peers ki raye | ☐ |
-| 19.7 | Final + increment/promotion sifarish | `PATCH /reviews/:id/finalize` → salary revision draft (9.2) | Finalize dialog | Payroll mein draft increment | ☐ |
-| 19.8 | Performance history | `GET /employees/:id/reviews` | Profile tab | Purane cycles | ☐ |
-| 19.9 | Completion tracking | `GET /review-cycles/:id/progress` | Progress bar | Pending list | ☐ |
+| 19.1 | KPI templates (designation wise) | `kpiTemplate.model.js`, CRUD | `KpiTemplatesPage.jsx` | Template bane | ☑ |
+| 19.2 | Review cycles (quarterly/annual) | `reviewCycle.model.js`, `POST /review-cycles` (sab ke reviews bana de) | `ReviewCyclesPage.jsx` | Cycle se reviews banein | ☑ |
+| 19.3 | Goals / OKRs | review.goals[], `PATCH /reviews/:id/goals` | `GoalsEditor.jsx` | Goals save | ☑ |
+| 19.4 | Self review | `PATCH /reviews/:id/self` | `MyReviewPage.jsx` | Deadline ke baad band | ☑ |
+| 19.5 | Manager review + rating | `PATCH /reviews/:id/manager` | `TeamReviewsPage.jsx` | Sirf apni team | ☑ |
+| 19.6 | 360° peer feedback (optional) | `POST /reviews/:id/peer` | Peer request + form | Peers ki raye | ☑ |
+| 19.7 | Final + increment/promotion sifarish | `PATCH /reviews/:id/finalize` → salary revision draft (9.2) | Finalize dialog | Payroll mein draft increment | ☑ |
+| 19.8 | Performance history | `GET /employees/:id/reviews` | Profile tab | Purane cycles | ☑ |
+| 19.9 | Completion tracking | `GET /review-cycles/:id/progress` | Progress bar | Pending list | ☑ |
 
 ## 23. M22 — Projects & Timesheets
 

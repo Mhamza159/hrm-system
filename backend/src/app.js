@@ -43,6 +43,7 @@ import loanRoutes from './modules/loans/loan.routes.js';
 import expenseRoutes from './modules/expenses/expense.routes.js';
 import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
 import assetRoutes from './modules/assets/asset.routes.js';
+import performanceRoutes from './modules/performance/performance.routes.js';
 import onboardingRoutes, { resignationRouter, offboardingRouter, exitInterviewRouter } from './modules/onboarding/onboarding.routes.js';
 import * as onboardingController from './modules/onboarding/onboarding.controller.js';
 import { streamServiceLetterSchema } from './modules/onboarding/onboarding.validation.js';
@@ -144,6 +145,7 @@ app.use('/api/v1/expense-categories', (req, res, next) => {
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/assets', assetRoutes);
 app.use('/api/v1/onboarding', onboardingRoutes);
+app.use('/api/v1/performance', performanceRoutes);
 app.use('/api/v1/resignations', resignationRouter);
 app.use('/api/v1/offboarding', offboardingRouter);
 app.use('/api/v1/exit-interviews', exitInterviewRouter);
