@@ -44,8 +44,23 @@ export const getAllRoles = async ({ page = 1, limit = 20, search = '' } = {}) =>
     .limit(Number(limit))
     .lean();
 
+  // Aggregate active user counts per role
+  const roleIds = roles.map((r) => r._id);
+  const userAgg = await User.aggregate([
+    { $match: { roles: { $in: roleIds }, isDeleted: { $ne: true } } },
+    { $unwind: '$roles' },
+    { $match: { roles: { $in: roleIds } } },
+    { $group: { _id: '$roles', count: { $sum: 1 } } }
+  ]);
+  const userCountMap = new Map(userAgg.map((u) => [u._id.toString(), u.count]));
+
+  const enrichedRoles = roles.map((r) => ({
+    ...r,
+    userCount: userCountMap.get(r._id.toString()) || 0
+  }));
+
   return {
-    roles,
+    roles: enrichedRoles,
     meta: {
       page: Number(page),
       limit: Number(limit),

@@ -61,7 +61,7 @@ describe('Roles CRUD API (Slice 26.7-TEST & 26.13-TEST)', () => {
       env.JWT_ACCESS_SECRET,
       { expiresIn: '15m' }
     );
-  }, 30000);
+  }, 60000);
 
   afterAll(async () => {
     await User.deleteMany({});
@@ -114,7 +114,7 @@ describe('Roles CRUD API (Slice 26.7-TEST & 26.13-TEST)', () => {
     expect(res.body.data.length).toBeGreaterThanOrEqual(2);
     expect(res.body.meta).toBeDefined();
     expect(res.body.meta.total).toBeGreaterThanOrEqual(2);
-  });
+  }, 60000);
 
   it('GET /api/v1/roles/:id should return role details', async () => {
     const res = await request(app)

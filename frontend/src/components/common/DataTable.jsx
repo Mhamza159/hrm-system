@@ -180,22 +180,28 @@ export function DataTable({
       </div>
 
       {/* Pagination Footer Controls */}
-      {pagination && (
-        <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-2 py-1">
-          <div>
-            Showing{' '}
-            <span className="font-semibold text-slate-900 dark:text-white">
-              {Math.min(
-                ((pagination.page - 1) * pagination.limit) + 1,
-                pagination.totalDocs || 0
-              )}
-            </span>{' '}
-            to{' '}
-            <span className="font-semibold text-slate-900 dark:text-white">
-              {Math.min(pagination.page * pagination.limit, pagination.totalDocs || 0)}
-            </span>{' '}
-            of <span className="font-semibold text-slate-900 dark:text-white">{pagination.totalDocs || 0}</span> entries
-          </div>
+      {pagination && (() => {
+        const total = pagination.totalDocs ?? pagination.totalRecords ?? pagination.total ?? pagination.totalItems ?? 0;
+        const from = total === 0 ? 0 : ((pagination.page - 1) * pagination.limit) + 1;
+        const to = Math.min(pagination.page * pagination.limit, total);
+
+        return (
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-2 py-1">
+            <div>
+              Showing{' '}
+              <span className="font-semibold text-slate-900 dark:text-white tabular-nums">
+                {from}
+              </span>{' '}
+              to{' '}
+              <span className="font-semibold text-slate-900 dark:text-white tabular-nums">
+                {to}
+              </span>{' '}
+              of{' '}
+              <span className="font-semibold text-slate-900 dark:text-white tabular-nums">
+                {total}
+              </span>{' '}
+              entries
+            </div>
           <div className="flex items-center gap-2">
             <button
               disabled={pagination.page <= 1}
@@ -216,7 +222,8 @@ export function DataTable({
             </button>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
