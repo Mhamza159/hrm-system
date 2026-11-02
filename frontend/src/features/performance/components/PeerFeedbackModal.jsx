@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 export const PeerFeedbackModal = ({ isOpen, onClose, reviewId }) => {
   const [requestPeerFeedback, { isLoading }] = useRequestPeerFeedbackMutation();
   const { data: empData } = useGetEmployeesQuery({ limit: 100 });
-  const employees = empData?.data?.employees || empData?.data || [];
+  const employees = empData?.data?.items || (Array.isArray(empData?.data) ? empData?.data : []);
 
   const [selectedPeer, setSelectedPeer] = useState('');
 
