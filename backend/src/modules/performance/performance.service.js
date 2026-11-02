@@ -21,10 +21,13 @@ import { ApiError } from '../../utils/apiError.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { notify } from '../../services/notify.service.js';
 
+const escapeRegex = (str) => String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 const isUserAdminOrHr = (user) => {
   const roles = (user?.roles || []).map((r) => (typeof r === 'string' ? r : r?.name));
   return roles.includes('Super Admin') || roles.includes('HR Manager');
 };
+
 
 // =========================================================================
 // SLICE 1: KPI TEMPLATE MASTER AUTHORING (19.1)
@@ -32,7 +35,7 @@ const isUserAdminOrHr = (user) => {
 
 export const createKpiTemplate = async ({ templateData, user, ipAddress, userAgent }) => {
   const existing = await KpiTemplate.findOne({
-    name: { $regex: new RegExp(`^${templateData.name.trim()}$`, 'i') },
+    name: { $regex: new RegExp(`^${escapeRegex(templateData.name.trim())}$`, 'i') },
     designationId: templateData.designationId,
     isDeleted: false
   });
@@ -65,7 +68,7 @@ export const getKpiTemplates = async ({ query = {}, user }) => {
   if (query.designationId) filter.designationId = query.designationId;
   if (query.isActive !== undefined) filter.isActive = query.isActive === 'true' || query.isActive === true;
   if (query.search) {
-    filter.name = { $regex: query.search.trim(), $options: 'i' };
+    filter.name = { $regex: escapeRegex(query.search.trim()), $options: 'i' };
   }
 
   return await KpiTemplate.find(filter)
@@ -97,7 +100,7 @@ export const updateKpiTemplate = async ({ id, templateData, user, ipAddress, use
   if (templateData.name && templateData.name !== template.name) {
     const duplicate = await KpiTemplate.findOne({
       _id: { $ne: id },
-      name: { $regex: new RegExp(`^${templateData.name.trim()}$`, 'i') },
+      name: { $regex: new RegExp(`^${escapeRegex(templateData.name.trim())}$`, 'i') },
       designationId: templateData.designationId || template.designationId,
       isDeleted: false
     });
@@ -153,7 +156,7 @@ export const deleteKpiTemplate = async ({ id, user, ipAddress, userAgent }) => {
 
 export const launchReviewCycle = async ({ cycleData, user, ipAddress, userAgent }) => {
   const existing = await ReviewCycle.findOne({
-    title: { $regex: new RegExp(`^${cycleData.title.trim()}$`, 'i') },
+    title: { $regex: new RegExp(`^${escapeRegex(cycleData.title.trim())}$`, 'i') },
     periodYear: cycleData.periodYear,
     isDeleted: false
   });
@@ -288,6 +291,18 @@ export const updateReviewGoals = async ({ reviewId, goals, user, ipAddress, user
     throw new ApiError(404, 'Performance Review not found');
   }
 
+  if (review.status === 'Finalized') {
+    throw new ApiError(400, 'Cannot modify goals on an already finalized appraisal');
+  }
+
+  if (review.status === 'Finalized') {
+    throw new ApiError(400, 'Cannot submit manager review on an already finalized appraisal');
+  }
+
+  if (review.status === 'Finalized') {
+    throw new ApiError(400, 'Cannot modify goals on an already finalized appraisal');
+  }
+
   // Lock goals once self-review has been submitted
   if (review.selfReview?.submitted) {
     throw new ApiError(400, 'Goals cannot be modified after self-review submission');
@@ -329,14 +344,34 @@ export const submitSelfReview = async ({ reviewId, kpiRatings, goalRatings = [],
     throw new ApiError(404, 'Performance Review not found');
   }
 
+  if (review.status === 'Finalized') {
+    throw new ApiError(400, 'Cannot submit manager review on an already finalized appraisal');
+  }
+
   const actorEmp = await Employee.findOne({ userId: user._id });
   if (!actorEmp || review.employeeId.toString() !== actorEmp._id.toString()) {
     throw new ApiError(403, 'You can only submit self-review for your own appraisal instance');
   }
 
+  if (review.status === 'Finalized') {
+    throw new ApiError(400, 'Cannot submit self-review on an already finalized appraisal');
+  }
+
+  if (review.selfReview?.submitted) {
+    throw new ApiError(400, 'Self-review has already been submitted for this appraisal instance');
+  }
+
   const cycle = await ReviewCycle.findOne({ _id: review.cycleId, isDeleted: false });
   if (!cycle) {
     throw new ApiError(404, 'Linked Review Cycle not found');
+  }
+
+  if (review.status === 'Finalized') {
+    throw new ApiError(400, 'Cannot submit self-review on an already finalized appraisal');
+  }
+
+  if (review.selfReview?.submitted) {
+    throw new ApiError(400, 'Self-review has already been submitted for this appraisal instance');
   }
 
   // Deadline Enforcement
@@ -430,6 +465,10 @@ export const submitManagerReview = async ({
     throw new ApiError(404, 'Performance Review not found');
   }
 
+  if (review.status === 'Finalized') {
+    throw new ApiError(400, 'Cannot submit manager review on an already finalized appraisal');
+  }
+
   const actorEmp = await Employee.findOne({ userId: user._id });
   const isAdminOrHr = isUserAdminOrHr(user);
   const isDirectManager = actorEmp && review.managerId && review.managerId.toString() === actorEmp._id.toString();
@@ -510,9 +549,17 @@ export const finalizeReview = async ({
     throw new ApiError(404, 'Performance Review not found');
   }
 
+  if (review.status === 'Finalized') {
+    throw new ApiError(400, 'Cannot submit manager review on an already finalized appraisal');
+  }
+
   const score = finalScore !== undefined
     ? finalScore
     : (review.managerReview?.calculatedScore || finalRating);
+
+  if (review.status === 'Finalized') {
+    throw new ApiError(400, 'This performance appraisal has already been finalized');
+  }
 
   let salaryRevisionId = null;
 
@@ -698,6 +745,10 @@ export const requestPeerFeedback = async ({ reviewId, peerEmployeeId, user, ipAd
     throw new ApiError(404, 'Performance Review not found');
   }
 
+  if (review.status === 'Finalized') {
+    throw new ApiError(400, 'Cannot submit manager review on an already finalized appraisal');
+  }
+
   const peerEmp = await Employee.findOne({ _id: peerEmployeeId, status: 'Active', isDeleted: false });
   if (!peerEmp) {
     throw new ApiError(404, 'Peer employee not found or inactive');
@@ -859,6 +910,10 @@ export const getReviewById = async ({ id, user, dataScope }) => {
 
   if (!review) {
     throw new ApiError(404, 'Performance Review not found');
+  }
+
+  if (review.status === 'Finalized') {
+    throw new ApiError(400, 'Cannot submit manager review on an already finalized appraisal');
   }
 
   const actorEmp = await Employee.findOne({ userId: user._id });

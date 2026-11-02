@@ -82,7 +82,7 @@ const ReviewCycleSchema = new mongoose.Schema(
 );
 
 // Indexes
-ReviewCycleSchema.index({ title: 1, periodYear: 1, isDeleted: 1 });
+ReviewCycleSchema.index({ title: 1, periodYear: 1, isDeleted: 1 }, { unique: true });
 ReviewCycleSchema.index({ status: 1 });
 ReviewCycleSchema.index({ periodYear: 1, periodQuarter: 1 });
 
