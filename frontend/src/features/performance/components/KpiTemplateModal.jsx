@@ -27,6 +27,7 @@ export const KpiTemplateModal = ({ isOpen, onClose, template }) => {
   });
 
   useEffect(() => {
+    if (!isOpen) return;
     if (template) {
       setFormData({
         name: template.name || '',
@@ -68,7 +69,7 @@ export const KpiTemplateModal = ({ isOpen, onClose, template }) => {
         ]
       });
     }
-  }, [template, isOpen, designations]);
+  }, [template, isOpen]);
 
   if (!isOpen) return null;
 

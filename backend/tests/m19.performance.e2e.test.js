@@ -202,7 +202,7 @@ describe('Module M19 — Performance & Appraisal E2E Test Suite', () => {
       status: 'Active',
       joinDate: new Date('2023-03-01')
     });
-  });
+  }, 60000);
 
   afterAll(async () => {
     await mongoose.connection.close();

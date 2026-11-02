@@ -295,14 +295,6 @@ export const updateReviewGoals = async ({ reviewId, goals, user, ipAddress, user
     throw new ApiError(400, 'Cannot modify goals on an already finalized appraisal');
   }
 
-  if (review.status === 'Finalized') {
-    throw new ApiError(400, 'Cannot submit manager review on an already finalized appraisal');
-  }
-
-  if (review.status === 'Finalized') {
-    throw new ApiError(400, 'Cannot modify goals on an already finalized appraisal');
-  }
-
   // Lock goals once self-review has been submitted
   if (review.selfReview?.submitted) {
     throw new ApiError(400, 'Goals cannot be modified after self-review submission');
@@ -345,16 +337,12 @@ export const submitSelfReview = async ({ reviewId, kpiRatings, goalRatings = [],
   }
 
   if (review.status === 'Finalized') {
-    throw new ApiError(400, 'Cannot submit manager review on an already finalized appraisal');
+    throw new ApiError(400, 'Cannot submit self-review on an already finalized appraisal');
   }
 
   const actorEmp = await Employee.findOne({ userId: user._id });
   if (!actorEmp || review.employeeId.toString() !== actorEmp._id.toString()) {
     throw new ApiError(403, 'You can only submit self-review for your own appraisal instance');
-  }
-
-  if (review.status === 'Finalized') {
-    throw new ApiError(400, 'Cannot submit self-review on an already finalized appraisal');
   }
 
   if (review.selfReview?.submitted) {
@@ -364,14 +352,6 @@ export const submitSelfReview = async ({ reviewId, kpiRatings, goalRatings = [],
   const cycle = await ReviewCycle.findOne({ _id: review.cycleId, isDeleted: false });
   if (!cycle) {
     throw new ApiError(404, 'Linked Review Cycle not found');
-  }
-
-  if (review.status === 'Finalized') {
-    throw new ApiError(400, 'Cannot submit self-review on an already finalized appraisal');
-  }
-
-  if (review.selfReview?.submitted) {
-    throw new ApiError(400, 'Self-review has already been submitted for this appraisal instance');
   }
 
   // Deadline Enforcement
@@ -465,10 +445,6 @@ export const submitManagerReview = async ({
     throw new ApiError(404, 'Performance Review not found');
   }
 
-  if (review.status === 'Finalized') {
-    throw new ApiError(400, 'Cannot submit manager review on an already finalized appraisal');
-  }
-
   const actorEmp = await Employee.findOne({ userId: user._id });
   const isAdminOrHr = isUserAdminOrHr(user);
   const isDirectManager = actorEmp && review.managerId && review.managerId.toString() === actorEmp._id.toString();
@@ -550,16 +526,12 @@ export const finalizeReview = async ({
   }
 
   if (review.status === 'Finalized') {
-    throw new ApiError(400, 'Cannot submit manager review on an already finalized appraisal');
+    throw new ApiError(400, 'This performance appraisal has already been finalized');
   }
 
   const score = finalScore !== undefined
     ? finalScore
     : (review.managerReview?.calculatedScore || finalRating);
-
-  if (review.status === 'Finalized') {
-    throw new ApiError(400, 'This performance appraisal has already been finalized');
-  }
 
   let salaryRevisionId = null;
 
@@ -746,7 +718,7 @@ export const requestPeerFeedback = async ({ reviewId, peerEmployeeId, user, ipAd
   }
 
   if (review.status === 'Finalized') {
-    throw new ApiError(400, 'Cannot submit manager review on an already finalized appraisal');
+    throw new ApiError(400, 'Cannot request peer feedback on an already finalized appraisal');
   }
 
   const peerEmp = await Employee.findOne({ _id: peerEmployeeId, status: 'Active', isDeleted: false });
@@ -811,6 +783,10 @@ export const submitPeerFeedback = async ({ requestId, rating, comments, user, ip
 
   if (!review) {
     throw new ApiError(404, 'Peer feedback request not found');
+  }
+
+  if (review.status === 'Finalized') {
+    throw new ApiError(400, 'Cannot submit peer feedback on an already finalized appraisal');
   }
 
   const peerItem = review.peerFeedbacks.id(requestId);
@@ -910,10 +886,6 @@ export const getReviewById = async ({ id, user, dataScope }) => {
 
   if (!review) {
     throw new ApiError(404, 'Performance Review not found');
-  }
-
-  if (review.status === 'Finalized') {
-    throw new ApiError(400, 'Cannot submit manager review on an already finalized appraisal');
   }
 
   const actorEmp = await Employee.findOne({ userId: user._id });

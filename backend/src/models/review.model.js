@@ -140,7 +140,7 @@ const ReviewSchema = new mongoose.Schema(
       approvedIncrementPercent: { type: Number, min: 0, max: 100, default: 0 },
       finalizedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
       finalizedAt: { type: Date },
-      salaryRevisionId: { type: mongoose.Schema.Types.ObjectId, ref: 'SalaryRevision' }
+      salaryRevisionId: { type: mongoose.Schema.Types.ObjectId, ref: 'SalaryStructure' }
     },
     isDeleted: {
       type: Boolean,
