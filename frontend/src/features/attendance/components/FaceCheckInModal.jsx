@@ -67,16 +67,15 @@ export const FaceCheckInModal = ({ isOpen, onClose, isClockedIn = false, isClock
     }
   };
 
-  // Perform face check-in/out submission
-  const executePunch = useCallback(async (descriptor, snapshotDataUri) => {
+  // Perform face check-in/out submission (Option 1: Ultra-lightweight descriptor punch, no heavy snapshot)
+  const executePunch = useCallback(async (descriptor) => {
     setIsProcessing(true);
     setPunchError(null);
 
     try {
       const payload = {
         source: 'face',
-        liveDescriptor: descriptor,
-        snapshot: snapshotDataUri
+        liveDescriptor: descriptor
       };
 
       if (direction === 'entry') {
@@ -104,19 +103,10 @@ export const FaceCheckInModal = ({ isOpen, onClose, isClockedIn = false, isClock
     }
   }, [direction, checkIn, checkOut, onClose]);
 
-  // Capture snapshot and execute punch
+  // Execute punch directly from detected descriptor (~1KB payload)
   const triggerPunchFromFrame = useCallback(async (descriptor) => {
-    if (!videoRef.current || isSubmitting) return;
-
-    // Capture lightweight 480x360 snapshot
-    const canvas = document.createElement('canvas');
-    canvas.width = 480;
-    canvas.height = 360;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-    const snapshotUri = canvas.toDataURL('image/jpeg', 0.8);
-
-    await executePunch(descriptor, snapshotUri);
+    if (isSubmitting) return;
+    await executePunch(descriptor);
   }, [executePunch, isSubmitting]);
 
   // Throttled real-time detection loop (runs every 200ms, auto punches when face is stable)
