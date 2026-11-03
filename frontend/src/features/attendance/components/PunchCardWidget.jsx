@@ -527,8 +527,14 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
       />
       <QrScannerModal
         isOpen={qrModalOpen}
+        isClockedIn={isClockedIn}
+        isClockedOut={isClockedOut}
         defaultAction={qrDefaultAction}
-        onClose={() => setQrModalOpen(false)}
+        onClose={() => {
+          setQrModalOpen(false);
+          refetch();
+          onActionSuccess?.();
+        }}
         onSuccess={() => {
           refetch();
           onActionSuccess?.();

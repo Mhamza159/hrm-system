@@ -258,7 +258,29 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
     faceSnapshotUrl = faceResult.snapshotUrl;
   }
 
+  // Check for existing attendance record
+  let attendance = await Attendance.findOne({ employeeId, date: todayUtc });
+  if (attendance && attendance.checkIn) {
+    // Kiosk Auto-Punch Toggle: If already clocked in today, seamlessly perform clock out!
     if (source === 'qr' || qrToken) {
+      if (!attendance.checkOut) {
+        return await checkOut({
+          user,
+          location,
+          source: 'qr',
+          qrToken,
+          deviceId,
+          deviceModel,
+          liveDescriptor,
+          snapshot
+        });
+      }
+      throw new ApiError(400, 'Shift completed. You have already clocked out for today.');
+    }
+    throw new ApiError(400, 'Already clocked in for today');
+  }
+
+  if (source === 'qr' || qrToken) {
     const kiosk = await verifyQrTokenAndDevice({
       qrToken,
       deviceId,
@@ -268,12 +290,6 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
     });
     punchSource = 'qr';
     kioskId = kiosk._id;
-  }
-
-  // Check for existing attendance record
-  let attendance = await Attendance.findOne({ employeeId, date: todayUtc });
-  if (attendance && attendance.checkIn) {
-    throw new ApiError(400, 'Already clocked in for today');
   }
 
   const { employee, shift, officeHours, lateRules } = await getShiftAndPolicies(employeeId);

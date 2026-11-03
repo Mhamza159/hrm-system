@@ -22,8 +22,15 @@ import { useCheckInMutation, useCheckOutMutation } from '../attendanceApi.js';
 import { getDeviceId, getDeviceModel } from '../../../utils/deviceFingerprint.js';
 import { toast } from 'sonner';
 
-export const QrScannerModal = ({ isOpen, onClose, defaultAction = 'in', onSuccess }) => {
-  const [action, setAction] = useState(defaultAction); // 'in' | 'out'
+export const QrScannerModal = ({
+  isOpen,
+  onClose,
+  isClockedIn = false,
+  isClockedOut = false,
+  defaultAction = 'in',
+  onSuccess
+}) => {
+  const [action, setAction] = useState(isClockedIn && !isClockedOut ? 'out' : defaultAction || 'in');
   const [scannerError, setScannerError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [scanSuccess, setScanSuccess] = useState(null);
@@ -35,8 +42,12 @@ export const QrScannerModal = ({ isOpen, onClose, defaultAction = 'in', onSucces
   const [checkOut] = useCheckOutMutation();
 
   useEffect(() => {
-    setAction(defaultAction);
-  }, [defaultAction, isOpen]);
+    if (isClockedIn && !isClockedOut) {
+      setAction('out');
+    } else {
+      setAction(defaultAction || 'in');
+    }
+  }, [defaultAction, isOpen, isClockedIn, isClockedOut]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -119,8 +130,15 @@ export const QrScannerModal = ({ isOpen, onClose, defaultAction = 'in', onSucces
     const deviceId = getDeviceId();
     const deviceModel = getDeviceModel();
 
-    // Auto-detect direction from kiosk QR payload if kiosk is single-direction
+    // Auto-detect direction: If already clocked in and not clocked out, target must be 'out' (Clock Out)
     let targetAction = action;
+    if (isClockedIn && !isClockedOut) {
+      targetAction = 'out';
+    } else if (!isClockedIn) {
+      targetAction = 'in';
+    }
+
+    // Also check kiosk QR payload if kiosk is single-direction (entry only / exit only)
     try {
       const parts = token.split('.');
       if (parts.length === 2) {
@@ -128,26 +146,45 @@ export const QrScannerModal = ({ isOpen, onClose, defaultAction = 'in', onSucces
         const payloadJson = JSON.parse(atob(b64));
         if (payloadJson?.kType === 'entry') {
           targetAction = 'in';
-          setAction('in');
         } else if (payloadJson?.kType === 'exit') {
           targetAction = 'out';
-          setAction('out');
         }
       }
     } catch {
-      // Retain current action selection
+      // Retain targetAction
     }
+    setAction(targetAction);
 
     try {
       let result;
       if (targetAction === 'in') {
-        result = await checkIn({
-          source: 'qr',
-          qrToken: token,
-          deviceId,
-          deviceModel
-        }).unwrap();
-        toast.success('Clock-In recorded successfully via QR scan!');
+        try {
+          result = await checkIn({
+            source: 'qr',
+            qrToken: token,
+            deviceId,
+            deviceModel
+          }).unwrap();
+          toast.success('Clock-In recorded successfully via QR scan!');
+        } catch (inErr) {
+          // If already clocked in today, gracefully fallback and punch clock-out
+          if (
+            inErr?.data?.message?.toLowerCase().includes('already clocked in') ||
+            inErr?.message?.toLowerCase().includes('already clocked in')
+          ) {
+            result = await checkOut({
+              source: 'qr',
+              qrToken: token,
+              deviceId,
+              deviceModel
+            }).unwrap();
+            targetAction = 'out';
+            setAction('out');
+            toast.success('Clock-Out recorded successfully via QR scan!');
+          } else {
+            throw inErr;
+          }
+        }
       } else {
         result = await checkOut({
           source: 'qr',

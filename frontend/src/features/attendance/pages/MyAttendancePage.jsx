@@ -2235,6 +2235,8 @@ export const MyAttendancePage = () => {
       />
       <QrScannerModal
         isOpen={qrModalOpen}
+        isClockedIn={isClockedIn}
+        isClockedOut={isClockedOut}
         onClose={() => {
           setQrModalOpen(false);
           refetch();
