@@ -133,5 +133,43 @@
   .animate-shimmer {
     animation: shimmer 2s infinite ease-in-out;
   }
+
+  /* Biometric optical scanner animations */
+  @keyframes scanline {
+    0% {
+      top: 0%;
+      opacity: 0.8;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      top: 100%;
+      opacity: 0.8;
+    }
+  }
+
+  .animate-scanline {
+    animation: scanline 2.2s ease-in-out infinite alternate;
+  }
+
+  @keyframes radarPulse {
+    0% {
+      transform: scale(0.95);
+      opacity: 0.8;
+    }
+    50% {
+      transform: scale(1.08);
+      opacity: 0.3;
+    }
+    100% {
+      transform: scale(0.95);
+      opacity: 0.8;
+    }
+  }
+
+  .animate-radar {
+    animation: radarPulse 3s ease-in-out infinite;
+  }
 }
 
