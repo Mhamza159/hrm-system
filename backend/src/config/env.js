@@ -8,8 +8,26 @@
  * - Fallbacks: Provides safe defaults for development.
  */
 
+import fs from 'fs';
+import path from 'path';
 import dotenv from 'dotenv';
-dotenv.config();
+
+// Automatically locate .env whether running from project root or backend folder
+const candidateEnvPaths = [
+  path.resolve(process.cwd(), 'backend', '.env'),
+  path.resolve(process.cwd(), '.env')
+];
+let loadedEnv = false;
+for (const p of candidateEnvPaths) {
+  if (fs.existsSync(p)) {
+    dotenv.config({ path: p });
+    loadedEnv = true;
+    break;
+  }
+}
+if (!loadedEnv) {
+  dotenv.config();
+}
 
 const rawMongoUri =
   process.env.MONGO_URI ||

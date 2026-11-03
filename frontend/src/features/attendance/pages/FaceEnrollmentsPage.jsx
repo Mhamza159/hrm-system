@@ -186,17 +186,19 @@ export const FaceEnrollmentsPage = () => {
                 <div className="space-y-3">
                   {/* Photo & Identity Header */}
                   <div className="flex items-start gap-3">
-                    <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted flex-shrink-0 border">
-                      {enrollment.enrollmentPhotoUrl ? (
+                    <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted flex-shrink-0 border relative flex items-center justify-center">
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground absolute inset-0">
+                        <UserCheck className="w-6 h-6" />
+                      </div>
+                      {enrollment.enrollmentPhotoUrl && (
                         <img
                           src={enrollment.enrollmentPhotoUrl}
                           alt={user.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover relative z-10"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
                         />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                          <UserCheck className="w-6 h-6" />
-                        </div>
                       )}
                     </div>
 

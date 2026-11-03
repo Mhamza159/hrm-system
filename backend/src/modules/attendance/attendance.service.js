@@ -2507,7 +2507,7 @@ export const calculateEuclideanDistance = (vecA, vecB) => {
 };
 
 export const verifyFacePunch = async ({ user, liveDescriptor, snapshot }) => {
-  const storedSnapshotUrl = saveBase64Image(snapshot, 'attendance', `punch_${user?._id || 'emp'}`);
+  const storedSnapshotUrl = await saveBase64Image(snapshot, 'attendance', `punch_${user?._id || 'emp'}`);
   const setting = await Setting.findOne({ key: 'faceAttendance' }).lean();
   const faceSettings = setting?.value || { isEnabled: true, matchThreshold: 0.50 };
 
@@ -2578,7 +2578,7 @@ export const enrollFace = async (userId, { descriptors, photo }) => {
   user.faceEnrollment = {
     status: 'pending',
     descriptors,
-    enrollmentPhotoUrl: saveBase64Image(photo, 'faces', `enroll_${userId}`),
+    enrollmentPhotoUrl: await saveBase64Image(photo, 'faces', `enroll_${userId}`),
     enrolledAt: new Date(),
     approvedAt: null,
     approvedBy: null,
