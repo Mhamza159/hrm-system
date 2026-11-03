@@ -96,7 +96,8 @@ export const calculateWorkMetrics = ({
     return { workDurationMinutes: 0, overtimeMinutes: 0, isEarlyDeparture: false };
   }
 
-  const rawMinutes = Math.max(0, Math.round((new Date(checkOut) - new Date(checkIn)) / 60000));
+  const diffMs = new Date(checkOut) - new Date(checkIn);
+  const rawMinutes = diffMs > 0 ? Math.max(1, Math.round(diffMs / 60000)) : 0;
   const workDurationMinutes = Math.max(0, rawMinutes - totalBreakMinutes);
 
   // Scheduled shift duration

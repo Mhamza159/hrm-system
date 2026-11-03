@@ -109,7 +109,12 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'performance.review.view', subject: 'Performance', scope: 'all' },
       { action: 'performance.review.submit', subject: 'Performance', scope: 'all' },
       { action: 'performance.review.finalize', subject: 'Performance', scope: 'all' },
-      { action: 'performance.peer.manage', subject: 'Performance', scope: 'all' }
+      { action: 'performance.peer.manage', subject: 'Performance', scope: 'all' },
+      { action: 'project.view', subject: 'Project', scope: 'all' },
+      { action: 'project.manage', subject: 'Project', scope: 'all' },
+      { action: 'timesheet.log', subject: 'Project', scope: 'own' },
+      { action: 'timesheet.compliance', subject: 'Project', scope: 'all' },
+      { action: 'report.utilization', subject: 'Project', scope: 'all' }
     ]
   },
   {
@@ -160,7 +165,12 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'performance.cycle.view', subject: 'Performance', scope: 'all' },
       { action: 'performance.review.view', subject: 'Performance', scope: 'department' },
       { action: 'performance.review.submit', subject: 'Performance', scope: 'department' },
-      { action: 'performance.peer.manage', subject: 'Performance', scope: 'department' }
+      { action: 'performance.peer.manage', subject: 'Performance', scope: 'department' },
+      { action: 'project.view', subject: 'Project', scope: 'department' },
+      { action: 'project.manage', subject: 'Project', scope: 'department' },
+      { action: 'timesheet.log', subject: 'Project', scope: 'own' },
+      { action: 'timesheet.approve', subject: 'Project', scope: 'team' },
+      { action: 'report.utilization', subject: 'Project', scope: 'department' }
     ]
   },
   {
@@ -196,7 +206,10 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'performance.cycle.view', subject: 'Performance', scope: 'all' },
       { action: 'performance.review.view', subject: 'Performance', scope: 'own' },
       { action: 'performance.review.submit', subject: 'Performance', scope: 'own' },
-      { action: 'performance.peer.manage', subject: 'Performance', scope: 'own' }
+      { action: 'performance.peer.manage', subject: 'Performance', scope: 'own' },
+      { action: 'project.view', subject: 'Project', scope: 'own' },
+      { action: 'timesheet.log', subject: 'Project', scope: 'own' },
+      { action: 'report.utilization', subject: 'Project', scope: 'own' }
     ]
   }
 ];

@@ -172,7 +172,10 @@ export const baseApi = createApi({
     'KpiTemplates',
     'ReviewCycles',
     'Reviews',
-    'PerformanceProgress'
+    'PerformanceProgress',
+    'Clients',
+    'Projects',
+    'Timesheets'
   ],
   endpoints: () => ({})
 });

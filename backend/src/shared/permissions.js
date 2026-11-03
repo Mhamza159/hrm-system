@@ -735,6 +735,63 @@ export const PERMISSIONS_CATALOGUE = [
         defaultScope: 'own'
       }
     ]
+  },
+  {
+    module: 'projects',
+    label: 'Projects & Timesheets',
+    subject: 'Project',
+    description: 'Client portfolio, project charters, member assignments, weekly timesheets, utilization, and profitability.',
+    actions: [
+      {
+        action: 'project.view',
+        label: 'View Projects & Clients',
+        description: 'View corporate clients and project charters according to scope.',
+        allowedScopes: ['own', 'department', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'project.manage',
+        label: 'Manage Projects, Clients & Team Members',
+        description: 'Create, edit, archive projects, manage client profiles, and assign project members.',
+        allowedScopes: ['department', 'all'],
+        defaultScope: 'department'
+      },
+      {
+        action: 'timesheet.log',
+        label: 'Log & Submit Timesheets',
+        description: 'Log daily hours, draft weekly entries, and submit timesheets for approval.',
+        allowedScopes: ['own', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'timesheet.approve',
+        label: 'Approve or Reject Subordinate Timesheets',
+        description: 'Review submitted weekly timesheets and approve or reject with comments.',
+        allowedScopes: ['team', 'department', 'all'],
+        defaultScope: 'team'
+      },
+      {
+        action: 'timesheet.compliance',
+        label: 'Manage Timesheet Compliance & Reminders',
+        description: 'Track missing weekly timesheets and trigger compliance reminders.',
+        allowedScopes: ['department', 'all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'report.utilization',
+        label: 'View Billable Utilization Telemetry',
+        description: 'Inspect billable versus non-billable utilization rates.',
+        allowedScopes: ['own', 'department', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'report.profitability',
+        label: 'View Project Cost & Profitability',
+        description: 'Executive project financial analytics, gross margins, and salary-derived labor costs.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      }
+    ]
   }
 ];
 

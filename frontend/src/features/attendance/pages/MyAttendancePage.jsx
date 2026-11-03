@@ -36,7 +36,13 @@ import {
   Plus,
   UserCheck,
   MessageSquare,
-  ArrowRight
+  ArrowRight,
+  ScanFace,
+  Globe,
+  Smartphone,
+  Home,
+  MapPin,
+  MonitorCheck
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -210,10 +216,18 @@ export const MyAttendancePage = () => {
       calcElapsed();
       const interval = setInterval(calcElapsed, 1000);
       return () => clearInterval(interval);
-    } else if (todayRecord?.workDurationMinutes) {
+    } else if (todayRecord?.workDurationMinutes && todayRecord.workDurationMinutes > 0) {
       const h = Math.floor(todayRecord.workDurationMinutes / 60);
       const m = todayRecord.workDurationMinutes % 60;
       setElapsedDuration(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`);
+    } else if (isClockedOut && todayRecord?.checkIn && todayRecord?.checkOut) {
+      const diffMs = Math.max(0, new Date(todayRecord.checkOut).getTime() - new Date(todayRecord.checkIn).getTime());
+      const hours = Math.floor(diffMs / 3600000);
+      const mins = Math.floor((diffMs % 3600000) / 60000);
+      const secs = Math.floor((diffMs % 60000) / 1000);
+      setElapsedDuration(
+        `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+      );
     } else {
       setElapsedDuration('00:00:00');
     }
@@ -316,12 +330,121 @@ export const MyAttendancePage = () => {
     return 'Shift: 11:00 - 17:00';
   }, [isSuperAdmin, shiftInfo]);
 
+  // Dynamic Punch Source Information Helper
+  const punchSourceInfo = useMemo(() => {
+    const src = todayRecord?.source || todayRecord?.checkInSource || (todayRecord?.checkIn ? 'web' : null);
+    switch (src) {
+      case 'face':
+        return {
+          label: 'Face Recognition Punch',
+          Icon: ScanFace,
+          color: 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/80 dark:border-emerald-800/60'
+        };
+      case 'qr':
+        return {
+          label: 'QR Code Attendance',
+          Icon: QrCode,
+          color: 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border-blue-200/80 dark:border-blue-800/60'
+        };
+      case 'web':
+        return {
+          label: 'Web Portal Attendance',
+          Icon: Globe,
+          color: 'text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200/80 dark:border-indigo-800/60'
+        };
+      case 'mobile':
+        return {
+          label: 'Mobile App Attendance',
+          Icon: Smartphone,
+          color: 'text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 border-purple-200/80 dark:border-purple-800/60'
+        };
+      case 'biometric':
+        return {
+          label: 'Biometric Terminal',
+          Icon: Fingerprint,
+          color: 'text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+        };
+      case 'kiosk':
+        return {
+          label: 'Office Kiosk Punch',
+          Icon: MonitorCheck,
+          color: 'text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 border-teal-200/80 dark:border-teal-800/60'
+        };
+      case 'wfh':
+        return {
+          label: 'Work From Home (WFH)',
+          Icon: Home,
+          color: 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border-amber-200/80 dark:border-amber-800/60'
+        };
+      case 'field':
+        return {
+          label: 'Field Duty Punch',
+          Icon: MapPin,
+          color: 'text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-950/40 border-orange-200/80 dark:border-orange-800/60'
+        };
+      default:
+        return {
+          label: isClockedIn ? 'System Punch' : 'Ready for Punch',
+          Icon: Fingerprint,
+          color: 'text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700'
+        };
+    }
+  }, [todayRecord, isClockedIn]);
+
+  // Compute Late Arrival Status & Duration
+  const lateInfo = useMemo(() => {
+    if (!todayRecord?.checkIn) return null;
+    const isMarkedLate = todayRecord.status === 'late' || todayRecord.flags?.includes('late') || Boolean(todayRecord.lateMinutes > 0);
+    let lateMins = todayRecord.lateMinutes || 0;
+
+    if (!lateMins && shiftInfo?.startTime) {
+      const checkInDate = new Date(todayRecord.checkIn);
+      const checkInMins = checkInDate.getHours() * 60 + checkInDate.getMinutes();
+
+      const parseTimeToMins = (tStr) => {
+        const match = tStr.match(/(\d+):(\d+)(?:\s*(AM|PM))?/i);
+        if (!match) return 0;
+        let h = parseInt(match[1], 10);
+        const m = parseInt(match[2], 10);
+        const meridiem = match[3]?.toUpperCase();
+        if (meridiem === 'PM' && h < 12) h += 12;
+        if (meridiem === 'AM' && h === 12) h = 0;
+        return h * 60 + m;
+      };
+
+      const shiftStartMins = parseTimeToMins(shiftInfo.startTime);
+      const grace = shiftInfo.graceMinutes ?? 15;
+      if (checkInMins > (shiftStartMins + grace)) {
+        lateMins = checkInMins - shiftStartMins;
+      }
+    }
+
+    if (isMarkedLate || lateMins > 0) {
+      const h = Math.floor(lateMins / 60);
+      const m = lateMins % 60;
+      const formatted = h > 0 ? `${h}h ${m}m` : `${m}m`;
+      return { isLate: true, lateMinutes: lateMins, text: `Late Arrival (+${formatted})` };
+    }
+    return null;
+  }, [todayRecord, shiftInfo]);
+
   // Compute 3 Working KPI Metrics
   const workedTodayHours = useMemo(() => {
-    if (todayRecord?.workDurationMinutes) {
+    if (todayRecord?.workDurationMinutes && todayRecord.workDurationMinutes > 0) {
       const h = Math.floor(todayRecord.workDurationMinutes / 60);
       const m = todayRecord.workDurationMinutes % 60;
       return `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m`;
+    }
+    if (isClockedOut && todayRecord?.checkIn && todayRecord?.checkOut) {
+      const diffMs = Math.max(0, new Date(todayRecord.checkOut).getTime() - new Date(todayRecord.checkIn).getTime());
+      const totalMins = Math.round(diffMs / 60000);
+      if (totalMins > 0) {
+        const h = Math.floor(totalMins / 60);
+        const m = totalMins % 60;
+        return `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m`;
+      }
+      const secs = Math.round(diffMs / 1000);
+      return `< 1m (${secs}s)`;
     }
     if (isClockedIn && !isClockedOut) {
       const parts = elapsedDuration.split(':');
@@ -332,13 +455,41 @@ export const MyAttendancePage = () => {
 
   const remainingHours = useMemo(() => {
     if (isSuperAdmin) return 'Flexible';
-    const targetMinutes = 360;
-    const currentWorkedMinutes = todayRecord?.workDurationMinutes || 0;
+
+    // Dynamic target minutes based on assigned shift (e.g. 09:00 - 18:00 = 540m - 60m break = 480m)
+    let targetMinutes = 480;
+    if (shiftInfo?.startTime && shiftInfo?.endTime) {
+      const parseTimeToMins = (tStr) => {
+        if (!tStr) return 0;
+        const match = tStr.match(/(\d+):(\d+)(?:\s*(AM|PM))?/i);
+        if (!match) return 0;
+        let h = parseInt(match[1], 10);
+        const m = parseInt(match[2], 10);
+        const meridiem = match[3]?.toUpperCase();
+        if (meridiem === 'PM' && h < 12) h += 12;
+        if (meridiem === 'AM' && h === 12) h = 0;
+        return h * 60 + m;
+      };
+
+      const startMins = parseTimeToMins(shiftInfo.startTime);
+      let endMins = parseTimeToMins(shiftInfo.endTime);
+      if (endMins <= startMins) endMins += 1440; // overnight shift
+
+      const breakMins = typeof shiftInfo.breakMinutes === 'number' ? shiftInfo.breakMinutes : 60;
+      targetMinutes = Math.max(0, (endMins - startMins) - breakMins);
+    }
+
+    let currentWorkedMinutes = todayRecord?.workDurationMinutes || 0;
+    if (currentWorkedMinutes === 0 && todayRecord?.checkIn) {
+      const end = todayRecord?.checkOut ? new Date(todayRecord.checkOut).getTime() : Date.now();
+      currentWorkedMinutes = Math.round(Math.max(0, end - new Date(todayRecord.checkIn).getTime()) / 60000);
+    }
+
     const remaining = Math.max(0, targetMinutes - currentWorkedMinutes);
     const h = Math.floor(remaining / 60);
     const m = remaining % 60;
     return `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m`;
-  }, [isSuperAdmin, todayRecord]);
+  }, [isSuperAdmin, shiftInfo, todayRecord, elapsedDuration]);
 
   const thisMonthHours = useMemo(() => {
     const totalH = summary.totalWorkHours || 0;
@@ -605,10 +756,18 @@ export const MyAttendancePage = () => {
             <span>DUTY: {elapsedDuration}</span>
           </div>
 
-          {/* Biometric Terminal Pill */}
+          {/* Late Arrival Indicator Pill */}
+          {lateInfo?.isLate && (
+            <div className="px-3.5 py-1.5 bg-rose-50/90 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/80 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-xs animate-in fade-in">
+              <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
+              <span>{lateInfo.text}</span>
+            </div>
+          )}
+
+          {/* Dynamic Punch Source Pill */}
           <div className="px-3.5 py-1.5 bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-xs">
-            <Fingerprint className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-            <span>Biometric Terminal</span>
+            <punchSourceInfo.Icon className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+            <span>{punchSourceInfo.label}</span>
           </div>
         </div>
       </div>
@@ -799,7 +958,7 @@ export const MyAttendancePage = () => {
                   </div>
                 </div>
 
-                {/* Sub Badges: Shift Schedule, Live Duty Time, Biometric Device */}
+                {/* Sub Badges: Shift Schedule, Live Duty Time, Late Arrival, Dynamic Punch Source */}
                 <div className="flex flex-wrap items-center gap-2 pt-2">
                   <span className="px-3 py-1 bg-blue-50/80 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/60 rounded-xl text-xs font-semibold flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -811,9 +970,16 @@ export const MyAttendancePage = () => {
                     <span>DUTY TIME: {elapsedDuration}</span>
                   </span>
 
-                  <span className="px-3 py-1 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5">
-                    <Fingerprint className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Biometric Device Attendance</span>
+                  {lateInfo?.isLate && (
+                    <span className="px-3 py-1 bg-rose-50/90 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/60 rounded-xl text-xs font-semibold flex items-center gap-1.5 animate-in fade-in">
+                      <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
+                      <span>{lateInfo.text}</span>
+                    </span>
+                  )}
+
+                  <span className={`px-3 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 border ${punchSourceInfo.color}`}>
+                    <punchSourceInfo.Icon className="w-3.5 h-3.5" />
+                    <span>{punchSourceInfo.label}</span>
                   </span>
                 </div>
               </div>
@@ -2057,6 +2223,11 @@ export const MyAttendancePage = () => {
       <FaceCheckInModal
         isOpen={faceModalOpen}
         isClockedIn={isClockedIn}
+        isClockedOut={isClockedOut}
+        onOpenCorrectionModal={() => {
+          setSelectedDateForCorrection(todayStr);
+          setCorrectionModalOpen(true);
+        }}
         onClose={() => {
           setFaceModalOpen(false);
           refetch();

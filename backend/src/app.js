@@ -50,6 +50,7 @@ import { streamServiceLetterSchema } from './modules/onboarding/onboarding.valid
 import reportsRoutes from './modules/reports/reports.routes.js';
 import auditRoutes from './modules/audit/audit.routes.js';
 import fileRoutes from './modules/files/file.routes.js';
+import { clientRouter, projectRouter, timesheetRouter, projectReportsRouter } from './modules/projects/project.routes.js';
 import * as attendanceController from './modules/attendance/attendance.controller.js';
 import * as leaveController from './modules/leaves/leave.controller.js';
 import * as payrollController from './modules/payroll/payroll.controller.js';
@@ -99,8 +100,8 @@ app.use(
 );
 
 // 3. Body parsers with defensive size caps
-app.use(express.json({ limit: '16kb' }));
-app.use(express.urlencoded({ extended: true, limit: '16kb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // 4. Perimeter NoSQL Injection & Query Parameter Sanitizer (Row X1.5)
 app.use(sanitize);
@@ -161,6 +162,10 @@ app.get('/api/v1/reports/tax-compliance', authenticate, checkPermission('payroll
 app.get('/api/v1/reports/eobi-compliance', authenticate, checkPermission('payroll.view', 'all'), payrollController.getEobiComplianceReport);
 app.get('/api/v1/reports/payroll-cost', authenticate, checkPermission('payroll.view', 'all'), payrollController.getDepartmentPayrollCostAnalytics);
 app.get('/api/v1/reports/leaves', authenticate, checkPermission('report.export', 'team'), leaveController.exportLeaveReport);
+app.use('/api/v1/clients', clientRouter);
+app.use('/api/v1/projects', projectRouter);
+app.use('/api/v1/timesheets', timesheetRouter);
+app.use('/api/v1/reports', projectReportsRouter);
 app.use('/api/v1/reports', reportsRoutes);
 app.use('/api/v1/audit-logs', auditRoutes);
 app.use('/api/v1/files', fileRoutes);

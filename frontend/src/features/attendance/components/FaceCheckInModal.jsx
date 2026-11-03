@@ -6,13 +6,18 @@ import { LivenessFeedback } from './LivenessFeedback';
 import { useCheckInMutation, useCheckOutMutation } from '../attendanceApi';
 import { toast } from 'sonner';
 
-export const FaceCheckInModal = ({ isOpen, onClose, isClockedIn = false, onOpenCorrectionModal }) => {
+export const FaceCheckInModal = ({ isOpen, onClose, isClockedIn = false, isClockedOut = false, onOpenCorrectionModal }) => {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
-  const blinkTrackerRef = useRef(new BlinkTracker());
-  const animationFrameRef = useRef(null);
+  const blinkTrackerRef = useRef(new BlinkTracker({ closedThreshold: 0.25, openThreshold: 0.28 }));
+  const detectionTimeoutRef = useRef(null);
+  const isDetectingRef = useRef(false);
+  const lastDetectedResultRef = useRef(null);
+  const stableFramesRef = useRef(0);
+  const isAutoPunchingRef = useRef(false);
+  const lastErrorTimeRef = useRef(0);
 
-  const [direction, setDirection] = useState(isClockedIn ? 'exit' : 'entry');
+  const [direction, setDirection] = useState(isClockedIn && !isClockedOut ? 'exit' : 'entry');
   const [isFaceDetected, setIsFaceDetected] = useState(false);
   const [isLive, setIsLive] = useState(false);
   const [currentEAR, setCurrentEAR] = useState(0.3);
@@ -52,9 +57,9 @@ export const FaceCheckInModal = ({ isOpen, onClose, isClockedIn = false, onOpenC
   };
 
   const stopCamera = () => {
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
+    if (detectionTimeoutRef.current) {
+      clearTimeout(detectionTimeoutRef.current);
+      detectionTimeoutRef.current = null;
     }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
@@ -90,59 +95,87 @@ export const FaceCheckInModal = ({ isOpen, onClose, isClockedIn = false, onOpenC
       const msg = err?.data?.message || err?.message || 'Face verification failed';
       setPunchError(msg);
       toast.error(msg);
+      lastErrorTimeRef.current = Date.now();
+      isAutoPunchingRef.current = false;
+      setIsLive(false);
+      stableFramesRef.current = 0;
     } finally {
       setIsProcessing(false);
     }
   }, [direction, checkIn, checkOut, onClose]);
 
-  // Real-time detection loop
-  const runDetectionLoop = useCallback(async () => {
-    if (!videoRef.current || !modelsLoaded || isSubmitting) return;
+  // Capture snapshot and execute punch
+  const triggerPunchFromFrame = useCallback(async (descriptor) => {
+    if (!videoRef.current || isSubmitting) return;
 
-    if (videoRef.current.readyState === 4) {
+    // Capture lightweight 480x360 snapshot
+    const canvas = document.createElement('canvas');
+    canvas.width = 480;
+    canvas.height = 360;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    const snapshotUri = canvas.toDataURL('image/jpeg', 0.8);
+
+    await executePunch(descriptor, snapshotUri);
+  }, [executePunch, isSubmitting]);
+
+  // Throttled real-time detection loop (runs every 200ms, auto punches when face is stable)
+  const runDetectionLoop = useCallback(async () => {
+    if (!videoRef.current || !modelsLoaded || isSubmitting || isAutoPunchingRef.current) return;
+
+    // 2.5s cooldown after an error before re-triggering auto punch
+    if (Date.now() - lastErrorTimeRef.current < 2500) {
+      detectionTimeoutRef.current = setTimeout(runDetectionLoop, 300);
+      return;
+    }
+
+    if (!isDetectingRef.current && videoRef.current.readyState === 4) {
+      isDetectingRef.current = true;
       try {
         const result = await detectFaceAndDescriptor(videoRef.current, { inputSize: 224 });
 
-        if (result && result.landmarks) {
+        if (result && result.landmarks && result.descriptor) {
           setIsFaceDetected(true);
+          lastDetectedResultRef.current = result;
+
           const blinked = blinkTrackerRef.current.update(result.landmarks);
           setCurrentEAR(blinkTrackerRef.current.lastEAR);
 
-          if (blinked && !isLive) {
+          stableFramesRef.current += 1;
+
+          // Auto-trigger punch upon either 2 consecutive stable face frames (~400ms) OR natural blink
+          if ((stableFramesRef.current >= 2 || blinked) && !isAutoPunchingRef.current && !isSubmitting) {
+            isAutoPunchingRef.current = true;
             setIsLive(true);
-
-            // Capture snapshot immediately
-            const canvas = document.createElement('canvas');
-            canvas.width = videoRef.current.videoWidth || 640;
-            canvas.height = videoRef.current.videoHeight || 480;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-            const snapshotUri = canvas.toDataURL('image/jpeg', 0.85);
-
-            // Trigger punch with descriptor
-            await executePunch(result.descriptor, snapshotUri);
+            await triggerPunchFromFrame(result.descriptor);
             return;
           }
         } else {
           setIsFaceDetected(false);
+          stableFramesRef.current = 0;
         }
       } catch (e) {
         // Suppress frame drop errors
+      } finally {
+        isDetectingRef.current = false;
       }
     }
 
-    if (!isLive && !isSubmitting) {
-      animationFrameRef.current = requestAnimationFrame(runDetectionLoop);
+    if (!isAutoPunchingRef.current && !isSubmitting) {
+      detectionTimeoutRef.current = setTimeout(runDetectionLoop, 200);
     }
-  }, [modelsLoaded, isSubmitting, isLive, detectFaceAndDescriptor, executePunch]);
+  }, [modelsLoaded, isSubmitting, detectFaceAndDescriptor, triggerPunchFromFrame]);
 
   useEffect(() => {
     if (isOpen) {
       blinkTrackerRef.current.reset();
+      stableFramesRef.current = 0;
+      isAutoPunchingRef.current = false;
+      lastErrorTimeRef.current = 0;
       setIsLive(false);
       setIsFaceDetected(false);
       setPunchError(null);
-      setDirection(isClockedIn ? 'exit' : 'entry');
+      setDirection(isClockedIn && !isClockedOut ? 'exit' : 'entry');
       startCamera();
     } else {
       stopCamera();
@@ -150,16 +183,16 @@ export const FaceCheckInModal = ({ isOpen, onClose, isClockedIn = false, onOpenC
     return () => {
       stopCamera();
     };
-  }, [isOpen, isClockedIn]);
+  }, [isOpen, isClockedIn, isClockedOut]);
 
   // Start detection loop once models are ready
   useEffect(() => {
     if (isOpen && modelsLoaded && !isLive && !isSubmitting) {
-      animationFrameRef.current = requestAnimationFrame(runDetectionLoop);
+      detectionTimeoutRef.current = setTimeout(runDetectionLoop, 300);
     }
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+      if (detectionTimeoutRef.current) {
+        clearTimeout(detectionTimeoutRef.current);
       }
     };
   }, [isOpen, modelsLoaded, isLive, isSubmitting, runDetectionLoop]);
@@ -177,7 +210,7 @@ export const FaceCheckInModal = ({ isOpen, onClose, isClockedIn = false, onOpenC
             </div>
             <div>
               <h3 className="font-bold text-base text-foreground">Facial Recognition Attendance</h3>
-              <p className="text-xs text-muted-foreground">Contactless biometric punch with active liveness check</p>
+              <p className="text-xs text-muted-foreground">Contactless biometric punch with active verification</p>
             </div>
           </div>
           <button
@@ -254,7 +287,7 @@ export const FaceCheckInModal = ({ isOpen, onClose, isClockedIn = false, onOpenC
                       isLive
                         ? 'border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.5)] scale-105'
                         : isFaceDetected
-                        ? 'border-dashed border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
+                        ? 'border-emerald-400/80 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
                         : 'border-dashed border-white/30'
                     }`}
                   />
@@ -301,20 +334,41 @@ export const FaceCheckInModal = ({ isOpen, onClose, isClockedIn = false, onOpenC
           </div>
         )}
 
-        {/* Instructions Footer */}
-        <div className="p-5 bg-muted/40 border-t rounded-b-3xl text-center space-y-1">
-          <p className="text-xs font-medium text-foreground">
-            {modelsLoading
-              ? 'Loading AI face models...'
-              : !isFaceDetected
-              ? 'Align your face inside the oval frame'
-              : !isLive
-              ? 'Blink your eyes to complete liveness test'
-              : 'Verifying with server...'}
-          </p>
-          <p className="text-[11px] text-muted-foreground">
-            Blinking confirms you are a physical live person and prevents proxy attendance.
-          </p>
+        {/* Automated Punch Status & Real-time Feedback Footer */}
+        <div className="p-5 bg-muted/40 border-t rounded-b-3xl space-y-3">
+          {isSubmitting ? (
+            <div
+              className={`w-full py-3.5 px-4 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2.5 shadow-md ${
+                direction === 'entry' ? 'bg-emerald-600' : 'bg-rose-600'
+              } animate-pulse`}
+            >
+              <RefreshCw className="w-4 h-4 animate-spin" />
+              <span>Verifying Biometrics & Clocking {direction === 'entry' ? 'In' : 'Out'}...</span>
+            </div>
+          ) : isFaceDetected ? (
+            <div className="w-full py-3.5 px-4 rounded-xl font-semibold text-sm text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center gap-2.5 shadow-xs">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+              <span>Face Detected! Auto-verifying {direction === 'entry' ? 'Clock In' : 'Clock Out'}...</span>
+            </div>
+          ) : (
+            <div className="w-full py-3.5 px-4 rounded-xl font-medium text-sm text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 flex items-center justify-center gap-2">
+              <Camera className="w-4 h-4 text-slate-400" />
+              <span>Position your face inside the frame to auto-punch</span>
+            </div>
+          )}
+
+          <div className="text-center space-y-0.5">
+            <p className="text-xs font-medium text-foreground">
+              {modelsLoading
+                ? 'Loading AI face models...'
+                : !isFaceDetected
+                ? 'Look directly at camera to trigger automatic verification'
+                : 'Hold still for a moment, attendance is recording automatically'}
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Contactless biometric punch &bull; Zero click required
+            </p>
+          </div>
         </div>
       </div>
     </div>

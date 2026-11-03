@@ -74,6 +74,12 @@ import ExpenseCategoriesPage from './features/expenses/pages/ExpenseCategoriesPa
 import ExpenseReportsPage from './features/expenses/pages/ExpenseReportsPage.jsx';
 import ReportsPage from './features/reports/pages/ReportsPage.jsx';
 import AuditLogsPage from './features/audit/pages/AuditLogsPage.jsx';
+import { ProjectsPage } from './features/projects/pages/ProjectsPage.jsx';
+import { MyTimesheetPage } from './features/projects/pages/MyTimesheetPage.jsx';
+import { TimesheetApprovalsPage } from './features/projects/pages/TimesheetApprovalsPage.jsx';
+import { TimesheetCompliancePage } from './features/projects/pages/TimesheetCompliancePage.jsx';
+import { UtilizationReportPage } from './features/projects/pages/UtilizationReportPage.jsx';
+import { ProjectProfitabilityPage } from './features/projects/pages/ProjectProfitabilityPage.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
 import { useRefreshTokenMutation } from './features/auth/authApi.js';
@@ -711,6 +717,60 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="projects"
+            element={
+              <ProtectedRoute requiredPermission="project.view">
+                <ProjectsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="timesheets/my"
+            element={
+              <ProtectedRoute requiredPermission="timesheet.log">
+                <MyTimesheetPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="timesheets/approvals"
+            element={
+              <ProtectedRoute requiredPermission="timesheet.approve">
+                <TimesheetApprovalsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="timesheets/compliance"
+            element={
+              <ProtectedRoute requiredPermission="timesheet.compliance">
+                <TimesheetCompliancePage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="reports/utilization"
+            element={
+              <ProtectedRoute requiredPermission="report.utilization">
+                <UtilizationReportPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="reports/profitability"
+            element={
+              <ProtectedRoute requiredPermission="report.profitability">
+                <ProjectProfitabilityPage />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="performance/team-reviews"
             element={

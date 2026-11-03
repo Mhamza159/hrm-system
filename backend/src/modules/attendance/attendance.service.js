@@ -28,6 +28,7 @@ import crypto from 'crypto';
 import QRCode from 'qrcode';
 import { Kiosk } from '../../models/kiosk.model.js';
 import { recordAuditLog } from '../../services/audit.service.js';
+import { saveBase64Image } from '../../utils/fileStorage.js';
 
 /**
  * Normalizes any Date or date string to UTC Midnight (00:00:00.000Z)
@@ -669,13 +670,19 @@ export const getMyAttendance = async ({ user, month, date }) => {
       shiftInfo = {
         name: shiftData.shift.name,
         startTime: shiftData.shift.startTime,
-        endTime: shiftData.shift.endTime
+        endTime: shiftData.shift.endTime,
+        graceMinutes: shiftData.shift.graceMinutes ?? 15,
+        breakMinutes: shiftData.shift.breakMinutes ?? 60,
+        type: shiftData.shift.type || 'fixed'
       };
     } else if (shiftData?.officeHours) {
       shiftInfo = {
         name: 'Standard Office Shift',
         startTime: shiftData.officeHours.startTime || '11:00 AM',
-        endTime: shiftData.officeHours.endTime || '05:00 PM'
+        endTime: shiftData.officeHours.endTime || '05:00 PM',
+        graceMinutes: 15,
+        breakMinutes: 60,
+        type: 'fixed'
       };
     }
   } catch {
@@ -2484,6 +2491,7 @@ export const calculateEuclideanDistance = (vecA, vecB) => {
 };
 
 export const verifyFacePunch = async ({ user, liveDescriptor, snapshot }) => {
+  const storedSnapshotUrl = saveBase64Image(snapshot, 'attendance', `punch_${user?._id || 'emp'}`);
   const setting = await Setting.findOne({ key: 'faceAttendance' }).lean();
   const faceSettings = setting?.value || { isEnabled: true, matchThreshold: 0.50 };
 
@@ -2521,7 +2529,7 @@ export const verifyFacePunch = async ({ user, liveDescriptor, snapshot }) => {
         checkIn: null,
         isFlagged: true,
         flagReason: 'face_match_failed',
-        snapshotUrl: snapshot || null,
+        snapshotUrl: storedSnapshotUrl || null,
         confidenceDistance: minDistance
       });
     } else {
@@ -2530,7 +2538,7 @@ export const verifyFacePunch = async ({ user, liveDescriptor, snapshot }) => {
       if (!existing.checkIn) {
         existing.status = 'absent';
       }
-      existing.snapshotUrl = snapshot || existing.snapshotUrl;
+      existing.snapshotUrl = storedSnapshotUrl || existing.snapshotUrl;
       existing.confidenceDistance = minDistance;
       await existing.save();
     }
@@ -2541,7 +2549,7 @@ export const verifyFacePunch = async ({ user, liveDescriptor, snapshot }) => {
   return {
     isMatch: true,
     distance: minDistance,
-    snapshotUrl: snapshot || null
+    snapshotUrl: storedSnapshotUrl || null
   };
 };
 
@@ -2554,7 +2562,7 @@ export const enrollFace = async (userId, { descriptors, photo }) => {
   user.faceEnrollment = {
     status: 'pending',
     descriptors,
-    enrollmentPhotoUrl: photo || null,
+    enrollmentPhotoUrl: saveBase64Image(photo, 'faces', `enroll_${userId}`),
     enrolledAt: new Date(),
     approvedAt: null,
     approvedBy: null,

@@ -19,7 +19,7 @@ const getEmployeeRole = (emp) => {
     (typeof emp.designation === 'string' ? emp.designation : emp.designation?.title) ||
     emp.userId?.roleId?.name ||
     emp.role ||
-    (Array.isArray(emp.roles) ? emp.roles[0] : null) ||
+    (Array.isArray(emp.roles) ? (typeof emp.roles[0] === 'object' ? emp.roles[0]?.name : emp.roles[0]) : null) ||
     'Staff'
   );
 };

@@ -165,6 +165,19 @@ export function Sidebar({ isOpen = false, onClose }) {
     },
     {
       type: 'group',
+      name: 'Projects & Timesheets',
+      icon: FolderKanban,
+      children: [
+        { name: 'Projects Portfolio', path: '/projects', permission: 'project.view' },
+        { name: 'My Timesheet', path: '/timesheets/my', permission: 'timesheet.log', excludeSuperAdmin: true },
+        { name: 'Timesheet Approvals', path: '/timesheets/approvals', permission: 'timesheet.approve' },
+        { name: 'Timesheet Compliance', path: '/timesheets/compliance', permission: 'timesheet.compliance' },
+        { name: 'Utilization Report', path: '/reports/utilization', permission: 'report.utilization' },
+        { name: 'Project Profitability', path: '/reports/profitability', permission: 'report.profitability' }
+      ]
+    },
+    {
+      type: 'group',
       name: 'Performance',
       icon: Award,
       children: [
@@ -212,7 +225,8 @@ export function Sidebar({ isOpen = false, onClose }) {
     Payroll: false,
     'Loans & Advances': false,
     Expenses: false,
-    Assets: false
+    Assets: false,
+    'Projects & Timesheets': false
   });
 
   // Auto-expand group if the active route is within its children

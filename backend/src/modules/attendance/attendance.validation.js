@@ -21,7 +21,7 @@ export const checkInSchema = z.object({
     snapshot: z
       .string()
       .trim()
-      .max(1500000, 'Snapshot payload exceeds 1.5MB limit')
+      .max(10000000, 'Snapshot payload exceeds limit')
       .regex(/^data:image\/(jpeg|jpg|png|webp);base64,/, 'Snapshot must be a valid base64 image data URI')
       .optional(),
     qrToken: z.string().trim().optional(),
@@ -52,7 +52,7 @@ export const checkOutSchema = z.object({
     snapshot: z
       .string()
       .trim()
-      .max(1500000, 'Snapshot payload exceeds 1.5MB limit')
+      .max(10000000, 'Snapshot payload exceeds limit')
       .regex(/^data:image\/(jpeg|jpg|png|webp);base64,/, 'Snapshot must be a valid base64 image data URI')
       .optional(),
     qrToken: z.string().trim().optional(),
@@ -330,7 +330,7 @@ export const enrollFaceSchema = z.object({
     photo: z
       .string()
       .trim()
-      .max(1500000, 'Enrollment photo exceeds maximum size limit (1.5MB)')
+      .max(10000000, 'Enrollment photo exceeds maximum size limit')
       .regex(/^data:image\/(jpeg|jpg|png|webp);base64,/, 'Enrollment photo must be a valid base64 image data URI')
       .optional()
   })

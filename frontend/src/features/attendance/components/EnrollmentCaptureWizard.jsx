@@ -69,11 +69,11 @@ export const EnrollmentCaptureWizard = ({ onEnrollmentComplete }) => {
 
       // Capture photo snapshot from video frame
       const canvas = document.createElement('canvas');
-      canvas.width = videoRef.current.videoWidth || 640;
-      canvas.height = videoRef.current.videoHeight || 480;
+      canvas.width = 480;
+      canvas.height = 360;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-      const photoDataUri = canvas.toDataURL('image/jpeg', 0.85);
+      const photoDataUri = canvas.toDataURL('image/jpeg', 0.8);
 
       const newFrame = {
         step: currentStepIndex + 1,

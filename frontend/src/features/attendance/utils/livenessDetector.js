@@ -56,7 +56,7 @@ export const calculateMeanEAR = (landmarks) => {
  */
 export class BlinkTracker {
   constructor(options = {}) {
-    this.closedThreshold = options.closedThreshold ?? 0.22;
+    this.closedThreshold = options.closedThreshold ?? 0.25;
     this.openThreshold = options.openThreshold ?? 0.28;
     this.minDurationMs = options.minDurationMs ?? 60;
     this.maxDurationMs = options.maxDurationMs ?? 1500;
