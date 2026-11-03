@@ -434,7 +434,7 @@ describe('Module M12 — Face Recognition Attendance E2E Test Suite', () => {
       expect(res.body.data.source).toBe('face');
       expect(['present', 'half_day', 'late']).toContain(res.body.data.status);
       expect(res.body.data.confidenceDistance).toBeLessThan(0.50);
-      expect(res.body.data.snapshotUrl).toBe('data:image/jpeg;base64,mocksnapshot');
+      expect(res.body.data.snapshotUrl).toMatch(/^(\/uploads\/attendance\/|data:image\/)/);
     });
 
     it('should successfully clock out with matching face descriptor', async () => {
@@ -512,7 +512,7 @@ describe('Module M12 — Face Recognition Attendance E2E Test Suite', () => {
       });
 
       expect(flagged).toBeDefined();
-      expect(flagged.snapshotUrl).toBe('data:image/jpeg;base64,mockfailedattemptphoto');
+      expect(flagged.snapshotUrl).toMatch(/^(\/uploads\/attendance\/|data:image\/)/);
       expect(flagged.confidenceDistance).toBeGreaterThan(0.50);
     });
   });

@@ -331,65 +331,78 @@ export const MyAttendancePage = () => {
   }, [isSuperAdmin, shiftInfo]);
 
   // Dynamic Punch Source Information Helper
-  const punchSourceInfo = useMemo(() => {
-    const src = todayRecord?.source || todayRecord?.checkInSource || (todayRecord?.checkIn ? 'web' : null);
+  const getPunchSourceInfo = (record) => {
+    const src = record?.source || record?.checkInSource || (record?.checkIn ? 'web' : null);
     switch (src) {
       case 'face':
         return {
-          label: 'Face Recognition Punch',
+          label: 'Face Recognition',
+          shortLabel: 'Face',
           Icon: ScanFace,
           color: 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/80 dark:border-emerald-800/60'
         };
       case 'qr':
         return {
-          label: 'QR Code Attendance',
+          label: 'QR Code',
+          shortLabel: 'QR Code',
           Icon: QrCode,
           color: 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border-blue-200/80 dark:border-blue-800/60'
         };
       case 'web':
         return {
-          label: 'Web Portal Attendance',
+          label: 'Web Portal',
+          shortLabel: 'Web',
           Icon: Globe,
           color: 'text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200/80 dark:border-indigo-800/60'
         };
       case 'mobile':
         return {
-          label: 'Mobile App Attendance',
+          label: 'Mobile App',
+          shortLabel: 'Mobile',
           Icon: Smartphone,
           color: 'text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 border-purple-200/80 dark:border-purple-800/60'
         };
       case 'biometric':
         return {
           label: 'Biometric Terminal',
+          shortLabel: 'Biometric',
           Icon: Fingerprint,
           color: 'text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
         };
       case 'kiosk':
         return {
-          label: 'Office Kiosk Punch',
+          label: 'Office Kiosk',
+          shortLabel: 'Kiosk',
           Icon: MonitorCheck,
           color: 'text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 border-teal-200/80 dark:border-teal-800/60'
         };
       case 'wfh':
         return {
           label: 'Work From Home (WFH)',
+          shortLabel: 'WFH',
           Icon: Home,
           color: 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border-amber-200/80 dark:border-amber-800/60'
         };
       case 'field':
         return {
           label: 'Field Duty Punch',
+          shortLabel: 'Field',
           Icon: MapPin,
           color: 'text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-950/40 border-orange-200/80 dark:border-orange-800/60'
         };
       default:
         return {
-          label: isClockedIn ? 'System Punch' : 'Ready for Punch',
-          Icon: Fingerprint,
+          label: record?.checkIn ? 'Web Portal' : 'Ready for Punch',
+          shortLabel: record?.checkIn ? 'Web' : '-',
+          Icon: Globe,
           color: 'text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700'
         };
     }
-  }, [todayRecord, isClockedIn]);
+  };
+
+  const punchSourceInfo = useMemo(() => {
+    return getPunchSourceInfo(todayRecord);
+  }, [todayRecord]);
 
   // Compute Late Arrival Status & Duration
   const lateInfo = useMemo(() => {
@@ -533,7 +546,10 @@ export const MyAttendancePage = () => {
     if (diff > 0) {
       const lh = Math.floor(diff / 60);
       const lm = diff % 60;
-      return `${lh}h ${lm}m late`;
+      if (lh > 0) {
+        return `${lh}h ${lm}m`;
+      }
+      return `${lm}m`;
     }
     return null;
   };
@@ -1523,71 +1539,77 @@ export const MyAttendancePage = () => {
             </div>
           </div>
 
-          {/* 6. BOTTOM DETAILED RECORD ROW / TABLE (100% Real Dynamic Data - Matches Screenshot 2) */}
+          {/* 6. BOTTOM DETAILED RECORD ROW / TABLE (100% Real Dynamic Data - Polished UI) */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-50/80 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-800">
-                    <th className="py-3.5 px-6">Date</th>
-                    <th className="py-3.5 px-6">Designation</th>
-                    <th className="py-3.5 px-6">Shift</th>
-                    <th className="py-3.5 px-6">Method</th>
-                    <th className="py-3.5 px-6">Status</th>
-                    <th className="py-3.5 px-6">Start Time</th>
-                    <th className="py-3.5 px-6">End Time</th>
+                    <th className="py-3.5 px-6 whitespace-nowrap">Date</th>
+                    <th className="py-3.5 px-6 whitespace-nowrap">Employee &amp; Designation</th>
+                    <th className="py-3.5 px-6 whitespace-nowrap">Shift</th>
+                    <th className="py-3.5 px-6 whitespace-nowrap">Method</th>
+                    <th className="py-3.5 px-6 whitespace-nowrap">Status</th>
+                    <th className="py-3.5 px-6 whitespace-nowrap">Start Time</th>
+                    <th className="py-3.5 px-6 whitespace-nowrap">End Time</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                   <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
                     {/* Date */}
-                    <td className="py-4 px-6 font-bold text-slate-900 dark:text-white font-mono">
+                    <td className="py-4 px-6 font-bold text-slate-900 dark:text-white font-mono whitespace-nowrap">
                       {formatDisplayDate(selectedDate || todayStr)}
                     </td>
 
-                    {/* Designation & Employee Name (Real Data from employeeData / user) */}
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900 dark:text-white">
+                    {/* Employee & Designation (Real Data from employeeData / user) */}
+                    <td className="py-4 px-6 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-900 dark:text-white text-xs">
                           {employeeData?.name || user?.name || 'Staff Member'}
                         </span>
-                        <span className="text-slate-500 dark:text-slate-400 font-medium">
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                           {employeeData?.designation || user?.designation || 'Staff'}
                         </span>
                       </div>
                     </td>
 
                     {/* Shift (Real Data from shiftInfo) */}
-                    <td className="py-4 px-6">
+                    <td className="py-4 px-6 whitespace-nowrap">
                       <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />
+                        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         <span className="font-semibold">{shiftInfo?.name || 'Morning Regular'}</span>
                       </div>
-                      <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                      <div className="text-[11px] text-slate-400 font-mono mt-0.5 pl-5">
                         {shiftInfo?.startTime && shiftInfo?.endTime
                           ? `${shiftInfo.startTime} - ${shiftInfo.endTime}`
                           : '11:00 - 17:00'}
                       </div>
                     </td>
 
-                    {/* Method (Real Data from checkInSource) */}
-                    <td className="py-4 px-6">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
-                        <Fingerprint className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>{selectedRecord?.checkInSource === 'web' ? 'Web' : 'Biometric'}</span>
-                      </span>
+                    {/* Method (Real Dynamic Punch Method matching punch source) */}
+                    <td className="py-4 px-6 whitespace-nowrap">
+                      {(() => {
+                        const method = getPunchSourceInfo(selectedRecord);
+                        const Icon = method.Icon;
+                        return (
+                          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${method.color}`}>
+                            <Icon className="w-3.5 h-3.5 shrink-0" />
+                            <span>{method.label}</span>
+                          </span>
+                        );
+                      })()}
                     </td>
 
-                    {/* Status (Real Computed State matching Screenshot 2) */}
-                    <td className="py-4 px-6">
+                    {/* Status (Late duration shown cleanly once: Late (+Xh Ym)) */}
+                    <td className="py-4 px-6 whitespace-nowrap">
                       {selectedRecord?.status === 'late' || (selectedRecord?.checkIn && getLateDifference(selectedRecord)) ? (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50/60 dark:bg-amber-950/30 text-amber-800 dark:text-amber-200 border border-amber-300/80 dark:border-amber-700/60">
-                          <Clock className="w-3.5 h-3.5 text-amber-600" />
-                          <span>Late ({getLateDifference(selectedRecord) || 'Late'})</span>
+                          <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                          <span>Late (+{getLateDifference(selectedRecord) || 'Late'})</span>
                         </span>
                       ) : selectedRecord?.status === 'present' ? (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                           <span>Present</span>
                         </span>
                       ) : selectedRecord?.status === 'absent' ? (
@@ -1601,24 +1623,17 @@ export const MyAttendancePage = () => {
                       )}
                     </td>
 
-                    {/* Start Time (Real Formatted Check-in & Late Badge) */}
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-slate-800 dark:text-slate-200 font-mono">
-                          {selectedRecord?.checkIn
-                            ? new Date(selectedRecord.checkIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-                            : '-'}
-                        </span>
-                        {getLateDifference(selectedRecord) && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-700/60">
-                            Late ({getLateDifference(selectedRecord)})
-                          </span>
-                        )}
-                      </div>
+                    {/* Start Time (Clean check-in time, no duplicate badge) */}
+                    <td className="py-4 px-6 whitespace-nowrap">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200 font-mono">
+                        {selectedRecord?.checkIn
+                          ? new Date(selectedRecord.checkIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                          : '-'}
+                      </span>
                     </td>
 
                     {/* End Time (Real Checkout or Active Status) */}
-                    <td className="py-4 px-6">
+                    <td className="py-4 px-6 whitespace-nowrap">
                       {selectedRecord?.checkOut ? (
                         <span className="font-semibold text-slate-800 dark:text-slate-200 font-mono">
                           {new Date(selectedRecord.checkOut).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
