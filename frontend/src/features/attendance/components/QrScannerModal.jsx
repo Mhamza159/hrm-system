@@ -119,9 +119,28 @@ export const QrScannerModal = ({ isOpen, onClose, defaultAction = 'in', onSucces
     const deviceId = getDeviceId();
     const deviceModel = getDeviceModel();
 
+    // Auto-detect direction from kiosk QR payload if kiosk is single-direction
+    let targetAction = action;
+    try {
+      const parts = token.split('.');
+      if (parts.length === 2) {
+        const b64 = parts[0].replace(/-/g, '+').replace(/_/g, '/');
+        const payloadJson = JSON.parse(atob(b64));
+        if (payloadJson?.kType === 'entry') {
+          targetAction = 'in';
+          setAction('in');
+        } else if (payloadJson?.kType === 'exit') {
+          targetAction = 'out';
+          setAction('out');
+        }
+      }
+    } catch {
+      // Retain current action selection
+    }
+
     try {
       let result;
-      if (action === 'in') {
+      if (targetAction === 'in') {
         result = await checkIn({
           source: 'qr',
           qrToken: token,
@@ -140,7 +159,7 @@ export const QrScannerModal = ({ isOpen, onClose, defaultAction = 'in', onSucces
       }
 
       setScanSuccess({
-        action,
+        action: targetAction,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
       });
 
@@ -169,12 +188,14 @@ export const QrScannerModal = ({ isOpen, onClose, defaultAction = 'in', onSucces
     setIsProcessing(false);
     setScanSuccess(null);
     if (scannerRef.current) {
-      scannerRef.current.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText) => handleQrDetected(decodedText),
-        () => {}
-      ).catch((e) => setScannerError(e.message));
+      scannerRef.current
+        .start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+          (decodedText) => handleQrDetected(decodedText),
+          () => {}
+        )
+        .catch((e) => setScannerError(e.message));
     }
   };
 

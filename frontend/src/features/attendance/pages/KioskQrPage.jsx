@@ -9,10 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import {
-  useGetCurrentKioskQrQuery,
-  useGetKioskByIdQuery
-} from '../attendanceApi.js';
+import { useGetCurrentKioskQrQuery } from '../attendanceApi.js';
 import {
   Monitor,
   Clock,
@@ -38,8 +35,7 @@ export const KioskQrPage = () => {
     skip: !kioskId
   });
 
-  const { data: kioskData } = useGetKioskByIdQuery(kioskId, { skip: !kioskId });
-  const kiosk = qrData?.data?.kiosk || kioskData?.data || {};
+  const kiosk = qrData?.data?.kiosk || {};
 
   // Live digital wall clock
   useEffect(() => {
@@ -47,19 +43,26 @@ export const KioskQrPage = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // 30s Countdown timer linked to QR generation
+  // Sync countdown whenever a new token arrives
   useEffect(() => {
     if (qrData?.data?.expiresIn) {
       setCountdown(qrData.data.expiresIn);
     }
   }, [qrData?.data?.token]);
 
+  // Seamless countdown ticker that requests next code upon expiry
   useEffect(() => {
     const timer = setInterval(() => {
-      setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          refetch();
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [refetch]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {

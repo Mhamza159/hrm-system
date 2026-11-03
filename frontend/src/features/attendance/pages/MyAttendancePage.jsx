@@ -2235,7 +2235,10 @@ export const MyAttendancePage = () => {
       />
       <QrScannerModal
         isOpen={qrModalOpen}
-        onClose={() => setQrModalOpen(false)}
+        onClose={() => {
+          setQrModalOpen(false);
+          refetch();
+        }}
         defaultAction={qrDefaultAction}
         onSuccess={() => {
           refetch();
