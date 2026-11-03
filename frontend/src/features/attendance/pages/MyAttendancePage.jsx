@@ -53,7 +53,8 @@ import {
   useStartBreakMutation,
   useEndBreakMutation,
   useGetMyWFHRequestsQuery,
-  useGetMyCorrectionsQuery
+  useGetMyCorrectionsQuery,
+  useGetFaceStatusQuery
 } from '../attendanceApi.js';
 import { AttendanceStatusBadge } from '../components/AttendanceStatusBadge.jsx';
 import { RequestCorrectionModal } from '../components/RequestCorrectionModal.jsx';
@@ -84,6 +85,26 @@ export const MyAttendancePage = () => {
   const [faceModalOpen, setFaceModalOpen] = useState(false);
   const { data: faceSettingRes } = useGetSettingByKeyQuery('faceAttendance');
   const isFaceEnabled = faceSettingRes?.data?.value?.isEnabled !== false;
+  const { data: faceStatusRes } = useGetFaceStatusQuery();
+  const faceEnrollmentStatus = faceStatusRes?.data?.status;
+
+  const handleOpenFaceModal = () => {
+    if (faceEnrollmentStatus !== 'approved') {
+      toast.error(
+        faceEnrollmentStatus === 'pending'
+          ? 'Your facial biometric enrollment is pending HR approval. Please wait for approval before clocking in.'
+          : 'Facial biometric not enrolled. Please register your face first to enable camera attendance.',
+        {
+          action: {
+            label: 'Enroll Face',
+            onClick: () => navigate('/attendance/face/enroll')
+          }
+        }
+      );
+      return;
+    }
+    setFaceModalOpen(true);
+  };
 
   // Navigation & View State
   const [activeTab, setActiveTab] = useState('daily'); // 'daily' | 'monthly' | 'employee_wise' | 'history'
@@ -1030,7 +1051,7 @@ export const MyAttendancePage = () => {
                       {isFaceEnabled && (
                         <button
                           type="button"
-                          onClick={() => setFaceModalOpen(true)}
+                          onClick={handleOpenFaceModal}
                           className="px-3.5 py-2.5 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 rounded-xl flex items-center gap-2 font-semibold text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
                           title="Face recognition camera clock in"
                         >
@@ -1086,7 +1107,7 @@ export const MyAttendancePage = () => {
                       {isFaceEnabled && (
                         <button
                           type="button"
-                          onClick={() => setFaceModalOpen(true)}
+                          onClick={handleOpenFaceModal}
                           className="px-3.5 py-2.5 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 rounded-xl flex items-center gap-2 font-semibold text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
                           title="Face recognition camera clock out"
                         >
