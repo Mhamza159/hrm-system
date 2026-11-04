@@ -18,8 +18,10 @@ import {
   Check,
   X,
   User,
-  ShieldAlert
+  ShieldAlert,
+  RefreshCw
 } from 'lucide-react';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import {
   useGetFlaggedPunchesQuery,
   useReviewFlaggedPunchMutation
@@ -33,7 +35,7 @@ export const FlaggedPunchesPage = () => {
   const [decision, setDecision] = useState('approved');
   const [comments, setComments] = useState('');
 
-  const { data, isLoading, refetch } = useGetFlaggedPunchesQuery({
+  const { data, isLoading, isFetching, refetch } = useGetFlaggedPunchesQuery({
     status: statusFilter,
     page,
     limit: 15
@@ -147,8 +149,21 @@ export const FlaggedPunchesPage = () => {
           </p>
         </div>
 
-        {/* Filter Pills */}
-        <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl self-start">
+        <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
+          {/* Refresh Button */}
+          <button
+            type="button"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="px-3.5 py-1.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition active:scale-95 disabled:opacity-50 cursor-pointer"
+            title="Reload flagged punches"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin text-emerald-500' : ''}`} />
+            <span>{isFetching ? 'Refreshing...' : 'Refresh Records'}</span>
+          </button>
+
+          {/* Filter Pills */}
+          <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl">
           {[
             { id: 'pending', label: 'Pending Review' },
             { id: 'resolved', label: 'Resolved' },
@@ -171,11 +186,19 @@ export const FlaggedPunchesPage = () => {
           ))}
         </div>
       </div>
+      </div>
 
       {/* Main Table */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
         {isLoading ? (
-          <div className="py-20 text-center text-slate-400">Loading flagged punch records...</div>
+          <div className="p-6">
+            <ScreenSkeleton
+              variant="table"
+              title="Flagged Punches Audit"
+              message="Auditing suspicious punch telemetry and geofence deviations..."
+              rows={5}
+            />
+          </div>
         ) : punches.length === 0 ? (
           <div className="py-20 text-center space-y-3">
             <CheckCircle className="w-10 h-10 text-emerald-500 mx-auto" />

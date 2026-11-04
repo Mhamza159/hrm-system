@@ -30,6 +30,7 @@ import {
   Users
 } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { StatCard } from '../../../components/common/StatCard.jsx';
 import { DataTable } from '../../../components/common/DataTable.jsx';
 import { ConfirmDialog } from '../../../components/common/ConfirmDialog.jsx';
@@ -51,7 +52,7 @@ export function LeaveTypesPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
 
-  const { data: response, isLoading, refetch } = useGetLeaveTypesQuery({});
+  const { data: response, isLoading, isFetching, refetch } = useGetLeaveTypesQuery({});
   const rawTypes = response?.data || [];
 
   const [deleteLeaveType, { isLoading: isDeleting }] = useDeleteLeaveTypeMutation();
@@ -277,7 +278,43 @@ export function LeaveTypesPage() {
         </div>
       )}
 
-      {/* 3. Stat Cards */}
+      {isLoading ? (
+
+
+        <div className="py-4">
+
+
+          <ScreenSkeleton
+
+
+            variant={viewMode === 'card' ? 'cards' : 'table'}
+
+
+            title="Leave Categories & Quotas"
+
+
+            message="Configuring policy allowances, paid leave ratios, and carry-forward limits..."
+
+
+            rows={5}
+
+
+            cards={6}
+
+
+          />
+
+
+        </div>
+
+
+      ) : (
+
+
+        <>
+
+
+          {/* 3. Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={Calendar}
@@ -398,21 +435,20 @@ export function LeaveTypesPage() {
 
             {/* Refresh */}
             <button
+              type="button"
               onClick={() => refetch()}
-              className="p-2 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-2xs cursor-pointer"
+              disabled={isFetching}
+              className="flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition shadow-2xs active:scale-95 disabled:opacity-50 cursor-pointer text-xs font-semibold"
               title="Refresh Leave Types"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin text-emerald-500' : ''}`} />
+              <span>{isFetching ? 'Refreshing...' : 'Refresh'}</span>
             </button>
           </div>
         </div>
 
         {/* 5. Main Content: Table or Card Grid */}
-        {isLoading ? (
-          <div className="py-16 text-center text-slate-400 animate-pulse text-xs">
-            Loading leave categories & quotas...
-          </div>
-        ) : filteredTypes.length === 0 ? (
+        {filteredTypes.length === 0 ? (
           <div className="py-16 text-center space-y-3">
             <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <Calendar className="w-7 h-7" />
@@ -580,6 +616,8 @@ export function LeaveTypesPage() {
           </div>
         )}
       </section>
+      </>
+      )}
 
       {/* 6. Create / Edit Modal */}
       <LeaveTypeModal

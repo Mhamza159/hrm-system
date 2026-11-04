@@ -8,7 +8,8 @@
  */
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {
+  useNavigate } from 'react-router-dom';
 import {
   Monitor,
   Plus,
@@ -23,8 +24,10 @@ import {
   ShieldAlert,
   ArrowRightLeft,
   ArrowDownRight,
-  ArrowUpRight
+  ArrowUpRight,
+  RefreshCw
 } from 'lucide-react';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import {
   useGetKiosksQuery,
   useDeleteKioskMutation,
@@ -46,7 +49,7 @@ export const KiosksPage = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingKiosk, setEditingKiosk] = useState(null);
 
-  const { data, isLoading, refetch } = useGetKiosksQuery({
+  const { data, isLoading, isFetching, refetch } = useGetKiosksQuery({
     search: search.trim() || undefined,
     type: typeFilter !== 'all' ? typeFilter : undefined
   });
@@ -158,13 +161,25 @@ export const KiosksPage = () => {
           </div>
         </div>
 
-        <button
-          onClick={handleOpenCreate}
-          className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-md shadow-blue-500/20 active:scale-95 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Register New Kiosk</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="inline-flex items-center gap-2 px-3.5 py-2.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+            title="Reload kiosks"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin text-blue-500' : ''}`} />
+            <span>{isFetching ? 'Refreshing...' : 'Refresh'}</span>
+          </button>
+          <button
+            onClick={handleOpenCreate}
+            className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-md shadow-blue-500/20 active:scale-95 transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Register New Kiosk</span>
+          </button>
+        </div>
       </div>
 
       {/* Filters Bar */}
@@ -197,7 +212,14 @@ export const KiosksPage = () => {
       {/* Kiosks Table / Cards */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
         {isLoading ? (
-          <div className="p-12 text-center text-xs text-slate-400">Loading registered kiosks...</div>
+          <div className="p-6">
+            <ScreenSkeleton
+              variant="cards"
+              title="Hardware Terminals"
+              message="Querying turnstiles, biometric tablets, and QR kiosk displays..."
+              cards={4}
+            />
+          </div>
         ) : kiosks.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <Monitor className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" />

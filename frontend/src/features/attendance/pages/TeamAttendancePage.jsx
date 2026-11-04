@@ -40,8 +40,10 @@ import {
   X,
   TrendingUp,
   Sparkles,
-  CheckCheck
+  CheckCheck,
+  RefreshCw
 } from 'lucide-react';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import {
   useGetTeamAttendanceQuery,
   useGetAttendanceHistoryQuery,
@@ -112,14 +114,13 @@ export const TeamAttendancePage = () => {
   };
 
   // Queries
-  const { data: teamData, isLoading: teamLoading, refetch: refetchTeam } = useGetTeamAttendanceQuery({
+  const { data: teamData, isLoading: teamLoading, isFetching: isTeamFetching, refetch: refetchTeam } = useGetTeamAttendanceQuery({
     date: selectedDate
   });
 
   const {
     data: historyData,
-    isLoading: isHistoryLoading,
-    refetch: refetchHistory
+    isLoading: isHistoryLoading, isFetching: isHistoryFetching, refetch: refetchHistory
   } = useGetAttendanceHistoryQuery(
     {
       month: historyMonth,
@@ -137,12 +138,12 @@ export const TeamAttendancePage = () => {
   const historyDaysCount = historyData?.data?.daysInMonth || historyDaysInMonth;
 
   // WFH & Corrections History Queries (Fetch All for Audit & History)
-  const { data: wfhData, isLoading: isWFHLoading, refetch: refetchWFH } = useGetTeamWFHRequestsQuery(
+  const { data: wfhData, isLoading: isWFHLoading, isFetching: isWFHFetching, refetch: refetchWFH } = useGetTeamWFHRequestsQuery(
     { status: 'all' },
     { skip: activeTab !== 'wfh' }
   );
 
-  const { data: correctionsData, isLoading: isCorrectionsLoading, refetch: refetchCorrections } = useGetTeamCorrectionsQuery(
+  const { data: correctionsData, isLoading: isCorrectionsLoading, isFetching: isCorrectionsFetching, refetch: refetchCorrections } = useGetTeamCorrectionsQuery(
     { status: 'all' },
     { skip: activeTab !== 'corrections' }
   );
@@ -181,8 +182,7 @@ export const TeamAttendancePage = () => {
   // Overtime Query & Mutation
   const {
     data: otData,
-    isLoading: isOtLoading,
-    refetch: refetchOvertime
+    isLoading: isOtLoading, isFetching: isOtFetching, refetch: refetchOvertime
   } = useGetTeamOvertimeRecordsQuery(
     {
       status: otStatusFilter,
@@ -193,6 +193,8 @@ export const TeamAttendancePage = () => {
     },
     { skip: !can('attendance.approve') }
   );
+
+  const isAnyRefreshing = isTeamFetching || isHistoryFetching || isWFHFetching || isCorrectionsFetching || isOtFetching;
 
   const [decideOvertime, { isLoading: isDecidingOT }] = useDecideOvertimeMutation();
 
@@ -336,7 +338,24 @@ export const TeamAttendancePage = () => {
           </div>
         </div>
 
+        
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              refetchTeam();
+              if (activeTab === 'history') refetchHistory();
+              if (activeTab === 'wfh') refetchWFH();
+              if (activeTab === 'corrections') refetchCorrections();
+              if (activeTab === 'overtime') refetchOvertime();
+            }}
+            disabled={isAnyRefreshing}
+            className="px-3.5 py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition active:scale-95 disabled:opacity-50 cursor-pointer"
+            title="Reload team records"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isAnyRefreshing ? 'animate-spin text-emerald-500' : ''}`} />
+            <span>{isAnyRefreshing ? 'Refreshing...' : 'Refresh Records'}</span>
+          </button>
           {can('attendance.export') && (
             <button
               onClick={() => setExportModalOpen(true)}
@@ -478,7 +497,14 @@ export const TeamAttendancePage = () => {
           </div>
 
           {teamLoading ? (
-            <div className="p-12 text-center text-sm text-slate-400">Loading team presence data...</div>
+            <div className="py-6">
+              <ScreenSkeleton
+                variant="cards"
+                title="Team Presence Roster"
+                message="Synchronizing live punch times, presence statuses, and break records..."
+                cards={6}
+              />
+            </div>
           ) : filteredMembers.length === 0 ? (
             <div className="p-12 text-center text-sm text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
               No employee attendance records matched this criteria.
@@ -829,9 +855,13 @@ export const TeamAttendancePage = () => {
 
           {/* Data List Content */}
           {isWFHLoading ? (
-            <div className="p-12 text-center text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mb-3" />
-              <div className="text-sm font-medium">Loading WFH applications history...</div>
+            <div className="py-6">
+              <ScreenSkeleton
+                variant="table"
+                title="WFH Applications"
+                message="Retrieving Work-From-Home requests and approvals..."
+                rows={5}
+              />
             </div>
           ) : filteredWFHRequests.length === 0 ? (
             <div className="p-12 text-center text-sm text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
@@ -1232,9 +1262,13 @@ export const TeamAttendancePage = () => {
 
           {/* Corrections Data Content */}
           {isCorrectionsLoading ? (
-            <div className="p-12 text-center text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mb-3" />
-              <div className="text-sm font-medium">Loading punch correction records...</div>
+            <div className="py-6">
+              <ScreenSkeleton
+                variant="table"
+                title="Punch Corrections"
+                message="Loading missed punch correction submissions..."
+                rows={5}
+              />
             </div>
           ) : filteredCorrections.length === 0 ? (
             <div className="p-12 text-center text-sm text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
@@ -1675,9 +1709,12 @@ export const TeamAttendancePage = () => {
           {/* Main Attendance Matrix Grid */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden">
             {isHistoryLoading ? (
-              <div className="p-12 text-center text-slate-400">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mb-3" />
-                <div className="text-sm font-medium">Loading team attendance history...</div>
+              <div className="py-6">
+                <ScreenSkeleton
+                  variant="matrix"
+                  title="Team Attendance Matrix"
+                  message="Loading monthly attendance history grid..."
+                />
               </div>
             ) : historyItems.length === 0 ? (
               <div className="p-12 text-center text-slate-400 italic">
@@ -2033,8 +2070,13 @@ export const TeamAttendancePage = () => {
 
           {/* Overtime Punches Table */}
           {isOtLoading ? (
-            <div className="p-12 text-center text-sm text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
-              Loading overtime records...
+            <div className="py-6">
+              <ScreenSkeleton
+                variant="table"
+                title="Overtime Punch Audit"
+                message="Retrieving employee overtime durations and approval workflows..."
+                rows={5}
+              />
             </div>
           ) : otItems.length === 0 ? (
             <div className="p-12 text-center text-sm text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">

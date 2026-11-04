@@ -38,7 +38,7 @@ const getRoleBadge = (roleName = 'Employee') => {
 };
 
 export const FaceEnrollPage = () => {
-  const { data: statusData, isLoading, refetch } = useGetFaceStatusQuery();
+  const { data: statusData, isLoading, isFetching, refetch } = useGetFaceStatusQuery();
   const [resetEnrollment, { isLoading: isResetting }] = useResetFaceEnrollmentMutation();
   const [isReEnrolling, setIsReEnrolling] = useState(false);
 
@@ -93,8 +93,19 @@ export const FaceEnrollPage = () => {
           </div>
         </div>
 
-        {/* Live Status Pill */}
-        <div className="flex items-center gap-2 self-start md:self-auto">
+        {/* Live Status Pill & Refresh Action */}
+        <div className="flex items-center gap-2.5 self-start md:self-auto">
+          <button
+            type="button"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="px-3 py-1.5 rounded-xl border bg-card hover:bg-muted text-foreground text-xs font-semibold flex items-center gap-1.5 transition shadow-xs cursor-pointer disabled:opacity-50"
+            title="Refresh biometric status"
+          >
+            <RefreshCw className={`w-3 h-3 ${isFetching ? 'animate-spin text-emerald-500' : ''}`} />
+            <span>{isFetching ? 'Checking...' : 'Refresh Status'}</span>
+          </button>
+
           <div className="px-3.5 py-1.5 rounded-xl border bg-card shadow-xs flex items-center gap-2">
             <span
               className={`w-2 h-2 rounded-full ${

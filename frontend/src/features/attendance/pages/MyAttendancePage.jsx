@@ -42,7 +42,8 @@ import {
   Smartphone,
   Home,
   MapPin,
-  MonitorCheck
+  MonitorCheck,
+  RefreshCw
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -64,6 +65,7 @@ import { GeoLocationBadge } from '../components/GeoLocationBadge.jsx';
 import { QrScannerModal } from '../components/QrScannerModal.jsx';
 import { FaceCheckInModal } from '../components/FaceCheckInModal.jsx';
 import { OnLeaveModal } from '../components/OnLeaveModal.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { QrCode, Camera } from 'lucide-react';
 import { useGeolocation } from '../../../hooks/useGeolocation.js';
 import { usePermission } from '../../../hooks/usePermission.js';
@@ -129,13 +131,14 @@ export const MyAttendancePage = () => {
   const [actionError, setActionError] = useState('');
 
   // API Data
-  const { data, isLoading, refetch } = useGetMyAttendanceQuery({ month: selectedMonth });
+  const { data, isLoading, isFetching, refetch } = useGetMyAttendanceQuery({ month: selectedMonth });
 
   // History Matrix Data (for personal Attendance History tab)
   const [historyPage, setHistoryPage] = useState(1);
   const {
     data: historyData,
     isLoading: isHistoryLoading,
+    isFetching: isHistoryFetching,
     refetch: refetchHistory
   } = useGetAttendanceHistoryQuery(
     {
@@ -153,8 +156,10 @@ export const MyAttendancePage = () => {
   const historyDaysCount = historyData?.data?.daysInMonth || daysInMonth;
 
   // Personal Requests & History Queries for Notification Badges
-  const { data: myWFHData, refetch: refetchWFH } = useGetMyWFHRequestsQuery({ status: 'all' });
-  const { data: myCorrectionsData, refetch: refetchCorrections } = useGetMyCorrectionsQuery({ status: 'all' });
+  const { data: myWFHData, isFetching: isWfhFetching, refetch: refetchWFH } = useGetMyWFHRequestsQuery({ status: 'all' });
+  const { data: myCorrectionsData, isFetching: isCorrectionsFetching, refetch: refetchCorrections } = useGetMyCorrectionsQuery({ status: 'all' });
+
+  const isAnyRefreshing = isFetching || isHistoryFetching || isWfhFetching || isCorrectionsFetching;
 
   const pendingRequestsCount = useMemo(() => {
     const wfhPending = (myWFHData?.data || []).filter((r) => r.status === 'pending').length;
@@ -823,6 +828,23 @@ export const MyAttendancePage = () => {
             <punchSourceInfo.Icon className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
             <span>{punchSourceInfo.label}</span>
           </div>
+
+          {/* Page Refresh Button */}
+          <button
+            type="button"
+            onClick={() => {
+              refetch();
+              refetchHistory();
+              refetchWFH();
+              refetchCorrections();
+            }}
+            disabled={isAnyRefreshing}
+            className="px-3.5 py-1.5 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 border border-slate-200 dark:border-slate-800 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-xs transition active:scale-95 disabled:opacity-50 cursor-pointer"
+            title="Reload attendance records"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isAnyRefreshing ? 'animate-spin text-emerald-500' : ''}`} />
+            <span>{isAnyRefreshing ? 'Refreshing...' : 'Refresh Records'}</span>
+          </button>
         </div>
       </div>
 
@@ -979,7 +1001,17 @@ export const MyAttendancePage = () => {
         </div>
       )}
 
-      {/* TAB CONTENT: DAILY DASHBOARD (DEFAULT VIEW) */}
+      {/* Loader while data is loading */}
+      {isLoading && !data ? (
+        <ScreenSkeleton
+          variant="cards"
+          title="Attendance Portal"
+          message="Retrieving live attendance records, punch telemetry, and shift schedule from database..."
+          cards={6}
+        />
+      ) : (
+        <>
+          {/* TAB CONTENT: DAILY DASHBOARD (DEFAULT VIEW) */}
       {activeTab === 'daily' && (
         <>
           {/* 4. MAIN HERO PUNCH & STATUS CARD + 3 WORKING KPI CARDS */}
@@ -2184,6 +2216,8 @@ export const MyAttendancePage = () => {
             setCorrectionModalOpen(true);
           }}
         />
+      )}
+        </>
       )}
 
       {/* Break Type Selector Modal */}

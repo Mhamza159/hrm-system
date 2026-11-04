@@ -13,7 +13,8 @@
  */
 
 import React, { useState } from 'react';
-import { toast } from 'sonner';
+import {
+  toast } from 'sonner';
 import {
   Coins,
   Plus,
@@ -25,9 +26,11 @@ import {
   Check,
   X,
   Calendar,
-  Sparkles
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import {
   useGetLeaveEncashmentsQuery,
   useRequestLeaveEncashmentMutation,
@@ -77,12 +80,12 @@ export function EncashmentPage() {
   const [remarks, setRemarks] = useState('');
 
   // Queries
-  const { data: encashmentsData, isLoading: isLoadingEncashments } = useGetLeaveEncashmentsQuery({
+  const { data: encashmentsData, isLoading: isLoadingEncashments, isFetching, refetch } = useGetLeaveEncashmentsQuery({
     year: selectedYear
   });
   const encashments = encashmentsData?.data || [];
 
-  const { data: balanceData } = useGetLeaveBalanceQuery({ year: selectedYear });
+  const { data: balanceData, refetch: refetchBalance } = useGetLeaveBalanceQuery({ year: selectedYear });
   const balances = balanceData?.data?.balances || [];
 
   const { data: typesData } = useGetLeaveTypesQuery({ isActive: true });
@@ -185,8 +188,18 @@ export function EncashmentPage() {
         subtitle="Monetize unutilized annual leave entitlements with automated payroll integration (PKR)."
         badge="Payroll Linkage"
         actions={
-          !isSuperAdmin ? (
-            <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => { refetch(); refetchBalance?.(); }}
+              disabled={isFetching}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+              title="Reload encashment records"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin text-emerald-500' : ''}`} />
+              <span>{isFetching ? 'Refreshing...' : 'Refresh'}</span>
+            </button>
+            {!isSuperAdmin && (
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs hover:shadow-sm transition-all cursor-pointer"
@@ -194,12 +207,45 @@ export function EncashmentPage() {
                 <Plus className="w-4 h-4" />
                 <span>Request Encashment</span>
               </button>
-            </div>
-          ) : null
+            )}
+          </div>
         }
       />
 
-      {/* KPI Cards */}
+      {isLoadingEncashments ? (
+
+
+        <div className="py-4">
+
+
+          <ScreenSkeleton
+
+
+            variant="table"
+
+
+            title="Leave Encashment Registry"
+
+
+            message="Calculating eligible unutilized quotas and payroll payout rates in PKR..."
+
+
+            rows={4}
+
+
+          />
+
+
+        </div>
+
+
+      ) : (
+
+
+        <>
+
+
+          {/* KPI Cards */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex items-center gap-3 shadow-xs">
           <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
@@ -249,9 +295,7 @@ export function EncashmentPage() {
           </div>
         </div>
 
-        {isLoadingEncashments ? (
-          <div className="py-12 text-center text-slate-500 dark:text-slate-400 animate-pulse">Loading encashment records...</div>
-        ) : encashments.length === 0 ? (
+        {encashments.length === 0 ? (
           <div className="py-12 text-center">
             <Coins className="w-10 h-10 mx-auto text-slate-400 mb-3" />
             <p className="text-sm font-medium text-slate-800 dark:text-slate-200">No encashment records submitted for {selectedYear}.</p>
@@ -345,6 +389,8 @@ export function EncashmentPage() {
           </div>
         )}
       </section>
+      </>
+      )}
 
       {/* Request Encashment Modal */}
       {isModalOpen && (

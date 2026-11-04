@@ -7,7 +7,11 @@
  */
 
 import React, { useState } from 'react';
-import { Clock, Plus, Trash2, Moon, Sun, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import {
+  Clock, Plus, Trash2, Moon, Sun, CheckCircle2, AlertCircle, X,
+  RefreshCw
+} from 'lucide-react';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import {
   useGetShiftsQuery,
   useCreateShiftMutation,
@@ -29,7 +33,7 @@ export const ShiftManagementPage = () => {
   const [workDays, setWorkDays] = useState(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const { data, isLoading, refetch } = useGetShiftsQuery();
+  const { data, isLoading, isFetching, refetch } = useGetShiftsQuery();
   const [createShift, { isLoading: isCreating }] = useCreateShiftMutation();
   const [deleteShift, { isLoading: isDeleting }] = useDeleteShiftMutation();
 
@@ -97,20 +101,39 @@ export const ShiftManagementPage = () => {
           </div>
         </div>
 
-        {can('org.manage') && (
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
-            onClick={() => setCreateModalOpen(true)}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
+            type="button"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="px-3.5 py-2 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:text-purple-600 dark:hover:text-purple-400 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition active:scale-95 disabled:opacity-50 cursor-pointer"
+            title="Reload shifts"
           >
-            <Plus className="w-4 h-4" />
-            <span>Create Shift</span>
+            <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin text-purple-500' : ''}`} />
+            <span>{isFetching ? 'Refreshing...' : 'Refresh Shifts'}</span>
           </button>
-        )}
+          {can('org.manage') && (
+            <button
+              onClick={() => setCreateModalOpen(true)}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create Shift</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Shifts Grid */}
       {isLoading ? (
-        <div className="p-12 text-center text-sm text-slate-400">Loading shift rosters...</div>
+        <div className="py-4">
+          <ScreenSkeleton
+            variant="cards"
+            title="Shift Schedules"
+            message="Retrieving office shift rosters, grace periods, and break rules..."
+            cards={3}
+          />
+        </div>
       ) : shifts.length === 0 ? (
         <div className="p-12 text-center text-sm text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
           No custom shifts found. The company fallback office hours (09:00 - 18:00) will be used by default.

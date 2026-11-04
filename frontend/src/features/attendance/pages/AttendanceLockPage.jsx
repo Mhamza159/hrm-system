@@ -30,6 +30,7 @@ import {
   ArrowRight,
   RefreshCw
 } from 'lucide-react';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import {
   useGetLockStatusQuery,
   useLockMonthMutation,
@@ -168,6 +169,19 @@ export const AttendanceLockPage = () => {
           <span className="font-medium">{actionError}</span>
         </div>
       )}
+
+      {/* Screen Skeleton during initial data loading */}
+      {isLoading && !data ? (
+        <div className="py-4">
+          <ScreenSkeleton
+            variant="cards"
+            title="Attendance Freeze Registry"
+            message="Auditing month lock parameters, unapproved WFH requests, and pending punch corrections..."
+            cards={3}
+          />
+        </div>
+      ) : (
+        <>
 
       {/* Month Navigation & Selector Toolbar */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -615,6 +629,9 @@ export const AttendanceLockPage = () => {
           </div>
         </div>
       </div>
+
+        </>
+      )}
 
       {/* Confirmation Modal */}
       {isConfirmModalOpen && (

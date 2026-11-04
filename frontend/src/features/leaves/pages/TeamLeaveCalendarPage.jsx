@@ -22,9 +22,11 @@ import {
   Sparkles,
   Filter,
   Info,
-  Download
+  Download,
+  RefreshCw
 } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { useGetLeaveCalendarQuery } from '../leavesApi.js';
 import { useGetDepartmentsQuery } from '../../departments/departmentsApi.js';
 import { ExportLeaveModal } from '../components/ExportLeaveModal.jsx';
@@ -48,7 +50,7 @@ export function TeamLeaveCalendarPage() {
   const { data: deptData } = useGetDepartmentsQuery({ limit: 100 }, { skip: !canFilterAllDepartments });
   const departments = deptData?.data || [];
 
-  const { data: calendarData, isLoading } = useGetLeaveCalendarQuery({
+  const { data: calendarData, isLoading, isFetching, refetch } = useGetLeaveCalendarQuery({
     month: monthParam,
     departmentId: selectedDeptId || undefined
   });
@@ -173,6 +175,17 @@ export function TeamLeaveCalendarPage() {
         badge="Coverage Intelligence"
         actions={
           <div className="flex items-center gap-3">
+            {/* Refresh Button */}
+            <button
+              type="button"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+              title="Reload leave calendar"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin text-emerald-500' : ''}`} />
+              <span>{isFetching ? 'Refreshing...' : 'Refresh'}</span>
+            </button>
             {/* Department Filter (HR/Admin) */}
             {canFilterAllDepartments && (
               <div className="relative">
@@ -230,7 +243,37 @@ export function TeamLeaveCalendarPage() {
         }
       />
 
-      {/* Summary KPI Badges */}
+      {isLoading && !calendarData ? (
+
+
+        <div className="py-4">
+
+
+          <ScreenSkeleton
+
+
+            variant="matrix"
+
+
+            title="Team Leave & Coverage Heatmap"
+
+
+            message="Calculating overlapping team absences, coverage conflicts, and gazetted holidays..."
+
+
+          />
+
+
+        </div>
+
+
+      ) : (
+
+
+        <>
+
+
+          {/* Summary KPI Badges */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex items-center gap-3 shadow-xs">
           <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
@@ -282,7 +325,6 @@ export function TeamLeaveCalendarPage() {
         </div>
       )}
 
-      {/* Calendar Grid */}
       <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
         {/* Weekday Headers */}
         <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-center text-xs font-bold text-slate-500 dark:text-slate-400 py-3 uppercase tracking-wider">
@@ -383,6 +425,8 @@ export function TeamLeaveCalendarPage() {
           })}
         </div>
       </section>
+      </>
+      )}
 
       {/* Export Leave Analytics Modal */}
       <ExportLeaveModal

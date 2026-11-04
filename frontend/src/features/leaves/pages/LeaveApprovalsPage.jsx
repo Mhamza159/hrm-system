@@ -31,6 +31,7 @@ import {
   Filter
 } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { LeaveDecideModal } from '../components/LeaveDecideModal.jsx';
 import { useGetPendingApprovalsQuery } from '../leavesApi.js';
 import { cn } from '../../../lib/utils.js';
@@ -80,20 +81,19 @@ export function LeaveApprovalsPage() {
   const [isDecideModalOpen, setIsDecideModalOpen] = useState(false);
 
   // 1. Live counter for Pending queue badge
-  const { data: pendingBadgeRes } = useGetPendingApprovalsQuery({ status: 'pending' });
+  const { data: pendingBadgeRes, isFetching: isBadgeFetching, refetch: refetchPendingBadge } = useGetPendingApprovalsQuery({ status: 'pending' });
   const pendingCount = pendingBadgeRes?.data?.length ?? 0;
 
   // 2. Active data query with selected status filter and search
   const {
     data: response,
-    isLoading,
-    isError,
-    refetch
+    isLoading, isFetching, isError, refetch
   } = useGetPendingApprovalsQuery({
     status: activeTab,
     search: searchTerm.trim() || undefined
   });
   const leavesList = response?.data || [];
+  const isRefreshing = isFetching || isBadgeFetching;
 
   const handleOpenDecision = (leave, action = 'approve') => {
     setSelectedLeave(leave);
@@ -167,20 +167,30 @@ export function LeaveApprovalsPage() {
 
             {/* Refresh Button */}
             <button
-              onClick={() => refetch()}
-              className="px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-emerald-600 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+              type="button"
+              onClick={() => {
+                refetch();
+                refetchPendingBadge?.();
+              }}
+              disabled={isRefreshing}
+              className="px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-emerald-600 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center gap-2 shadow-xs transition active:scale-95 disabled:opacity-50 cursor-pointer shrink-0"
               title="Refresh Queue & Records"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Refresh</span>
+              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-emerald-500' : ''}`} />
+              <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
             </button>
           </div>
         </div>
 
         {/* Content Table / States */}
         {isLoading ? (
-          <div className="py-16 text-center text-slate-400 animate-pulse text-xs">
-            Loading leave requests and histories...
+          <div className="p-6">
+            <ScreenSkeleton
+              variant="table"
+              title="Leave Approvals Queue"
+              message="Auditing employee leave dossiers, supervisor tiers, and attached medical certificates..."
+              rows={5}
+            />
           </div>
         ) : isError ? (
           <div className="py-12 text-center text-rose-500 text-xs">
