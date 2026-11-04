@@ -2606,15 +2606,39 @@ export const enrollFace = async (userId, { descriptors, photo }) => {
 };
 
 export const getFaceEnrollmentStatus = async (userId) => {
-  const user = await User.findById(userId).select('faceEnrollment name email employeeId').lean();
+  const user = await User.findById(userId)
+    .select('faceEnrollment name email employeeId roles')
+    .populate('roles', 'name')
+    .populate({
+      path: 'employeeId',
+      select: 'name employeeCode departmentId designationId avatar status',
+      populate: [
+        { path: 'departmentId', select: 'name code' },
+        { path: 'designationId', select: 'title' }
+      ]
+    })
+    .lean();
   if (!user) throw new ApiError(404, 'User not found');
+
+  const emp = user.employeeId || {};
+  const rolesList = (user.roles || []).map((r) => (typeof r === 'string' ? r : r?.name)).filter(Boolean);
+
   return {
     status: user.faceEnrollment?.status || 'none',
     enrolledAt: user.faceEnrollment?.enrolledAt || null,
     approvedAt: user.faceEnrollment?.approvedAt || null,
     rejectionReason: user.faceEnrollment?.rejectionReason || null,
     enrollmentPhotoUrl: user.faceEnrollment?.enrollmentPhotoUrl || null,
-    descriptorsCount: user.faceEnrollment?.descriptors?.length || 0
+    descriptorsCount: user.faceEnrollment?.descriptors?.length || 0,
+    employee: {
+      name: emp.name || user.name || user.email?.split('@')[0] || 'Employee',
+      email: user.email,
+      employeeCode: emp.employeeCode || 'EMP-—',
+      department: emp?.departmentId?.name || null,
+      designation: emp?.designationId?.title || null,
+      role: rolesList[0] || 'Employee',
+      avatar: emp.avatar || null
+    }
   };
 };
 

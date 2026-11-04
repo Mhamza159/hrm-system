@@ -1,13 +1,48 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { Camera, RefreshCw, CheckCircle2, AlertCircle, ArrowRight, UserCheck } from 'lucide-react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import {
+  Camera,
+  RefreshCw,
+  CheckCircle2,
+  AlertCircle,
+  ArrowRight,
+  UserCheck,
+  ShieldCheck,
+  RotateCcw,
+  Sparkles,
+  Maximize2,
+  ChevronRight,
+  Sun,
+  Eye,
+  Info,
+  Check,
+  Compass
+} from 'lucide-react';
 import { useFaceApi } from '../hooks/useFaceApi';
 import { useEnrollFaceMutation } from '../attendanceApi';
 import { toast } from 'sonner';
 
 const STEPS = [
-  { id: 1, title: 'Frontal Face', instruction: 'Look directly at the camera with a neutral expression' },
-  { id: 2, title: 'Slight Left', instruction: 'Turn your head slightly to the left' },
-  { id: 3, title: 'Slight Right', instruction: 'Turn your head slightly to the right' }
+  {
+    id: 1,
+    title: 'Frontal Angle',
+    sub: 'Direct view',
+    instruction: 'Look straight at the camera with a relaxed, neutral expression.',
+    iconDirection: 'center'
+  },
+  {
+    id: 2,
+    title: 'Slight Left',
+    sub: 'Turn ~15° left',
+    instruction: 'Gently turn your head slightly to your left while keeping eyes forward.',
+    iconDirection: 'left'
+  },
+  {
+    id: 3,
+    title: 'Slight Right',
+    sub: 'Turn ~15° right',
+    instruction: 'Gently turn your head slightly to your right to record side depth.',
+    iconDirection: 'right'
+  }
 ];
 
 export const EnrollmentCaptureWizard = ({ onEnrollmentComplete }) => {
@@ -17,6 +52,8 @@ export const EnrollmentCaptureWizard = ({ onEnrollmentComplete }) => {
   const [capturedFrames, setCapturedFrames] = useState([]);
   const [isCapturing, setIsCapturing] = useState(false);
   const [cameraError, setCameraError] = useState(null);
+  const [isFaceDetected, setIsFaceDetected] = useState(false);
+  const detectionTimerRef = useRef(null);
 
   const { isLoaded: modelsLoaded, isLoading: modelsLoading, detectFaceAndDescriptor } = useFaceApi();
   const [enrollFace, { isLoading: isSubmitting }] = useEnrollFaceMutation();
@@ -42,7 +79,9 @@ export const EnrollmentCaptureWizard = ({ onEnrollmentComplete }) => {
       }
     } catch (err) {
       console.error('[Enrollment] Camera start error:', err);
-      setCameraError('Unable to access camera. Please allow camera permissions and ensure no other application is using it.');
+      setCameraError(
+        'Unable to access camera. Please allow camera permissions in your browser and ensure no other application is using it.'
+      );
     }
   };
 
@@ -52,22 +91,46 @@ export const EnrollmentCaptureWizard = ({ onEnrollmentComplete }) => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
+      if (detectionTimerRef.current) {
+        clearInterval(detectionTimerRef.current);
+      }
     };
   }, []);
+
+  // Lightweight detection loop to give user real-time visual feedback if face is in frame
+  useEffect(() => {
+    if (!modelsLoaded || cameraError) return;
+
+    detectionTimerRef.current = setInterval(async () => {
+      if (!videoRef.current || videoRef.current.readyState < 2 || isCapturing || isSubmitting) return;
+      try {
+        const res = await detectFaceAndDescriptor(videoRef.current, { inputSize: 224, scoreThreshold: 0.45 });
+        setIsFaceDetected(Boolean(res));
+      } catch {
+        // silent loop
+      }
+    }, 400);
+
+    return () => {
+      if (detectionTimerRef.current) {
+        clearInterval(detectionTimerRef.current);
+      }
+    };
+  }, [modelsLoaded, cameraError, isCapturing, isSubmitting, detectFaceAndDescriptor]);
 
   const handleCaptureFrame = async () => {
     if (!videoRef.current || !modelsLoaded) return;
     setIsCapturing(true);
 
     try {
-      const result = await detectFaceAndDescriptor(videoRef.current);
+      const result = await detectFaceAndDescriptor(videoRef.current, { inputSize: 320, scoreThreshold: 0.5 });
       if (!result) {
-        toast.error('No face detected. Please ensure your face is well-lit and centered inside the frame.');
+        toast.error('No face detected. Please ensure your face is well-lit and centered inside the biometric frame.');
         setIsCapturing(false);
         return;
       }
 
-      // Capture photo snapshot from video frame
+      // Capture lightweight, optimized photo snapshot (320x240 @ 0.7 quality ~12KB)
       const canvas = document.createElement('canvas');
       canvas.width = 320;
       canvas.height = 240;
@@ -77,6 +140,7 @@ export const EnrollmentCaptureWizard = ({ onEnrollmentComplete }) => {
 
       const newFrame = {
         step: currentStepIndex + 1,
+        title: STEPS[currentStepIndex].title,
         descriptor: result.descriptor,
         photo: photoDataUri
       };
@@ -86,9 +150,9 @@ export const EnrollmentCaptureWizard = ({ onEnrollmentComplete }) => {
 
       if (currentStepIndex + 1 < STEPS.length) {
         setCurrentStepIndex(currentStepIndex + 1);
-        toast.success(`Captured angle ${currentStepIndex + 1} of ${STEPS.length}!`);
+        toast.success(`Captured ${STEPS[currentStepIndex].title}! Proceeding to angle ${currentStepIndex + 2}.`);
       } else {
-        toast.success('All 3 angles captured! Submitting enrollment to HR...');
+        toast.success('All 3 facial angles verified! Transmitting registration to HR...');
         await handleSubmitEnrollment(updated);
       }
     } catch (err) {
@@ -124,135 +188,278 @@ export const EnrollmentCaptureWizard = ({ onEnrollmentComplete }) => {
     setCurrentStepIndex(0);
   };
 
+  const currentStep = STEPS[currentStepIndex];
+
   return (
-    <div className="bg-card border rounded-2xl p-6 shadow-sm max-w-2xl mx-auto space-y-6">
-      {/* Header and Step Indicators */}
-      <div className="space-y-2 text-center">
-        <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center justify-center gap-2">
-          <UserCheck className="w-5 h-5 text-primary" />
-          Face Biometric Enrollment
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Step {currentStepIndex + 1} of {STEPS.length}: <span className="font-semibold text-foreground">{STEPS[currentStepIndex].title}</span>
-        </p>
-        <p className="text-xs text-primary font-medium">{STEPS[currentStepIndex].instruction}</p>
-      </div>
-
-      {/* Progress Dots */}
-      <div className="flex justify-center items-center gap-3">
-        {STEPS.map((s, idx) => (
-          <div
-            key={s.id}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all ${
-              idx < capturedFrames.length
-                ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
-                : idx === currentStepIndex
-                ? 'bg-primary text-primary-foreground shadow-sm'
-                : 'bg-muted text-muted-foreground'
-            }`}
-          >
-            {idx < capturedFrames.length ? <CheckCircle2 className="w-3.5 h-3.5" /> : <span>{s.id}</span>}
-            <span>{s.title}</span>
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* ================= LEFT / MAIN: OPTICAL BIOMETRIC HUD ================= */}
+      <div className="lg:col-span-8 bg-card border border-border rounded-3xl p-5 sm:p-6 shadow-xs space-y-5">
+        {/* Step Context Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-mono uppercase tracking-wider font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                Step {currentStepIndex + 1} of {STEPS.length}
+              </span>
+              <h2 className="text-lg font-bold text-foreground font-mono-title">
+                {currentStep.title}
+              </h2>
+            </div>
+            <p className="text-xs text-muted-foreground">{currentStep.instruction}</p>
           </div>
-        ))}
-      </div>
 
-      {/* Video Viewport with Oval Face Guide */}
-      <div className="relative rounded-xl overflow-hidden bg-black aspect-video flex items-center justify-center border shadow-inner">
-        {cameraError ? (
-          <div className="p-6 text-center text-rose-400 space-y-2">
-            <AlertCircle className="w-8 h-8 mx-auto" />
-            <p className="text-sm">{cameraError}</p>
-            <button
-              onClick={startCamera}
-              className="mt-2 text-xs px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded-md transition"
-            >
-              Retry Camera
-            </button>
-          </div>
-        ) : (
-          <>
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              muted
-              className="w-full h-full object-cover mirror-mode"
-              style={{ transform: 'scaleX(-1)' }}
-            />
-
-            {/* Oval Face Guide Overlay */}
-            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+          {/* Quick Progress Bar */}
+          <div className="flex items-center gap-1.5 self-start sm:self-auto">
+            {STEPS.map((s, idx) => (
               <div
-                className={`w-48 h-64 border-2 rounded-[50%] transition-all ${
-                  modelsLoaded
-                    ? 'border-dashed border-emerald-400/80 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
-                    : 'border-dashed border-amber-400/80'
+                key={s.id}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  idx < capturedFrames.length
+                    ? 'w-7 bg-emerald-500'
+                    : idx === currentStepIndex
+                    ? 'w-9 bg-foreground shadow-xs'
+                    : 'w-5 bg-muted'
                 }`}
               />
-            </div>
-
-            {/* Status Chip */}
-            <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-[11px] font-medium text-white flex items-center gap-1.5 border border-white/10">
-              <span className={`w-2 h-2 rounded-full ${modelsLoaded ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-              {modelsLoading ? 'Loading Neural Weights...' : modelsLoaded ? 'Face AI Engine Ready' : 'Initializing...'}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Captured Frames Thumbnail Bar */}
-      {capturedFrames.length > 0 && (
-        <div className="space-y-1.5">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Captured Angles</p>
-          <div className="flex gap-3">
-            {capturedFrames.map((frame, idx) => (
-              <div key={idx} className="relative w-20 h-16 rounded-lg overflow-hidden border border-emerald-500/40 shadow-sm">
-                <img src={frame.photo} alt={`Angle ${idx + 1}`} className="w-full h-full object-cover" />
-                <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[10px] text-center text-emerald-300 py-0.5">
-                  Angle {idx + 1}
-                </span>
-              </div>
             ))}
           </div>
         </div>
-      )}
 
-      {/* Action Buttons */}
-      <div className="flex items-center justify-between pt-2">
-        <button
-          type="button"
-          onClick={handleReset}
-          disabled={capturedFrames.length === 0 || isSubmitting}
-          className="px-4 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition disabled:opacity-40"
-        >
-          Reset Captures
-        </button>
-
-        <button
-          type="button"
-          onClick={handleCaptureFrame}
-          disabled={!modelsLoaded || isCapturing || isSubmitting || cameraError}
-          className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground font-semibold text-sm rounded-xl hover:bg-primary/90 transition shadow-sm disabled:opacity-50"
-        >
-          {isSubmitting ? (
-            <>
-              <RefreshCw className="w-4 h-4 animate-spin" />
-              Submitting to HR...
-            </>
-          ) : isCapturing ? (
-            <>
-              <RefreshCw className="w-4 h-4 animate-spin" />
-              Detecting Face...
-            </>
+        {/* Viewport Frame with Optical Biometric HUD */}
+        <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-4/3 sm:aspect-16/10 flex items-center justify-center border-2 border-border shadow-inner group">
+          {cameraError ? (
+            <div className="p-8 text-center text-rose-400 space-y-3 max-w-sm">
+              <div className="w-12 h-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mx-auto text-rose-500">
+                <AlertCircle className="w-6 h-6" />
+              </div>
+              <h4 className="text-sm font-bold text-foreground">Camera Access Required</h4>
+              <p className="text-xs text-muted-foreground leading-relaxed">{cameraError}</p>
+              <button
+                type="button"
+                onClick={startCamera}
+                className="mt-2 text-xs px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl transition cursor-pointer"
+              >
+                Retry Camera Connection
+              </button>
+            </div>
           ) : (
             <>
-              <Camera className="w-4 h-4" />
-              Capture Angle {currentStepIndex + 1}
-              <ArrowRight className="w-4 h-4 ml-1" />
+              {/* Webcam Feed */}
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover mirror-mode"
+                style={{ transform: 'scaleX(-1)' }}
+              />
+
+              {/* Tactical Biometric HUD Corners */}
+              <div className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-emerald-400 pointer-events-none" />
+              <div className="absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 border-emerald-400 pointer-events-none" />
+              <div className="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 border-emerald-400 pointer-events-none" />
+              <div className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-emerald-400 pointer-events-none" />
+
+              {/* Center Biometric Oval Guide */}
+              <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                <div
+                  className={`w-44 h-60 sm:w-52 sm:h-72 rounded-[50%] transition-all duration-300 relative flex items-center justify-center ${
+                    isFaceDetected
+                      ? 'border-2 border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.25)]'
+                      : modelsLoaded
+                      ? 'border-2 border-dashed border-amber-400/80 animate-pulse'
+                      : 'border-2 border-dashed border-slate-600'
+                  }`}
+                >
+                  {/* Internal alignment reticle */}
+                  <div className="w-4 h-4 border-t border-b border-white/40 absolute" />
+                  <div className="h-4 w-4 border-l border-r border-white/40 absolute" />
+                </div>
+              </div>
+
+              {/* Status Header Chips */}
+              <div className="absolute top-3.5 left-3.5 flex items-center gap-2">
+                <div className="bg-black/75 backdrop-blur-md px-3 py-1.5 rounded-full text-[11px] font-mono text-white flex items-center gap-2 border border-white/10 shadow-sm">
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      modelsLoaded ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'
+                    }`}
+                  />
+                  <span>
+                    {modelsLoading
+                      ? 'Loading Neural Weights...'
+                      : isFaceDetected
+                      ? 'Face In Position'
+                      : modelsLoaded
+                      ? 'Align Face In Frame'
+                      : 'Calibrating...'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="absolute top-3.5 right-3.5">
+                <div className="bg-black/75 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-mono text-slate-300 border border-white/10">
+                  <span>RESNET-34 128-D</span>
+                </div>
+              </div>
+
+              {/* Lower Direction Guidance HUD Banner */}
+              <div className="absolute bottom-3.5 inset-x-3.5 flex items-center justify-between pointer-events-none">
+                <div className="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 text-[11px] text-white flex items-center gap-2">
+                  <Compass className="w-3.5 h-3.5 text-emerald-400 animate-spin-slow" />
+                  <span className="font-semibold">{currentStep.title}:</span>
+                  <span className="text-slate-300">{currentStep.instruction}</span>
+                </div>
+              </div>
             </>
           )}
-        </button>
+        </div>
+
+        {/* Action Controls Footer */}
+        <div className="flex items-center justify-between pt-1 gap-4">
+          <button
+            type="button"
+            onClick={handleReset}
+            disabled={capturedFrames.length === 0 || isSubmitting}
+            className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl transition disabled:opacity-40 cursor-pointer"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reset All Captures</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleCaptureFrame}
+            disabled={!modelsLoaded || isCapturing || isSubmitting || cameraError}
+            className="flex items-center gap-2 px-6 py-2.5 bg-foreground text-background hover:bg-foreground/90 font-bold text-xs rounded-xl transition shadow-xs disabled:opacity-50 active:scale-95 cursor-pointer"
+          >
+            {isSubmitting ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin text-background" />
+                <span>Submitting to HR...</span>
+              </>
+            ) : isCapturing ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin text-background" />
+                <span>Extracting Descriptors...</span>
+              </>
+            ) : (
+              <>
+                <Camera className="w-4 h-4 text-emerald-500" />
+                <span>Capture {currentStep.title}</span>
+                <ArrowRight className="w-4 h-4 ml-0.5" />
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* ================= RIGHT: CAPTURE TELEMETRY & SEQUENCE PANEL ================= */}
+      <div className="lg:col-span-4 space-y-5">
+        {/* Angle Sequence Cards */}
+        <div className="bg-card border rounded-3xl p-5 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b pb-3">
+            <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
+              <Camera className="w-4 h-4 text-emerald-500" />
+              <span>Biometric Angle Slots</span>
+            </h3>
+            <span className="text-[11px] font-mono text-muted-foreground font-semibold">
+              {capturedFrames.length} / {STEPS.length} Captured
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {STEPS.map((step, idx) => {
+              const frame = capturedFrames[idx];
+              const isCurrent = idx === currentStepIndex && !frame;
+              const isCompleted = Boolean(frame);
+
+              return (
+                <div
+                  key={step.id}
+                  className={`p-3 rounded-2xl border transition-all flex items-center gap-3 relative overflow-hidden ${
+                    isCompleted
+                      ? 'bg-emerald-500/5 border-emerald-500/30'
+                      : isCurrent
+                      ? 'bg-card border-foreground/30 shadow-xs ring-1 ring-foreground/20'
+                      : 'bg-muted/40 border-border opacity-70'
+                  }`}
+                >
+                  {/* Thumbnail / Indicator */}
+                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-black flex-shrink-0 border border-border relative flex items-center justify-center">
+                    {frame?.photo ? (
+                      <img src={frame.photo} alt={step.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-slate-500 gap-0.5">
+                        <span className="font-mono text-xs font-bold text-slate-400">#{step.id}</span>
+                      </div>
+                    )}
+                    {isCompleted && (
+                      <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xs">
+                        <Check className="w-2.5 h-2.5 stroke-[3]" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Details */}
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-xs text-foreground truncate">{step.title}</h4>
+                      <span className="text-[10px] font-mono text-muted-foreground">{step.sub}</span>
+                    </div>
+
+                    <p className="text-[11px] text-muted-foreground line-clamp-1">
+                      {isCompleted
+                        ? '128-d descriptor extracted'
+                        : isCurrent
+                        ? 'Align face & tap capture'
+                        : 'Waiting for previous angle'}
+                    </p>
+
+                    {isCompleted && (
+                      <span className="inline-block text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase">
+                        Ready for verification
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Quality & Guidance Best Practices */}
+        <div className="bg-card border rounded-3xl p-5 shadow-xs space-y-3">
+          <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+            <Sun className="w-4 h-4 text-amber-500" />
+            <span>Biometric Accuracy Guidelines</span>
+          </div>
+          <ul className="text-xs text-muted-foreground space-y-2">
+            <li className="flex items-start gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 flex-shrink-0" />
+              <span>Ensure adequate front-facing ambient lighting without dark shadows.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 flex-shrink-0" />
+              <span>Keep your eyes open and look directly into the camera lens.</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 flex-shrink-0" />
+              <span>Do not wear heavy sunglasses or cover your face with clothing.</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Security & Data Privacy Pill */}
+        <div className="p-4 rounded-2xl bg-muted/40 border border-border flex items-start gap-3 text-xs text-muted-foreground">
+          <ShieldCheck className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <span className="font-semibold text-foreground text-[11px]">Enterprise Biometric Privacy</span>
+            <p className="text-[11px] leading-relaxed">
+              Biometric embeddings are encrypted mathematically. Raw vectors are matched locally without third-party exposure.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
