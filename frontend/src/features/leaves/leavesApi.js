@@ -183,7 +183,7 @@ export const leavesApi = baseApi.injectEndpoints({
         method: 'PATCH',
         body
       }),
-      invalidatesTags: ['Leave']
+      invalidatesTags: ['Leave', 'Attendance']
     }),
 
     // 6.10: Team Leave Conflict Calendar

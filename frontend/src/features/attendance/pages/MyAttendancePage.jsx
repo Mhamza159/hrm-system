@@ -63,6 +63,7 @@ import { MyRequestsView } from '../components/MyRequestsView.jsx';
 import { GeoLocationBadge } from '../components/GeoLocationBadge.jsx';
 import { QrScannerModal } from '../components/QrScannerModal.jsx';
 import { FaceCheckInModal } from '../components/FaceCheckInModal.jsx';
+import { OnLeaveModal } from '../components/OnLeaveModal.jsx';
 import { QrCode, Camera } from 'lucide-react';
 import { useGeolocation } from '../../../hooks/useGeolocation.js';
 import { usePermission } from '../../../hooks/usePermission.js';
@@ -83,28 +84,11 @@ export const MyAttendancePage = () => {
   const { data: qrSettingRes } = useGetSettingByKeyQuery('qrAttendance');
   const isQrEnabled = qrSettingRes?.data?.value?.isEnabled !== false;
   const [faceModalOpen, setFaceModalOpen] = useState(false);
+  const [onLeaveModalOpen, setOnLeaveModalOpen] = useState(false);
   const { data: faceSettingRes } = useGetSettingByKeyQuery('faceAttendance');
   const isFaceEnabled = faceSettingRes?.data?.value?.isEnabled !== false;
   const { data: faceStatusRes } = useGetFaceStatusQuery();
   const faceEnrollmentStatus = faceStatusRes?.data?.status;
-
-  const handleOpenFaceModal = () => {
-    if (faceEnrollmentStatus !== 'approved') {
-      toast.error(
-        faceEnrollmentStatus === 'pending'
-          ? 'Your facial biometric enrollment is pending HR approval. Please wait for approval before clocking in.'
-          : 'Facial biometric not enrolled. Please register your face first to enable camera attendance.',
-        {
-          action: {
-            label: 'Enroll Face',
-            onClick: () => navigate('/attendance/face/enroll')
-          }
-        }
-      );
-      return;
-    }
-    setFaceModalOpen(true);
-  };
 
   // Navigation & View State
   const [activeTab, setActiveTab] = useState('daily'); // 'daily' | 'monthly' | 'employee_wise' | 'history'
@@ -218,6 +202,29 @@ export const MyAttendancePage = () => {
 
   // Selected date record (defaults to today if selected)
   const selectedRecord = recordMap.get(selectedDate) || (selectedDate === todayStr ? todayRecord : null);
+  const todayLeave = data?.data?.todayLeave || null;
+
+  const handleOpenFaceModal = () => {
+    if (todayLeave && !isClockedIn) {
+      setOnLeaveModalOpen(true);
+      return;
+    }
+    if (faceEnrollmentStatus !== 'approved') {
+      toast.error(
+        faceEnrollmentStatus === 'pending'
+          ? 'Your facial biometric enrollment is pending HR approval. Please wait for approval before clocking in.'
+          : 'Facial biometric not enrolled. Please register your face first to enable camera attendance.',
+        {
+          action: {
+            label: 'Enroll Face',
+            onClick: () => navigate('/attendance/face/enroll')
+          }
+        }
+      );
+      return;
+    }
+    setFaceModalOpen(true);
+  };
 
   // Live Duty elapsed ticker
   const [elapsedDuration, setElapsedDuration] = useState('00:00:00');
@@ -259,6 +266,12 @@ export const MyAttendancePage = () => {
     setActionError('');
     clearGeoError();
 
+    // 5.1-LEAVE-GUARD: Block punch if employee has an active approved leave today
+    if (todayLeave && !isClockedIn) {
+      setOnLeaveModalOpen(true);
+      return;
+    }
+
     let punchLocation = null;
     try {
       const coords = await getLocation();
@@ -292,7 +305,11 @@ export const MyAttendancePage = () => {
       }).unwrap();
       refetch();
     } catch (err) {
-      setActionError(err.data?.message || err.message || 'Failed to clock in');
+      const msg = err.data?.message || err.message || 'Failed to clock in';
+      setActionError(msg);
+      if (err.data?.errors?.some?.(e => e.code === 'ON_APPROVED_LEAVE') || msg.toLowerCase().includes('approved') || msg.toLowerCase().includes('leave')) {
+        setOnLeaveModalOpen(true);
+      }
     }
   };
 
@@ -1038,6 +1055,10 @@ export const MyAttendancePage = () => {
                         <button
                           type="button"
                           onClick={() => {
+                            if (todayLeave) {
+                              setOnLeaveModalOpen(true);
+                              return;
+                            }
                             setQrDefaultAction('in');
                             setQrModalOpen(true);
                           }}
@@ -2281,6 +2302,12 @@ export const MyAttendancePage = () => {
         onSuccess={() => {
           refetch();
         }}
+      />
+      <OnLeaveModal
+        isOpen={onLeaveModalOpen}
+        onClose={() => setOnLeaveModalOpen(false)}
+        leave={todayLeave}
+        onLeaveCancelled={refetch}
       />
     </div>
   );

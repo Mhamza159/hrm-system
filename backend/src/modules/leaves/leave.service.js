@@ -1285,25 +1285,34 @@ export const cancelLeave = async (leaveId, cancellationReason, user) => {
       { $inc: { 'balances.$.pendingDays': -leave.days } }
     );
   } else if (leave.status === 'approved') {
-    // Check start date: cannot cancel if already started or in past
+    // Check date: cannot cancel if already fully concluded in the past
     const todayMidnight = normalizeToUtcMidnight(new Date());
-    if (leave.startDate < todayMidnight) {
+    if (leave.endDate < todayMidnight) {
       throw new ApiError(400, 'Cannot cancel an approved leave that has already commenced or occurred in the past');
     }
 
     leave.status = 'cancelled';
-    leave.cancellationReason = cancellationReason || 'Cancelled prior to start';
+    leave.cancellationReason = cancellationReason || (leave.startDate <= todayMidnight ? 'Cancelled by employee to mark attendance' : 'Cancelled prior to start');
+
+    let daysToRestore = leave.days;
+    if (leave.startDate < todayMidnight) {
+      const { deductibleDays } = await calculateDeductibleDays(todayMidnight, leave.endDate, leave.halfDay);
+      daysToRestore = Math.min(leave.days, deductibleDays || 1);
+    }
 
     // Restore used quota
-    await LeaveBalance.updateOne(
-      { employeeId: leave.employeeId, year, 'balances.leaveTypeId': leave.leaveTypeId },
-      { $inc: { 'balances.$.usedDays': -leave.days } }
-    );
+    if (daysToRestore > 0) {
+      await LeaveBalance.updateOne(
+        { employeeId: leave.employeeId, year, 'balances.leaveTypeId': leave.leaveTypeId },
+        { $inc: { 'balances.$.usedDays': -daysToRestore } }
+      );
+    }
 
-    // Remove linked on_leave / half_day attendance records
+    // Remove linked on_leave / half_day attendance records from today onwards
+    const fromDate = leave.startDate < todayMidnight ? todayMidnight : leave.startDate;
     await Attendance.deleteMany({
       employeeId: leave.employeeId,
-      date: { $gte: leave.startDate, $lte: leave.endDate },
+      date: { $gte: fromDate, $lte: leave.endDate },
       status: { $in: ['on_leave', 'half_day'] }
     });
   }

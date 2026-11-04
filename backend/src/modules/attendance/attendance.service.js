@@ -10,6 +10,7 @@
 import mongoose from 'mongoose';
 import ExcelJS from 'exceljs';
 import { Attendance } from '../../models/attendance.model.js';
+import { Leave } from '../../models/leave.model.js';
 import { Shift } from '../../models/shift.model.js';
 import { MonthLock } from '../../models/monthLock.model.js';
 import { WFHRequest } from '../../models/wfh.model.js';
@@ -243,6 +244,23 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
   const todayUtc = normalizeToUtcMidnight(new Date());
 
   await assertMonthNotLocked(todayUtc);
+
+  // 5.1-LEAVE-GUARD: Block check-in if employee has an active approved leave for today
+  const activeLeave = await Leave.findOne({
+    employeeId,
+    status: 'approved',
+    startDate: { $lte: todayUtc },
+    endDate: { $gte: todayUtc }
+  }).populate('leaveTypeId', 'name code').lean();
+
+  if (activeLeave) {
+    const leaveName = activeLeave.leaveTypeId?.name || 'Leave';
+    throw new ApiError(
+      400,
+      `You are on approved ${leaveName} today. Attendance punch is blocked while on leave. Please cancel your leave if you wish to work today.`,
+      [{ code: 'ON_APPROVED_LEAVE', leaveId: activeLeave._id, leaveName, startDate: activeLeave.startDate, endDate: activeLeave.endDate }]
+    );
+  }
   let kioskId = null;
   let punchSource = source;
   let faceConfidenceDistance = null;
@@ -705,10 +723,29 @@ export const getMyAttendance = async ({ user, month, date }) => {
     // Super admin or employee without assigned shift
   }
 
+  const todayUtc = normalizeToUtcMidnight(new Date());
+  const todayLeave = await Leave.findOne({
+    employeeId: new mongoose.Types.ObjectId(employeeId),
+    status: 'approved',
+    startDate: { $lte: todayUtc },
+    endDate: { $gte: todayUtc }
+  }).populate('leaveTypeId', 'name code').lean();
+
   return {
     records,
     employee: employeeInfo,
     shift: shiftInfo,
+    todayLeave: todayLeave
+      ? {
+          _id: todayLeave._id,
+          leaveType: todayLeave.leaveTypeId?.name || 'Leave',
+          leaveTypeCode: todayLeave.leaveTypeId?.code,
+          startDate: todayLeave.startDate,
+          endDate: todayLeave.endDate,
+          reason: todayLeave.reason,
+          days: todayLeave.days
+        }
+      : null,
     summary: {
       totalDays: records.length,
       presentCount,

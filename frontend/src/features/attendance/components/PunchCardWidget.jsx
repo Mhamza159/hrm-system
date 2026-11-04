@@ -22,7 +22,8 @@ import {
   Navigation,
   Info,
   QrCode,
-  Camera
+  Camera,
+  Palmtree
 } from 'lucide-react';
 import {
   useGetMyAttendanceQuery,
@@ -34,6 +35,7 @@ import {
 import { AttendanceStatusBadge } from './AttendanceStatusBadge.jsx';
 import { QrScannerModal } from './QrScannerModal.jsx';
 import { FaceCheckInModal } from './FaceCheckInModal.jsx';
+import { OnLeaveModal } from './OnLeaveModal.jsx';
 import { GeoLocationBadge } from './GeoLocationBadge.jsx';
 import { useGeolocation } from '../../../hooks/useGeolocation.js';
 import { usePermission } from '../../../hooks/usePermission.js';
@@ -54,6 +56,7 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
   const { data: qrSettingRes } = useGetSettingByKeyQuery('qrAttendance');
   const isQrEnabled = qrSettingRes?.data?.value?.isEnabled !== false;
   const [faceModalOpen, setFaceModalOpen] = useState(false);
+  const [onLeaveModalOpen, setOnLeaveModalOpen] = useState(false);
   const { data: faceSettingRes } = useGetSettingByKeyQuery('faceAttendance');
   const isFaceEnabled = faceSettingRes?.data?.value?.isEnabled !== false;
 
@@ -65,6 +68,7 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
 
   const todayStr = new Date().toISOString().split('T')[0];
   const { data: attendanceData, isLoading, refetch } = useGetMyAttendanceQuery({ date: todayStr });
+  const todayLeave = attendanceData?.data?.todayLeave;
 
   const [checkIn, { isLoading: isCheckingIn }] = useCheckInMutation();
   const [checkOut, { isLoading: isCheckingOut }] = useCheckOutMutation();
@@ -115,6 +119,12 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
     setActionError('');
     clearGeoError();
 
+    // 5.1-LEAVE-GUARD: Block punch if employee has an active approved leave today
+    if (todayLeave && !isClockedIn) {
+      setOnLeaveModalOpen(true);
+      return;
+    }
+
     let punchLocation = null;
     try {
       // 14.8 Zero continuous tracking: query location exclusively on punch click
@@ -151,7 +161,11 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
       refetch();
       if (onActionSuccess) onActionSuccess();
     } catch (err) {
-      setActionError(err.data?.message || err.message || 'Failed to clock in');
+      const msg = err.data?.message || err.message || 'Failed to clock in';
+      setActionError(msg);
+      if (err.data?.errors?.some?.(e => e.code === 'ON_APPROVED_LEAVE') || msg.toLowerCase().includes('approved') || msg.toLowerCase().includes('leave')) {
+        setOnLeaveModalOpen(true);
+      }
     }
   };
 
@@ -288,25 +302,53 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
                 Punch Actions Disabled
               </div>
             ) : !isClockedIn ? (
-                            <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 w-full sm:w-auto">
+                {todayLeave && (
+                  <div className="w-full sm:w-auto p-2.5 px-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2">
+                      <Palmtree className="w-4 h-4 text-amber-500" />
+                      <span className="font-semibold text-amber-700 dark:text-amber-300">
+                        Approved {todayLeave.leaveType}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setOnLeaveModalOpen(true)}
+                      className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+                    >
+                      Details
+                    </button>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
                 {isQrEnabled && (
-<button
-                  type="button"
-                  onClick={() => {
-                    setQrDefaultAction('in');
-                    setQrModalOpen(true);
-                  }}
-                  className="px-4 py-3 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 rounded-xl flex items-center gap-2 font-semibold text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
-                  title="Scan office kiosk QR code to clock in"
-                >
-                  <QrCode className="w-4 h-4" />
-                  <span>Scan QR</span>
-                </button> 
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (todayLeave) {
+                        setOnLeaveModalOpen(true);
+                        return;
+                      }
+                      setQrDefaultAction('in');
+                      setQrModalOpen(true);
+                    }}
+                    className="px-4 py-3 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 rounded-xl flex items-center gap-2 font-semibold text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
+                    title="Scan office kiosk QR code to clock in"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    <span>Scan QR</span>
+                  </button> 
                 )}
                 {isFaceEnabled && (
                   <button
                     type="button"
-                    onClick={() => setFaceModalOpen(true)}
+                    onClick={() => {
+                      if (todayLeave) {
+                        setOnLeaveModalOpen(true);
+                        return;
+                      }
+                      setFaceModalOpen(true);
+                    }}
                     className="px-4 py-3 bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 hover:bg-purple-100 rounded-xl flex items-center gap-2 font-semibold text-xs shadow-xs transition-all active:scale-95 cursor-pointer"
                     title="Face recognition camera clock in"
                   >
@@ -316,12 +358,13 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
                 )}
                 <button
                   onClick={handleCheckIn}
-                disabled={isPunchLoading || isLoading}
-                className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold rounded-xl flex items-center gap-2 shadow-sm transition-all transform active:scale-95 cursor-pointer"
-              >
-                <Play className="w-5 h-5 fill-current" />
-                <span>{isLocating ? 'Acquiring GPS...' : isCheckingIn ? 'Clocking In...' : 'Clock In'}</span>
-              </button>
+                  disabled={isPunchLoading || isLoading}
+                  className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold rounded-xl flex items-center gap-2 shadow-sm transition-all transform active:scale-95 cursor-pointer"
+                >
+                  <Play className="w-5 h-5 fill-current" />
+                  <span>{isLocating ? 'Acquiring GPS...' : isCheckingIn ? 'Clocking In...' : 'Clock In'}</span>
+                </button>
+                </div>
               </div>
             ) : !isClockedOut ? (
               <>
@@ -536,6 +579,15 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
           onActionSuccess?.();
         }}
         onSuccess={() => {
+          refetch();
+          onActionSuccess?.();
+        }}
+      />
+      <OnLeaveModal
+        isOpen={onLeaveModalOpen}
+        onClose={() => setOnLeaveModalOpen(false)}
+        leave={todayLeave}
+        onLeaveCancelled={() => {
           refetch();
           onActionSuccess?.();
         }}
