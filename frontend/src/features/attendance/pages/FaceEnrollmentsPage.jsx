@@ -22,12 +22,16 @@ import {
   Building2,
   Briefcase,
   Calendar,
-  Sparkles,
   Camera,
   Check,
   X,
   Eye,
-  Info
+  Crown,
+  Users,
+  Shield,
+  BadgeCheck,
+  Mail,
+  Hash
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -39,15 +43,48 @@ const QUICK_REJECT_REASONS = [
   'Incorrect employee photo submitted'
 ];
 
+/**
+ * Returns role badge styling & icon based on role name
+ */
+const getRoleBadgeConfig = (roleName = 'Employee') => {
+  const normalized = String(roleName).toLowerCase();
+  if (normalized.includes('super admin') || normalized.includes('admin')) {
+    return {
+      label: roleName,
+      icon: Crown,
+      classes: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
+    };
+  }
+  if (normalized.includes('hr') || normalized.includes('manager')) {
+    return {
+      label: roleName,
+      icon: Shield,
+      classes: 'bg-purple-500/15 text-purple-700 dark:text-purple-300 border-purple-500/30'
+    };
+  }
+  if (normalized.includes('department') || normalized.includes('lead')) {
+    return {
+      label: roleName,
+      icon: Users,
+      classes: 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30'
+    };
+  }
+  return {
+    label: roleName,
+    icon: UserCheck,
+    classes: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+  };
+};
+
 export const FaceEnrollmentsPage = () => {
   const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'approved' | 'rejected' | 'all'
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table'
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
-  const [selectedPhotoModal, setSelectedPhotoModal] = useState(null); // { user, photoUrl }
-  const [rejectModalUser, setRejectModalUser] = useState(null);
+  const [selectedPhotoModal, setSelectedPhotoModal] = useState(null); // { user, details, photoUrl }
+  const [rejectModalUser, setRejectModalUser] = useState(null); // { id, name }
   const [rejectionReason, setRejectionReason] = useState('');
-  const [resetModalUser, setResetModalUser] = useState(null);
+  const [resetModalUser, setResetModalUser] = useState(null); // { id, name }
   const [resetReason, setResetReason] = useState('');
 
   const { data, isLoading, isFetching, refetch } = useGetFaceEnrollmentsQuery({
@@ -65,10 +102,10 @@ export const FaceEnrollmentsPage = () => {
   const meta = data?.meta || { total: 0, pages: 1 };
   const counts = data?.meta?.counts || { pending: 0, approved: 0, rejected: 0, all: 0 };
 
-  const handleApprove = async (userId, userName) => {
+  const handleApprove = async (userId, employeeName) => {
     try {
       await approveEnrollment(userId).unwrap();
-      toast.success(`Face biometric for ${userName} approved successfully!`);
+      toast.success(`Face biometric for ${employeeName} approved successfully!`);
       if (selectedPhotoModal?.user?._id === userId) {
         setSelectedPhotoModal(null);
       }
@@ -77,8 +114,8 @@ export const FaceEnrollmentsPage = () => {
     }
   };
 
-  const handleOpenRejectModal = (user) => {
-    setRejectModalUser(user);
+  const handleOpenRejectModal = (user, employeeName) => {
+    setRejectModalUser({ id: user._id, name: employeeName });
     setRejectionReason(QUICK_REJECT_REASONS[0]);
   };
 
@@ -88,19 +125,19 @@ export const FaceEnrollmentsPage = () => {
       return;
     }
     try {
-      await rejectEnrollment({ userId: rejectModalUser._id, reason: rejectionReason.trim() }).unwrap();
+      await rejectEnrollment({ userId: rejectModalUser.id, reason: rejectionReason.trim() }).unwrap();
       toast.success(`Enrollment for ${rejectModalUser.name} rejected.`);
-      setRejectModalUser(null);
-      if (selectedPhotoModal?.user?._id === rejectModalUser._id) {
+      if (selectedPhotoModal?.user?._id === rejectModalUser.id) {
         setSelectedPhotoModal(null);
       }
+      setRejectModalUser(null);
     } catch (err) {
       toast.error(err?.data?.message || 'Failed to reject enrollment');
     }
   };
 
-  const handleOpenResetModal = (user) => {
-    setResetModalUser(user);
+  const handleOpenResetModal = (user, employeeName) => {
+    setResetModalUser({ id: user._id, name: employeeName });
     setResetReason('Administrative recalibration requested');
   };
 
@@ -110,7 +147,7 @@ export const FaceEnrollmentsPage = () => {
       return;
     }
     try {
-      await resetEnrollment({ userId: resetModalUser._id, reason: resetReason.trim() }).unwrap();
+      await resetEnrollment({ userId: resetModalUser.id, reason: resetReason.trim() }).unwrap();
       toast.success(`Face biometric reset for ${resetModalUser.name}. Employee can re-enroll.`);
       setResetModalUser(null);
     } catch (err) {
@@ -305,7 +342,7 @@ export const FaceEnrollmentsPage = () => {
             <Search className="w-3.5 h-3.5 absolute left-3 top-3 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search employee, ID, or email..."
+              placeholder="Search by name, ID, email..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -388,9 +425,26 @@ export const FaceEnrollmentsPage = () => {
             const enrollment = user.faceEnrollment || {};
             const emp = user.employeeId || {};
             const status = enrollment.status || 'none';
-            const deptName = emp?.departmentId?.name || emp?.department || null;
-            const desigTitle = emp?.designationId?.title || emp?.designation || null;
-            const empCode = emp?.employeeCode || (user.employeeId && typeof user.employeeId === 'string' ? user.employeeId : null);
+
+            // Explicit Employee Detail Resolution
+            const employeeName = emp.name || user.name || user.email?.split('@')[0] || 'Employee';
+            const employeeEmail = user.email || '—';
+            const employeeCode = emp.employeeCode || (typeof user.employeeId === 'string' ? user.employeeId : 'EMP-—');
+            const department = emp?.departmentId?.name || emp?.department || null;
+            const designation = emp?.designationId?.title || emp?.designation || null;
+            const rolesList = (user.roles || []).map((r) => (typeof r === 'string' ? r : r?.name)).filter(Boolean);
+            const primaryRole = rolesList[0] || 'Employee';
+            const roleConfig = getRoleBadgeConfig(primaryRole);
+            const RoleIcon = roleConfig.icon;
+
+            const cardDetails = {
+              name: employeeName,
+              email: employeeEmail,
+              code: employeeCode,
+              role: primaryRole,
+              department,
+              designation
+            };
 
             return (
               <div
@@ -409,22 +463,54 @@ export const FaceEnrollmentsPage = () => {
                 />
 
                 <div className="space-y-4">
-                  {/* Header: Photo + Profile Info */}
+                  {/* Status & Employee Code Top Bar */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={`text-[10px] font-mono uppercase font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 ${
+                        status === 'approved'
+                          ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
+                          : status === 'pending'
+                          ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                          : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30'
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          status === 'approved'
+                            ? 'bg-emerald-500'
+                            : status === 'pending'
+                            ? 'bg-amber-500'
+                            : 'bg-rose-500'
+                        }`}
+                      />
+                      {status === 'approved' ? 'Approved Active' : status === 'pending' ? 'Pending Review' : 'Rejected'}
+                    </span>
+
+                    <span className="text-[11px] font-mono text-muted-foreground font-semibold px-2 py-0.5 bg-muted rounded-md border border-border">
+                      {employeeCode}
+                    </span>
+                  </div>
+
+                  {/* Header: Photo + Profile Details */}
                   <div className="flex items-start gap-4">
                     {/* Captured Photo Frame */}
                     <div
                       onClick={() =>
                         enrollment.enrollmentPhotoUrl &&
-                        setSelectedPhotoModal({ user, photoUrl: enrollment.enrollmentPhotoUrl })
+                        setSelectedPhotoModal({
+                          user,
+                          details: cardDetails,
+                          photoUrl: enrollment.enrollmentPhotoUrl
+                        })
                       }
-                      className="relative w-24 h-24 rounded-2xl overflow-hidden bg-slate-950 border-2 border-border flex-shrink-0 group/photo cursor-pointer shadow-inner"
+                      className="relative w-24 h-28 rounded-2xl overflow-hidden bg-slate-950 border-2 border-border flex-shrink-0 group/photo cursor-pointer shadow-inner"
                       title="Click to inspect captured face photo in full resolution"
                     >
                       {enrollment.enrollmentPhotoUrl ? (
                         <>
                           <img
                             src={enrollment.enrollmentPhotoUrl}
-                            alt={user.name}
+                            alt={employeeName}
                             className="w-full h-full object-cover transition-transform duration-300 group-hover/photo:scale-105"
                           />
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/photo:opacity-100 transition-opacity flex items-center justify-center">
@@ -444,53 +530,42 @@ export const FaceEnrollmentsPage = () => {
                       )}
                     </div>
 
-                    {/* Employee Profile Info */}
+                    {/* Employee Identity Details */}
                     <div className="space-y-1.5 flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1">
-                        <span
-                          className={`text-[10px] font-mono uppercase font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
-                            status === 'approved'
-                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-                              : status === 'pending'
-                              ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                              : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
-                          }`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${
-                            status === 'approved' ? 'bg-emerald-500' : status === 'pending' ? 'bg-amber-500' : 'bg-rose-500'
-                          }`} />
-                          {status === 'approved' ? 'Approved' : status === 'pending' ? 'Pending' : 'Rejected'}
-                        </span>
-                        {empCode && (
-                          <span className="text-[11px] font-mono text-muted-foreground font-semibold">
-                            {empCode}
-                          </span>
-                        )}
-                      </div>
-
-                      <h3 className="font-bold text-sm text-foreground truncate" title={user.name}>
-                        {user.name}
+                      {/* Full Name */}
+                      <h3 className="font-extrabold text-base text-foreground truncate" title={employeeName}>
+                        {employeeName}
                       </h3>
 
-                      <p className="text-xs text-muted-foreground truncate" title={user.email}>
-                        {user.email}
+                      {/* Email */}
+                      <p className="text-xs text-muted-foreground font-mono truncate" title={employeeEmail}>
+                        {employeeEmail}
                       </p>
 
-                      {/* Department & Designation Badges */}
-                      {(deptName || desigTitle) && (
-                        <div className="flex flex-wrap gap-1.5 pt-0.5">
-                          {deptName && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 bg-muted rounded-md text-foreground/80">
-                              <Building2 className="w-2.5 h-2.5 text-muted-foreground" />
-                              <span className="truncate max-w-[110px]">{deptName}</span>
-                            </span>
-                          )}
-                          {desigTitle && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 bg-muted rounded-md text-foreground/80">
-                              <Briefcase className="w-2.5 h-2.5 text-muted-foreground" />
-                              <span className="truncate max-w-[120px]">{desigTitle}</span>
-                            </span>
-                          )}
+                      {/* System Role Badge */}
+                      <div className="pt-0.5">
+                        <span
+                          className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase font-mono px-2 py-0.5 rounded-md border ${roleConfig.classes}`}
+                          title={`System Role: ${primaryRole}`}
+                        >
+                          <RoleIcon className="w-3 h-3" />
+                          <span>{primaryRole}</span>
+                        </span>
+                      </div>
+
+                      {/* Assigned Designation */}
+                      {designation && (
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground pt-0.5">
+                          <Briefcase className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                          <span className="truncate">{designation}</span>
+                        </div>
+                      )}
+
+                      {/* Assigned Department */}
+                      {department && (
+                        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                          <Building2 className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                          <span className="truncate">{department}</span>
                         </div>
                       )}
                     </div>
@@ -544,7 +619,7 @@ export const FaceEnrollmentsPage = () => {
                     <>
                       <button
                         type="button"
-                        onClick={() => handleApprove(user._id, user.name)}
+                        onClick={() => handleApprove(user._id, employeeName)}
                         disabled={isApproving}
                         className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 disabled:opacity-50"
                       >
@@ -553,7 +628,7 @@ export const FaceEnrollmentsPage = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleOpenRejectModal(user)}
+                        onClick={() => handleOpenRejectModal(user, employeeName)}
                         disabled={isRejecting}
                         className="py-2 px-3 border border-rose-300 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1 cursor-pointer active:scale-95 disabled:opacity-50"
                       >
@@ -567,7 +642,11 @@ export const FaceEnrollmentsPage = () => {
                         type="button"
                         onClick={() =>
                           enrollment.enrollmentPhotoUrl &&
-                          setSelectedPhotoModal({ user, photoUrl: enrollment.enrollmentPhotoUrl })
+                          setSelectedPhotoModal({
+                            user,
+                            details: cardDetails,
+                            photoUrl: enrollment.enrollmentPhotoUrl
+                          })
                         }
                         className="flex-1 py-2 px-3 border border-border bg-card hover:bg-muted text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer text-muted-foreground hover:text-foreground"
                       >
@@ -576,7 +655,7 @@ export const FaceEnrollmentsPage = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleOpenResetModal(user)}
+                        onClick={() => handleOpenResetModal(user, employeeName)}
                         disabled={isResetting}
                         className="py-2 px-3 border border-border hover:bg-rose-500/10 hover:border-rose-500/30 text-muted-foreground hover:text-rose-600 dark:hover:text-rose-400 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1 cursor-pointer active:scale-95"
                         title="Reset biometric enrollment and prompt employee to re-enroll"
@@ -599,7 +678,7 @@ export const FaceEnrollmentsPage = () => {
               <thead>
                 <tr className="border-b bg-muted/50 text-[11px] font-mono uppercase text-muted-foreground tracking-wider">
                   <th className="py-3.5 px-4">Employee Details</th>
-                  <th className="py-3.5 px-4">Department & Role</th>
+                  <th className="py-3.5 px-4">Role & Designation</th>
                   <th className="py-3.5 px-4 text-center">Biometric Capture</th>
                   <th className="py-3.5 px-4">Telemetry</th>
                   <th className="py-3.5 px-4">Status</th>
@@ -611,35 +690,63 @@ export const FaceEnrollmentsPage = () => {
                   const enrollment = user.faceEnrollment || {};
                   const emp = user.employeeId || {};
                   const status = enrollment.status || 'none';
-                  const deptName = emp?.departmentId?.name || emp?.department || '—';
-                  const desigTitle = emp?.designationId?.title || emp?.designation || '—';
-                  const empCode = emp?.employeeCode || 'EMP-—';
+
+                  // Explicit Detail Resolution
+                  const employeeName = emp.name || user.name || user.email?.split('@')[0] || 'Employee';
+                  const employeeEmail = user.email || '—';
+                  const employeeCode = emp.employeeCode || (typeof user.employeeId === 'string' ? user.employeeId : 'EMP-—');
+                  const department = emp?.departmentId?.name || emp?.department || '—';
+                  const designation = emp?.designationId?.title || emp?.designation || 'Staff Member';
+                  const rolesList = (user.roles || []).map((r) => (typeof r === 'string' ? r : r?.name)).filter(Boolean);
+                  const primaryRole = rolesList[0] || 'Employee';
+                  const roleConfig = getRoleBadgeConfig(primaryRole);
+                  const RoleIcon = roleConfig.icon;
+
+                  const rowDetails = {
+                    name: employeeName,
+                    email: employeeEmail,
+                    code: employeeCode,
+                    role: primaryRole,
+                    department,
+                    designation
+                  };
 
                   return (
                     <tr key={user._id} className="hover:bg-muted/30 transition-colors">
-                      {/* Employee Details */}
+                      {/* Employee Details (Name, Code, Email) */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center text-foreground font-bold text-xs uppercase border flex-shrink-0">
-                            {user.name?.charAt(0) || 'U'}
+                          <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-foreground font-bold text-xs uppercase border border-border flex-shrink-0 shadow-xs">
+                            {employeeName.charAt(0)}
                           </div>
-                          <div className="min-w-0">
+                          <div className="min-w-0 space-y-0.5">
                             <div className="flex items-center gap-2">
-                              <span className="font-bold text-foreground truncate">{user.name}</span>
-                              <span className="font-mono text-[10px] text-muted-foreground px-1.5 py-0.5 bg-muted rounded">
-                                {empCode}
+                              <span className="font-bold text-sm text-foreground truncate">{employeeName}</span>
+                              <span className="font-mono text-[10px] text-muted-foreground px-1.5 py-0.5 bg-muted rounded border border-border">
+                                {employeeCode}
                               </span>
                             </div>
-                            <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
+                            <p className="text-[11px] text-muted-foreground font-mono truncate">{employeeEmail}</p>
                           </div>
                         </div>
                       </td>
 
-                      {/* Department & Role */}
+                      {/* System Role & Assigned Designation */}
                       <td className="py-3.5 px-4">
-                        <div className="space-y-0.5">
-                          <p className="font-medium text-foreground">{deptName}</p>
-                          <p className="text-[11px] text-muted-foreground">{desigTitle}</p>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase font-mono px-2 py-0.5 rounded-md border ${roleConfig.classes}`}
+                            >
+                              <RoleIcon className="w-3 h-3" />
+                              <span>{primaryRole}</span>
+                            </span>
+                            <span className="font-semibold text-foreground text-xs">{designation}</span>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                            <Building2 className="w-3 h-3 text-muted-foreground/70" />
+                            <span>{department}</span>
+                          </p>
                         </div>
                       </td>
 
@@ -648,14 +755,18 @@ export const FaceEnrollmentsPage = () => {
                         {enrollment.enrollmentPhotoUrl ? (
                           <div
                             onClick={() =>
-                              setSelectedPhotoModal({ user, photoUrl: enrollment.enrollmentPhotoUrl })
+                              setSelectedPhotoModal({
+                                user,
+                                details: rowDetails,
+                                photoUrl: enrollment.enrollmentPhotoUrl
+                              })
                             }
-                            className="relative inline-block w-12 h-12 rounded-xl overflow-hidden border bg-black cursor-pointer group shadow-xs"
+                            className="relative inline-block w-12 h-14 rounded-xl overflow-hidden border-2 border-border bg-black cursor-pointer group shadow-xs"
                             title="Click to view full captured photo"
                           >
                             <img
                               src={enrollment.enrollmentPhotoUrl}
-                              alt={user.name}
+                              alt={employeeName}
                               className="w-full h-full object-cover group-hover:scale-110 transition duration-200"
                             />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
@@ -687,15 +798,21 @@ export const FaceEnrollmentsPage = () => {
                         <span
                           className={`inline-flex items-center gap-1 text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded-full ${
                             status === 'approved'
-                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
+                              ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
                               : status === 'pending'
-                              ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
-                              : 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+                              ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                              : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30'
                           }`}
                         >
-                          <span className={`w-1.5 h-1.5 rounded-full ${
-                            status === 'approved' ? 'bg-emerald-500' : status === 'pending' ? 'bg-amber-500' : 'bg-rose-500'
-                          }`} />
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              status === 'approved'
+                                ? 'bg-emerald-500'
+                                : status === 'pending'
+                                ? 'bg-amber-500'
+                                : 'bg-rose-500'
+                            }`}
+                          />
                           {status}
                         </span>
                       </td>
@@ -707,7 +824,7 @@ export const FaceEnrollmentsPage = () => {
                             <>
                               <button
                                 type="button"
-                                onClick={() => handleApprove(user._id, user.name)}
+                                onClick={() => handleApprove(user._id, employeeName)}
                                 disabled={isApproving}
                                 className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-xs transition cursor-pointer shadow-xs"
                                 title="Approve"
@@ -716,7 +833,7 @@ export const FaceEnrollmentsPage = () => {
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleOpenRejectModal(user)}
+                                onClick={() => handleOpenRejectModal(user, employeeName)}
                                 disabled={isRejecting}
                                 className="px-2.5 py-1.5 border border-rose-300 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg font-semibold text-xs transition cursor-pointer"
                                 title="Reject"
@@ -727,7 +844,7 @@ export const FaceEnrollmentsPage = () => {
                           ) : (
                             <button
                               type="button"
-                              onClick={() => handleOpenResetModal(user)}
+                              onClick={() => handleOpenResetModal(user, employeeName)}
                               disabled={isResetting}
                               className="px-2.5 py-1.5 border hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg text-xs font-medium transition cursor-pointer flex items-center gap-1"
                               title="Reset Biometric"
@@ -781,7 +898,7 @@ export const FaceEnrollmentsPage = () => {
               <div className="relative aspect-4/3 rounded-2xl overflow-hidden bg-black border-2 border-emerald-500/40 shadow-inner flex items-center justify-center">
                 <img
                   src={selectedPhotoModal.photoUrl}
-                  alt={selectedPhotoModal.user.name}
+                  alt={selectedPhotoModal.details.name}
                   className="w-full h-full object-cover"
                 />
                 {/* Facial Inspection Guide Overlay */}
@@ -798,33 +915,53 @@ export const FaceEnrollmentsPage = () => {
               <div className="space-y-3 text-xs">
                 <div>
                   <span className="text-[10px] uppercase font-mono text-muted-foreground tracking-wider">
-                    Employee Information
+                    Employee Details
                   </span>
-                  <h4 className="text-base font-bold text-foreground">
-                    {selectedPhotoModal.user.name}
+                  <h4 className="text-lg font-extrabold text-foreground">
+                    {selectedPhotoModal.details.name}
                   </h4>
-                  <p className="text-muted-foreground">{selectedPhotoModal.user.email}</p>
+                  <p className="text-muted-foreground font-mono">{selectedPhotoModal.details.email}</p>
                 </div>
 
                 <div className="p-3 bg-muted/50 border rounded-2xl space-y-2">
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Employee ID:</span>
+                    <span className="font-mono font-bold text-foreground">
+                      {selectedPhotoModal.details.code}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">System Role:</span>
+                    <span className="font-bold text-foreground">
+                      {selectedPhotoModal.details.role}
+                    </span>
+                  </div>
+                  {selectedPhotoModal.details.designation && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Designation:</span>
+                      <span className="font-semibold text-foreground">
+                        {selectedPhotoModal.details.designation}
+                      </span>
+                    </div>
+                  )}
+                  {selectedPhotoModal.details.department && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Department:</span>
+                      <span className="font-medium text-foreground">
+                        {selectedPhotoModal.details.department}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center pt-1 border-t">
                     <span className="text-muted-foreground">Status:</span>
                     <span className="font-bold uppercase font-mono text-foreground">
                       {selectedPhotoModal.user.faceEnrollment?.status || 'Pending'}
                     </span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Descriptors:</span>
                     <span className="font-mono font-semibold text-emerald-500">
-                      {selectedPhotoModal.user.faceEnrollment?.descriptors?.length || 0} angles (Front, Left, Right)
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Captured On:</span>
-                    <span className="font-mono text-foreground">
-                      {selectedPhotoModal.user.faceEnrollment?.enrolledAt
-                        ? new Date(selectedPhotoModal.user.faceEnrollment.enrolledAt).toLocaleString()
-                        : '—'}
+                      {selectedPhotoModal.user.faceEnrollment?.descriptors?.length || 0} vectors
                     </span>
                   </div>
                 </div>
@@ -834,7 +971,7 @@ export const FaceEnrollmentsPage = () => {
                   <div className="flex items-center gap-2 pt-2">
                     <button
                       type="button"
-                      onClick={() => handleApprove(selectedPhotoModal.user._id, selectedPhotoModal.user.name)}
+                      onClick={() => handleApprove(selectedPhotoModal.user._id, selectedPhotoModal.details.name)}
                       disabled={isApproving}
                       className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                     >
@@ -843,7 +980,7 @@ export const FaceEnrollmentsPage = () => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleOpenRejectModal(selectedPhotoModal.user)}
+                      onClick={() => handleOpenRejectModal(selectedPhotoModal.user, selectedPhotoModal.details.name)}
                       disabled={isRejecting}
                       className="py-2 px-3 border border-rose-300 text-rose-600 hover:bg-rose-50 font-semibold rounded-xl text-xs transition cursor-pointer"
                     >

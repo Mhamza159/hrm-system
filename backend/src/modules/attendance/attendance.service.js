@@ -2641,9 +2641,10 @@ export const getFaceEnrollments = async ({ status, search, page = 1, limit = 20 
   const [users, total, countsAgg] = await Promise.all([
     User.find(query)
       .select('name email employeeId faceEnrollment roles createdAt')
+      .populate('roles', 'name')
       .populate({
         path: 'employeeId',
-        select: 'name employeeCode departmentId designationId phone joiningDate workLocation status',
+        select: 'name employeeCode departmentId designationId phone joiningDate workLocation status avatar',
         populate: [
           { path: 'departmentId', select: 'name code' },
           { path: 'designationId', select: 'title' }
