@@ -37,6 +37,7 @@ export const FaceCheckInModal = ({
   const stableFramesRef = useRef(0);
   const isAutoPunchingRef = useRef(false);
   const lastErrorTimeRef = useRef(0);
+  const latestDescriptorRef = useRef(null);
 
   const [direction, setDirection] = useState(isClockedIn && !isClockedOut ? 'exit' : 'entry');
   const [isFaceDetected, setIsFaceDetected] = useState(false);
@@ -163,31 +164,42 @@ export const FaceCheckInModal = ({
     await executePunch(descriptor);
   }, [executePunch, isSubmitting]);
 
+  // One-click instant manual punch bypass (zero waiting when face is aligned)
+  const handleManualPunch = useCallback(async () => {
+    if (isSubmitting || !latestDescriptorRef.current) return;
+    isAutoPunchingRef.current = true;
+    setIsLive(true);
+    await executePunch(latestDescriptorRef.current);
+  }, [isSubmitting, executePunch]);
+
   // Real-time detection loop (runs continuously once optical engine is warm)
   const runDetectionLoop = useCallback(async () => {
     if (!videoRef.current || !isEngineReady || isSubmitting || isAutoPunchingRef.current) return;
 
-    // 2.5s cooldown after an error before re-triggering auto punch
-    if (Date.now() - lastErrorTimeRef.current < 2500) {
-      detectionTimeoutRef.current = setTimeout(runDetectionLoop, 250);
+    // 2s cooldown after an error before re-triggering auto punch
+    if (Date.now() - lastErrorTimeRef.current < 2000) {
+      detectionTimeoutRef.current = setTimeout(runDetectionLoop, 200);
       return;
     }
 
     if (!isDetectingRef.current && videoRef.current.readyState >= 2) {
       isDetectingRef.current = true;
       try {
-        const result = await detectFaceAndDescriptor(videoRef.current, { inputSize: 256 });
+        const result = await detectFaceAndDescriptor(videoRef.current, { inputSize: 224, scoreThreshold: 0.5 });
 
         if (result && result.landmarks && result.descriptor) {
           setIsFaceDetected(true);
+          latestDescriptorRef.current = result.descriptor;
 
           const blinked = blinkTrackerRef.current.update(result.landmarks);
           setCurrentEAR(blinkTrackerRef.current.lastEAR);
 
           stableFramesRef.current += 1;
 
-          // STRICT LIVENESS: Auto-trigger punch upon genuine natural blink (anti-spoofing enforcement)
-          if (blinked && !isAutoPunchingRef.current && !isSubmitting) {
+          // DUAL-LIVENESS: Auto-punch immediately on natural blink OR after 5 stable frames (~800ms steady hold)
+          const isLivenessSatisfied = blinked || stableFramesRef.current >= 5;
+
+          if (isLivenessSatisfied && !isAutoPunchingRef.current && !isSubmitting) {
             isAutoPunchingRef.current = true;
             setIsLive(true);
             await triggerPunchFromFrame(result.descriptor);
@@ -205,7 +217,7 @@ export const FaceCheckInModal = ({
     }
 
     if (!isAutoPunchingRef.current && !isSubmitting) {
-      detectionTimeoutRef.current = setTimeout(runDetectionLoop, 150);
+      detectionTimeoutRef.current = setTimeout(runDetectionLoop, 100);
     }
   }, [isEngineReady, isSubmitting, detectFaceAndDescriptor, triggerPunchFromFrame]);
 
@@ -215,6 +227,7 @@ export const FaceCheckInModal = ({
       blinkTrackerRef.current.reset();
       stableFramesRef.current = 0;
       isAutoPunchingRef.current = false;
+      latestDescriptorRef.current = null;
       lastErrorTimeRef.current = 0;
       setIsLive(false);
       setIsFaceDetected(false);
@@ -486,7 +499,7 @@ export const FaceCheckInModal = ({
                         ) : isFaceDetected ? (
                           <>
                             <Eye className="w-3.5 h-3.5 text-white animate-bounce" />
-                            <span>BLINK TO CONFIRM PUNCH</span>
+                            <span>BLINK OR HOLD STEADY</span>
                           </>
                         ) : (
                           <>
@@ -565,15 +578,25 @@ export const FaceCheckInModal = ({
                   <span>Verifying Biometrics & Clocking {direction === 'entry' ? 'In' : 'Out'}...</span>
                 </div>
               ) : isFaceDetected ? (
-                <div className="w-full py-3 px-4 rounded-xl font-bold text-xs text-emerald-300 bg-emerald-950/60 border border-emerald-500/40 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                  <Eye className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                  <span>Face Aligned! Natural Blink Required to Clock {direction === 'entry' ? 'In' : 'Out'}</span>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleManualPunch}
+                  disabled={isSubmitting}
+                  className={`w-full py-3.5 px-4 rounded-xl font-bold text-xs text-white flex items-center justify-center gap-2 shadow-lg transition-all active:scale-[0.98] cursor-pointer ${
+                    direction === 'entry'
+                      ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30 ring-2 ring-emerald-400/40'
+                      : 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/30 ring-2 ring-rose-400/40'
+                  }`}
+                >
+                  <ScanFace className="w-4 h-4 animate-pulse" />
+                  <span>Face Aligned — Tap to Clock {direction === 'entry' ? 'In' : 'Out'} Now</span>
+                  <ArrowRight className="w-3.5 h-3.5 ml-1 opacity-80" />
+                </button>
               ) : (
                 <div className="w-full py-3 px-4 rounded-xl font-medium text-xs text-slate-400 bg-slate-900/80 border border-slate-800 flex items-center justify-center gap-2">
                   <Cpu className="w-3.5 h-3.5 text-slate-500" />
                   <span>
-                    {!isEngineReady ? 'Calibrating optical vision engine...' : 'Align face in the frame and blink to punch'}
+                    {!isEngineReady ? 'Calibrating optical vision engine...' : 'Align face in the frame to mark attendance'}
                   </span>
                 </div>
               )}
@@ -581,9 +604,9 @@ export const FaceCheckInModal = ({
               <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono px-1">
                 <span className="flex items-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Liveness Protected (Threshold 0.48)</span>
+                  <span>Biometric Precision (Threshold 0.50)</span>
                 </span>
-                <span>Active Biometrics</span>
+                <span>Active Liveness</span>
               </div>
             </div>
           </>

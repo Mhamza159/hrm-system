@@ -2509,7 +2509,7 @@ export const calculateEuclideanDistance = (vecA, vecB) => {
 export const verifyFacePunch = async ({ user, liveDescriptor, snapshot }) => {
   const storedSnapshotUrl = await saveBase64Image(snapshot, 'attendance', `punch_${user?._id || 'emp'}`);
   const setting = await Setting.findOne({ key: 'faceAttendance' }).lean();
-  const faceSettings = setting?.value || { isEnabled: true, matchThreshold: 0.48 };
+  const faceSettings = setting?.value || { isEnabled: true, matchThreshold: 0.50 };
 
   if (faceSettings.isEnabled === false) {
     throw new ApiError(400, 'Face recognition attendance is currently disabled by administrator');
@@ -2524,7 +2524,7 @@ export const verifyFacePunch = async ({ user, liveDescriptor, snapshot }) => {
     throw new ApiError(400, 'A valid 128-dimensional live face descriptor is required for face attendance');
   }
 
-  const matchThreshold = faceSettings.matchThreshold ?? 0.48;
+  const matchThreshold = faceSettings.matchThreshold ?? 0.50;
   let minDistance = Infinity;
   for (const enrolledVec of dbUser.faceEnrollment.descriptors) {
     const dist = calculateEuclideanDistance(liveDescriptor, enrolledVec);
