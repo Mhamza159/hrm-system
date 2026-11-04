@@ -339,7 +339,7 @@ export const getFaceEnrollmentStatus = asyncHandler(async (req, res) => {
 
 export const getFaceEnrollments = asyncHandler(async (req, res) => {
   const result = await attendanceService.getFaceEnrollments(req.query);
-  return res.status(200).json(apiResponse(200, result.users, 'Face enrollments retrieved successfully', result.meta));
+  return res.status(200).json(apiResponse(200, result.users, 'Face enrollments retrieved successfully', { ...result.meta, counts: result.counts }));
 });
 
 export const approveFaceEnrollment = asyncHandler(async (req, res) => {

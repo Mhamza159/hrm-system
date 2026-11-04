@@ -2638,19 +2638,45 @@ export const getFaceEnrollments = async ({ status, search, page = 1, limit = 20 
   const limitNum = Math.max(1, Number(limit) || 20);
   const skip = (pageNum - 1) * limitNum;
 
-  const [users, total] = await Promise.all([
+  const [users, total, countsAgg] = await Promise.all([
     User.find(query)
       .select('name email employeeId faceEnrollment roles createdAt')
-      .populate('employeeId', 'name employeeCode departmentId designationId')
+      .populate({
+        path: 'employeeId',
+        select: 'name employeeCode departmentId designationId phone joiningDate workLocation status',
+        populate: [
+          { path: 'departmentId', select: 'name code' },
+          { path: 'designationId', select: 'title' }
+        ]
+      })
+      .populate('faceEnrollment.approvedBy', 'name email')
       .sort({ 'faceEnrollment.enrolledAt': -1, createdAt: -1 })
       .skip(skip)
       .limit(limitNum)
       .lean(),
-    User.countDocuments(query)
+    User.countDocuments(query),
+    User.aggregate([
+      { $match: { 'faceEnrollment.status': { $in: ['pending', 'approved', 'rejected'] } } },
+      { $group: { _id: '$faceEnrollment.status', count: { $sum: 1 } } }
+    ])
   ]);
+
+  const counts = {
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    all: 0
+  };
+  for (const item of countsAgg) {
+    if (counts[item._id] !== undefined) {
+      counts[item._id] = item.count;
+      counts.all += item.count;
+    }
+  }
 
   return {
     users,
+    counts,
     meta: {
       page: pageNum,
       limit: limitNum,
