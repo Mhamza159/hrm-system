@@ -14,7 +14,7 @@ import { AssetRequest } from '../../models/assetRequest.model.js';
 import { Employee } from '../../models/employee.model.js';
 import { User } from '../../models/user.model.js';
 import { Role } from '../../models/role.model.js';
-import { ApiError } from '../../utils/apiError.js';
+import { ApiError } from '../../utils/ApiError.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { notify } from '../../services/notify.service.js';
 

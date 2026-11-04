@@ -18,7 +18,7 @@ import { Employee } from '../../models/employee.model.js';
 import { User } from '../../models/user.model.js';
 import { Department } from '../../models/department.model.js';
 import { Role } from '../../models/role.model.js';
-import { ApiError } from '../../utils/apiError.js';
+import { ApiError } from '../../utils/ApiError.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { emailService } from '../../services/email.service.js';
 import { notify } from '../../services/notify.service.js';
