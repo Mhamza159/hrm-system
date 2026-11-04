@@ -19,6 +19,7 @@ import {
   Smartphone
 } from 'lucide-react';
 import { useCheckInMutation, useCheckOutMutation } from '../attendanceApi.js';
+import { useGeolocation } from '../../../hooks/useGeolocation.js';
 import { getDeviceId, getDeviceModel } from '../../../utils/deviceFingerprint.js';
 import { toast } from 'sonner';
 
@@ -40,6 +41,7 @@ export const QrScannerModal = ({
 
   const [checkIn] = useCheckInMutation();
   const [checkOut] = useCheckOutMutation();
+  const { getLocation } = useGeolocation();
 
   useEffect(() => {
     if (isClockedIn && !isClockedOut) {
@@ -155,6 +157,20 @@ export const QrScannerModal = ({
     }
     setAction(targetAction);
 
+    // Capture GPS Geofence coordinates
+    let punchLocation = null;
+    try {
+      const coords = await getLocation();
+      punchLocation = {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        accuracy: coords.accuracy,
+        isMock: false
+      };
+    } catch (locErr) {
+      console.warn('[QrScannerModal] Geolocation capture skipped or denied:', locErr?.message);
+    }
+
     try {
       let result;
       if (targetAction === 'in') {
@@ -163,7 +179,8 @@ export const QrScannerModal = ({
             source: 'qr',
             qrToken: token,
             deviceId,
-            deviceModel
+            deviceModel,
+            ...(punchLocation ? { location: punchLocation } : {})
           }).unwrap();
           toast.success('Clock-In recorded successfully via QR scan!');
         } catch (inErr) {
@@ -176,7 +193,8 @@ export const QrScannerModal = ({
               source: 'qr',
               qrToken: token,
               deviceId,
-              deviceModel
+              deviceModel,
+              ...(punchLocation ? { location: punchLocation } : {})
             }).unwrap();
             targetAction = 'out';
             setAction('out');
@@ -190,7 +208,8 @@ export const QrScannerModal = ({
           source: 'qr',
           qrToken: token,
           deviceId,
-          deviceModel
+          deviceModel,
+          ...(punchLocation ? { location: punchLocation } : {})
         }).unwrap();
         toast.success('Clock-Out recorded successfully via QR scan!');
       }

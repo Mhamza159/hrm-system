@@ -18,6 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { useFaceApi } from '../hooks/useFaceApi';
 import { BlinkTracker } from '../utils/livenessDetector';
 import { useCheckInMutation, useCheckOutMutation, useGetFaceStatusQuery } from '../attendanceApi';
+import { useGeolocation } from '../../../hooks/useGeolocation';
 import { toast } from 'sonner';
 
 export const FaceCheckInModal = ({
@@ -51,6 +52,7 @@ export const FaceCheckInModal = ({
   const enrollmentStatus = faceStatusRes?.data?.status; // 'approved' | 'pending' | 'none' | 'rejected'
 
   const { isLoaded: modelsLoaded, isLoading: modelsLoading, detectFaceAndDescriptor } = useFaceApi();
+  const { getLocation } = useGeolocation();
   const [checkIn, { isLoading: isCheckingIn }] = useCheckInMutation();
   const [checkOut, { isLoading: isCheckingOut }] = useCheckOutMutation();
 
@@ -105,15 +107,29 @@ export const FaceCheckInModal = ({
     setIsCameraReady(false);
   };
 
-  // Perform face check-in/out submission (Option 1: 1KB descriptor payload)
+  // Perform face check-in/out submission (Option 1: 1KB descriptor payload with GPS Geofencing)
   const executePunch = useCallback(async (descriptor) => {
     setIsProcessing(true);
     setPunchError(null);
 
     try {
+      let punchLocation = null;
+      try {
+        const coords = await getLocation();
+        punchLocation = {
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          accuracy: coords.accuracy,
+          isMock: false
+        };
+      } catch (locErr) {
+        console.warn('[FaceModal] Geolocation capture skipped or denied:', locErr?.message);
+      }
+
       const payload = {
         source: 'face',
-        liveDescriptor: descriptor
+        liveDescriptor: descriptor,
+        ...(punchLocation ? { location: punchLocation } : {})
       };
 
       if (direction === 'entry') {
@@ -139,7 +155,7 @@ export const FaceCheckInModal = ({
     } finally {
       setIsProcessing(false);
     }
-  }, [direction, checkIn, checkOut, onClose]);
+  }, [direction, checkIn, checkOut, onClose, getLocation]);
 
   // Execute punch directly from detected descriptor
   const triggerPunchFromFrame = useCallback(async (descriptor) => {
