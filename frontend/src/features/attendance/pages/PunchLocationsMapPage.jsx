@@ -15,7 +15,8 @@ import {
   AlertTriangle,
   Navigation,
   RefreshCw,
-  Layers
+  Layers,
+  MapPin
 } from 'lucide-react';
 import { useGetPunchLocationsQuery } from '../attendanceApi.js';
 import { PunchMap } from '../components/PunchMap.jsx';
