@@ -28,6 +28,12 @@ import { useAuth } from '../../../hooks/useAuth.js';
 import { LoanDecisionModal } from '../components/LoanDecisionModal.jsx';
 import { LoanScheduleDrawer } from '../components/LoanScheduleDrawer.jsx';
 
+// Helper to detect if loan applicant holds HR Manager role
+const isLoanFromHR = (loan) => {
+  const roles = loan?.employeeId?.userId?.roles || [];
+  return roles.some((r) => (r?.name || r) === 'HR Manager');
+};
+
 export function LoanApprovalsPage() {
   const { isSuperAdmin, isHR } = useAuth();
   const [activeTab, setActiveTab] = useState('pending_me');
@@ -40,10 +46,15 @@ export function LoanApprovalsPage() {
   // Filter queue based on active tab
   const filteredLoans = loans.filter((loan) => {
     if (activeTab === 'pending_me') {
-      if (isSuperAdmin) return loan.status === 'pending_admin';
-      if (isHR) return loan.status === 'pending_hr';
+      const fromHR = isLoanFromHR(loan);
+      if (isSuperAdmin) {
+        return loan.status === 'pending_admin' || (fromHR && ['pending_recommendation', 'pending_hr', 'pending_admin'].includes(loan.status));
+      }
+      if (isHR) {
+        return loan.status === 'pending_hr' && !fromHR;
+      }
       // Department Manager default
-      return loan.status === 'pending_recommendation';
+      return loan.status === 'pending_recommendation' && !fromHR;
     }
     if (activeTab === 'all_pending') {
       return ['pending_recommendation', 'pending_hr', 'pending_admin'].includes(loan.status);
