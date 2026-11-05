@@ -191,16 +191,16 @@ export function PayrollReportsPage() {
                         {d.employeeCount || d.count || 0}
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono text-slate-800 dark:text-slate-200">
-                        PKR {((d.totalGross || 0) / 100).toLocaleString('en-PK')}
+                        PKR {(((d.totalGrossPaisa ?? d.totalGross) || 0) / 100).toLocaleString('en-PK')}
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono text-rose-600 dark:text-rose-400">
-                        PKR {((d.totalTax || 0) / 100).toLocaleString('en-PK')}
+                        PKR {(((d.totalIncomeTaxPaisa ?? d.totalTax) || 0) / 100).toLocaleString('en-PK')}
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono text-amber-600 dark:text-amber-400">
-                        PKR {((d.totalEobi || 0) / 100).toLocaleString('en-PK')}
+                        PKR {(((d.totalEobiPaisa ?? d.totalEobi) || 0) / 100).toLocaleString('en-PK')}
                       </td>
                       <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                        PKR {((d.totalNet || 0) / 100).toLocaleString('en-PK')}
+                        PKR {(((d.totalNetPaisa ?? d.totalNet) || 0) / 100).toLocaleString('en-PK')}
                       </td>
                     </tr>
                   ))}

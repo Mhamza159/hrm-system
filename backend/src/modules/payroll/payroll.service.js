@@ -877,10 +877,10 @@ export class PayrollService {
    */
   static async getTaxComplianceReport(query = {}) {
     const { Payslip } = await import('../../models/payslip.model.js');
-    const taxYear = Number(query.taxYear) || new Date().getFullYear();
+    const taxYear = Number(query.taxYear || query.year) || new Date().getFullYear();
 
     const slips = await Payslip.find({
-      status: 'paid',
+      status: { $in: ['approved', 'paid'] },
       $or: [
         { year: taxYear - 1, month: { $gte: 7 } },
         { year: taxYear, month: { $lte: 6 } }
@@ -919,11 +919,11 @@ export class PayrollService {
    */
   static async getEobiComplianceReport(query = {}) {
     const { Payslip } = await import('../../models/payslip.model.js');
-    const year = Number(query.year) || new Date().getFullYear();
+    const year = Number(query.year || query.taxYear) || new Date().getFullYear();
 
     const slips = await Payslip.find({
       year,
-      status: 'paid'
+      status: { $in: ['approved', 'paid'] }
     });
 
     let totalEmployeeEobi = 0;
@@ -1011,12 +1011,17 @@ export class PayrollService {
     const { Payslip } = await import('../../models/payslip.model.js');
     const year = Number(query.year) || new Date().getFullYear();
 
+    const matchFilter = {
+      year,
+      status: { $in: ['draft', 'approved', 'paid'] }
+    };
+    if (query.month) {
+      matchFilter.month = Number(query.month);
+    }
+
     const analytics = await Payslip.aggregate([
       {
-        $match: {
-          year,
-          status: { $in: ['approved', 'paid'] }
-        }
+        $match: matchFilter
       },
       {
         $lookup: {
@@ -1057,6 +1062,10 @@ export class PayrollService {
         $project: {
           _id: 1,
           departmentName: 1,
+          totalGross: '$totalGrossPay',
+          totalNet: '$totalNetPay',
+          totalTax: '$totalIncomeTax',
+          totalEobi: '$totalEobi',
           totalGrossPaisa: '$totalGrossPay',
           totalNetPaisa: '$totalNetPay',
           totalIncomeTaxPaisa: '$totalIncomeTax',
