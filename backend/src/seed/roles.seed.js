@@ -104,7 +104,6 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'offboard.manage', subject: 'Resignation', scope: 'all' },
       { action: 'performance.template.view', subject: 'Performance', scope: 'all' },
       { action: 'performance.template.manage', subject: 'Performance', scope: 'all' },
-      { action: 'performance.cycle.view', subject: 'Performance', scope: 'all' },
       { action: 'performance.cycle.manage', subject: 'Performance', scope: 'all' },
       { action: 'performance.review.view', subject: 'Performance', scope: 'all' },
       { action: 'performance.review.submit', subject: 'Performance', scope: 'all' },

@@ -158,7 +158,7 @@ export default function App() {
           <Route
             path="reports"
             element={
-              <ProtectedRoute requiredPermission="report.view">
+              <ProtectedRoute requiredPermission="report.view" managerOnly={true}>
                 <ReportsPage />
               </ProtectedRoute>
             }
@@ -262,7 +262,7 @@ export default function App() {
           <Route
             path="teams/my"
             element={
-              <ProtectedRoute requiredPermission="org.view">
+              <ProtectedRoute requiredPermission="org.view" managerOnly={true}>
                 <MyTeamPage />
               </ProtectedRoute>
             }
@@ -270,7 +270,7 @@ export default function App() {
           <Route
             path="employees"
             element={
-              <ProtectedRoute requiredPermission="employee.view">
+              <ProtectedRoute requiredPermission="employee.view" managerOnly={true}>
                 <EmployeeListPage />
               </ProtectedRoute>
             }
@@ -402,7 +402,7 @@ export default function App() {
           <Route
             path="attendance/map"
             element={
-              <ProtectedRoute requiredPermission="attendance.view">
+              <ProtectedRoute requiredPermission="attendance.view" managerOnly={true}>
                 <PunchLocationsMapPage />
               </ProtectedRoute>
             }
@@ -538,7 +538,7 @@ export default function App() {
           <Route
             path="payroll/reports"
             element={
-              <ProtectedRoute requiredPermission="payroll.view">
+              <ProtectedRoute requiredPermission="payroll.view" hrOnly={true}>
                 <PayrollReportsPage />
               </ProtectedRoute>
             }
@@ -604,7 +604,7 @@ export default function App() {
           <Route
             path="expenses/reports"
             element={
-              <ProtectedRoute requiredPermission="report.view">
+              <ProtectedRoute requiredPermission="report.view" managerOnly={true}>
                 <ExpenseReportsPage />
               </ProtectedRoute>
             }
@@ -654,7 +654,7 @@ export default function App() {
           <Route
             path="onboarding"
             element={
-              <ProtectedRoute requiredPermission="onboard.view">
+              <ProtectedRoute requiredPermission="onboard.view" hrOnly={true}>
                 <OnboardingPage />
               </ProtectedRoute>
             }
@@ -678,7 +678,7 @@ export default function App() {
           <Route
             path="offboarding"
             element={
-              <ProtectedRoute requiredPermission="offboard.view">
+              <ProtectedRoute requiredPermission="offboard.view" hrOnly={true}>
                 <OffboardingPage />
               </ProtectedRoute>
             }
@@ -696,7 +696,7 @@ export default function App() {
           <Route
             path="performance/cycles"
             element={
-              <ProtectedRoute requiredPermission="performance.cycle.view">
+              <ProtectedRoute requiredPermission="performance.cycle.view" hrOnly={true}>
                 <ReviewCyclesPage />
               </ProtectedRoute>
             }
@@ -720,7 +720,7 @@ export default function App() {
           <Route
             path="projects"
             element={
-              <ProtectedRoute requiredPermission="project.view">
+              <ProtectedRoute requiredPermission="project.view" managerOnly={true}>
                 <ProjectsPage />
               </ProtectedRoute>
             }
@@ -756,7 +756,7 @@ export default function App() {
           <Route
             path="reports/utilization"
             element={
-              <ProtectedRoute requiredPermission="report.utilization">
+              <ProtectedRoute requiredPermission="report.utilization" managerOnly={true}>
                 <UtilizationReportPage />
               </ProtectedRoute>
             }
@@ -774,7 +774,7 @@ export default function App() {
           <Route
             path="performance/team-reviews"
             element={
-              <ProtectedRoute requiredPermission="performance.review.view">
+              <ProtectedRoute requiredPermission="performance.review.view" managerOnly={true}>
                 <TeamReviewsPage />
               </ProtectedRoute>
             }

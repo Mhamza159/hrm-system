@@ -58,7 +58,7 @@ import { getUserDisplayName } from '../../lib/formatters.js';
 import { cn } from '../../lib/utils.js';
 
 export function Sidebar({ isOpen = false, onClose }) {
-  const { user, isHR, isSuperAdmin } = useAuth();
+  const { user, isHR, isSuperAdmin, isDeptManager } = useAuth();
   const { can } = usePermission();
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -77,9 +77,10 @@ export function Sidebar({ isOpen = false, onClose }) {
   // Helper to filter items based on CASL permission & role guards
   const isItemVisible = (item) => {
     if (item.excludeSuperAdmin && isSuperAdmin) return false;
-    if (item.permission && !can(item.permission)) return false;
-    if (item.hrOnly && !isHR && !can('user.manage')) return false;
+    if (item.hrOnly && !isHR && !isSuperAdmin) return false;
     if (item.superAdminOnly && !isSuperAdmin) return false;
+    if (item.managerOnly && !isDeptManager && !isHR && !isSuperAdmin) return false;
+    if (item.permission && !can(item.permission)) return false;
     return true;
   };
 
@@ -88,8 +89,8 @@ export function Sidebar({ isOpen = false, onClose }) {
     { type: 'link', name: 'Dashboard', path: '/', icon: LayoutDashboard, exact: true },
     { type: 'link', name: 'My Profile', path: '/me', icon: User },
     { type: 'link', name: 'Org Chart', path: '/org-chart', icon: Network, permission: 'org.view' },
-    { type: 'link', name: 'My Team', path: '/teams/my', icon: UserCheck, permission: 'org.view' },
-    { type: 'link', name: 'Employees', path: '/employees', icon: Users, permission: 'employee.view' },
+    { type: 'link', name: 'My Team', path: '/teams/my', icon: UserCheck, permission: 'org.view', managerOnly: true },
+    { type: 'link', name: 'Employees', path: '/employees', icon: Users, permission: 'employee.view', managerOnly: true },
     {
       type: 'group',
       name: 'Attendance',
@@ -100,7 +101,7 @@ export function Sidebar({ isOpen = false, onClose }) {
         { name: 'Attendance Lock', path: '/attendance/lock', permission: 'attendance.lock' },
         { name: 'Flagged Punches', path: '/attendance/flagged', permission: 'attendance.approve' },
         { name: 'WFH Locations', path: '/attendance/wfh-locations', permission: 'attendance.wfh' },
-        { name: 'Punch Map', path: '/attendance/map', permission: 'attendance.view' },
+        { name: 'Punch Map', path: '/attendance/map', permission: 'attendance.view', managerOnly: true },
         { name: 'Kiosk Terminals', path: '/attendance/kiosks', permission: 'attendance.kiosk.manage' },
         { name: 'Face Enrollment', path: '/attendance/face/enroll', permission: 'attendance.mark' },
         { name: 'Face Approvals', path: '/attendance/face/enrollments', permission: 'attendance.face.manage' }
@@ -129,7 +130,7 @@ export function Sidebar({ isOpen = false, onClose }) {
         { name: 'Salary Structures', path: '/payroll/salary-structures', permission: 'payroll.manage' },
         { name: 'Payroll Runs', path: '/payroll/runs', permission: 'payroll.manage' },
         { name: 'Exit Settlements', path: '/payroll/settlement', permission: 'payroll.manage' },
-        { name: 'Payroll Reports', path: '/payroll/reports', permission: 'payroll.view' }
+        { name: 'Payroll Reports', path: '/payroll/reports', permission: 'payroll.manage', hrOnly: true }
       ]
     },
     {
@@ -150,7 +151,7 @@ export function Sidebar({ isOpen = false, onClose }) {
         { name: 'My Expenses', path: '/expenses', permission: 'expense.view', excludeSuperAdmin: true },
         { name: 'Expense Approvals', path: '/expenses/approvals', permission: 'expense.approve' },
         { name: 'Categories & Limits', path: '/expenses/categories', permission: 'expense.settings' },
-        { name: 'Expense Reports', path: '/expenses/reports', permission: 'report.view' }
+        { name: 'Expense Reports', path: '/expenses/reports', permission: 'expense.approve', managerOnly: true }
       ]
     },
         {
@@ -168,11 +169,11 @@ export function Sidebar({ isOpen = false, onClose }) {
       name: 'Projects & Timesheets',
       icon: FolderKanban,
       children: [
-        { name: 'Projects Portfolio', path: '/projects', permission: 'project.view' },
+        { name: 'Projects Portfolio', path: '/projects', permission: 'project.view', managerOnly: true },
         { name: 'My Timesheet', path: '/timesheets/my', permission: 'timesheet.log', excludeSuperAdmin: true },
         { name: 'Timesheet Approvals', path: '/timesheets/approvals', permission: 'timesheet.approve' },
         { name: 'Timesheet Compliance', path: '/timesheets/compliance', permission: 'timesheet.compliance' },
-        { name: 'Utilization Report', path: '/reports/utilization', permission: 'report.utilization' },
+        { name: 'Utilization Report', path: '/reports/utilization', permission: 'report.utilization', managerOnly: true },
         { name: 'Project Profitability', path: '/reports/profitability', permission: 'report.profitability' }
       ]
     },
@@ -182,8 +183,8 @@ export function Sidebar({ isOpen = false, onClose }) {
       icon: Award,
       children: [
         { name: 'My Appraisal', path: '/performance/my-review', permission: 'performance.review.view', excludeSuperAdmin: true },
-        { name: 'Team Reviews', path: '/performance/team-reviews', permission: 'performance.review.view' },
-        { name: 'Appraisal Cycles', path: '/performance/cycles', permission: 'performance.cycle.view' },
+        { name: 'Team Reviews', path: '/performance/team-reviews', permission: 'performance.review.view', managerOnly: true },
+        { name: 'Appraisal Cycles', path: '/performance/cycles', permission: 'performance.cycle.view', hrOnly: true },
         { name: 'KPI Templates', path: '/performance/templates', permission: 'performance.template.view' }
       ]
     },
@@ -192,14 +193,14 @@ export function Sidebar({ isOpen = false, onClose }) {
       name: 'Lifecycle',
       icon: ListChecks,
       children: [
-        { name: 'Onboarding', path: '/onboarding', permission: 'onboard.view' },
+        { name: 'Onboarding', path: '/onboarding', permission: 'onboard.view', hrOnly: true },
         { name: 'My Lifecycle Tasks', path: '/onboarding/my-tasks', permission: 'onboard.view', excludeSuperAdmin: true },
         { name: 'Resignation', path: '/resignations', permission: 'resignation.submit' },
-        { name: 'Exit Clearance', path: '/offboarding', permission: 'offboard.view' },
+        { name: 'Exit Clearance', path: '/offboarding', permission: 'offboard.view', hrOnly: true },
         { name: 'Checklist Templates', path: '/onboarding/templates', permission: 'onboard.manage' }
       ]
     },
-    { type: 'link', name: 'Reports', path: '/reports', icon: BarChart3, permission: 'report.view' },
+    { type: 'link', name: 'Reports', path: '/reports', icon: BarChart3, permission: 'report.view', managerOnly: true },
     { type: 'link', name: 'Company Policies', path: '/policies', icon: BookOpen, permission: 'settings.view' },
     { type: 'link', name: 'Announcements', path: '/announcements', icon: Megaphone, permission: 'announcement.view' },
     { type: 'link', name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount > 0 ? unreadCount : undefined },

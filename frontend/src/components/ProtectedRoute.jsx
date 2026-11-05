@@ -23,9 +23,19 @@ import { usePermission } from '../hooks/usePermission.js';
  * @param {React.ReactNode} props.children - Target protected route view
  * @param {string|string[]} [props.requiredRole] - Required user role (legacy fallback)
  * @param {string} [props.requiredPermission] - Required CASL permission action (e.g. 'login.history', 'org.view')
+ * @param {boolean} [props.managerOnly=false] - Only accessible by Department Managers, HR Managers, or Super Admin
+ * @param {boolean} [props.hrOnly=false] - Only accessible by HR Managers or Super Admin
+ * @param {boolean} [props.adminOnly=false] - Only accessible by Super Admin
  */
-export function ProtectedRoute({ children, requiredRole = null, requiredPermission = null }) {
-  const { user, isAuthenticated, isInitialized, hasRole, isSuperAdmin } = useAuth();
+export function ProtectedRoute({
+  children,
+  requiredRole = null,
+  requiredPermission = null,
+  managerOnly = false,
+  hrOnly = false,
+  adminOnly = false
+}) {
+  const { user, isAuthenticated, isInitialized, hasRole, isSuperAdmin, isHR, isDeptManager } = useAuth();
   const { can } = usePermission();
   const location = useLocation();
 
@@ -48,7 +58,20 @@ export function ProtectedRoute({ children, requiredRole = null, requiredPermissi
     return <Navigate to="/change-password" replace />;
   }
 
-  // 4. Dynamic CASL permission check (Super Admin always has administrative pass)
+  // 4. Role Hierarchy Check
+  if (adminOnly && !isSuperAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (hrOnly && !isHR && !isSuperAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (managerOnly && !isDeptManager && !isHR && !isSuperAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  // 5. Dynamic CASL permission check (Super Admin always has administrative pass)
   if (requiredPermission) {
     const isPermitted = isSuperAdmin || can(requiredPermission);
     if (!isPermitted) {
@@ -56,7 +79,7 @@ export function ProtectedRoute({ children, requiredRole = null, requiredPermissi
     }
   }
 
-  // 5. Granular role requirement check (Super Admin always has administrative pass)
+  // 6. Granular role requirement check (Super Admin always has administrative pass)
   if (requiredRole) {
     const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
     const isAuthorized = isSuperAdmin || roles.some((role) => hasRole(role));
