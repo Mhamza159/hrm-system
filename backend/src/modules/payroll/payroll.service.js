@@ -271,7 +271,7 @@ export class PayrollService {
    */
   static async getPayrollRuns(query = {}) {
     const { page = 1, limit = 20, status, year } = query;
-    const filter = {};
+    const filter = { isDeleted: { $ne: true } };
     if (status) filter.status = status;
     if (year) filter.year = Number(year);
 
@@ -1080,27 +1080,73 @@ export class PayrollService {
       throw new ApiError(404, 'Payroll run not found');
     }
 
-    // Strict Security Invariant: Finalized payroll runs (approved or paid) can NEVER be deleted
+    let isSuperAdmin = false;
+    if (actor?.role === 'Super Admin') {
+      isSuperAdmin = true;
+    } else if (Array.isArray(actor?.roles)) {
+      isSuperAdmin = actor.roles.some((r) => (typeof r === 'object' && r?.name ? r.name : r) === 'Super Admin');
+      if (!isSuperAdmin) {
+        const { Role } = await import('../../models/role.model.js');
+        const saRole = await Role.findOne({ name: 'Super Admin' });
+        if (saRole) {
+          isSuperAdmin = actor.roles.some((r) => (r?._id || r)?.toString() === saRole._id.toString());
+        }
+      }
+    }
+    const isEmptyRun = (run.totalEmployees === 0 || !run.totalEmployees);
+
+    // If finalized (approved or paid), allow Super Admin or empty shell runs to be deleted
     if (['approved', 'paid'].includes(run.status) || run.isLocked) {
-      throw new ApiError(400, 'Cannot delete an approved, paid, or locked payroll run.');
+      if (!isSuperAdmin && !isEmptyRun) {
+        throw new ApiError(400, 'Cannot delete an approved, paid, or locked payroll run. Only Super Admin can authorize removal.');
+      }
     }
 
-    run.isDeleted = true;
-    run.deletedAt = new Date();
-    run.deletedBy = actor?._id || null;
-    await run.save();
-
-    await Payslip.updateMany(
-      { payrollRunId: run._id },
-      { $set: { isDeleted: true, deletedAt: new Date() } }
-    );
-
-    // Revert associated leave encashments back to approved & unlinked status (BUG-03 Fix)
+    // Revert associated leave encashments back to approved & unlinked status
     const { LeaveEncashment } = await import('../../models/leaveEncashment.model.js');
     await LeaveEncashment.updateMany(
       { payrollRunId: run._id },
       { $set: { status: 'approved', payrollRunId: null } }
     );
+
+    // Revert any loan installments settled by this run
+    const { Loan } = await import('../../models/loan.model.js');
+    const { Payslip } = await import('../../models/payslip.model.js');
+    const payslips = await Payslip.find({ payrollRunId: run._id });
+    for (const slip of payslips) {
+      const loanDeductions = (slip.deductions || []).filter(
+        (d) => d.category === 'loan_installment' || d.category === 'advance'
+      );
+      for (const item of loanDeductions) {
+        const match = item.name?.match(/\(([^)]+)\)/);
+        if (match && match[1]) {
+          const loan = await Loan.findOne({ loanId: match[1] });
+          if (loan) {
+            const padMonth = String(run.month).padStart(2, '0');
+            const ym = `${run.year}-${padMonth}`;
+            const inst = loan.schedule.find(
+              (s) => s.payslipId?.toString() === slip._id.toString() || (s.dueMonth === ym && s.status === 'deducted')
+            );
+            if (inst) {
+              inst.status = 'pending';
+              inst.paidAt = null;
+              inst.payslipId = null;
+              inst.notes = '';
+            }
+            loan.remainingBalance += item.amount;
+            loan.totalRepaid = Math.max(0, (loan.totalRepaid || 0) - item.amount);
+            loan.repayments = (loan.repayments || []).filter((r) => !r.reference?.includes(slip._id.toString().slice(-6)));
+            if (loan.status === 'closed') {
+              loan.status = 'active';
+            }
+            await loan.save();
+          }
+        }
+      }
+    }
+
+    await Payslip.deleteMany({ payrollRunId: run._id });
+    await run.deleteOne();
 
     await recordAuditLog({
       userId: actor?._id,
@@ -1286,6 +1332,37 @@ export class PayrollService {
         });
       }
 
+      // C2. Query active loan & salary advance installments due this month
+      const { Loan } = await import('../../models/loan.model.js');
+      const activeLoans = await Loan.find({
+        employeeId: emp._id,
+        status: 'active',
+        'schedule.dueMonth': yearMonth,
+        'schedule.status': 'pending'
+      });
+
+      let loanDeductionPaisa = 0;
+      const loanRecoveries = [];
+      for (const loan of activeLoans) {
+        const scheduledInst = loan.schedule.find(
+          (inst) => inst.dueMonth === yearMonth && inst.status === 'pending'
+        );
+        if (scheduledInst && scheduledInst.amount > 0) {
+          const isAdvance = loan.type === 'advance';
+          const deductionAmount = Math.min(scheduledInst.amount, loan.remainingBalance);
+          if (deductionAmount > 0) {
+            loanDeductionPaisa += deductionAmount;
+            loanRecoveries.push({
+              loanId: loan.loanId,
+              type: loan.type,
+              amountPaisa: deductionAmount,
+              installmentNumber: scheduledInst.installmentNumber,
+              totalTenure: loan.repaymentTenureMonths
+            });
+          }
+        }
+      }
+
       // D. Projected Gross & Tax/Statutory Calculations
       const projectedGrossPaisa = baseGross + overtimePayPaisa + encashmentPayPaisa;
       const taxableGross = Math.max(0, projectedGrossPaisa - unpaidLeavePaisa);
@@ -1316,7 +1393,7 @@ export class PayrollService {
         // default statutory safe fallback
       }
 
-      const projectedDeductionsPaisa = unpaidLeavePaisa + latePenaltyPaisa + taxWithheldPaisa + eobiEmployeePaisa + pfEmployeePaisa;
+      const projectedDeductionsPaisa = unpaidLeavePaisa + latePenaltyPaisa + taxWithheldPaisa + eobiEmployeePaisa + pfEmployeePaisa + loanDeductionPaisa;
       const projectedNetPaisa = Math.max(0, projectedGrossPaisa - projectedDeductionsPaisa);
 
       totalGrossPaisa += projectedGrossPaisa;
@@ -1343,6 +1420,8 @@ export class PayrollService {
         overtimeHours,
         overtimePayPaisa,
         encashmentPayPaisa,
+        loanDeductionPaisa,
+        loanRecoveries,
         taxWithheldPaisa,
         eobiPaisa: eobiEmployeePaisa,
         providentFundPaisa: pfEmployeePaisa,
@@ -1355,7 +1434,8 @@ export class PayrollService {
           paidLeaves: paidLeavesTimeline,
           approvedOvertime: overtimeTimeline,
           absences: absencesTimeline,
-          encashments: encashmentsTimeline
+          encashments: encashmentsTimeline,
+          loans: loanRecoveries
         }
       });
     }

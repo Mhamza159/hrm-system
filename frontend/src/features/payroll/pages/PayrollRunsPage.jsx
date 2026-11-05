@@ -24,14 +24,17 @@ import {
   FileCheck2,
   Layers,
   X,
-  Lock
+  Lock,
+  Trash2
 } from 'lucide-react';
 import {
-  useGetPayrollRunsQuery
+  useGetPayrollRunsQuery,
+  useDeletePayrollRunMutation
 } from '../payrollApi.js';
 import { PayrollProgressBar } from '../components/PayrollProgressBar.jsx';
 import { PrePayrollAuditModal } from '../components/PrePayrollAuditModal.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { toast } from 'sonner';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 
 export function PayrollRunsPage() {
@@ -42,6 +45,22 @@ export function PayrollRunsPage() {
 
   // Generation Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [deletePayrollRun] = useDeletePayrollRunMutation();
+
+  const handleDeleteRun = async (run) => {
+    const monthName = months.find((m) => m.value === run.month)?.label || `M${run.month}`;
+    if (!window.confirm(`Are you sure you want to delete the payroll run for ${monthName} ${run.year}? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      await deletePayrollRun(run._id).unwrap();
+      toast.success(`Payroll run for ${monthName} ${run.year} deleted successfully.`);
+      refetch();
+    } catch (err) {
+      toast.error(err?.data?.message || err?.message || 'Failed to delete payroll run');
+    }
+  };
 
   const { data, isLoading, refetch } = useGetPayrollRunsQuery({
     page,
@@ -305,7 +324,7 @@ export function PayrollRunsPage() {
                       <td className="px-6 py-4 text-center">
                         <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 dark:text-slate-300">
                           <Users className="w-3.5 h-3.5 text-slate-400" />
-                          {run.employeeCount || 0}
+                          {run.totalEmployees ?? run.employeeCount ?? 0}
                         </span>
                       </td>
 
@@ -314,7 +333,7 @@ export function PayrollRunsPage() {
                       </td>
 
                       <td className="px-6 py-4 text-right font-medium text-rose-600 dark:text-rose-400">
-                        PKR {((run.totalIncomeTax || 0) / 100).toLocaleString('en-PK')}
+                        PKR {(((run.totalTaxWithheld ?? run.totalIncomeTax) || 0) / 100).toLocaleString('en-PK')}
                       </td>
 
                       <td className="px-6 py-4 text-right font-bold text-emerald-600 dark:text-emerald-400">
@@ -322,13 +341,23 @@ export function PayrollRunsPage() {
                       </td>
 
                       <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => navigate(`/payroll/runs/${run._id}`)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-lg transition-colors"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          Details
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => navigate(`/payroll/runs/${run._id}`)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-lg transition-colors"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            Details
+                          </button>
+                          <button
+                            onClick={() => handleDeleteRun(run)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 rounded-lg transition-colors"
+                            title="Delete this payroll run"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

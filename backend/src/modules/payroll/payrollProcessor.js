@@ -82,6 +82,7 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
     generatedBy: actor._id
   });
 
+  try {
   // 3. Query all active employees with active salary structures
   const activeStructures = await SalaryStructure.find({
     status: 'active',
@@ -177,7 +178,7 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
     }
 
     // Compute Gross Pay for the month
-    const grossPay = earnings.reduce((acc, curr) => acc + curr.amount, 0);
+    let grossPay = earnings.reduce((acc, curr) => acc + curr.amount, 0);
 
     // --- D. M6 Leaves: Unpaid Leave Absences ---
     const leaves = await Leave.find({
@@ -394,4 +395,9 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
   });
 
   return payrollRun;
+  } catch (err) {
+    await Payslip.deleteMany({ payrollRunId: payrollRun._id });
+    await payrollRun.deleteOne();
+    throw err;
+  }
 }

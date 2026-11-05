@@ -27,18 +27,21 @@ import {
   SlidersHorizontal,
   Eye,
   Lock,
+  Trash2,
   Download,
   CreditCard
 } from 'lucide-react';
 import {
   useGetPayrollRunByIdQuery,
   useApprovePayrollRunMutation,
-  useMarkPayrollPaidMutation
+  useMarkPayrollPaidMutation,
+  useDeletePayrollRunMutation
 } from '../payrollApi.js';
 import { PayslipAdjustmentDrawer } from '../components/PayslipAdjustmentDrawer.jsx';
 import { PayslipPreviewModal } from '../components/PayslipPreviewModal.jsx';
 import { BankAdviceExportModal } from '../components/BankAdviceExportModal.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { toast } from 'sonner';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 
 export function PayrollRunDetailPage() {
@@ -55,6 +58,22 @@ export function PayrollRunDetailPage() {
   const { data, isLoading, refetch } = useGetPayrollRunByIdQuery({ id });
   const [approvePayrollRun, { isLoading: isApproving }] = useApprovePayrollRunMutation();
   const [markPayrollPaid, { isLoading: isPaying }] = useMarkPayrollPaidMutation();
+  const [deletePayrollRun, { isLoading: isDeleting }] = useDeletePayrollRunMutation();
+
+  const handleDelete = async () => {
+    setActionError('');
+    if (!window.confirm(`Are you sure you want to delete the ${monthName} ${run.year} payroll run? This will remove all associated payslips.`)) {
+      return;
+    }
+    try {
+      await deletePayrollRun(id).unwrap();
+      toast.success(`Payroll run for ${monthName} ${run.year} deleted successfully.`);
+      navigate('/payroll/runs');
+    } catch (err) {
+      setActionError(err?.data?.message || err?.message || 'Failed to delete payroll run');
+      toast.error(err?.data?.message || err?.message || 'Failed to delete payroll run');
+    }
+  };
 
   const run = data?.data?.run || data?.run || data?.data || {};
   const payslips = data?.data?.payslips || data?.payslips || [];
@@ -179,6 +198,17 @@ export function PayrollRunDetailPage() {
             </Can>
           )}
 
+          {/* Delete Run Button */}
+          <button
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-900/50 rounded-xl shadow-xs transition-colors disabled:opacity-50"
+            title="Delete this payroll run"
+          >
+            <Trash2 className="w-4 h-4 text-rose-600" />
+            {isDeleting ? 'Deleting...' : 'Delete Run'}
+          </button>
+
           {/* Mark as Paid Button */}
           {run.status === 'approved' && (
             <Can I="payroll.approve" a="Payroll">
@@ -249,7 +279,7 @@ export function PayrollRunDetailPage() {
         <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
           <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Headcount</p>
           <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">
-            {run.employeeCount || payslips.length}
+            {run.totalEmployees ?? run.employeeCount ?? payslips.length}
           </p>
         </div>
 
@@ -263,14 +293,14 @@ export function PayrollRunDetailPage() {
         <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
           <p className="text-[11px] font-semibold text-rose-500 uppercase tracking-wider">FBR Tax Withheld</p>
           <p className="text-lg font-bold text-rose-600 dark:text-rose-400 mt-1 font-mono">
-            PKR {((run.totalIncomeTax || 0) / 100).toLocaleString('en-PK')}
+            PKR {(((run.totalTaxWithheld ?? run.totalIncomeTax) || 0) / 100).toLocaleString('en-PK')}
           </p>
         </div>
 
         <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
           <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">EOBI (EE+ER)</p>
           <p className="text-lg font-bold text-slate-900 dark:text-white mt-1 font-mono">
-            PKR {((run.totalEobi || 0) / 100).toLocaleString('en-PK')}
+            PKR {((((run.totalEobiEmployer || 0) + (run.totalEobiEmployee || 0)) || run.totalEobi || 0) / 100).toLocaleString('en-PK')}
           </p>
         </div>
 

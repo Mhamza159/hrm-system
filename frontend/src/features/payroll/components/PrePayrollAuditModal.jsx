@@ -29,7 +29,8 @@ import {
   Loader2,
   ShieldAlert,
   Sparkles,
-  FileText
+  FileText,
+  CreditCard
 } from 'lucide-react';
 import { useGetPrePayrollAuditQuery, useGeneratePayrollRunMutation } from '../payrollApi.js';
 import { toast } from 'sonner';
@@ -477,6 +478,29 @@ export function PrePayrollAuditModal({ isOpen, onClose, onSuccess }) {
                                         <p className="text-[11px] text-slate-400 italic">No approved overtime this month.</p>
                                       )}
                                     </div>
+
+                                    {/* 5. Loans & Salary Advances (If Any) */}
+                                    {emp.loanDeductionPaisa > 0 && (
+                                      <div className="p-3 rounded-xl bg-amber-50/50 dark:bg-[#1f2619] border border-amber-200 dark:border-amber-800 space-y-2 md:col-span-3">
+                                        <div className="flex items-center justify-between text-xs font-bold text-amber-800 dark:text-amber-300">
+                                          <span className="flex items-center gap-1.5">
+                                            <CreditCard className="w-3.5 h-3.5 text-amber-500" />
+                                            Scheduled Loan & Advance Deductions (-PKR {(emp.loanDeductionPaisa / 100).toLocaleString()})
+                                          </span>
+                                          <span className="text-[10px] text-amber-600 dark:text-amber-400 font-semibold">Scheduled Recovery</span>
+                                        </div>
+                                        <div className="space-y-1">
+                                          {(emp.auditBreakdown?.loans || emp.loanRecoveries || []).map((loan, idx) => (
+                                            <div key={idx} className="flex items-center justify-between text-[11px] p-1.5 rounded bg-white dark:bg-[#111D17]">
+                                              <span className="text-slate-700 dark:text-slate-300">
+                                                {loan.type === 'advance' ? 'Salary Advance' : 'Company Loan'} ({loan.loanId}) • Inst. {loan.installmentNumber} of {loan.totalTenure}
+                                              </span>
+                                              <span className="text-rose-600 font-bold">-PKR {(loan.amountPaisa / 100).toLocaleString()}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
 
                                     {/* 4. Leave Encashment (If Any) */}
                                     {emp.encashmentPayPaisa > 0 && (

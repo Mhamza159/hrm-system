@@ -121,6 +121,18 @@ export const payrollApi = baseApi.injectEndpoints({
       ]
     }),
 
+    deletePayrollRun: builder.mutation({
+      query: (runId) => ({
+        url: `/payroll/runs/${runId}`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: [
+        { type: 'PayrollRun', id: 'LIST' },
+        { type: 'Payslip', id: 'LIST' },
+        'PrePayrollAudit'
+      ]
+    }),
+
     // 9.11: My Payslips
     getMyPayslips: builder.query({
       query: (params) => ({
@@ -194,6 +206,7 @@ export const {
   useAdjustPayslipMutation,
   useApprovePayrollRunMutation,
   useMarkPayrollPaidMutation,
+  useDeletePayrollRunMutation,
   useGetMyPayslipsQuery,
   useProcessFinalSettlementMutation,
   useGetTaxComplianceReportQuery,
