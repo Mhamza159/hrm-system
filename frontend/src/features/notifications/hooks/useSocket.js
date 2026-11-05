@@ -62,7 +62,7 @@ export const useSocket = () => {
       // Real-time notification handler
       sharedSocket.on('notification:new', (notification) => {
         // 1. Invalidate RTK Query cache so unread badge and drawer refresh immediately
-        dispatch(baseApi.util.invalidateTags(['Notification']));
+        dispatch(baseApi.util.invalidateTags(['Notification', 'NotificationCounts']));
 
         // 2. Display unobtrusive toast notification
         if (notification?.title) {
@@ -84,7 +84,7 @@ export const useSocket = () => {
 
       // Real-time announcement handler
       sharedSocket.on('announcement:new', (announcement) => {
-        dispatch(baseApi.util.invalidateTags(['Announcement', 'Notification']));
+        dispatch(baseApi.util.invalidateTags(['Announcement', 'Notification', 'NotificationCounts']));
         if (announcement?.title) {
           toast.message(`📢 ${announcement.title}`, {
             description: announcement.content?.slice(0, 100) + '...',
