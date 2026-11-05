@@ -14,7 +14,7 @@ import { Employee } from '../../models/employee.model.js';
 import { User } from '../../models/user.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { recordAuditLog } from '../../services/audit.service.js';
-import { assertSuperAdminIfApplicantIsHR, isApplicantHR } from '../../utils/hrApprovalGuard.js';
+import { assertSuperAdminIfApplicantIsHR, isApplicantHR, notifySuperAdmins, notifyHRManagers } from '../../utils/hrApprovalGuard.js';
 import { notify } from '../../services/notify.service.js';
 import {
   validateLoanPolicy,
@@ -107,16 +107,36 @@ export async function createLoan(employeeId, loanData, actor, { ip, userAgent } 
     }
   });
 
-  // 6. Notify Department Manager if direct report exists
+  // 6. Notification Dispatch
   const applicant = await Employee.findById(employeeId).populate('managerId');
-  if (applicant?.managerId?.userId) {
-    const applicantName = applicant.name || `${applicant.firstName || ''} ${applicant.lastName || ''}`.trim() || 'Employee';
-    await notify(applicant.managerId.userId, {
-      type: 'leave', // Reuse existing channel
-      title: `New ${type === 'advance' ? 'Salary Advance' : 'Loan'} Request`,
-      body: `${applicantName} applied for PKR ${(amount / 100).toLocaleString('en-PK')} (${type}).`,
+  const applicantName = applicant?.name || `${applicant?.firstName || ''} ${applicant?.lastName || ''}`.trim() || 'Employee';
+  const amountFormatted = (amount / 100).toLocaleString('en-PK');
+
+  if (isHrApplicant) {
+    // Executive Notification: HR staff member applied -> notify all Super Admins immediately
+    await notifySuperAdmins({
+      type: 'leave',
+      title: `New ${type === 'advance' ? 'Salary Advance' : 'Loan'} Request (HR Staff)`,
+      body: `${applicantName} (HR Manager) applied for PKR ${amountFormatted} (${type}). Awaiting Super Admin disbursement authorization.`,
       link: '/loans/approvals'
-    }).catch(() => {});
+    });
+  } else {
+    // Normal Flow: Notify direct manager, or HR if employee has no manager
+    if (applicant?.managerId?.userId) {
+      await notify(applicant.managerId.userId, {
+        type: 'leave',
+        title: `New ${type === 'advance' ? 'Salary Advance' : 'Loan'} Request`,
+        body: `${applicantName} applied for PKR ${amountFormatted} (${type}).`,
+        link: '/loans/approvals'
+      }).catch(() => {});
+    } else {
+      await notifyHRManagers({
+        type: 'leave',
+        title: `New ${type === 'advance' ? 'Salary Advance' : 'Loan'} Request`,
+        body: `${applicantName} applied for PKR ${amountFormatted} (${type}). Awaiting HR review.`,
+        link: '/loans/approvals'
+      });
+    }
   }
 
   return loan;
@@ -205,7 +225,15 @@ export async function getLoans(
 
   const [items, total] = await Promise.all([
     Loan.find(filter)
-      .populate('employeeId', 'firstName lastName employeeCode email departmentId')
+      .populate({
+        path: 'employeeId',
+        select: 'firstName lastName name employeeCode email departmentId managerId userId',
+        populate: {
+          path: 'userId',
+          select: 'name email roles',
+          populate: { path: 'roles', select: 'name' }
+        }
+      })
       .populate('recommendation.recommendedBy', 'name email')
       .populate('hrReview.reviewedBy', 'name email')
       .populate('adminApproval.approvedBy', 'name email')
@@ -230,7 +258,15 @@ export async function getLoans(
  */
 export async function getLoanById(id, userScope = 'all', actor = null) {
   const loan = await Loan.findById(id)
-    .populate('employeeId', 'firstName lastName employeeCode email departmentId designationId managerId')
+    .populate({
+      path: 'employeeId',
+      select: 'firstName lastName name employeeCode email departmentId designationId managerId userId',
+      populate: {
+        path: 'userId',
+        select: 'name email roles',
+        populate: { path: 'roles', select: 'name' }
+      }
+    })
     .populate('recommendation.recommendedBy', 'name email')
     .populate('hrReview.reviewedBy', 'name email')
     .populate('adminApproval.approvedBy', 'name email')
@@ -378,6 +414,12 @@ export async function decideLoan(id, decisionData, actor, { ip, userAgent } = {}
         decision: 'recommended',
         comments: sanitizedComments
       };
+      await notifyHRManagers({
+        type: 'leave',
+        title: 'Loan Recommendation Awaiting HR',
+        body: `Loan ${loan.loanId} was recommended by department manager. Awaiting HR verification.`,
+        link: '/loans/approvals'
+      });
     } else if (decision === 'decline' || decision === 'reject') {
       loan.status = 'rejected';
       loan.recommendation = {
@@ -404,6 +446,12 @@ export async function decideLoan(id, decisionData, actor, { ip, userAgent } = {}
         decision: 'forwarded',
         comments: sanitizedComments
       };
+      await notifySuperAdmins({
+        type: 'leave',
+        title: 'Loan Awaiting Executive Disbursement',
+        body: `Loan ${loan.loanId} was reviewed and forwarded by HR. Awaiting Super Admin disbursement authorization.`,
+        link: '/loans/approvals'
+      });
     } else if (decision === 'reject') {
       loan.status = 'rejected';
       loan.hrReview = {

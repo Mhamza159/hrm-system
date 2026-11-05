@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { X, CheckCircle2, XCircle, AlertTriangle, Send, DollarSign } from 'lucide-react';
+import { X, CheckCircle2, XCircle, AlertTriangle, Send, DollarSign, ShieldCheck } from 'lucide-react';
 import { useDecideLoanMutation } from '../loansApi.js';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { cn } from '../../../lib/utils.js';
@@ -41,7 +41,7 @@ export function LoanDecisionModal({ isOpen, onClose, loan }) {
 
   const amountPkr = (loan.amount || 0) / 100;
   const installmentPkr = (loan.monthlyInstallment || 0) / 100;
-  const employeeName = loan.employeeId?.user?.name || loan.employeeId?.firstName || 'Employee';
+  const employeeName = loan.employeeId?.name || loan.employeeId?.user?.name || loan.employeeId?.userId?.name || `${loan.employeeId?.firstName || ''} ${loan.employeeId?.lastName || ''}`.trim() || 'Employee';
 
   const handleSubmit = async (e) => {
     e.preventDefault();

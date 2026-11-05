@@ -134,7 +134,7 @@ export function LoanApprovalsPage() {
               const amountPkr = (loan.amount || 0) / 100;
               const installmentPkr = (loan.monthlyInstallment || 0) / 100;
               const emp = loan.employeeId;
-              const empName = emp?.user?.name || `${emp?.firstName || ''} ${emp?.lastName || ''}`.trim() || 'Employee';
+              const empName = emp?.name || emp?.user?.name || emp?.userId?.name || `${emp?.firstName || ''} ${emp?.lastName || ''}`.trim() || 'Employee';
 
               const canTakeAction =
                 (loan.status === 'pending_recommendation' && !isSuperAdmin && !isHR) ||
@@ -155,6 +155,11 @@ export function LoanApprovalsPage() {
                         {loan.type}
                       </span>
                       <StatusBadge status={loan.status} />
+                      {isLoanFromHR(loan) && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                          HR Staff Request
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                       <User className="w-3.5 h-3.5 text-slate-400" />

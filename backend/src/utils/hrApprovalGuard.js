@@ -9,6 +9,8 @@
 
 import { Employee } from '../models/employee.model.js';
 import { User } from '../models/user.model.js';
+import { Role } from '../models/role.model.js';
+import { notify } from '../services/notify.service.js';
 import { ApiError } from './ApiError.js';
 
 /**
@@ -106,5 +108,49 @@ export const assertSuperAdminIfApplicantIsHR = async (
         `Forbidden: Any ${requestTypeName} applied by HR personnel can only be approved or decided by the Super Admin.`
       );
     }
+  }
+};
+
+/**
+ * Helper to dispatch in-app/push notification to all active Super Admins.
+ * @param {Object} payload - Notification payload { type, title, body, link }
+ */
+export const notifySuperAdmins = async (payload) => {
+  try {
+    const role = await Role.findOne({ name: 'Super Admin' }).select('_id');
+    if (!role) return;
+    const adminUsers = await User.find({
+      roles: role._id,
+      isActive: true,
+      isDeleted: { $ne: true }
+    }).select('_id').lean();
+    const adminUserIds = adminUsers.map((u) => u._id);
+    if (adminUserIds.length > 0) {
+      await notify(adminUserIds, payload);
+    }
+  } catch (err) {
+    console.error('[Notification Error - Super Admins]', err.message);
+  }
+};
+
+/**
+ * Helper to dispatch in-app/push notification to all active HR Managers.
+ * @param {Object} payload - Notification payload { type, title, body, link }
+ */
+export const notifyHRManagers = async (payload) => {
+  try {
+    const role = await Role.findOne({ name: 'HR Manager' }).select('_id');
+    if (!role) return;
+    const hrUsers = await User.find({
+      roles: role._id,
+      isActive: true,
+      isDeleted: { $ne: true }
+    }).select('_id').lean();
+    const hrUserIds = hrUsers.map((u) => u._id);
+    if (hrUserIds.length > 0) {
+      await notify(hrUserIds, payload);
+    }
+  } catch (err) {
+    console.error('[Notification Error - HR Managers]', err.message);
   }
 };
