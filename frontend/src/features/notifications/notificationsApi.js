@@ -30,7 +30,8 @@ export const notificationsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (result, error, id) => [
         { type: 'Notification', id },
-        { type: 'Notification', id: 'LIST' }
+        { type: 'Notification', id: 'LIST' },
+        'NotificationCounts'
       ]
     }),
 
@@ -40,7 +41,15 @@ export const notificationsApi = baseApi.injectEndpoints({
         url: '/notifications/read-all',
         method: 'PATCH'
       }),
-      invalidatesTags: [{ type: 'Notification', id: 'LIST' }]
+      invalidatesTags: [{ type: 'Notification', id: 'LIST' }, 'NotificationCounts']
+    }),
+
+    // Fetch unread notification counts grouped by module & link
+    getNotificationUnreadSummary: builder.query({
+      query: () => ({
+        url: '/notifications/unread-summary'
+      }),
+      providesTags: ['NotificationCounts']
     }),
 
     // Fetch user notification channel preferences
@@ -65,6 +74,7 @@ export const notificationsApi = baseApi.injectEndpoints({
 
 export const {
   useGetNotificationsQuery,
+  useGetNotificationUnreadSummaryQuery,
   useMarkAsReadMutation,
   useMarkAllAsReadMutation,
   useGetNotificationPreferencesQuery,

@@ -77,6 +77,7 @@ const notificationSchema = new mongoose.Schema(
 
 // High-speed compound index for unread count checks and recent list pagination
 notificationSchema.index({ userId: 1, isRead: 1, createdAt: -1 });
+notificationSchema.index({ userId: 1, isRead: 1, type: 1 });
 
 // Automated MongoDB TTL (Time-To-Live) index: Purges alerts older than 90 days (90 * 24 * 60 * 60 seconds)
 notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 });

@@ -73,6 +73,15 @@ export const useSocket = () => {
         }
       });
 
+      // Real-time notification read status sync
+      sharedSocket.on('notification:read', () => {
+        dispatch(baseApi.util.invalidateTags(['Notification', 'NotificationCounts']));
+      });
+
+      sharedSocket.on('notification:read_all', () => {
+        dispatch(baseApi.util.invalidateTags(['Notification', 'NotificationCounts']));
+      });
+
       // Real-time announcement handler
       sharedSocket.on('announcement:new', (announcement) => {
         dispatch(baseApi.util.invalidateTags(['Announcement', 'Notification']));

@@ -53,6 +53,7 @@ import { usePermission } from '../../hooks/usePermission.js';
 import { logout } from '../../features/auth/authSlice.js';
 import { useLogoutMutation } from '../../features/auth/authApi.js';
 import { useGetNotificationsQuery } from '../../features/notifications/notificationsApi.js';
+import { useModuleNotificationCounts } from '../../features/notifications/hooks/useModuleNotificationCounts.js';
 import { RoleBadge } from '../common/RoleBadge.jsx';
 import { getUserDisplayName } from '../../lib/formatters.js';
 import { cn } from '../../lib/utils.js';
@@ -65,11 +66,8 @@ export function Sidebar({ isOpen = false, onClose }) {
   const location = useLocation();
   const [logoutApi] = useLogoutMutation();
 
-  const { data: notifData } = useGetNotificationsQuery(
-    { page: 1, limit: 1, unreadOnly: 'false' },
-    { pollingInterval: 60000 }
-  );
-  const unreadCount = notifData?.data?.unreadCount || 0;
+  const { totalUnread, groupCounts, getRouteCount } = useModuleNotificationCounts();
+  const unreadCount = totalUnread;
 
   const userName = getUserDisplayName(user);
   const primaryRole = user?.roles?.[0] || 'Employee';
@@ -385,12 +383,19 @@ export function Sidebar({ isOpen = false, onClose }) {
                       <Icon className={cn('w-4 h-4 transition-colors', isGroupActive ? 'text-[#00C471]' : 'text-white/70 group-hover:text-white')} />
                       <span>{item.name}</span>
                     </div>
-                    <ChevronDown
-                      className={cn(
-                        'w-4 h-4 transition-transform duration-200 text-white/50 group-hover:text-white',
-                        isGroupOpen && 'rotate-180 text-white'
+                    <div className="flex items-center gap-2">
+                      {!isGroupOpen && (groupCounts[item.name] || 0) > 0 && (
+                        <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold bg-[#00C471] text-white shadow-[0_0_8px_rgba(0,196,113,0.5)] font-mono animate-pulse">
+                          {groupCounts[item.name] > 99 ? '99+' : groupCounts[item.name]}
+                        </span>
                       )}
-                    />
+                      <ChevronDown
+                        className={cn(
+                          'w-4 h-4 transition-transform duration-200 text-white/50 group-hover:text-white',
+                          isGroupOpen && 'rotate-180 text-white'
+                        )}
+                      />
+                    </div>
                   </button>
 
                   {/* Dropdown Items with Tree Indicator Line & Bullets */}
@@ -413,20 +418,28 @@ export function Sidebar({ isOpen = false, onClose }) {
                             )
                           }
                         >
-                          {({ isActive }) => (
-                            <>
-                              {/* Circular Dot on the vertical line (matching reference image) */}
-                              <span
-                                className={cn(
-                                  'absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full border border-[#061A14] transition-all',
-                                  isActive
-                                    ? 'bg-[#00C471] ring-2 ring-[#00C471]/30 shadow-[0_0_8px_rgba(0,196,113,0.6)]'
-                                    : 'bg-white/40 group-hover:bg-white/80'
+                          {({ isActive }) => {
+                            const routeUnread = getRouteCount(child.path);
+                            return (
+                              <>
+                                {/* Circular Dot on the vertical line (matching reference image) */}
+                                <span
+                                  className={cn(
+                                    'absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full border border-[#061A14] transition-all',
+                                    isActive
+                                      ? 'bg-[#00C471] ring-2 ring-[#00C471]/30 shadow-[0_0_8px_rgba(0,196,113,0.6)]'
+                                      : 'bg-white/40 group-hover:bg-white/80'
+                                  )}
+                                />
+                                <span className="truncate">{child.name}</span>
+                                {routeUnread > 0 && (
+                                  <span className="ml-auto text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-[#00C471]/20 text-[#00C471] border border-[#00C471]/30 font-mono">
+                                    {routeUnread > 99 ? '99+' : routeUnread}
+                                  </span>
                                 )}
-                              />
-                              <span className="truncate">{child.name}</span>
-                            </>
-                          )}
+                              </>
+                            );
+                          }}
                         </NavLink>
                       ))}
                     </div>
@@ -462,12 +475,20 @@ export function Sidebar({ isOpen = false, onClose }) {
                       )
                     }
                   >
-                    {({ isActive }) => (
-                      <>
-                        <Icon className={cn('w-4 h-4 transition-colors', isActive ? 'text-white' : 'text-white/70 group-hover:text-white')} />
-                        <span>{item.name}</span>
-                      </>
-                    )}
+                    {({ isActive }) => {
+                      const routeUnread = getRouteCount(item.path);
+                      return (
+                        <>
+                          <Icon className={cn('w-4 h-4 transition-colors', isActive ? 'text-white' : 'text-white/70 group-hover:text-white')} />
+                          <span>{item.name}</span>
+                          {routeUnread > 0 && (
+                            <span className="ml-auto text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-[#00C471]/20 text-[#00C471] border border-[#00C471]/30 font-mono">
+                              {routeUnread > 99 ? '99+' : routeUnread}
+                            </span>
+                          )}
+                        </>
+                      );
+                    }}
                   </NavLink>
                 );
               })}

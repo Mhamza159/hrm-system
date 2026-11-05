@@ -152,3 +152,47 @@ export const updatePreferences = async (userId, prefs) => {
 
   return user.notificationPrefs;
 };
+
+
+/**
+ * Retrieve unread notification count grouped by module type and navigational links
+ * @param {string|import('mongoose').Types.ObjectId} userId 
+ * @returns {Promise<{ totalUnread: number, byType: Record<string, number>, byLink: Record<string, number> }>}
+ */
+export const getUnreadSummaryByModule = async (userId) => {
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+
+  const [aggregateResult, totalUnread] = await Promise.all([
+    Notification.aggregate([
+      { $match: { userId: userObjectId, isRead: false } },
+      {
+        $group: {
+          _id: '$type',
+          count: { $sum: 1 },
+          links: { $push: '$link' }
+        }
+      }
+    ]),
+    Notification.countDocuments({ userId: userObjectId, isRead: false })
+  ]);
+
+  const byType = {};
+  const byLink = {};
+
+  for (const group of aggregateResult) {
+    byType[group._id] = group.count;
+    if (Array.isArray(group.links)) {
+      for (const link of group.links) {
+        if (link) {
+          byLink[link] = (byLink[link] || 0) + 1;
+        }
+      }
+    }
+  }
+
+  return {
+    totalUnread,
+    byType,
+    byLink
+  };
+};

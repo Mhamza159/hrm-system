@@ -26,6 +26,13 @@ router.get(
   notificationController.getNotifications
 );
 
+// 1.1 Retrieve unread notifications summary by module category and target link
+router.get(
+  '/unread-summary',
+  checkPermission('notification.view'),
+  notificationController.getUnreadSummary
+);
+
 // 2. Mark single notification as read
 router.patch(
   '/:id/read',

@@ -149,6 +149,7 @@ export const baseApi = createApi({
     'OrgChart',
     'Team',
     'Notification',
+    'NotificationCounts',
     'Announcement',
     'WFH',
     'Correction',

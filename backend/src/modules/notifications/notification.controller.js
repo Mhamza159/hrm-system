@@ -47,3 +47,11 @@ export const updatePreferences = asyncHandler(async (req, res) => {
     apiResponse(200, result, 'Notification preferences updated successfully')
   );
 });
+
+
+export const getUnreadSummary = asyncHandler(async (req, res) => {
+  const result = await notificationService.getUnreadSummaryByModule(req.user._id);
+  return res.status(200).json(
+    apiResponse(200, result, 'Unread notification summary retrieved successfully')
+  );
+});
