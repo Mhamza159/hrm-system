@@ -24,7 +24,7 @@ import {
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { StatusBadge } from '../../../components/common/StatusBadge.jsx';
 import { Can } from '../../../components/common/Can.jsx';
-import { useGetLoansQuery } from '../loansApi.js';
+import { useGetMyLoansQuery } from '../loansApi.js';
 import { LoanApplyModal } from '../components/LoanApplyModal.jsx';
 import { LoanScheduleDrawer } from '../components/LoanScheduleDrawer.jsx';
 
@@ -32,7 +32,7 @@ export function MyLoansPage() {
   const [isApplyOpen, setIsApplyOpen] = useState(false);
   const [selectedLoanId, setSelectedLoanId] = useState(null);
 
-  const { data: loansRes, isLoading, refetch } = useGetLoansQuery({ page: 1, limit: 50 });
+  const { data: loansRes, isLoading, refetch } = useGetMyLoansQuery({ page: 1, limit: 50 });
   const loans = loansRes?.data || [];
 
   // Metrics calculation

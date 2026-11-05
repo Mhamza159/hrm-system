@@ -18,13 +18,28 @@ export const loansApi = baseApi.injectEndpoints({
         method: 'POST',
         body
       }),
-      invalidatesTags: [{ type: 'Loans', id: 'LIST' }, 'Loan']
+      invalidatesTags: [{ type: 'Loans', id: 'LIST' }, { type: 'Loans', id: 'MY_LIST' }, 'Loan']
     }),
 
     // 10.2: Live Borrowing Limit & Eligibility
     getLoanEligibility: builder.query({
       query: () => '/loans/my-eligibility',
       providesTags: ['Loan']
+    }),
+
+    // 10.1: Personal Self-Service Loans (Strictly Scoped to Caller)
+    getMyLoans: builder.query({
+      query: (params) => ({
+        url: '/loans/my',
+        params
+      }),
+      providesTags: (result) =>
+        result?.data
+          ? [
+              ...result.data.map(({ _id }) => ({ type: 'Loan', id: _id })),
+              { type: 'Loans', id: 'MY_LIST' }
+            ]
+          : [{ type: 'Loans', id: 'MY_LIST' }]
     }),
 
     // List Loans (Scoped by CASL ability: own/team/dept/all)
@@ -92,6 +107,7 @@ export const loansApi = baseApi.injectEndpoints({
 export const {
   useApplyLoanMutation,
   useGetLoanEligibilityQuery,
+  useGetMyLoansQuery,
   useGetLoansQuery,
   useGetLoanByIdQuery,
   useGetLoanScheduleQuery,

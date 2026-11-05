@@ -58,9 +58,11 @@ export async function createLoan(employeeId, loanData, actor, { ip, userAgent } 
   // Sanitize reason to prevent XSS / HTML injection in notifications & audit logs
   const sanitizedReason = (reason || '').replace(/<[^>]*>?/gm, '').trim();
 
-  // 4. Persist in initial status (if applicant is HR, skip directly to pending_admin for Super Admin approval)
+  // 4. Persist in initial status:
+  // - If applicant is HR -> routes directly to Super Admin ('pending_admin')
+  // - If applicant is regular employee -> routes to HR ('pending_hr') for verification before passing to Super Admin
   const isHrApplicant = await isApplicantHR(employeeId, actor?._id);
-  const initialStatus = isHrApplicant ? 'pending_admin' : 'pending_recommendation';
+  const initialStatus = isHrApplicant ? 'pending_admin' : 'pending_hr';
 
   let loan;
   try {
@@ -121,21 +123,21 @@ export async function createLoan(employeeId, loanData, actor, { ip, userAgent } 
       link: '/loans/approvals'
     });
   } else {
-    // Normal Flow: Notify direct manager, or HR if employee has no manager
+    // Standard Employee Flow: Notify HR Managers immediately for review & verification
+    await notifyHRManagers({
+      type: 'leave',
+      title: `New ${type === 'advance' ? 'Salary Advance' : 'Loan'} Request`,
+      body: `${applicantName} applied for PKR ${amountFormatted} (${type}). Awaiting HR review.`,
+      link: '/loans/approvals'
+    });
+    // If employee also has a direct manager, keep manager informed
     if (applicant?.managerId?.userId) {
       await notify(applicant.managerId.userId, {
         type: 'leave',
-        title: `New ${type === 'advance' ? 'Salary Advance' : 'Loan'} Request`,
-        body: `${applicantName} applied for PKR ${amountFormatted} (${type}).`,
+        title: `Team Member Borrowing Request`,
+        body: `${applicantName} applied for PKR ${amountFormatted} (${type}). Submitted to HR for processing.`,
         link: '/loans/approvals'
       }).catch(() => {});
-    } else {
-      await notifyHRManagers({
-        type: 'leave',
-        title: `New ${type === 'advance' ? 'Salary Advance' : 'Loan'} Request`,
-        body: `${applicantName} applied for PKR ${amountFormatted} (${type}). Awaiting HR review.`,
-        link: '/loans/approvals'
-      });
     }
   }
 

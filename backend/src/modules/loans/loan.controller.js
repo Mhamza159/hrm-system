@@ -43,6 +43,20 @@ export const getMyEligibility = asyncHandler(async (req, res) => {
   );
 });
 
+export const getMyLoans = asyncHandler(async (req, res) => {
+  // Always enforce 'own' scope to guarantee personal loans only, regardless of user role
+  const result = await loanService.getLoans(req.query, 'own', req.user);
+
+  return res.status(200).json(
+    apiResponse(200, result.items, 'Personal loans retrieved successfully', {
+      page: result.page,
+      limit: result.limit,
+      total: result.total,
+      totalPages: result.totalPages
+    })
+  );
+});
+
 export const getLoans = asyncHandler(async (req, res) => {
   // Extract active scope from CASL middleware
   const userScope = req.permissionScope || 'own';

@@ -54,6 +54,17 @@ router.post(
 );
 
 // ==========================================
+// 10.1: Personal Self-Service Loans (Strictly Scoped to Caller)
+// ==========================================
+router.get(
+  '/my',
+  authenticate,
+  checkPermission('loan.view', 'own'),
+  validate(queryLoansSchema),
+  loanController.getMyLoans
+);
+
+// ==========================================
 // List Loans (Scoped by CASL ability: own/team/dept/all)
 // ==========================================
 router.get(
