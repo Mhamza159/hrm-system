@@ -14,6 +14,7 @@ import { Employee } from '../../models/employee.model.js';
 import { User } from '../../models/user.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { recordAuditLog } from '../../services/audit.service.js';
+import { assertSuperAdminIfApplicantIsHR, isApplicantHR } from '../../utils/hrApprovalGuard.js';
 import { notify } from '../../services/notify.service.js';
 import {
   validateLoanPolicy,
@@ -57,7 +58,10 @@ export async function createLoan(employeeId, loanData, actor, { ip, userAgent } 
   // Sanitize reason to prevent XSS / HTML injection in notifications & audit logs
   const sanitizedReason = (reason || '').replace(/<[^>]*>?/gm, '').trim();
 
-  // 4. Persist in 'pending_recommendation' status (guarded by partial unique index)
+  // 4. Persist in initial status (if applicant is HR, skip directly to pending_admin for Super Admin approval)
+  const isHrApplicant = await isApplicantHR(employeeId, actor?._id);
+  const initialStatus = isHrApplicant ? 'pending_admin' : 'pending_recommendation';
+
   let loan;
   try {
     loan = await Loan.create({
@@ -70,7 +74,7 @@ export async function createLoan(employeeId, loanData, actor, { ip, userAgent } 
       remainingBalance: amount,
       totalRepaid: 0,
       reason: sanitizedReason,
-      status: 'pending_recommendation',
+      status: initialStatus,
       effectiveStartMonth,
       schedule,
       repayments: []
@@ -299,6 +303,41 @@ export async function decideLoan(id, decisionData, actor, { ip, userAgent } = {}
 
   if (!loan) {
     throw new ApiError(404, 'Loan record not found');
+  }
+
+  await assertSuperAdminIfApplicantIsHR(loan.employeeId, actor, 'loan application');
+
+  const isSuperAdminActor = Array.isArray(actor?.roles)
+    ? actor.roles.some((r) => (typeof r === 'object' ? r.name : r) === 'Super Admin')
+    : actor?.role === 'Super Admin';
+  const isHrApplicant = await isApplicantHR(loan.employeeId);
+
+  // When applicant is HR, Super Admin can directly approve or reject from any stage
+  if (isHrApplicant && isSuperAdminActor && (loan.status === 'pending_recommendation' || loan.status === 'pending_hr')) {
+    const sanitized = (comments || '').replace(/<[^>]*>?/gm, '').trim();
+    if (decision === 'approve') {
+      loan.status = 'active';
+      loan.adminApproval = {
+        approvedBy: actor._id,
+        approvedAt: new Date(),
+        decision: 'approved',
+        disbursementMethod: disbursementMethod || 'bank_transfer',
+        comments: sanitized
+      };
+      await loan.save();
+      return loan;
+    } else if (decision === 'reject') {
+      loan.status = 'rejected';
+      loan.adminApproval = {
+        approvedBy: actor._id,
+        approvedAt: new Date(),
+        decision: 'rejected',
+        disbursementMethod: null,
+        comments: sanitized
+      };
+      await loan.save();
+      return loan;
+    }
   }
 
   // Separation of duties: Applicant cannot recommend or approve their own loan

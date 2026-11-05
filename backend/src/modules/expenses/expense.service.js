@@ -18,6 +18,7 @@ import { ApiError } from '../../utils/ApiError.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { notify } from '../../services/notify.service.js';
 import { isCloudinaryConfigured, uploadBufferToCloudinary } from '../../config/cloudinary.js';
+import { assertSuperAdminIfApplicantIsHR, isApplicantHR } from '../../utils/hrApprovalGuard.js';
 
 // Default managerial approval threshold: PKR 15,000 (1,500,000 paisa)
 export const DEFAULT_MANAGER_APPROVAL_LIMIT_PAISA = 1500000;
@@ -251,7 +252,7 @@ export async function createExpense(employeeId, data, file, actor) {
     receiptUrl: receiptInfo.receiptUrl,
     receiptPublicId: receiptInfo.receiptPublicId,
     receiptMimeType: receiptInfo.receiptMimeType,
-    status: 'pending_manager',
+    status: (await isApplicantHR(employee._id, actor?._id)) ? 'pending_admin' : 'pending_manager',
     approvalHistory: [
       {
         stage: 'submission',
@@ -423,6 +424,9 @@ export async function decideExpense(id, decisionData, actor) {
   if (actorEmployeeId && actorEmployeeId === expense.employeeId.toString()) {
     throw new ApiError(403, 'Separation of duties violation: You cannot decide or approve your own expense claim.');
   }
+
+  // 2b. Executive Policy: HR applicant expenses can ONLY be decided by Super Admin
+  await assertSuperAdminIfApplicantIsHR(expense.employeeId, actor, 'expense claim');
 
   const isSuperAdmin = actor.role === 'Super Admin' || actor.roles?.some((r) => r.name === 'Super Admin');
   const isHR = actor.role === 'HR Manager' || actor.roles?.some((r) => r.name === 'HR Manager');

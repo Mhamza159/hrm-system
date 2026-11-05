@@ -24,6 +24,7 @@ import { User } from '../../models/user.model.js';
 import { checkApprovalLimit } from '../../utils/approvalLimit.js';
 import ExcelJS from 'exceljs';
 import { calculateDeductibleDays } from './leaveCalculator.js';
+import { assertSuperAdminIfApplicantIsHR, isApplicantHR } from '../../utils/hrApprovalGuard.js';
 
 /**
  * Helper to check whether user has a specific permission action across their roles
@@ -828,6 +829,19 @@ export const getMyLeaves = async (employeeId, query = {}) => {
  * @returns {Promise<Array<Object>>}
  */
 export const buildApprovalChain = async (employee, netDays) => {
+  // If applicant is HR, the only approval tier is Super Admin
+  const isHrApplicant = await isApplicantHR(employee._id, employee.userId);
+  if (isHrApplicant) {
+    return [
+      {
+        step: 1,
+        approverRole: 'Super Admin',
+        approverId: null,
+        status: 'pending'
+      }
+    ];
+  }
+
   const leavePolicy = (await SettingService.getSetting('leavePolicy')) || {
     approvalChainLevels: 2
   };
@@ -1054,6 +1068,8 @@ export const decideLeave = async (leaveId, action, reason, user) => {
   if (!leave) {
     throw new ApiError(404, 'Leave application record not found');
   }
+
+  await assertSuperAdminIfApplicantIsHR(leave.employeeId, user, 'leave application');
 
   if (leave.status !== 'pending') {
     throw new ApiError(400, `Cannot decide on leave with status '${leave.status}'. Only pending leaves can be approved or rejected.`);
@@ -1624,6 +1640,8 @@ export const decideLeaveEncashment = async (id, { action, rejectionReason }, use
   if (!encashment) {
     throw new ApiError(404, 'Leave encashment record not found');
   }
+
+  await assertSuperAdminIfApplicantIsHR(encashment.employeeId, user, 'leave encashment request');
 
   if (encashment.status !== 'pending') {
     throw new ApiError(400, `Cannot decide on encashment with status '${encashment.status}'. Only pending requests can be approved or rejected.`);

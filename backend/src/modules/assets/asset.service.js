@@ -17,6 +17,7 @@ import { Role } from '../../models/role.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { notify } from '../../services/notify.service.js';
+import { assertSuperAdminIfApplicantIsHR } from '../../utils/hrApprovalGuard.js';
 
 /**
  * 23.1: Register a new physical hardware or software asset into inventory
@@ -736,6 +737,8 @@ export const approveAssetRequest = async ({ id, allocatedAssetId, user, ipAddres
     throw new ApiError(404, 'Asset requisition not found');
   }
 
+  await assertSuperAdminIfApplicantIsHR(request.employeeId, user, 'asset requisition');
+
   if (request.status !== 'pending') {
     throw new ApiError(400, `Requisition has already been processed (current status: '${request.status}').`);
   }
@@ -823,6 +826,8 @@ export const rejectAssetRequest = async ({ id, rejectionReason, user, ipAddress,
   if (!prevReq) {
     throw new ApiError(404, 'Asset requisition not found');
   }
+
+  await assertSuperAdminIfApplicantIsHR(prevReq.employeeId, user, 'asset requisition');
 
   if (prevReq.status !== 'pending') {
     throw new ApiError(400, `Requisition has already been processed (current status: '${prevReq.status}').`);

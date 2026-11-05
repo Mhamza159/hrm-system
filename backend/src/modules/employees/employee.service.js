@@ -28,6 +28,7 @@ import { scopeFilter } from '../../utils/scopeFilter.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { emailService } from '../../services/email.service.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary, isCloudinaryConfigured } from '../../config/cloudinary.js';
+import { assertSuperAdminIfApplicantIsHR } from '../../utils/hrApprovalGuard.js';
 import { initializeEmployeeLeaveBalances } from '../leaves/leave.service.js';
 import { assertEmployeeAssetClearance } from '../assets/asset.service.js';
 import { initOnboardingForEmployee } from '../onboarding/onboarding.service.js';
@@ -1058,6 +1059,8 @@ export const decideChangeRequest = async (id, { action, rejectionReason }, actor
   if (!changeReq) {
     throw new ApiError(404, 'Change request not found');
   }
+
+  await assertSuperAdminIfApplicantIsHR(changeReq.employeeId, actor, 'profile change request');
 
   if (changeReq.status !== 'pending') {
     throw new ApiError(400, `Request is already ${changeReq.status}`);

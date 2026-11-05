@@ -22,6 +22,7 @@ import { SalaryStructure } from '../../models/salaryStructure.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { notify } from '../../services/notify.service.js';
+import { assertSuperAdminIfApplicantIsHR } from '../../utils/hrApprovalGuard.js';
 
 // =========================================================================
 // DATE & ISO WEEK UTILITIES
@@ -749,6 +750,8 @@ export const decideTimesheet = async ({ id, decision, rejectionReason, user, ipA
   if (!timesheet) {
     throw new ApiError(404, 'Timesheet not found');
   }
+
+  await assertSuperAdminIfApplicantIsHR(timesheet.employeeId, user, 'timesheet submission');
 
   if (timesheet.status === 'approved') {
     throw new ApiError(400, 'Timesheet is already approved and locked');

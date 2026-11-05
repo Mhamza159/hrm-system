@@ -23,6 +23,7 @@ import { recordAuditLog } from '../../services/audit.service.js';
 import { emailService } from '../../services/email.service.js';
 import { notify } from '../../services/notify.service.js';
 import { assertEmployeeAssetClearance } from '../assets/asset.service.js';
+import { assertSuperAdminIfApplicantIsHR } from '../../utils/hrApprovalGuard.js';
 
 // =========================================================================
 // SLICE 1: CHECKLIST TEMPLATE MASTER AUTHORING (18.1)
@@ -607,6 +608,8 @@ export const decideResignation = async ({ id, decisionData, user, ipAddress, use
   if (!resignation) {
     throw new ApiError(404, 'Resignation record not found');
   }
+
+  await assertSuperAdminIfApplicantIsHR(resignation.employeeId, user, 'resignation request');
 
   const userRoles = user.roles?.map((r) => r.name || r) || [];
   const isSuperAdmin = userRoles.includes('Super Admin');

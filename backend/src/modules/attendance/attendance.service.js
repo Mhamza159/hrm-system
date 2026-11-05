@@ -30,6 +30,7 @@ import QRCode from 'qrcode';
 import { Kiosk } from '../../models/kiosk.model.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { saveBase64Image } from '../../utils/fileStorage.js';
+import { assertSuperAdminIfApplicantIsHR } from '../../utils/hrApprovalGuard.js';
 
 /**
  * Normalizes any Date or date string to UTC Midnight (00:00:00.000Z)
@@ -1136,6 +1137,8 @@ export const decideWFH = async ({ requestId, user, decision, decisionReason }) =
     throw new ApiError(404, 'WFH request not found');
   }
 
+  await assertSuperAdminIfApplicantIsHR(wfh.employeeId, user, 'WFH request');
+
   // PBAC Boundaries: Verify department scope and block self-approval
   if (!isFullAdminOrHR(user)) {
     const managerEmp = await Employee.findOne({ userId: user._id, isDeleted: false }, '_id departmentId').lean();
@@ -1427,6 +1430,8 @@ export const decideCorrection = async ({ correctionId, user, decision, decisionN
   if (!correction) {
     throw new ApiError(404, 'Correction request not found');
   }
+
+  await assertSuperAdminIfApplicantIsHR(correction.employeeId, user, 'attendance punch correction');
 
   // PBAC Boundaries: Verify department scope and block self-approval
   if (!isFullAdminOrHR(user)) {
@@ -2226,6 +2231,8 @@ export const updateWfhLocationStatus = async (id, { status, remarks }, actor) =>
     throw new ApiError(404, 'WFH location not found');
   }
 
+  await assertSuperAdminIfApplicantIsHR(location.employeeId, actor, 'WFH location request');
+
   const isSuperAdmin = actor.role === 'Super Admin' || actor.roles?.some((r) => r.name === 'Super Admin');
   const isHR = actor.role === 'HR Manager' || actor.roles?.some((r) => r.name === 'HR Manager');
   const actorEmployeeId = actor.employeeId?._id?.toString() || actor.employeeId?.toString();
@@ -2752,6 +2759,8 @@ export const approveFaceEnrollment = async (targetUserId, actor) => {
   const user = await User.findById(targetUserId);
   if (!user || user.isDeleted) throw new ApiError(404, 'User not found');
 
+  await assertSuperAdminIfApplicantIsHR(null, actor, 'face enrollment', user);
+
   if (!user.faceEnrollment || user.faceEnrollment.status === 'none') {
     throw new ApiError(400, 'User does not have an active face enrollment');
   }
@@ -2780,6 +2789,8 @@ export const approveFaceEnrollment = async (targetUserId, actor) => {
 export const rejectFaceEnrollment = async (targetUserId, actor, reason) => {
   const user = await User.findById(targetUserId);
   if (!user || user.isDeleted) throw new ApiError(404, 'User not found');
+
+  await assertSuperAdminIfApplicantIsHR(null, actor, 'face enrollment', user);
 
   if (!user.faceEnrollment || user.faceEnrollment.status === 'none') {
     throw new ApiError(400, 'User does not have an active face enrollment');
