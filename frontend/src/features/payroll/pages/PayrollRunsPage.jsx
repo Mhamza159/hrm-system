@@ -36,6 +36,7 @@ import { PrePayrollAuditModal } from '../components/PrePayrollAuditModal.jsx';
 import { Can } from '../../../components/common/Can.jsx';
 import { toast } from 'sonner';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 
 export function PayrollRunsPage() {
   const navigate = useNavigate();
@@ -62,7 +63,7 @@ export function PayrollRunsPage() {
     }
   };
 
-  const { data, isLoading, refetch } = useGetPayrollRunsQuery({
+  const { data, isLoading, isFetching, refetch } = useGetPayrollRunsQuery({
     page,
     limit: 20,
     status: statusFilter || undefined,
@@ -123,6 +124,14 @@ export function PayrollRunsPage() {
   };
 
   // Quick aggregate metrics
+  if (isLoading && !data) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
+
   const totalDisbursedPaisa = runs
     .filter((r) => r.status === 'paid')
     .reduce((sum, r) => sum + (r.totalNetPay || 0), 0);
@@ -149,6 +158,8 @@ export function PayrollRunsPage() {
           </div>
         </div>
 
+        <div className="flex items-center gap-2">
+          <RefreshButton onRefresh={refetch} isFetching={isFetching} />
         <Can I="payroll.create" a="Payroll" fallback={
           <button
             onClick={() => setIsModalOpen(true)}
@@ -166,6 +177,7 @@ export function PayrollRunsPage() {
             Generate Payroll Run
           </button>
         </Can>
+        </div>
       </div>
 
       {/* Overview Stat Cards */}

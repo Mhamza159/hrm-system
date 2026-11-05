@@ -30,6 +30,8 @@ import { useGetAssetsQuery, useDeleteAssetMutation } from '../assetApi.js';
 import { AssetFormModal } from '../components/AssetFormModal.jsx';
 import { usePermission } from '../../../hooks/usePermission.js';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { toast } from 'sonner';
 
 export const AssetsPage = () => {
@@ -46,7 +48,7 @@ export const AssetsPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
 
-  const { data: assetsRes, isLoading, isFetching } = useGetAssetsQuery({
+  const { data: assetsRes, isLoading, isFetching, refetch } = useGetAssetsQuery({
     page,
     limit: 12,
     search: search.trim() || undefined,
@@ -58,6 +60,14 @@ export const AssetsPage = () => {
   const [deleteAsset, { isLoading: isDeleting }] = useDeleteAssetMutation();
 
   const assets = assetsRes?.data || [];
+
+  if (isLoading && !assetsRes) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
   const meta = assetsRes?.meta || { page: 1, limit: 12, total: 0, pages: 1 };
 
   const handleOpenCreate = () => {
@@ -145,15 +155,18 @@ export const AssetsPage = () => {
           </p>
         </div>
 
-        <Can I="asset.create" a="Asset">
-          <button
-            onClick={handleOpenCreate}
-            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition-all active:scale-95 self-start cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Register New Asset</span>
-          </button>
-        </Can>
+        <div className="flex items-center gap-2">
+          <RefreshButton onRefresh={refetch} isFetching={isFetching} />
+          <Can I="asset.create" a="Asset">
+            <button
+              onClick={handleOpenCreate}
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition-all active:scale-95 self-start cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Register New Asset</span>
+            </button>
+          </Can>
+        </div>
       </div>
 
       {/* Filter and Search Bar */}

@@ -19,13 +19,23 @@ import {
 } from 'lucide-react';
 import { useGetMyTasksQuery, useCompleteTaskMutation } from '../onboardingApi.js';
 import { toast } from 'sonner';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 
 export const MyTasksPage = () => {
   const [statusFilter, setStatusFilter] = useState('pending');
-  const { data: tasksRes, isLoading } = useGetMyTasksQuery();
+  const { data: tasksRes, isLoading, isFetching, refetch } = useGetMyTasksQuery();
   const tasks = tasksRes?.data || [];
 
   const [completeTask, { isLoading: isCompleting }] = useCompleteTaskMutation();
+
+  if (isLoading && !tasksRes) {
+    return (
+      <div className="p-6 max-w-5xl mx-auto space-y-6">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
 
   const handleMarkComplete = async (taskId, title) => {
     try {
@@ -61,6 +71,7 @@ export const MyTasksPage = () => {
         </div>
 
         <div className="flex items-center space-x-2">
+          <RefreshButton onRefresh={refetch} isFetching={isFetching} />
           <button
             onClick={() => setStatusFilter('pending')}
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition ${

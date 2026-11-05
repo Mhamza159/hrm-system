@@ -29,6 +29,8 @@ import {
 } from '../payrollApi.js';
 import { SalaryFormModal } from '../components/SalaryFormModal.jsx';
 import { SalaryRevisionModal } from '../components/SalaryRevisionModal.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 
 export function SalaryStructuresPage() {
   const [page, setPage] = useState(1);
@@ -39,7 +41,7 @@ export function SalaryStructuresPage() {
   const [selectedForRevision, setSelectedForRevision] = useState(null);
   const [selectedForHistoryId, setSelectedForHistoryId] = useState(null);
 
-  const { data, isLoading, refetch } = useGetSalaryStructuresQuery({
+  const { data, isLoading, isFetching, refetch } = useGetSalaryStructuresQuery({
     page,
     limit: 20,
     search: search ? search : undefined,
@@ -53,6 +55,14 @@ export function SalaryStructuresPage() {
 
   const structures = data?.data || [];
   const meta = data?.meta || { totalDocs: 0, totalPages: 1 };
+
+  if (isLoading && !data) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -74,13 +84,16 @@ export function SalaryStructuresPage() {
           </div>
         </div>
 
-        <button
-          onClick={() => setIsAssignModalOpen(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-all shadow-emerald-600/20"
-        >
-          <Plus className="w-4 h-4" />
-          Assign Salary Structure
-        </button>
+        <div className="flex items-center gap-2">
+          <RefreshButton onRefresh={refetch} isFetching={isFetching} />
+          <button
+            onClick={() => setIsAssignModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-all shadow-emerald-600/20"
+          >
+            <Plus className="w-4 h-4" />
+            Assign Salary Structure
+          </button>
+        </div>
       </div>
 
       {/* Filters & Search */}

@@ -25,6 +25,8 @@ import {
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { StatusBadge } from '../../../components/common/StatusBadge.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { useGetLoansQuery, useGetLoanLedgerSummaryQuery } from '../loansApi.js';
 import { LoanStatsCard } from '../components/LoanStatsCard.jsx';
 import { LoanScheduleDrawer } from '../components/LoanScheduleDrawer.jsx';
@@ -37,10 +39,10 @@ export function LoanLedgerPage() {
   const [scheduleLoanId, setScheduleLoanId] = useState(null);
   const [prepayTargetLoan, setPrepayTargetLoan] = useState(null);
 
-  const { data: summaryRes, isLoading: isLoadingSummary } = useGetLoanLedgerSummaryQuery();
+  const { data: summaryRes, isLoading: isLoadingSummary, isFetching: isFetchingSummary, refetch: refetchSummary } = useGetLoanLedgerSummaryQuery();
   const summary = summaryRes?.data;
 
-  const { data: loansRes, isLoading: isLoadingLoans, refetch } = useGetLoansQuery({
+  const { data: loansRes, isLoading: isLoadingLoans, isFetching: isFetchingLoans, refetch: refetchLoans } = useGetLoansQuery({
     page: 1,
     limit: 100,
     status: statusFilter || undefined,
@@ -62,6 +64,14 @@ export function LoanLedgerPage() {
   const totalDisbursedPkr = summary ? (summary.totalDisbursedPaisa || 0) / 100 : 0;
   const totalRepaidPkr = summary ? (summary.totalRepaidPaisa || 0) / 100 : 0;
   const totalOutstandingPkr = summary ? (summary.totalOutstandingPaisa || 0) / 100 : 0;
+  if ((isLoadingSummary || isLoadingLoans) && !loansRes && !summaryRes) {
+    return (
+      <div className="space-y-6">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
+
   const recoveryRate = totalDisbursedPkr > 0 ? Math.round((totalRepaidPkr / totalDisbursedPkr) * 100) : 0;
 
   return (
@@ -69,6 +79,7 @@ export function LoanLedgerPage() {
       <PageHeader
         title="Company Borrowing Ledger"
         description="Comprehensive audit of all active loans, salary advances, amortization, and collections."
+        actions={<RefreshButton onRefresh={() => { refetchSummary(); refetchLoans(); }} isFetching={isFetchingSummary || isFetchingLoans} />}
       />
 
       {/* KPI Cards */}

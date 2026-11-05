@@ -26,6 +26,7 @@ import { useGetEmployeesQuery } from '../../employees/employeesApi.js';
 import { useGetEmployeeSalaryStructureQuery } from '../payrollApi.js';
 import { SettlementGratuityModal } from '../components/SettlementGratuityModal.jsx';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 
 export function FinalSettlementPage() {
   const [search, setSearch] = useState('');
@@ -35,7 +36,7 @@ export function FinalSettlementPage() {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { data: employeesData, isLoading: isLoadingEmployees, refetch } = useGetEmployeesQuery({
+  const { data: employeesData, isLoading: isLoadingEmployees, isFetching: isFetchingEmployees, refetch } = useGetEmployeesQuery({
     page,
     limit: 20,
     search: search ? search : undefined,
@@ -100,6 +101,7 @@ export function FinalSettlementPage() {
             </p>
           </div>
         </div>
+        <RefreshButton onRefresh={refetch} isFetching={isFetchingEmployees} />
       </div>
 
       {/* Filter and Search Bar */}

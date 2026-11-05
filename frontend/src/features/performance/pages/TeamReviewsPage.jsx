@@ -13,16 +13,18 @@ import { ManagerReviewModal } from '../components/ManagerReviewModal.jsx';
 import { FinalizeReviewModal } from '../components/FinalizeReviewModal.jsx';
 import { PeerFeedbackModal } from '../components/PeerFeedbackModal.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 
 export const TeamReviewsPage = () => {
   const [selectedCycle, setSelectedCycle] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [search, setSearch] = useState('');
 
-  const { data: cyclesData } = useGetReviewCyclesQuery();
+  const { data: cyclesData, isFetching: isFetchingCycles, refetch: refetchCycles } = useGetReviewCyclesQuery();
   const cycles = cyclesData?.data || [];
 
-  const { data: reviewsData, isLoading } = useGetReviewsQuery({
+  const { data: reviewsData, isLoading, isFetching: isFetchingReviews, refetch: refetchReviews } = useGetReviewsQuery({
     cycleId: selectedCycle ? selectedCycle : undefined,
     status: selectedStatus ? selectedStatus : undefined
   });
@@ -30,6 +32,14 @@ export const TeamReviewsPage = () => {
 
   const [activeModal, setActiveModal] = useState(null); // 'manager' | 'finalize' | 'peer'
   const [targetReview, setTargetReview] = useState(null);
+
+  if (isLoading && !reviewsData) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
 
   const filteredReviews = reviews.filter((r) => {
     if (!search.trim()) return true;
@@ -68,6 +78,7 @@ export const TeamReviewsPage = () => {
             Review subordinates self-evaluations, submit manager scores, request 360 peer feedback, and finalize ratings.
           </p>
         </div>
+        <RefreshButton onRefresh={() => { refetchCycles?.(); refetchReviews?.(); }} isFetching={isFetchingCycles || isFetchingReviews} />
       </div>
 
       {/* Filter Bar */}

@@ -27,6 +27,8 @@ import { DataTable } from '../../../components/common/DataTable.jsx';
 import { StatusBadge } from '../../../components/common/StatusBadge.jsx';
 import { ConfirmDialog } from '../../../components/common/ConfirmDialog.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import {
   useGetDesignationsQuery,
   useGetDepartmentsQuery,
@@ -50,14 +52,22 @@ export function DesignationsPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
 
-  const { data: deptResponse } = useGetDepartmentsQuery();
+  const { data: deptResponse, isFetching: isFetchingDept, refetch: refetchDept } = useGetDepartmentsQuery();
   const departments = deptResponse?.data || [];
 
-  const { data: desigResponse, isLoading } = useGetDesignationsQuery({
+  const { data: desigResponse, isLoading, isFetching: isFetchingDesig, refetch: refetchDesig } = useGetDesignationsQuery({
     departmentId: selectedDeptFilter || undefined,
     grade: selectedGradeFilter || undefined
   });
   const designations = desigResponse?.data || [];
+
+  if (isLoading && !desigResponse) {
+    return (
+      <div className="space-y-6">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
 
   const [deleteDesignation, { isLoading: isDeleting }] = useDeleteDesignationMutation();
 
@@ -202,15 +212,18 @@ export function DesignationsPage() {
         title="Designations & Career Ladders"
         subtitle="Manage standardized job titles, organizational grade levels, and department staff capacities."
         actions={
-          <Can I="org.manage" a="Organization">
-            <button
-              onClick={handleCreate}
-              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl text-white bg-[#00C471] hover:bg-[#00B064] shadow-sm transition-all cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Designation</span>
-            </button>
-          </Can>
+          <div className="flex items-center gap-2">
+            <RefreshButton onRefresh={() => { refetchDept(); refetchDesig(); }} isFetching={isFetchingDept || isFetchingDesig} />
+            <Can I="org.manage" a="Organization">
+              <button
+                onClick={handleCreate}
+                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl text-white bg-[#00C471] hover:bg-[#00B064] shadow-sm transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Designation</span>
+              </button>
+            </Can>
+          </div>
         }
       />
 

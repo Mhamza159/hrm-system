@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { useGetMyExpensesQuery } from '../expensesApi.js';
 import ExpenseFormModal from '../components/ExpenseFormModal.jsx';
 
@@ -30,7 +32,7 @@ export default function MyExpensesPage() {
   const [isApplyOpen, setIsApplyOpen] = useState(false);
   const [previewReceipt, setPreviewReceipt] = useState(null);
 
-  const { data, isLoading, error } = useGetMyExpensesQuery();
+  const { data, isLoading, isFetching, error, refetch } = useGetMyExpensesQuery();
   const expenses = data?.data || [];
 
   // Summary KPIs
@@ -38,6 +40,14 @@ export default function MyExpensesPage() {
   const totalReimbursedPaisa = expenses
     .filter((e) => e.status === 'reimbursed')
     .reduce((sum, item) => sum + (item.approvedAmount || item.amount || 0), 0);
+  if (isLoading && !data) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-150">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
+
   const pendingCount = expenses.filter(
     (e) => e.status === 'pending_manager' || e.status === 'pending_admin'
   ).length;
@@ -89,15 +99,18 @@ export default function MyExpensesPage() {
         title="My Expense Claims"
         description="Submit out-of-pocket operational expenses and track managerial reimbursement approval."
         actions={
-          <Can I="expense.create" a="Expense">
-            <button
-              onClick={() => setIsApplyOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/20 transition"
-            >
-              <Plus className="w-4 h-4" />
-              Submit Expense
-            </button>
-          </Can>
+          <div className="flex items-center gap-2">
+            <RefreshButton onRefresh={refetch} isFetching={isFetching} />
+            <Can I="expense.create" a="Expense">
+              <button
+                onClick={() => setIsApplyOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/20 transition"
+              >
+                <Plus className="w-4 h-4" />
+                Submit Expense
+              </button>
+            </Can>
+          </div>
         }
       />
 

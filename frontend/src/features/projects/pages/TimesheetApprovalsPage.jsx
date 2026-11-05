@@ -18,6 +18,8 @@ import {
   CheckSquare
 } from 'lucide-react';
 import { useGetPendingTimesheetsQuery } from '../projectsApi.js';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { TimesheetDecisionModal } from '../components/TimesheetDecisionModal.jsx';
 
 export const TimesheetApprovalsPage = () => {
@@ -25,11 +27,19 @@ export const TimesheetApprovalsPage = () => {
   const [selectedTimesheet, setSelectedTimesheet] = useState(null);
   const [isDecisionModalOpen, setIsDecisionModalOpen] = useState(false);
 
-  const { data: pendingRes, isLoading, refetch } = useGetPendingTimesheetsQuery({
+  const { data: pendingRes, isLoading, isFetching, refetch } = useGetPendingTimesheetsQuery({
     limit: 100
   });
 
   const timesheets = pendingRes?.data || [];
+
+  if (isLoading && !pendingRes) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-200">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
 
   const filteredTimesheets = timesheets.filter((t) => {
     if (!search.trim()) return true;
@@ -60,6 +70,7 @@ export const TimesheetApprovalsPage = () => {
 
         {/* Quick Stats Pill */}
         <div className="flex items-center gap-3">
+          <RefreshButton onRefresh={refetch} isFetching={isFetching} />
           <div className="px-4 py-2 rounded-xl border border-border bg-card shadow-sm text-right">
             <span className="text-xs text-muted-foreground block font-medium">Pending Review</span>
             <span className="text-lg font-bold text-primary font-mono">

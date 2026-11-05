@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { useGetOnboardingsQuery, useResendWelcomeEmailMutation } from '../onboardingApi.js';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { toast } from 'sonner';
 
 export const OnboardingPage = () => {
@@ -28,13 +30,21 @@ export const OnboardingPage = () => {
   const [search, setSearch] = useState('');
   const [selectedChecklist, setSelectedChecklist] = useState(null);
 
-  const { data: checklistsRes, isLoading } = useGetOnboardingsQuery({
+  const { data: checklistsRes, isLoading, isFetching, refetch } = useGetOnboardingsQuery({
     type: 'onboarding',
     status: statusFilter || undefined
   });
   const checklists = checklistsRes?.data || [];
 
   const [resendWelcomeEmail, { isLoading: isResending }] = useResendWelcomeEmailMutation();
+
+  if (isLoading && !checklistsRes) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
 
   const handleResendWelcome = async (id, name) => {
     try {
@@ -72,6 +82,7 @@ export const OnboardingPage = () => {
             </p>
           </div>
         </div>
+        <RefreshButton onRefresh={refetch} isFetching={isFetching} />
       </div>
 
       {/* Filters */}

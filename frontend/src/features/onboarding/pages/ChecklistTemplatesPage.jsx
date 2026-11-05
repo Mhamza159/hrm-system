@@ -28,6 +28,8 @@ import {
 import { useGetDepartmentsQuery } from '../../departments/departmentsApi.js';
 import { ChecklistTemplateModal } from '../components/ChecklistTemplateModal.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { toast } from 'sonner';
 
 export const ChecklistTemplatesPage = () => {
@@ -37,7 +39,7 @@ export const ChecklistTemplatesPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
 
-  const { data: templatesRes, isLoading } = useGetChecklistTemplatesQuery({
+  const { data: templatesRes, isLoading, isFetching, refetch } = useGetChecklistTemplatesQuery({
     type: activeTab,
     departmentId: selectedDept || undefined
   });
@@ -47,6 +49,14 @@ export const ChecklistTemplatesPage = () => {
   const departments = deptData?.data || [];
 
   const [deleteTemplate] = useDeleteChecklistTemplateMutation();
+
+  if (isLoading && !templatesRes) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <ScreenSkeleton variant="cards" />
+      </div>
+    );
+  }
 
   const filteredTemplates = templates.filter((tpl) => {
     if (searchQuery.trim()) {
@@ -96,15 +106,18 @@ export const ChecklistTemplatesPage = () => {
           </div>
         </div>
 
-        <Can perform="onboard.manage">
-          <button
-            onClick={handleCreate}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm shadow-sm transition"
-          >
-            <Plus className="w-4 h-4" />
-            New Template
-          </button>
-        </Can>
+        <div className="flex items-center gap-2">
+          <RefreshButton onRefresh={refetch} isFetching={isFetching} />
+          <Can perform="onboard.manage">
+            <button
+              onClick={handleCreate}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm shadow-sm transition"
+            >
+              <Plus className="w-4 h-4" />
+              New Template
+            </button>
+          </Can>
+        </div>
       </div>
 
       {/* Lifecycle Selector Tabs & Controls */}

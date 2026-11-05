@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { Card } from '../../../components/common/Card.jsx';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import {
   useGetChangeRequestsQuery,
   useDecideChangeRequestMutation
@@ -33,13 +35,21 @@ export default function ChangeRequestsPage() {
   const [rejectingId, setRejectingId] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
 
-  const { data: requestData, isLoading, refetch } = useGetChangeRequestsQuery(
+  const { data: requestData, isLoading, isFetching, refetch } = useGetChangeRequestsQuery(
     selectedStatus === 'all' ? {} : { status: selectedStatus }
   );
 
   const [decideChangeRequest, { isLoading: isDeciding }] = useDecideChangeRequestMutation();
 
   const requests = requestData?.data || [];
+
+  if (isLoading && !requestData) {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto pb-12">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
 
   const handleApprove = async (id) => {
     try {
@@ -111,6 +121,7 @@ export default function ChangeRequestsPage() {
       <PageHeader
         title="Profile Change Requests"
         subtitle="Review and authorize employee requests for sensitive banking coordinates, residential addresses, and emergency contacts."
+        actions={<RefreshButton onRefresh={refetch} isFetching={isFetching} />}
       />
 
       {/* Filter Tabs */}

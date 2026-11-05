@@ -27,6 +27,8 @@ import {
 } from '../assetApi.js';
 import { AssetRequestModal } from '../components/AssetRequestModal.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { toast } from 'sonner';
 
 export const AssetRequestsPage = () => {
@@ -41,8 +43,16 @@ export const AssetRequestsPage = () => {
   const [rejectingRequest, setRejectingRequest] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
 
-  const { data: requestsRes, isLoading } = useGetAssetRequestsQuery();
+  const { data: requestsRes, isLoading, isFetching, refetch } = useGetAssetRequestsQuery();
   const requests = Array.isArray(requestsRes?.data) ? requestsRes.data : (Array.isArray(requestsRes) ? requestsRes : []);
+
+  if (isLoading && !requestsRes) {
+    return (
+      <div className="p-6 max-w-6xl mx-auto space-y-6">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
   const { data: availableAssetsRes } = useGetAssetsQuery(
     allocatingRequest ? { status: 'available', type: allocatingRequest.assetType } : { status: 'available' },
     { skip: !allocatingRequest }
@@ -112,15 +122,18 @@ export const AssetRequestsPage = () => {
           </p>
         </div>
 
-        <Can I="asset.request" a="AssetRequest">
-          <button
-            onClick={() => setRequestModalOpen(true)}
-            className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer self-start"
-          >
-            <Plus className="w-4 h-4" />
-            <span>New Requisition</span>
-          </button>
-        </Can>
+        <div className="flex items-center gap-2">
+          <RefreshButton onRefresh={refetch} isFetching={isFetching} />
+          <Can I="asset.request" a="AssetRequest">
+            <button
+              onClick={() => setRequestModalOpen(true)}
+              className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition-all active:scale-95 cursor-pointer self-start"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Requisition</span>
+            </button>
+          </Can>
+        </div>
       </div>
 
       {/* Filter Tabs */}

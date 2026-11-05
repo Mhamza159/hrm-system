@@ -19,6 +19,8 @@ import {
   BellOff
 } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import {
   useGetNotificationsQuery,
   useMarkAllAsReadMutation
@@ -41,7 +43,7 @@ export const NotificationsPage = () => {
   const [filterTab, setFilterTab] = useState('all'); // 'all' | 'unread'
   const [selectedType, setSelectedType] = useState('');
 
-  const { data: notificationsData, isLoading } = useGetNotificationsQuery({
+  const { data: notificationsData, isLoading, isFetching, refetch } = useGetNotificationsQuery({
     page,
     limit: 15,
     unreadOnly: filterTab === 'unread' ? 'true' : 'false',
@@ -70,17 +72,20 @@ export const NotificationsPage = () => {
         title="Notifications & Activity Log"
         description="Review your historical alerts, approval updates, and operational notices."
       >
-        {unreadCount > 0 && (
-          <button
-            type="button"
-            onClick={handleMarkAllRead}
-            disabled={isMarkingAll}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 hover:bg-emerald-100/80 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 rounded-xl border border-emerald-200 dark:border-emerald-800/60 transition-all shadow-xs disabled:opacity-50 active:scale-95 cursor-pointer"
-          >
-            <CheckCheck className="w-4 h-4 text-[#00C471]" />
-            <span>Mark all as read</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          <RefreshButton onRefresh={refetch} isFetching={isFetching} />
+          {unreadCount > 0 && (
+            <button
+              type="button"
+              onClick={handleMarkAllRead}
+              disabled={isMarkingAll}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 hover:bg-emerald-100/80 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/50 rounded-xl border border-emerald-200 dark:border-emerald-800/60 transition-all shadow-xs disabled:opacity-50 active:scale-95 cursor-pointer"
+            >
+              <CheckCheck className="w-4 h-4 text-[#00C471]" />
+              <span>Mark all as read</span>
+            </button>
+          )}
+        </div>
       </PageHeader>
 
       {/* 2. Filter Toolbar */}

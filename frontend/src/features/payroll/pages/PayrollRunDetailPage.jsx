@@ -43,6 +43,7 @@ import { BankAdviceExportModal } from '../components/BankAdviceExportModal.jsx';
 import { Can } from '../../../components/common/Can.jsx';
 import { toast } from 'sonner';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 
 export function PayrollRunDetailPage() {
   const { id } = useParams();
@@ -55,7 +56,7 @@ export function PayrollRunDetailPage() {
   const [actionError, setActionError] = useState('');
   const accessToken = useSelector((state) => state.auth?.accessToken);
 
-  const { data, isLoading, refetch } = useGetPayrollRunByIdQuery({ id });
+  const { data, isLoading, isFetching, refetch } = useGetPayrollRunByIdQuery({ id });
   const [approvePayrollRun, { isLoading: isApproving }] = useApprovePayrollRunMutation();
   const [markPayrollPaid, { isLoading: isPaying }] = useMarkPayrollPaidMutation();
   const [deletePayrollRun, { isLoading: isDeleting }] = useDeletePayrollRunMutation();
@@ -169,6 +170,7 @@ export function PayrollRunDetailPage() {
 
         {/* Executive Action Buttons */}
         <div className="flex items-center gap-3">
+          <RefreshButton onRefresh={refetch} isFetching={isFetching} />
           {actionError && (
             <span className="text-xs text-rose-600 dark:text-rose-400 font-medium mr-2">
               {actionError}

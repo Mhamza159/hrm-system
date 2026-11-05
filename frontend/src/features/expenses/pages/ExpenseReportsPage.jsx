@@ -20,15 +20,25 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { useGetExpenseMonthlyReportQuery } from '../expensesApi.js';
 
 export default function ExpenseReportsPage() {
   const currentMonthStr = new Date().toISOString().slice(0, 7);
   const [selectedMonth, setSelectedMonth] = useState(currentMonthStr);
 
-  const { data, isLoading, error } = useGetExpenseMonthlyReportQuery({
+  const { data, isLoading, isFetching, error, refetch } = useGetExpenseMonthlyReportQuery({
     month: selectedMonth
   });
+
+  if (isLoading && !data) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-150">
+        <ScreenSkeleton variant="cards" />
+      </div>
+    );
+  }
 
   const report = data?.data || { grandTotals: {}, breakdown: [] };
   const grandTotals = report.grandTotals || {};
@@ -66,6 +76,7 @@ export default function ExpenseReportsPage() {
         description="Comprehensive audit breakdown of corporate expenditure across categories and departments."
         actions={
           <div className="flex items-center gap-3">
+            <RefreshButton onRefresh={refetch} isFetching={isFetching} />
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-300">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <input

@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import {
   useGetExpenseCategoriesQuery,
   useDeleteExpenseCategoryMutation
@@ -34,7 +36,7 @@ export default function ExpenseCategoriesPage() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [deleteError, setDeleteError] = useState('');
 
-  const { data, isLoading, error } = useGetExpenseCategoriesQuery();
+  const { data, isLoading, isFetching, error, refetch } = useGetExpenseCategoriesQuery();
   const [deleteCategory, { isLoading: isDeleting }] = useDeleteExpenseCategoryMutation();
 
   const categories = data?.data || [];
@@ -61,6 +63,14 @@ export default function ExpenseCategoriesPage() {
     }
   };
 
+  if (isLoading && !data) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-150">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
+
   const totalCategories = categories.length;
   const activeCount = categories.filter((c) => c.isActive).length;
   const receiptMandatedCount = categories.filter((c) => c.requiresReceipt).length;
@@ -71,15 +81,18 @@ export default function ExpenseCategoriesPage() {
         title="Expense Categories & Policy Limits"
         description="Configure corporate claim ceilings, receipt audit mandates, and category codes."
         actions={
-          <Can I="expense.settings" a="ExpenseCategory">
-            <button
-              onClick={handleOpenCreate}
-              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/20 transition"
-            >
-              <Plus className="w-4 h-4" />
-              Add Category
-            </button>
-          </Can>
+          <div className="flex items-center gap-2">
+            <RefreshButton onRefresh={refetch} isFetching={isFetching} />
+            <Can I="expense.settings" a="ExpenseCategory">
+              <button
+                onClick={handleOpenCreate}
+                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/20 transition"
+              >
+                <Plus className="w-4 h-4" />
+                Add Category
+              </button>
+            </Can>
+          </div>
         }
       />
 

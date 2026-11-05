@@ -19,25 +19,38 @@ import {
   Clock
 } from 'lucide-react';
 import { useGetMyAssetsQuery } from '../assetApi.js';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { AssetIssueModal } from '../components/AssetIssueModal.jsx';
 
 export const MyAssetsPage = () => {
   const [selectedAssetForIssue, setSelectedAssetForIssue] = useState(null);
 
-  const { data: assetsRes, isLoading } = useGetMyAssetsQuery();
+  const { data: assetsRes, isLoading, isFetching, refetch } = useGetMyAssetsQuery();
   const assets = assetsRes?.data || (Array.isArray(assetsRes) ? assetsRes : []);
+
+  if (isLoading && !assetsRes) {
+    return (
+      <div className="p-6 max-w-5xl mx-auto space-y-6">
+        <ScreenSkeleton variant="cards" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-          <Laptop className="w-6 h-6 text-emerald-500" />
-          My Assigned Assets
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Company equipment, devices, and software licenses registered under your custody.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+            <Laptop className="w-6 h-6 text-emerald-500" />
+            My Assigned Assets
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Company equipment, devices, and software licenses registered under your custody.
+          </p>
+        </div>
+        <RefreshButton onRefresh={refetch} isFetching={isFetching} />
       </div>
 
       {isLoading ? (

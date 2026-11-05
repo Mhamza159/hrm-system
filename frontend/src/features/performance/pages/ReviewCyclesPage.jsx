@@ -12,15 +12,25 @@ import { Calendar, PlayCircle, BarChart3, CheckCircle2, Clock, AlertTriangle, Us
 import { useGetReviewCyclesQuery, useUpdateCycleStatusMutation } from '../performanceApi.js';
 import { ReviewCycleModal } from '../components/ReviewCycleModal.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { toast } from 'sonner';
 
 export const ReviewCyclesPage = () => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { data: cyclesData, isLoading } = useGetReviewCyclesQuery();
+  const { data: cyclesData, isLoading, isFetching, refetch } = useGetReviewCyclesQuery();
   const cycles = cyclesData?.data || [];
 
   const [updateCycleStatus] = useUpdateCycleStatusMutation();
+
+  if (isLoading && !cyclesData) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <ScreenSkeleton variant="cards" />
+      </div>
+    );
+  }
 
   const handleStatusToggle = async (cycle) => {
     const nextStatus = cycle.status === 'Active' ? 'Closed' : 'Active';
@@ -48,14 +58,17 @@ export const ReviewCyclesPage = () => {
           </p>
         </div>
 
-        <Can perform="performance.cycle.manage">
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm"
-          >
-            <PlayCircle className="h-4 w-4" /> Launch New Cycle
-          </button>
-        </Can>
+        <div className="flex items-center gap-2">
+          <RefreshButton onRefresh={refetch} isFetching={isFetching} />
+          <Can perform="performance.cycle.manage">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm"
+            >
+              <PlayCircle className="h-4 w-4" /> Launch New Cycle
+            </button>
+          </Can>
+        </div>
       </div>
 
       {/* Cycles List */}

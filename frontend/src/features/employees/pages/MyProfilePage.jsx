@@ -56,6 +56,7 @@ import { Card } from '../../../components/common/Card.jsx';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { StatusBadge } from '../../../components/common/StatusBadge.jsx';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { ChangeRequestModal } from '../components/ChangeRequestModal.jsx';
 import { TwoFactorModal } from '../../auth/components/TwoFactorModal.jsx';
 import { ChangePasswordModal } from '../../auth/components/ChangePasswordModal.jsx';
@@ -72,7 +73,7 @@ export default function MyProfilePage() {
   const navigate = useNavigate();
   const { user, hasRole } = useAuth();
   const { can } = usePermission();
-  const { data: profileData, isLoading, error, refetch } = useGetMyProfileQuery();
+  const { data: profileData, isLoading, isFetching, error, refetch } = useGetMyProfileQuery();
   const [updateSkills, { isLoading: isUpdatingSkills }] = useUpdateSkillsMutation();
   const [uploadAvatar, { isLoading: isUploadingAvatar }] = useUploadAvatarMutation();
   const fileInputRef = useRef(null);

@@ -25,6 +25,8 @@ import { DataTable } from '../../../components/common/DataTable.jsx';
 import { StatusBadge } from '../../../components/common/StatusBadge.jsx';
 import { ConfirmDialog } from '../../../components/common/ConfirmDialog.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import {
   useGetDepartmentsQuery,
   useDeleteDepartmentMutation
@@ -37,10 +39,18 @@ export function DepartmentsPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
 
-  const { data: response, isLoading, refetch } = useGetDepartmentsQuery();
+  const { data: response, isLoading, isFetching, refetch } = useGetDepartmentsQuery();
   const [deleteDepartment, { isLoading: isDeleting }] = useDeleteDepartmentMutation();
 
   const departments = response?.data || [];
+
+  if (isLoading && !response) {
+    return (
+      <div className="space-y-6">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
 
   // Compute summary stats
   const totalDepartments = departments.length;
@@ -189,15 +199,18 @@ export function DepartmentsPage() {
         title="Departments & Corporate Hierarchy"
         subtitle="Manage company business units, parent divisions, and assigned staff headcounts."
         actions={
-          <Can I="org.manage" a="Organization">
-            <button
-              onClick={handleCreate}
-              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl text-white bg-[#00C471] hover:bg-[#00B064] shadow-sm transition-all cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Department</span>
-            </button>
-          </Can>
+          <div className="flex items-center gap-2">
+            <RefreshButton onRefresh={refetch} isFetching={isFetching} />
+            <Can I="org.manage" a="Organization">
+              <button
+                onClick={handleCreate}
+                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl text-white bg-[#00C471] hover:bg-[#00B064] shadow-sm transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Department</span>
+              </button>
+            </Can>
+          </div>
         }
       />
 

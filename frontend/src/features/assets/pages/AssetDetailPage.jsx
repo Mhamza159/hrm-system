@@ -31,6 +31,8 @@ import { AssetAssignModal } from '../components/AssetAssignModal.jsx';
 import { AssetReturnModal } from '../components/AssetReturnModal.jsx';
 import { AssetRepairModal } from '../components/AssetRepairModal.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { toast } from 'sonner';
 
 export const AssetDetailPage = () => {
@@ -42,7 +44,7 @@ export const AssetDetailPage = () => {
   const [returnModalOpen, setReturnModalOpen] = useState(false);
   const [repairModalOpen, setRepairModalOpen] = useState(false);
 
-  const { data: assetRes, isLoading } = useGetAssetByIdQuery(id);
+  const { data: assetRes, isLoading, isFetching, refetch } = useGetAssetByIdQuery(id);
   const asset = assetRes?.data;
 
   const [updateRepair] = useUpdateAssetRepairMutation();
@@ -63,8 +65,12 @@ export const AssetDetailPage = () => {
     }
   };
 
-  if (isLoading) {
-    return <div className="p-16 text-center text-xs text-slate-400">Loading asset profile...</div>;
+  if (isLoading && !asset) {
+    return (
+      <div className="p-6 max-w-6xl mx-auto space-y-6">
+        <ScreenSkeleton variant="cards" />
+      </div>
+    );
   }
 
   if (!asset) {
@@ -122,6 +128,8 @@ export const AssetDetailPage = () => {
           </div>
 
           {/* Action Buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <RefreshButton onRefresh={refetch} isFetching={isFetching} />
           <Can I="asset.assign" a="Asset">
             <div className="flex items-center gap-2 flex-wrap">
               {asset.status === 'available' && (
@@ -155,6 +163,7 @@ export const AssetDetailPage = () => {
               )}
             </div>
           </Can>
+          </div>
         </div>
 
         {/* Specifications & Financials Grid */}

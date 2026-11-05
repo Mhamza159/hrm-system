@@ -25,6 +25,8 @@ import {
   useGetProjectsQuery
 } from '../projectsApi.js';
 import { TimesheetWeeklyGrid } from '../components/TimesheetWeeklyGrid.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { toast } from 'sonner';
 
 export const MyTimesheetPage = () => {
@@ -59,6 +61,7 @@ export const MyTimesheetPage = () => {
   const {
     data: timesheetsRes,
     isLoading: isTimesheetsLoading,
+    isFetching: isTimesheetsFetching,
     refetch
   } = useGetMyWeeklyTimesheetsQuery({
     weekStartDate: weekStartDateIso
@@ -68,6 +71,14 @@ export const MyTimesheetPage = () => {
   const [submitWeek, { isLoading: isSubmitting }] = useSubmitWeekTimesheetsMutation();
 
   const entries = timesheetsRes?.data?.entries || [];
+
+  if (isTimesheetsLoading && !timesheetsRes) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-200">
+        <ScreenSkeleton variant="matrix" />
+      </div>
+    );
+  }
   const assignedProjects = projectsRes?.data || [];
 
   const draftEntries = entries.filter((e) => e.status === 'draft' || e.status === 'rejected');
@@ -109,6 +120,7 @@ export const MyTimesheetPage = () => {
 
         {/* Action Button */}
         <div className="flex items-center gap-3">
+          <RefreshButton onRefresh={refetch} isFetching={isTimesheetsFetching} />
           <button
             onClick={handleSubmitWeek}
             disabled={isSubmitting || draftEntries.length === 0}

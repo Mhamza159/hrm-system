@@ -20,13 +20,15 @@ import {
   Lock
 } from 'lucide-react';
 import { useGetProjectProfitabilityReportQuery } from '../projectsApi.js';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { useAuth } from '../../../hooks/useAuth.js';
 
 export const ProjectProfitabilityPage = () => {
   const { user } = useAuth();
   const isSuperAdmin = user?.roles?.some((r) => r === 'Super Admin' || r?.name === 'Super Admin');
 
-  const { data: reportRes, isLoading, error } = useGetProjectProfitabilityReportQuery(undefined, {
+  const { data: reportRes, isLoading, isFetching, refetch, error } = useGetProjectProfitabilityReportQuery(undefined, {
     skip: !isSuperAdmin
   });
 
@@ -43,6 +45,14 @@ export const ProjectProfitabilityPage = () => {
   }
 
   const projects = reportRes?.data || [];
+
+  if (isLoading && !reportRes) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-200">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
 
   const totalRevenue = projects.reduce((sum, p) => sum + (p.totalRevenuePaisa || 0), 0) / 100;
   const totalLaborCost = projects.reduce((sum, p) => sum + (p.totalLaborCostPaisa || 0), 0) / 100;
@@ -63,9 +73,12 @@ export const ProjectProfitabilityPage = () => {
           </p>
         </div>
 
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
-          <Lock className="h-3.5 w-3.5" /> Super Admin Only
-        </span>
+        <div className="flex items-center gap-3">
+          <RefreshButton onRefresh={refetch} isFetching={isFetching} />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20">
+            <Lock className="h-3.5 w-3.5" /> Super Admin Only
+          </span>
+        </div>
       </div>
 
       {/* KPI Stats */}

@@ -12,6 +12,8 @@ import { useGetKpiTemplatesQuery, useDeleteKpiTemplateMutation } from '../perfor
 import { useGetDesignationsQuery } from '../../departments/departmentsApi.js';
 import { KpiTemplateModal } from '../components/KpiTemplateModal.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { toast } from 'sonner';
 
 export const KpiTemplatesPage = () => {
@@ -20,7 +22,7 @@ export const KpiTemplatesPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState(null);
 
-  const { data: templatesData, isLoading } = useGetKpiTemplatesQuery({
+  const { data: templatesData, isLoading, isFetching, refetch } = useGetKpiTemplatesQuery({
     search: search ? search : undefined,
     designationId: selectedDesignation ? selectedDesignation : undefined
   });
@@ -30,6 +32,14 @@ export const KpiTemplatesPage = () => {
   const designations = desigData?.data || [];
 
   const [deleteTemplate] = useDeleteKpiTemplateMutation();
+
+  if (isLoading && !templatesData) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
 
   const handleOpenCreate = () => {
     setEditingTemplate(null);
@@ -66,14 +76,17 @@ export const KpiTemplatesPage = () => {
           </p>
         </div>
 
-        <Can perform="performance.template.manage">
-          <button
-            onClick={handleOpenCreate}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm"
-          >
-            <Plus className="h-4 w-4" /> New Template
-          </button>
-        </Can>
+        <div className="flex items-center gap-2">
+          <RefreshButton onRefresh={refetch} isFetching={isFetching} />
+          <Can perform="performance.template.manage">
+            <button
+              onClick={handleOpenCreate}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm"
+            >
+              <Plus className="h-4 w-4" /> New Template
+            </button>
+          </Can>
+        </div>
       </div>
 
       {/* Filter Bar */}

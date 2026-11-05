@@ -26,6 +26,8 @@ import {
   UserCheck
 } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { useGetReportDataQuery } from '../reportsApi.js';
 import { ReportFilterToolbar } from '../components/ReportFilterToolbar.jsx';
@@ -98,7 +100,7 @@ export default function ReportsPage() {
     setPage(1);
   };
 
-  const { data: response, isLoading } = useGetReportDataQuery({
+  const { data: response, isLoading, isFetching, refetch } = useGetReportDataQuery({
     type: activeType,
     from,
     to,
@@ -107,6 +109,14 @@ export default function ReportsPage() {
     page,
     limit: 25
   });
+
+  if (isLoading && !response) {
+    return (
+      <div className="space-y-6">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
 
   const reportData = response?.data || {};
   const summary = reportData.summary;
@@ -119,6 +129,7 @@ export default function ReportsPage() {
       <PageHeader
         title="Reports & Organizational Intelligence"
         description="Comprehensive analytical reports across attendance, leaves, payroll liabilities, and demographics."
+        actions={<RefreshButton onRefresh={refetch} isFetching={isFetching} />}
       />
 
       {/* 2. Report Type Tabs Bar */}

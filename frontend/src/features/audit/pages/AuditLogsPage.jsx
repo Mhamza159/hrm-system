@@ -10,6 +10,8 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Eye, Activity, Database, AlertCircle } from 'lucide-react';
 import { useGetAuditLogsQuery } from '../auditApi.js';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { AuditLogFilterToolbar } from '../components/AuditLogFilterToolbar.jsx';
 import { AuditLogDiffModal } from '../components/AuditLogDiffModal.jsx';
 import { DataTable } from '../../../components/common/DataTable.jsx';
@@ -29,7 +31,7 @@ export const AuditLogsPage = () => {
   const [selectedLog, setSelectedLog] = useState(null);
   const [diffModalOpen, setDiffModalOpen] = useState(false);
 
-  const { data: response, isLoading, isError, refetch } = useGetAuditLogsQuery(filters);
+  const { data: response, isLoading, isFetching, isError, refetch } = useGetAuditLogsQuery(filters);
 
   const handleFilterChange = (newFilters) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
@@ -53,6 +55,14 @@ export const AuditLogsPage = () => {
   };
 
   const auditItems = response?.data || [];
+
+  if (isLoading && !response) {
+    return (
+      <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
   const meta = response?.meta || { total: 0, page: 1, limit: 20, totalPages: 1 };
 
   const columns = [
@@ -149,6 +159,7 @@ export const AuditLogsPage = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <RefreshButton onRefresh={refetch} isFetching={isFetching} />
           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-500 text-xs font-semibold rounded-full border border-emerald-500/20">
             <Activity className="w-3.5 h-3.5" />
             <span>Immutable Ledger</span>

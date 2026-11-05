@@ -29,6 +29,7 @@ import { useAuth } from '../../../hooks/useAuth.js';
 import { useGetMyPayslipsQuery } from '../payrollApi.js';
 import { PayslipPreviewModal } from '../components/PayslipPreviewModal.jsx';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 
 export function MyPayslipsPage() {
   const { isSuperAdmin } = useAuth();
@@ -42,7 +43,7 @@ export function MyPayslipsPage() {
     return <Navigate to="/payroll" replace />;
   }
 
-  const { data, isLoading } = useGetMyPayslipsQuery({
+  const { data, isLoading, isFetching, refetch } = useGetMyPayslipsQuery({
     page,
     limit: 12
   });
@@ -108,6 +109,14 @@ export function MyPayslipsPage() {
   };
 
   // Compute aggregate stats across available payslips
+  if (isLoading && !data) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <ScreenSkeleton variant="cards" />
+      </div>
+    );
+  }
+
   const totalNetPaisa = payslips.reduce((sum, s) => sum + (s.netPay || 0), 0);
   const totalTaxPaisa = payslips.reduce((sum, s) => sum + (s.taxWithheld || s.incomeTax || 0), 0);
   const avgNetPaisa = payslips.length > 0 ? totalNetPaisa / payslips.length : 0;
@@ -134,6 +143,7 @@ export function MyPayslipsPage() {
 
         {/* Tax Certificate Form IT-3 Download */}
         <div className="flex items-center gap-3">
+          <RefreshButton onRefresh={refetch} isFetching={isFetching} />
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}

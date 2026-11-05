@@ -9,11 +9,13 @@
 import React, { useState } from 'react';
 import { Target, CheckCircle2, Clock, AlertCircle, Send, Star, ShieldCheck } from 'lucide-react';
 import { useGetReviewsQuery, useSubmitSelfReviewMutation } from '../performanceApi.js';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { GoalsEditor } from '../components/GoalsEditor.jsx';
 import { toast } from 'sonner';
 
 export const MyReviewPage = () => {
-  const { data: reviewsData, isLoading } = useGetReviewsQuery();
+  const { data: reviewsData, isLoading, isFetching, refetch } = useGetReviewsQuery();
   const reviews = reviewsData?.data || [];
   const activeReview = reviews[0]; // Primary active appraisal
 
@@ -42,8 +44,12 @@ export const MyReviewPage = () => {
     }
   }, [activeReview]);
 
-  if (isLoading) {
-    return <div className="p-8 text-center text-slate-500">Loading Your Performance Appraisal...</div>;
+  if (isLoading && !reviewsData) {
+    return (
+      <div className="p-6 max-w-5xl mx-auto space-y-6">
+        <ScreenSkeleton variant="cards" />
+      </div>
+    );
   }
 
   if (!activeReview) {
@@ -125,6 +131,7 @@ export const MyReviewPage = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <RefreshButton onRefresh={refetch} isFetching={isFetching} />
           <span
             className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${
               isSubmitted

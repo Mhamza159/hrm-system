@@ -19,10 +19,20 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { useGetPublicPoliciesQuery } from '../settingsApi.js';
 
 export default function PoliciesPage() {
-  const { data: policiesRes, isLoading, refetch } = useGetPublicPoliciesQuery();
+  const { data: policiesRes, isLoading, isFetching, refetch } = useGetPublicPoliciesQuery();
+
+  if (isLoading && !policiesRes) {
+    return (
+      <div className="space-y-6">
+        <ScreenSkeleton variant="cards" />
+      </div>
+    );
+  }
 
   const policies = policiesRes?.data || {};
   const company = policies.company || {};
@@ -38,15 +48,18 @@ export default function PoliciesPage() {
         title="Company Handbook & Policies"
         description="Official working schedules, attendance punctuality guidelines, and leave entitlement rules."
         actions={
-          <Can I="settings.manage" a="Setting">
-            <Link
-              to="/settings"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#00C471] hover:bg-emerald-600 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
-            >
-              <Settings className="w-3.5 h-3.5" />
-              Manage Settings
-            </Link>
-          </Can>
+          <div className="flex items-center gap-2">
+            <RefreshButton onRefresh={refetch} isFetching={isFetching} />
+            <Can I="settings.manage" a="Setting">
+              <Link
+                to="/settings"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#00C471] hover:bg-emerald-600 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                Manage Settings
+              </Link>
+            </Can>
+          </div>
         }
       />
 

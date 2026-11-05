@@ -24,6 +24,8 @@ import {
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { StatusBadge } from '../../../components/common/StatusBadge.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { useGetMyLoansQuery } from '../loansApi.js';
 import { LoanApplyModal } from '../components/LoanApplyModal.jsx';
 import { LoanScheduleDrawer } from '../components/LoanScheduleDrawer.jsx';
@@ -32,7 +34,7 @@ export function MyLoansPage() {
   const [isApplyOpen, setIsApplyOpen] = useState(false);
   const [selectedLoanId, setSelectedLoanId] = useState(null);
 
-  const { data: loansRes, isLoading, refetch } = useGetMyLoansQuery({ page: 1, limit: 50 });
+  const { data: loansRes, isLoading, isFetching, refetch } = useGetMyLoansQuery({ page: 1, limit: 50 });
   const loans = loansRes?.data || [];
 
   // Metrics calculation
@@ -42,6 +44,14 @@ export function MyLoansPage() {
   );
 
   const totalOutstandingPaisa = activeLoans.reduce((acc, curr) => acc + (curr.remainingBalance || 0), 0);
+  if (isLoading && !loansRes) {
+    return (
+      <div className="space-y-6">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
+
   const totalOutstandingPkr = totalOutstandingPaisa / 100;
 
   const totalBorrowedPaisa = loans
@@ -56,15 +66,18 @@ export function MyLoansPage() {
         title="My Loans & Advances"
         description="Manage your emergency salary advances, company loans, and monthly deduction schedules."
         actions={
-          <Can I="loan.create" a="Loan">
-            <button
-              onClick={() => setIsApplyOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm shadow-emerald-500/20 hover:shadow-md transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              Apply for Borrowing
-            </button>
-          </Can>
+          <div className="flex items-center gap-2">
+            <RefreshButton onRefresh={refetch} isFetching={isFetching} />
+            <Can I="loan.create" a="Loan">
+              <button
+                onClick={() => setIsApplyOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm shadow-emerald-500/20 hover:shadow-md transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                Apply for Borrowing
+              </button>
+            </Can>
+          </div>
         }
       />
 

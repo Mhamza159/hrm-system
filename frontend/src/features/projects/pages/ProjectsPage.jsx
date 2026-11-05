@@ -35,6 +35,8 @@ import { ProjectModal } from '../components/ProjectModal.jsx';
 import { ClientModal } from '../components/ClientModal.jsx';
 import { ProjectMembersModal } from '../components/ProjectMembersModal.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { toast } from 'sonner';
 
 export const ProjectsPage = () => {
@@ -50,13 +52,13 @@ export const ProjectsPage = () => {
   const [selectedClient, setSelectedClient] = useState(null);
 
   // Queries & Mutations
-  const { data: projectsRes, isLoading: isProjectsLoading } = useGetProjectsQuery({
+  const { data: projectsRes, isLoading: isProjectsLoading, isFetching: isProjectsFetching, refetch: refetchProjects } = useGetProjectsQuery({
     search: search.trim() || undefined,
     status: statusFilter || undefined,
     limit: 50
   });
 
-  const { data: clientsRes, isLoading: isClientsLoading } = useGetClientsQuery({
+  const { data: clientsRes, isLoading: isClientsLoading, isFetching: isClientsFetching, refetch: refetchClients } = useGetClientsQuery({
     search: search.trim() || undefined,
     limit: 50
   });
@@ -65,6 +67,14 @@ export const ProjectsPage = () => {
   const [deleteClient] = useDeleteClientMutation();
 
   const projects = projectsRes?.data || [];
+
+  if ((isProjectsLoading || isClientsLoading) && !projectsRes) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-200">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
   const clients = clientsRes?.data || [];
 
   const activeProjectsCount = projects.filter((p) => p.status === 'active').length;
@@ -105,6 +115,7 @@ export const ProjectsPage = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <RefreshButton onRefresh={() => { refetchProjects(); refetchClients(); }} isFetching={isProjectsFetching || isClientsFetching} />
           <Can I="project.manage">
             <button
               onClick={() => {

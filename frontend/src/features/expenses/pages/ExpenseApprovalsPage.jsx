@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { useGetPendingExpenseApprovalsQuery } from '../expensesApi.js';
 import ExpenseDecisionModal from '../components/ExpenseDecisionModal.jsx';
 import ExpenseReimburseModal from '../components/ExpenseReimburseModal.jsx';
@@ -34,7 +36,7 @@ export default function ExpenseApprovalsPage() {
   const [isReimburseModalOpen, setIsReimburseModalOpen] = useState(false);
   const [search, setSearch] = useState('');
 
-  const { data, isLoading, error } = useGetPendingExpenseApprovalsQuery({
+  const { data, isLoading, isFetching, error, refetch } = useGetPendingExpenseApprovalsQuery({
     status: activeTab
   });
 
@@ -52,6 +54,14 @@ export default function ExpenseApprovalsPage() {
     return claimNum.includes(term) || applicant.includes(term) || category.includes(term);
   });
 
+  if (isLoading && !data) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-150">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
+
   const handleOpenDecision = (claim) => {
     setSelectedExpense(claim);
     setIsDecisionModalOpen(true);
@@ -67,6 +77,7 @@ export default function ExpenseApprovalsPage() {
       <PageHeader
         title="Expense Approvals & Reimbursements"
         description="Verify submitted receipt proofs, authorize managerial claims, and execute company reimbursements."
+        actions={<RefreshButton onRefresh={refetch} isFetching={isFetching} />}
       />
 
       {/* Navigation Tabs */}

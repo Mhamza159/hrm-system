@@ -18,6 +18,8 @@ import {
   Users
 } from 'lucide-react';
 import { useGetUtilizationReportQuery } from '../projectsApi.js';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { useGetDepartmentsQuery } from '../../departments/departmentsApi.js';
 
 export const UtilizationReportPage = () => {
@@ -28,11 +30,19 @@ export const UtilizationReportPage = () => {
   const { data: deptRes } = useGetDepartmentsQuery({ limit: 100 });
   const departments = deptRes?.data || [];
 
-  const { data: reportRes, isLoading } = useGetUtilizationReportQuery({
+  const { data: reportRes, isLoading, isFetching, refetch } = useGetUtilizationReportQuery({
     startDate: startDate || undefined,
     endDate: endDate || undefined,
     departmentId: selectedDeptId || undefined
   });
+
+  if (isLoading && !reportRes) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-200">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
 
   const summary = reportRes?.data?.summary || {
     totalBillableHours: 0,
@@ -56,6 +66,7 @@ export const UtilizationReportPage = () => {
             Analyze engineering and delivery team billable ratios versus internal non-billable time.
           </p>
         </div>
+        <RefreshButton onRefresh={refetch} isFetching={isFetching} />
       </div>
 
       {/* KPI Cards Row */}

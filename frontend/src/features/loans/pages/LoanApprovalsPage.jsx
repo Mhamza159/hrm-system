@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { StatusBadge } from '../../../components/common/StatusBadge.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { useGetLoansQuery } from '../loansApi.js';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { LoanDecisionModal } from '../components/LoanDecisionModal.jsx';
@@ -40,8 +42,16 @@ export function LoanApprovalsPage() {
   const [selectedLoan, setSelectedLoan] = useState(null);
   const [scheduleLoanId, setScheduleLoanId] = useState(null);
 
-  const { data: loansRes, isLoading, refetch } = useGetLoansQuery({ page: 1, limit: 100 });
+  const { data: loansRes, isLoading, isFetching, refetch } = useGetLoansQuery({ page: 1, limit: 100 });
   const loans = loansRes?.data || [];
+
+  if (isLoading && !loansRes) {
+    return (
+      <div className="space-y-6">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
 
   // Filter queue based on active tab
   const filteredLoans = loans.filter((loan) => {
@@ -73,6 +83,7 @@ export function LoanApprovalsPage() {
       <PageHeader
         title="Borrowing Approval Queue"
         description="Multi-tier review, recommendations, and executive disbursement authorizations."
+        actions={<RefreshButton onRefresh={refetch} isFetching={isFetching} />}
       />
 
       {/* Tabs */}

@@ -28,6 +28,8 @@ import {
 import { useAuth } from '../../../hooks/useAuth.js';
 import { usePermission } from '../../../hooks/usePermission.js';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { toast } from 'sonner';
 
 export const ResignationPage = () => {
@@ -48,17 +50,25 @@ export const ResignationPage = () => {
     comments: ''
   });
 
-  const { data: myResRes, isLoading: myLoading } = useGetMyResignationQuery();
+  const { data: myResRes, isLoading: myLoading, isFetching: myFetching, refetch: refetchMy } = useGetMyResignationQuery();
   const myResignation = myResRes?.data;
 
   const canManageOffboarding = can('offboard.manage');
-  const { data: allResRes, isLoading: allLoading } = useGetResignationsQuery(
+  const { data: allResRes, isLoading: allLoading, isFetching: allFetching, refetch: refetchAll } = useGetResignationsQuery(
     {},
     { skip: !canManageOffboarding }
   );
   const reviewQueue = allResRes?.data || [];
 
   const [submitResignation, { isLoading: isSubmitting }] = useSubmitResignationMutation();
+
+  if (myLoading && !myResRes) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-8">
+        <ScreenSkeleton variant="cards" />
+      </div>
+    );
+  }
   const [decideResignation, { isLoading: isDeciding }] = useDecideResignationMutation();
 
   const handleSubmit = async (e) => {
@@ -112,18 +122,21 @@ export const ResignationPage = () => {
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8">
       {/* Top Banner */}
-      <div className="flex items-center gap-2">
-        <div className="p-2 bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 rounded-lg">
-          <FileText className="w-6 h-6" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 rounded-lg">
+            <FileText className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Employee Resignation Portal
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Submit formal resignation, track notice period timelines, and coordinate team handovers.
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Employee Resignation Portal
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Submit formal resignation, track notice period timelines, and coordinate team handovers.
-          </p>
-        </div>
+        <RefreshButton onRefresh={() => { refetchMy?.(); if (canManageOffboarding) refetchAll?.(); }} isFetching={myFetching || (canManageOffboarding && allFetching)} />
       </div>
 
       {/* Employee Submission / Status Panel */}

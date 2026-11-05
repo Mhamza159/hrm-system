@@ -22,6 +22,8 @@ import {
   useGetMissingTimesheetsQuery,
   useRemindMissingTimesheetsMutation
 } from '../projectsApi.js';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { useGetDepartmentsQuery } from '../../departments/departmentsApi.js';
 import { toast } from 'sonner';
 
@@ -44,7 +46,7 @@ export const TimesheetCompliancePage = () => {
   const { data: deptRes } = useGetDepartmentsQuery({ limit: 100 });
   const departments = deptRes?.data || [];
 
-  const { data: complianceRes, isLoading, refetch } = useGetMissingTimesheetsQuery({
+  const { data: complianceRes, isLoading, isFetching, refetch } = useGetMissingTimesheetsQuery({
     weekStartDate: weekStartDateIso,
     departmentId: selectedDeptId || undefined
   });
@@ -52,6 +54,14 @@ export const TimesheetCompliancePage = () => {
   const [remindMissing, { isLoading: isReminding }] = useRemindMissingTimesheetsMutation();
 
   const missingList = complianceRes?.data?.missingList || [];
+
+  if (isLoading && !complianceRes) {
+    return (
+      <div className="space-y-6 animate-in fade-in duration-200">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
   const totalMissingCount = complianceRes?.data?.totalMissingCount || 0;
 
   const filteredList = missingList.filter((emp) => {
@@ -107,14 +117,17 @@ export const TimesheetCompliancePage = () => {
           </p>
         </div>
 
-        <button
-          onClick={handleRemindAll}
-          disabled={isReminding || filteredList.length === 0}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-amber-600 text-white hover:bg-amber-700 shadow-sm transition disabled:opacity-50"
-        >
-          {isReminding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bell className="h-4 w-4" />}
-          Send Reminders ({filteredList.length} Delinquent)
-        </button>
+        <div className="flex items-center gap-3">
+          <RefreshButton onRefresh={refetch} isFetching={isFetching} />
+          <button
+            onClick={handleRemindAll}
+            disabled={isReminding || filteredList.length === 0}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-amber-600 text-white hover:bg-amber-700 shadow-sm transition disabled:opacity-50"
+          >
+            {isReminding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bell className="h-4 w-4" />}
+            Send Reminders ({filteredList.length} Delinquent)
+          </button>
+        </div>
       </div>
 
       {/* Filter Header */}

@@ -10,15 +10,21 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { BarChart3, ArrowLeft, CheckCircle2, Clock, AlertTriangle, Users, Building, ShieldAlert } from 'lucide-react';
 import { useGetCycleProgressQuery } from '../performanceApi.js';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 
 export const CycleProgressPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: progressData, isLoading } = useGetCycleProgressQuery(id);
+  const { data: progressData, isLoading, isFetching, refetch } = useGetCycleProgressQuery(id);
   const progress = progressData?.data;
 
-  if (isLoading) {
-    return <div className="p-8 text-center text-slate-500">Loading Cycle Progress Metrics...</div>;
+  if (isLoading && !progress) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <ScreenSkeleton variant="cards" />
+      </div>
+    );
   }
 
   if (!progress) {
@@ -55,6 +61,7 @@ export const CycleProgressPage = () => {
             </p>
           </div>
         </div>
+        <RefreshButton onRefresh={refetch} isFetching={isFetching} />
       </div>
 
       {/* KPI Stats Cards */}

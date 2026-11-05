@@ -28,6 +28,8 @@ import {
   useGetEobiComplianceReportQuery,
   useGetTeamOvertimeQuery
 } from '../payrollApi.js';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 
 export function PayrollReportsPage() {
   const [activeTab, setActiveTab] = useState('cost'); // 'cost' | 'tax' | 'eobi' | 'overtime'
@@ -36,25 +38,37 @@ export function PayrollReportsPage() {
   const [year, setYear] = useState(new Date().getFullYear().toString());
 
   // Queries
-  const { data: costData, isLoading: isLoadingCost } = useGetDepartmentPayrollCostQuery(
+  const { data: costData, isLoading: isLoadingCost, isFetching: isFetchingCost, refetch: refetchCost } = useGetDepartmentPayrollCostQuery(
     { month: month || undefined, year: year || undefined },
     { skip: activeTab !== 'cost' }
   );
 
-  const { data: taxData, isLoading: isLoadingTax } = useGetTaxComplianceReportQuery(
+  const { data: taxData, isLoading: isLoadingTax, isFetching: isFetchingTax, refetch: refetchTax } = useGetTaxComplianceReportQuery(
     { taxYear },
     { skip: activeTab !== 'tax' }
   );
 
-  const { data: eobiData, isLoading: isLoadingEobi } = useGetEobiComplianceReportQuery(
+  const { data: eobiData, isLoading: isLoadingEobi, isFetching: isFetchingEobi, refetch: refetchEobi } = useGetEobiComplianceReportQuery(
     { taxYear },
     { skip: activeTab !== 'eobi' }
   );
 
-  const { data: overtimeData, isLoading: isLoadingOvertime } = useGetTeamOvertimeQuery(
+  const { data: overtimeData, isLoading: isLoadingOvertime, isFetching: isFetchingOvertime, refetch: refetchOvertime } = useGetTeamOvertimeQuery(
     { month: month || undefined, year: year || undefined },
     { skip: activeTab !== 'overtime' }
   );
+
+  const isFetching = (activeTab === 'cost' && isFetchingCost) ||
+                     (activeTab === 'tax' && isFetchingTax) ||
+                     (activeTab === 'eobi' && isFetchingEobi) ||
+                     (activeTab === 'overtime' && isFetchingOvertime);
+
+  const handleRefresh = () => {
+    if (activeTab === 'cost') refetchCost();
+    else if (activeTab === 'tax') refetchTax();
+    else if (activeTab === 'eobi') refetchEobi();
+    else if (activeTab === 'overtime') refetchOvertime();
+  };
 
   const departmentCosts = Array.isArray(costData?.data) ? costData.data : [];
   const taxReport = taxData?.data?.monthlyBreakdown || (Array.isArray(taxData?.data) ? taxData.data : []);
@@ -83,6 +97,7 @@ export function PayrollReportsPage() {
             </p>
           </div>
         </div>
+        <RefreshButton onRefresh={handleRefresh} isFetching={isFetching} />
       </div>
 
       {/* Tabs Navigation */}

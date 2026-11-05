@@ -27,14 +27,24 @@ import {
   useGetSettlementSummaryQuery
 } from '../onboardingApi.js';
 import { Can } from '../../../components/common/Can.jsx';
+import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { toast } from 'sonner';
 
 export const OffboardingPage = () => {
   const [selectedId, setSelectedId] = useState(null);
   const [activeCategory, setActiveCategory] = useState('all');
 
-  const { data: offboardRes, isLoading } = useGetOffboardingsQuery();
+  const { data: offboardRes, isLoading, isFetching, refetch } = useGetOffboardingsQuery();
   const offboardings = offboardRes?.data || [];
+
+  if (isLoading && !offboardRes) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
+        <ScreenSkeleton variant="table" />
+      </div>
+    );
+  }
 
   const [signoffClearance, { isLoading: isSigning }] = useSignoffExitClearanceMutation();
 
@@ -69,6 +79,7 @@ export const OffboardingPage = () => {
             </p>
           </div>
         </div>
+        <RefreshButton onRefresh={refetch} isFetching={isFetching} />
       </div>
 
       {/* Main Clearance List */}
