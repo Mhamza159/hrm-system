@@ -42,13 +42,44 @@ export const notify = async (userIds, payload) => {
       return { success: false, count: 0, notifications: [] };
     }
 
+    // Support polymorphic invocation: notify({ userId, title, message/body, type, link })
+    let targetRecipients = userIds;
+    let targetPayload = payload || {};
+
+    if (
+      userIds &&
+      typeof userIds === 'object' &&
+      !Array.isArray(userIds) &&
+      !(userIds instanceof mongoose.Types.ObjectId) &&
+      (userIds.title || userIds.body || userIds.message || userIds.userId || userIds.recipients)
+    ) {
+      targetPayload = { ...userIds, ...(payload || {}) };
+      targetRecipients = userIds.userId || userIds.recipients || userIds.userIds || userIds.recipient;
+    }
+
+    if (!targetRecipients || (Array.isArray(targetRecipients) && targetRecipients.length === 0)) {
+      return { success: false, count: 0, notifications: [] };
+    }
+
+    // Recursive and resilient ID extractor
+    const extractId = (val) => {
+      if (!val) return null;
+      if (typeof val === 'string') return val;
+      if (val instanceof mongoose.Types.ObjectId) return val.toString();
+      if (val._id) return extractId(val._id);
+      if (val.id) return extractId(val.id);
+      if (val.userId) return extractId(val.userId);
+      if (typeof val.toString === 'function' && typeof val !== 'object') return val.toString();
+      return null;
+    };
+
     // 1. Normalize and deduplicate recipient IDs
-    const rawList = Array.isArray(userIds) ? userIds : [userIds];
+    const rawList = Array.isArray(targetRecipients) ? targetRecipients : [targetRecipients];
     const uniqueIds = Array.from(
       new Set(
         rawList
+          .map(extractId)
           .filter(Boolean)
-          .map((id) => (typeof id === 'string' ? id : id.toString()))
           .filter((id) => mongoose.Types.ObjectId.isValid(id))
       )
     );
@@ -60,11 +91,11 @@ export const notify = async (userIds, payload) => {
     const {
       type = 'system',
       title,
-      body,
+      body = targetPayload.message,
       link = null,
       metadata = {},
       channels = ['inApp', 'email', 'whatsapp']
-    } = payload;
+    } = targetPayload;
 
     const TYPE_ALIASES = {
       loans: 'loan',
@@ -163,7 +194,7 @@ export const notify = async (userIds, payload) => {
         .lean()
         .then((users) => {
           for (const u of users) {
-            const prefs = u.notificationPrefs?.[type] || {
+            const prefs = u.notificationPrefs?.[normalizedType] || {
               email: true,
               whatsapp: true
             };

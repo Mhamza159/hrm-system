@@ -669,7 +669,7 @@ export const submitWeekTimesheets = async ({ employeeId, weekStartDate, user, ip
   const employee = await Employee.findById(employeeId).populate('managerId');
   if (employee?.managerId?.userId) {
     await notify(employee.managerId.userId, {
-      type: 'system',
+      type: 'project',
       title: 'Timesheet Submitted for Review',
       body: `${employee.name} submitted timesheets for week starting ${monday.toISOString().slice(0, 10)}.`,
       link: '/timesheets/approvals'
@@ -803,7 +803,7 @@ export const decideTimesheet = async ({ id, decision, rejectionReason, user, ipA
   const employee = await Employee.findById(timesheet.employeeId);
   if (employee?.userId) {
     await notify(employee.userId, {
-      type: 'system',
+      type: 'project',
       title: `Timesheet ${decision === 'approved' ? 'Approved' : 'Rejected'}`,
       body: `Your timesheet entry for ${timesheet.date.toISOString().slice(0, 10)} was ${decision}.${decision === 'rejected' ? ` Reason: ${timesheet.rejectionReason}` : ''}`,
       link: '/timesheets/my'
@@ -1093,7 +1093,7 @@ export const remindMissingTimesheets = async ({ weekStartDate, employeeIds, user
   for (const emp of employees) {
     if (emp.userId) {
       await notify(emp.userId._id || emp.userId, {
-        type: 'system',
+        type: 'project',
         title: 'Timesheet Submission Reminder',
         body: `Please complete and submit your weekly timesheet for ${weekLabel}.`,
         link: '/timesheets/my'

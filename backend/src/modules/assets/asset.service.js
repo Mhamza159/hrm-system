@@ -346,8 +346,7 @@ export const assignAsset = async ({ id, employeeId, assignedDate, notes = '', co
     await notify(employee.userId, {
       title: 'Company Asset Assigned',
       body: `You have been assigned ${asset.name} (Tag: ${asset.assetTag}).`,
-      message: `You have been assigned ${asset.name} (Tag: ${asset.assetTag}).`,
-      type: 'system',
+      type: 'asset',
       link: '/assets/my'
     }).catch((err) => console.error('[Notify Error]', err.message));
   }
@@ -619,8 +618,7 @@ export const reportAssetIssue = async ({ id, issueData, user, ipAddress, userAge
       await notify(hrUserIds, {
         title: 'Asset Issue Reported',
         body: `Issue reported on ${asset.name} (${asset.assetTag}): ${issueData.description}`,
-        message: `Issue reported on ${asset.name} (${asset.assetTag}): ${issueData.description}`,
-        type: 'system',
+        type: 'asset',
         link: `/assets/${asset._id}`
       }).catch((err) => console.error('[Notify Error]', err.message));
     }
@@ -691,8 +689,7 @@ export const createAssetRequest = async ({ requestData, user, ipAddress, userAge
       await notify(hrUserIds, {
         title: 'New Asset Requisition',
         body: `Asset requisition submitted for ${targetEmployee.name || targetEmployee.employeeCode}.`,
-        message: `Asset requisition submitted for ${targetEmployee.name || targetEmployee.employeeCode}.`,
-        type: 'system',
+        type: 'asset',
         link: '/assets/requests'
       }).catch((err) => console.error('[Notify Error]', err.message));
     }
@@ -799,8 +796,7 @@ export const approveAssetRequest = async ({ id, allocatedAssetId, user, ipAddres
     await notify(targetEmployee.userId, {
       title: 'Asset Requisition Approved',
       body: `Your equipment requisition for ${asset.name} has been approved and allocated.`,
-      message: `Your equipment requisition for ${asset.name} has been approved and allocated.`,
-      type: 'system',
+      type: 'asset',
       link: '/assets/my'
     }).catch((err) => console.error('[Notify Error]', err.message));
   }
@@ -809,8 +805,7 @@ export const approveAssetRequest = async ({ id, allocatedAssetId, user, ipAddres
     await notify(request.requestedBy, {
       title: 'Team Asset Request Approved',
       body: `Asset ${asset.name} (${asset.assetTag}) allocated for your team member.`,
-      message: `Asset ${asset.name} (${asset.assetTag}) allocated for your team member.`,
-      type: 'system',
+      type: 'asset',
       link: '/assets/requests'
     }).catch((err) => console.error('[Notify Error]', err.message));
   }
@@ -871,8 +866,7 @@ export const rejectAssetRequest = async ({ id, rejectionReason, user, ipAddress,
     await notify(request.requestedBy, {
       title: 'Asset Request Declined',
       body: `Your asset requisition was declined: ${rejectionReason}`,
-      message: `Your asset requisition was declined: ${rejectionReason}`,
-      type: 'system',
+      type: 'asset',
       link: '/assets/requests'
     }).catch((err) => console.error('[Notify Error]', err.message));
   }
@@ -920,8 +914,7 @@ export const checkExpiringAssets = async () => {
       await notify(recipientIds, {
         title: 'Asset Expiry Notice (30-Day Window)',
         body: `${expiringAssets.length} asset warranty/license(s) are approaching expiration within the next 30 days.`,
-        message: `${expiringAssets.length} asset warranty/license(s) are approaching expiration within the next 30 days.`,
-        type: 'system',
+        type: 'asset',
         link: '/assets?expiringSoon=true'
       }).catch((err) => console.error('[Notify Error]', err.message));
     }

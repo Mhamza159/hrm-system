@@ -28,7 +28,8 @@ import { scopeFilter } from '../../utils/scopeFilter.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { emailService } from '../../services/email.service.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary, isCloudinaryConfigured } from '../../config/cloudinary.js';
-import { assertSuperAdminIfApplicantIsHR } from '../../utils/hrApprovalGuard.js';
+import { assertSuperAdminIfApplicantIsHR, isApplicantHR, notifySuperAdmins, notifyHRManagers } from '../../utils/hrApprovalGuard.js';
+import { notify } from '../../services/notify.service.js';
 import { initializeEmployeeLeaveBalances } from '../leaves/leave.service.js';
 import { assertEmployeeAssetClearance } from '../assets/asset.service.js';
 import { initOnboardingForEmployee } from '../onboarding/onboarding.service.js';
@@ -1028,6 +1029,24 @@ export const submitChangeRequest = async (userId, { field, requestedValue, reaso
     status: 'pending'
   });
 
+  const isHr = await isApplicantHR(employee._id, userId);
+  const applicantName = employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Employee';
+  if (isHr) {
+    await notifySuperAdmins({
+      type: 'profile',
+      title: 'Profile Change Request (HR Personnel)',
+      body: `${applicantName} requested an update to their ${field}. Awaiting Super Admin review.`,
+      link: '/admin/change-requests'
+    }).catch(() => {});
+  } else {
+    await notifyHRManagers({
+      type: 'profile',
+      title: 'New Profile Change Request',
+      body: `${applicantName} submitted a change request for ${field}.`,
+      link: '/admin/change-requests'
+    }).catch(() => {});
+  }
+
   return request;
 };
 
@@ -1081,6 +1100,13 @@ export const decideChangeRequest = async (id, { action, rejectionReason }, actor
       details: { rejectionReason }
     });
 
+    await notify(changeReq.requestedBy, {
+      type: 'profile',
+      title: 'Profile Change Request Declined',
+      body: `Your request to update ${changeReq.field} was declined: ${rejectionReason || 'Contact HR for details.'}`,
+      link: '/profile'
+    }).catch(() => {});
+
     return changeReq;
   }
 
@@ -1130,6 +1156,13 @@ export const decideChangeRequest = async (id, { action, rejectionReason }, actor
     before: beforeSnapshot,
     after: employee.toObject()
   });
+
+  await notify(changeReq.requestedBy, {
+    type: 'profile',
+    title: 'Profile Change Request Approved',
+    body: `Your request to update ${changeReq.field} has been approved and applied to your profile.`,
+    link: '/profile'
+  }).catch(() => {});
 
   return changeReq;
 };

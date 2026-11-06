@@ -526,7 +526,8 @@ export const submitResignation = async ({ resignationData, user, ipAddress, user
       await notify(hrUsers.map((u) => u._id), {
         title: 'New Resignation Submitted',
         body: `${employee.name} has submitted a formal resignation.`,
-        type: 'system'
+        type: 'onboarding',
+        link: '/offboarding'
       }).catch((err) => console.error('[Notify Error]', err.message));
     }
   }
@@ -659,7 +660,8 @@ export const decideResignation = async ({ id, decisionData, user, ipAddress, use
       body: decisionData.status === 'accepted'
         ? `Your resignation has been accepted. Official last working day set to ${new Date(resignation.officialLastWorkingDay).toLocaleDateString()}.`
         : `Your resignation request was rejected. Reason: ${resignation.rejectionReason || 'Please contact HR.'}`,
-      type: 'system'
+      type: 'onboarding',
+      link: '/profile'
     }).catch((err) => console.error('[Notify Error]', err.message));
   }
 

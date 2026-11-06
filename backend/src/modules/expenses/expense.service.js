@@ -18,7 +18,7 @@ import { ApiError } from '../../utils/ApiError.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { notify } from '../../services/notify.service.js';
 import { isCloudinaryConfigured, uploadBufferToCloudinary } from '../../config/cloudinary.js';
-import { assertSuperAdminIfApplicantIsHR, isApplicantHR } from '../../utils/hrApprovalGuard.js';
+import { assertSuperAdminIfApplicantIsHR, isApplicantHR, notifySuperAdmins, notifyHRManagers } from '../../utils/hrApprovalGuard.js';
 
 // Default managerial approval threshold: PKR 15,000 (1,500,000 paisa)
 export const DEFAULT_MANAGER_APPROVAL_LIMIT_PAISA = 1500000;
@@ -274,13 +274,30 @@ export async function createExpense(employeeId, data, file, actor) {
     meta: { claimNumber, amount: amountPaisa, category: category.name }
   }).catch(() => {});
 
-  // 6. Notify Department Manager if present
-  if (employee.managerId?.userId) {
-    const applicantName = employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Employee';
+  // 6. Notify relevant approvers based on PBAC rules
+  const isHr = await isApplicantHR(employee._id, actor);
+  const applicantName = employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Employee';
+  const formattedPkr = (amountPaisa / 100).toLocaleString('en-PK');
+
+  if (isHr) {
+    await notifySuperAdmins({
+      type: 'expense',
+      title: 'New Expense Claim (HR Staff)',
+      body: `${applicantName} (HR Manager) submitted claim ${claimNumber} for PKR ${formattedPkr} (${category.name}). Awaiting Super Admin review.`,
+      link: '/expenses/approvals'
+    }).catch(() => {});
+  } else if (employee.managerId?.userId) {
     await notify(employee.managerId.userId, {
       type: 'expense',
       title: 'New Expense Claim Submitted',
-      body: `${applicantName} submitted claim ${claimNumber} for PKR ${(amountPaisa / 100).toLocaleString('en-PK')} (${category.name}).`,
+      body: `${applicantName} submitted claim ${claimNumber} for PKR ${formattedPkr} (${category.name}).`,
+      link: '/expenses/approvals'
+    }).catch(() => {});
+  } else {
+    await notifyHRManagers({
+      type: 'expense',
+      title: 'New Expense Claim Submitted',
+      body: `${applicantName} submitted claim ${claimNumber} for PKR ${formattedPkr} (${category.name}). Awaiting HR review.`,
       link: '/expenses/approvals'
     }).catch(() => {});
   }
@@ -479,6 +496,13 @@ export async function decideExpense(id, decisionData, actor) {
         comments: `Claim amount (PKR ${(expense.amount / 100).toLocaleString('en-PK')}) exceeds manager threshold (PKR ${(approvalLimitPaisa / 100).toLocaleString('en-PK')}). Escalated to Super Admin. Remarks: ${comments.trim()}`,
         timestamp: new Date()
       });
+
+      await notifySuperAdmins({
+        type: 'expense',
+        title: 'Expense Claim Escalated to Super Admin',
+        body: `Claim ${expense.claimNumber} (PKR ${(expense.amount / 100).toLocaleString('en-PK')}) exceeded manager threshold and has been escalated for Super Admin approval.`,
+        link: '/expenses/approvals'
+      }).catch(() => {});
     } else {
       // Direct approval
       expense.status = 'approved';

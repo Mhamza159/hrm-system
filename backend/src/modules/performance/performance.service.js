@@ -400,12 +400,11 @@ export const submitSelfReview = async ({ reviewId, kpiRatings, goalRatings = [],
   if (review.managerId) {
     const managerEmp = await Employee.findById(review.managerId);
     if (managerEmp?.userId) {
-      await notify({
-        userId: managerEmp.userId,
+      await notify(managerEmp.userId, {
         title: 'Subordinate Self-Review Submitted',
-        message: `${actorEmp.firstName} ${actorEmp.lastName} has submitted their self-appraisal.`,
+        body: `${actorEmp.firstName} ${actorEmp.lastName} has submitted their self-appraisal.`,
         type: 'performance',
-        link: `/performance/team-reviews`
+        link: '/performance/team-reviews'
       });
     }
   }
@@ -601,12 +600,11 @@ export const finalizeReview = async ({
   // Notify Employee of Final Appraisal
   const employee = await Employee.findById(review.employeeId);
   if (employee?.userId) {
-    await notify({
-      userId: employee.userId,
+    await notify(employee.userId, {
       title: 'Performance Appraisal Finalized',
-      message: `Your performance evaluation has been approved with a final rating of ${finalRating}/5.`,
+      body: `Your performance evaluation has been approved with a final rating of ${finalRating}/5.`,
       type: 'performance',
-      link: `/performance/my-review`
+      link: '/performance/my-review'
     });
   }
 
@@ -747,12 +745,11 @@ export const requestPeerFeedback = async ({ reviewId, peerEmployeeId, user, ipAd
   await review.save();
 
   if (peerEmp.userId) {
-    await notify({
-      userId: peerEmp.userId,
+    await notify(peerEmp.userId, {
       title: '360° Peer Feedback Requested',
-      message: `You have been requested to provide confidential peer feedback for an appraisal.`,
+      body: 'You have been requested to provide confidential peer feedback for an appraisal.',
       type: 'performance',
-      link: `/performance/my-review`
+      link: '/performance/my-review'
     });
   }
 

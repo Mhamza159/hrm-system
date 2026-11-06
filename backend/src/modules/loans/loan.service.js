@@ -124,7 +124,7 @@ export async function createLoan(employeeId, loanData, actor, { ip, userAgent } 
   if (isHrApplicant) {
     // Executive Notification: HR staff member applied -> notify all Super Admins immediately
     await notifySuperAdmins({
-      type: 'leave',
+      type: 'loan',
       title: `New ${type === 'advance' ? 'Salary Advance' : 'Loan'} Request (HR Staff)`,
       body: `${applicantName} (HR Manager) applied for PKR ${amountFormatted} (${type}). Awaiting Super Admin disbursement authorization.`,
       link: '/loans/approvals'
@@ -132,7 +132,7 @@ export async function createLoan(employeeId, loanData, actor, { ip, userAgent } 
   } else if (applicant?.managerId?.userId) {
     // Manager Recommendation Flow: Notify direct manager to review & recommend
     await notify(applicant.managerId.userId, {
-      type: 'leave',
+      type: 'loan',
       title: `Borrowing Request Awaiting Recommendation`,
       body: `${applicantName} applied for PKR ${amountFormatted} (${type}). Awaiting your manager recommendation.`,
       link: '/loans/approvals'
@@ -140,7 +140,7 @@ export async function createLoan(employeeId, loanData, actor, { ip, userAgent } 
   } else {
     // Standard Employee Flow without direct manager: Notify HR Managers
     await notifyHRManagers({
-      type: 'leave',
+      type: 'loan',
       title: `New ${type === 'advance' ? 'Salary Advance' : 'Loan'} Request`,
       body: `${applicantName} applied for PKR ${amountFormatted} (${type}). Awaiting HR review.`,
       link: '/loans/approvals'
@@ -547,7 +547,7 @@ export async function decideLoan(id, decisionData, actor, { ip, userAgent } = {}
   const applicantUser = await User.findOne({ employeeId: loan.employeeId._id });
   if (applicantUser) {
     await notify(applicantUser._id, {
-      type: 'leave',
+      type: 'loan',
       title: `Loan Request ${loan.status.toUpperCase()}`,
       body: `Your request for ${loan.loanId} status is now '${loan.status}'. Notes: ${sanitizedComments}`,
       link: '/loans'
