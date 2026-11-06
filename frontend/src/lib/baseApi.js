@@ -58,10 +58,22 @@ class Mutex {
 const mutex = new Mutex();
 
 /**
+ * Resolves the API base URL supporting production environments (e.g. Render / Railway backend with Vercel frontend)
+ */
+export const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
+  if (!envUrl) return '/api/v1';
+  if (envUrl.endsWith('/api/v1')) return envUrl;
+  if (envUrl.endsWith('/api/v1/')) return envUrl.slice(0, -1);
+  const cleanUrl = envUrl.endsWith('/') ? envUrl.slice(0, -1) : envUrl;
+  return `${cleanUrl}/api/v1`;
+};
+
+/**
  * Primary low-level fetchBaseQuery instance
  */
 const baseQuery = fetchBaseQuery({
-  baseUrl: '/api/v1',
+  baseUrl: getApiBaseUrl(),
   credentials: 'include',
   prepareHeaders: (headers, { getState }) => {
     const token = getState()?.auth?.accessToken;
