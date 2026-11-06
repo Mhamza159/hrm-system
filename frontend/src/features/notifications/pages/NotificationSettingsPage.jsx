@@ -16,7 +16,14 @@ import {
   MessageSquare,
   Clock,
   Calendar,
-  DollarSign,
+  Coins,
+  Receipt,
+  Laptop,
+  UserCheck,
+  Award,
+  FolderKanban,
+  ShieldCheck,
+  User,
   Megaphone,
   Save,
   RotateCcw,
@@ -30,25 +37,81 @@ import {
 
 const CATEGORY_ITEMS = [
   {
-    key: 'attendance',
-    title: 'Attendance & Shifts',
-    description: 'Check-in reminders, late arrival alerts, and manager shift change notifications.',
-    icon: Clock,
-    color: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/60'
-  },
-  {
     key: 'leave',
     title: 'Leaves & Holidays',
     description: 'Leave request submission receipts, manager approval/rejection updates, and gazetted holiday notices.',
     icon: Calendar,
-    color: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60'
+    color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60'
+  },
+  {
+    key: 'attendance',
+    title: 'Attendance & Shifts',
+    description: 'Check-in reminders, late arrival alerts, missed punches, and manager shift change notifications.',
+    icon: Clock,
+    color: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/60'
   },
   {
     key: 'payroll',
     title: 'Payroll & Compensation',
     description: 'Monthly payslip release alerts, bonus disbursement notices, and tax deduction reports.',
-    icon: DollarSign,
+    icon: Coins,
+    color: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60'
+  },
+  {
+    key: 'loan',
+    title: 'Loans & Advances',
+    description: 'Loan approvals, rejection feedback, deduction reminders, and prepayment settlement receipts.',
+    icon: Coins,
     color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60'
+  },
+  {
+    key: 'expense',
+    title: 'Expenses & Reimbursements',
+    description: 'Expense claim approval notices, manager queries, receipts verification, and payment disbursements.',
+    icon: Receipt,
+    color: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800/60'
+  },
+  {
+    key: 'asset',
+    title: 'Assets Management',
+    description: 'Hardware equipment allocation notices, asset handover approvals, and return deadlines.',
+    icon: Laptop,
+    color: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800/60'
+  },
+  {
+    key: 'onboarding',
+    title: 'Onboarding & Offboarding',
+    description: 'Welcome tasks, probation review notices, resignation updates, and exit interview clearances.',
+    icon: UserCheck,
+    color: 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800/60'
+  },
+  {
+    key: 'performance',
+    title: 'Performance & Appraisals',
+    description: 'Quarterly review launches, 360 peer feedback requests, rating reports, and appraisal results.',
+    icon: Award,
+    color: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60'
+  },
+  {
+    key: 'project',
+    title: 'Projects & Timesheets',
+    description: 'New project/task assignments, deadline reminders, timesheet submission receipts, and approvals.',
+    icon: FolderKanban,
+    color: 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800/60'
+  },
+  {
+    key: 'security',
+    title: 'Security & Compliance',
+    description: '2FA authentication codes, suspicious device logins, password rotation, and account locks.',
+    icon: ShieldCheck,
+    color: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/60'
+  },
+  {
+    key: 'profile',
+    title: 'Profile & Documents',
+    description: 'HR responses to your profile update requests, document verifications, and compliance reminders.',
+    icon: User,
+    color: 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
   },
   {
     key: 'announcement',
@@ -63,20 +126,27 @@ export const NotificationSettingsPage = () => {
   const { data: prefsData, isLoading } = useGetNotificationPreferencesQuery();
   const [updatePrefs, { isLoading: isSaving }] = useUpdateNotificationPreferencesMutation();
 
-  const [localPrefs, setLocalPrefs] = useState({
-    attendance: { inApp: true, email: true, whatsapp: false },
-    leave: { inApp: true, email: true, whatsapp: false },
-    payroll: { inApp: true, email: true, whatsapp: false },
-    announcement: { inApp: true, email: true, whatsapp: false }
+  const [localPrefs, setLocalPrefs] = useState(() => {
+    const initial = {};
+    CATEGORY_ITEMS.forEach((cat) => {
+      initial[cat.key] = { inApp: true, email: true, whatsapp: false };
+    });
+    return initial;
   });
 
   useEffect(() => {
     if (prefsData?.data) {
-      setLocalPrefs({
-        attendance: { inApp: true, email: true, whatsapp: false, ...prefsData.data.attendance },
-        leave: { inApp: true, email: true, whatsapp: false, ...prefsData.data.leave },
-        payroll: { inApp: true, email: true, whatsapp: false, ...prefsData.data.payroll },
-        announcement: { inApp: true, email: true, whatsapp: false, ...prefsData.data.announcement }
+      setLocalPrefs((prev) => {
+        const next = { ...prev };
+        CATEGORY_ITEMS.forEach((cat) => {
+          next[cat.key] = {
+            inApp: true,
+            email: true,
+            whatsapp: false,
+            ...(prefsData.data[cat.key] || {})
+          };
+        });
+        return next;
       });
     }
   }, [prefsData]);
@@ -85,8 +155,8 @@ export const NotificationSettingsPage = () => {
     setLocalPrefs((prev) => ({
       ...prev,
       [category]: {
-        ...prev[category],
-        [channel]: !prev[category]?.[channel]
+        ...(prev[category] || { inApp: true, email: false, whatsapp: false }),
+        [channel]: !(prev[category]?.[channel] ?? false)
       }
     }));
   };
@@ -101,12 +171,11 @@ export const NotificationSettingsPage = () => {
   };
 
   const handleReset = () => {
-    setLocalPrefs({
-      attendance: { inApp: true, email: true, whatsapp: false },
-      leave: { inApp: true, email: true, whatsapp: false },
-      payroll: { inApp: true, email: true, whatsapp: false },
-      announcement: { inApp: true, email: true, whatsapp: false }
+    const defaults = {};
+    CATEGORY_ITEMS.forEach((cat) => {
+      defaults[cat.key] = { inApp: true, email: true, whatsapp: false };
     });
+    setLocalPrefs(defaults);
     toast.info('Preferences reset to default values (Click Save to apply)');
   };
 
@@ -115,7 +184,7 @@ export const NotificationSettingsPage = () => {
       {/* Page Header */}
       <PageHeader
         title="Notification Settings"
-        description="Control which channels (In-App, Email, WhatsApp) are used to notify you for each category."
+        description="Control which channels (In-App, Email, WhatsApp) are used to notify you for each operational category."
       >
         <div className="flex items-center gap-2">
           <button
@@ -151,7 +220,7 @@ export const NotificationSettingsPage = () => {
           </span>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3.5">
           {CATEGORY_ITEMS.map((cat) => {
             const Icon = cat.icon;
             const current = localPrefs[cat.key] || { inApp: true, email: true, whatsapp: false };
@@ -159,7 +228,7 @@ export const NotificationSettingsPage = () => {
             return (
               <div
                 key={cat.key}
-                className="p-5 bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl shadow-xs"
+                className="p-4 sm:p-5 bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl shadow-xs transition-all hover:border-slate-300 dark:hover:border-[#224031]"
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   {/* Category Details */}
@@ -173,7 +242,7 @@ export const NotificationSettingsPage = () => {
                       <h4 className="text-sm font-semibold text-slate-900 dark:text-white">
                         {cat.title}
                       </h4>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                      <p className="text-xs text-slate-500 dark:text-[#7E9E8F] mt-0.5 leading-relaxed">
                         {cat.description}
                       </p>
                     </div>

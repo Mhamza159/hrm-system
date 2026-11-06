@@ -66,6 +66,21 @@ export const notify = async (userIds, payload) => {
       channels = ['inApp', 'email', 'whatsapp']
     } = payload;
 
+    const TYPE_ALIASES = {
+      loans: 'loan',
+      expenses: 'expense',
+      assets: 'asset',
+      timesheet: 'project',
+      timesheets: 'project',
+      projects: 'project',
+      resignation: 'onboarding',
+      offboarding: 'onboarding',
+      appraisal: 'performance',
+      appraisals: 'performance',
+      leaves: 'leave'
+    };
+    const normalizedType = TYPE_ALIASES[type?.toLowerCase()] || type?.toLowerCase() || 'system';
+
     if (!title || !body) {
       throw new Error('Notification requires both title and body content');
     }
@@ -79,10 +94,10 @@ export const notify = async (userIds, payload) => {
           const globalChannels = adminNotifSetting.channels || { inApp: true, email: true, whatsapp: false };
 
           let targetConfig = null;
-          if (type === 'announcement' && adminNotifSetting.announcements) {
+          if (normalizedType === 'announcement' && adminNotifSetting.announcements) {
             targetConfig = adminNotifSetting.announcements;
-          } else if (type && adminNotifSetting.categories?.[type]) {
-            targetConfig = adminNotifSetting.categories[type];
+          } else if (normalizedType && adminNotifSetting.categories?.[normalizedType]) {
+            targetConfig = adminNotifSetting.categories[normalizedType];
           }
 
           adminChannels = {
@@ -105,7 +120,7 @@ export const notify = async (userIds, payload) => {
     if (effectiveInApp) {
       const documentsToInsert = uniqueIds.map((uid) => ({
         userId: new mongoose.Types.ObjectId(uid),
-        type,
+        type: normalizedType,
         title: title.trim(),
         body: body.trim(),
         link: link ? link.trim() : null,
