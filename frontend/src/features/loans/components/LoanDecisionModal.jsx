@@ -5,11 +5,12 @@
  * SPECIFICATION & THEME:
  * - Module: M10 Loans & Advances (BUILD-GUIDE Section 15 · Row 10.3)
  * - State Flow: Manager Recommend -> HR Forward -> Super Admin Final Approve & Disburse.
+ * - Forest & Emerald Theme: Emerald accents, accessible contrast, 100% dark mode compatible.
  */
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { X, CheckCircle2, XCircle, AlertTriangle, Send, DollarSign, ShieldCheck } from 'lucide-react';
+import { X, CheckCircle2, XCircle, Send, DollarSign, ShieldCheck } from 'lucide-react';
 import { useDecideLoanMutation } from '../loansApi.js';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { cn } from '../../../lib/utils.js';
@@ -41,7 +42,11 @@ export function LoanDecisionModal({ isOpen, onClose, loan }) {
 
   const amountPkr = (loan.amount || 0) / 100;
   const installmentPkr = (loan.monthlyInstallment || 0) / 100;
-  const employeeName = loan.employeeId?.name || loan.employeeId?.user?.name || loan.employeeId?.userId?.name || `${loan.employeeId?.firstName || ''} ${loan.employeeId?.lastName || ''}`.trim() || 'Employee';
+  const employeeName =
+    loan.employeeId?.name ||
+    loan.employeeId?.user?.name ||
+    loan.employeeId?.userId?.name ||
+    'Employee';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -59,34 +64,43 @@ export function LoanDecisionModal({ isOpen, onClose, loan }) {
         disbursementMethod: decision === 'approve' ? disbursementMethod : undefined
       }).unwrap();
 
-      toast.success(`Loan application successfully processed as ${decision}`);
-      onClose();
+      toast.success(`Loan application successfully processed as ${decision}.`);
     } catch (err) {
-      toast.error(err?.data?.message || 'Failed to record decision');
+      toast.error(err?.data?.message || err?.message || 'Failed to record decision');
+      return;
+    }
+
+    // Safely invoke onClose outside the API catch block
+    try {
+      if (typeof onClose === 'function') {
+        onClose();
+      }
+    } catch (closeErr) {
+      console.error('Error during decision modal close callback:', closeErr);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div
-        className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden transform transition-all"
+        className="w-full max-w-lg bg-white dark:bg-[#111D17] rounded-2xl shadow-2xl border border-slate-200 dark:border-[#1A3125] overflow-hidden transform transition-all"
         role="dialog"
         aria-modal="true"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-[#1A3125] bg-slate-50/70 dark:bg-[#0E1A14]">
           <div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
               Review Borrowing Application
             </h3>
-            <p className="text-xs text-slate-500 font-mono mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">
               {loan.loanId} • {employeeName}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-[#1A3125] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -95,28 +109,28 @@ export function LoanDecisionModal({ isOpen, onClose, loan }) {
         {/* Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Overview summary */}
-          <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200/80 dark:border-slate-700/60 space-y-2">
+          <div className="p-4 bg-slate-50 dark:bg-[#0A110D] rounded-xl border border-slate-200/80 dark:border-[#1A3125] space-y-2">
             <div className="flex justify-between text-xs">
-              <span className="text-slate-500">Applicant:</span>
+              <span className="text-slate-500 font-medium">Applicant:</span>
               <span className="font-semibold text-slate-900 dark:text-slate-100">{employeeName}</span>
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-slate-500">Requested Amount:</span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">
+              <span className="text-slate-500 font-medium">Requested Amount:</span>
+              <span className="font-bold text-[#00C471] dark:text-[#00C471] tabular-nums">
                 PKR {amountPkr.toLocaleString()}
               </span>
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-slate-500">Tenure & Installment:</span>
-              <span className="text-slate-700 dark:text-slate-300">
+              <span className="text-slate-500 font-medium">Tenure & Installment:</span>
+              <span className="text-slate-700 dark:text-slate-300 tabular-nums">
                 {loan.repaymentTenureMonths} mo • PKR {installmentPkr.toLocaleString()}/mo
               </span>
             </div>
             <div className="flex justify-between text-xs">
-              <span className="text-slate-500">Effective Start Month:</span>
-              <span className="text-slate-700 dark:text-slate-300">{loan.effectiveStartMonth}</span>
+              <span className="text-slate-500 font-medium">Effective Start Month:</span>
+              <span className="text-slate-700 dark:text-slate-300 font-mono">{loan.effectiveStartMonth}</span>
             </div>
-            <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 text-xs text-slate-600 dark:text-slate-400 italic">
+            <div className="pt-2 border-t border-slate-200/60 dark:border-[#1A3125] text-xs text-slate-600 dark:text-slate-400 italic">
               "{loan.reason}"
             </div>
           </div>
@@ -133,23 +147,23 @@ export function LoanDecisionModal({ isOpen, onClose, loan }) {
                     type="button"
                     onClick={() => setDecision('recommend')}
                     className={cn(
-                      'py-2 px-3 text-xs font-semibold rounded-xl border transition-all flex items-center justify-center gap-1.5',
+                      'py-2 px-3 text-xs font-semibold rounded-xl border transition-all flex items-center justify-center gap-1.5 cursor-pointer',
                       decision === 'recommend'
-                        ? 'bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
-                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                        ? 'bg-emerald-50 dark:bg-[#00C471]/15 border-[#00C471] text-[#00C471]'
+                        : 'border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-slate-400'
                     )}
                   >
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    <CheckCircle2 className="w-4 h-4 text-[#00C471]" />
                     Recommend to HR
                   </button>
                   <button
                     type="button"
                     onClick={() => setDecision('decline')}
                     className={cn(
-                      'py-2 px-3 text-xs font-semibold rounded-xl border transition-all flex items-center justify-center gap-1.5',
+                      'py-2 px-3 text-xs font-semibold rounded-xl border transition-all flex items-center justify-center gap-1.5 cursor-pointer',
                       decision === 'decline'
-                        ? 'bg-rose-50 border-rose-500 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300'
-                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                        ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-700 dark:text-rose-300'
+                        : 'border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-slate-400'
                     )}
                   >
                     <XCircle className="w-4 h-4 text-rose-500" />
@@ -164,10 +178,10 @@ export function LoanDecisionModal({ isOpen, onClose, loan }) {
                     type="button"
                     onClick={() => setDecision('forward')}
                     className={cn(
-                      'py-2 px-3 text-xs font-semibold rounded-xl border transition-all flex items-center justify-center gap-1.5',
+                      'py-2 px-3 text-xs font-semibold rounded-xl border transition-all flex items-center justify-center gap-1.5 cursor-pointer',
                       decision === 'forward'
-                        ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
-                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                        ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-500 text-blue-700 dark:text-blue-300'
+                        : 'border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-slate-400'
                     )}
                   >
                     <Send className="w-4 h-4 text-blue-500" />
@@ -177,10 +191,10 @@ export function LoanDecisionModal({ isOpen, onClose, loan }) {
                     type="button"
                     onClick={() => setDecision('reject')}
                     className={cn(
-                      'py-2 px-3 text-xs font-semibold rounded-xl border transition-all flex items-center justify-center gap-1.5',
+                      'py-2 px-3 text-xs font-semibold rounded-xl border transition-all flex items-center justify-center gap-1.5 cursor-pointer',
                       decision === 'reject'
-                        ? 'bg-rose-50 border-rose-500 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300'
-                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                        ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-700 dark:text-rose-300'
+                        : 'border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-slate-400'
                     )}
                   >
                     <XCircle className="w-4 h-4 text-rose-500" />
@@ -195,23 +209,23 @@ export function LoanDecisionModal({ isOpen, onClose, loan }) {
                     type="button"
                     onClick={() => setDecision('approve')}
                     className={cn(
-                      'py-2 px-3 text-xs font-semibold rounded-xl border transition-all flex items-center justify-center gap-1.5',
+                      'py-2 px-3 text-xs font-semibold rounded-xl border transition-all flex items-center justify-center gap-1.5 cursor-pointer',
                       decision === 'approve'
-                        ? 'bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
-                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                        ? 'bg-emerald-50 dark:bg-[#00C471]/15 border-[#00C471] text-[#00C471]'
+                        : 'border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-slate-400'
                     )}
                   >
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    <CheckCircle2 className="w-4 h-4 text-[#00C471]" />
                     Approve & Disburse
                   </button>
                   <button
                     type="button"
                     onClick={() => setDecision('reject')}
                     className={cn(
-                      'py-2 px-3 text-xs font-semibold rounded-xl border transition-all flex items-center justify-center gap-1.5',
+                      'py-2 px-3 text-xs font-semibold rounded-xl border transition-all flex items-center justify-center gap-1.5 cursor-pointer',
                       decision === 'reject'
-                        ? 'bg-rose-50 border-rose-500 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300'
-                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                        ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-500 text-rose-700 dark:text-rose-300'
+                        : 'border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-slate-400'
                     )}
                   >
                     <XCircle className="w-4 h-4 text-rose-500" />
@@ -231,7 +245,7 @@ export function LoanDecisionModal({ isOpen, onClose, loan }) {
               <select
                 value={disbursementMethod}
                 onChange={(e) => setDisbursementMethod(e.target.value)}
-                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-900 dark:text-slate-100"
+                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-[#0A110D] border border-slate-200 dark:border-[#1A3125] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00C471]/20 focus:border-[#00C471] text-slate-900 dark:text-slate-100 cursor-pointer"
               >
                 <option value="bank_transfer">Direct Corporate Bank Transfer</option>
                 <option value="cash">Cash via Petty Cash Voucher</option>
@@ -252,17 +266,17 @@ export function LoanDecisionModal({ isOpen, onClose, loan }) {
               placeholder="State recommendation justification, policy compliance checks, or decline reason..."
               required
               maxLength={500}
-              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-900 dark:text-slate-100 resize-none"
+              className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-[#0A110D] border border-slate-200 dark:border-[#1A3125] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00C471]/20 focus:border-[#00C471] text-slate-900 dark:text-slate-100 resize-none"
             />
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100 dark:border-[#1A3125]">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+              className="px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#1A3125] rounded-xl transition-colors cursor-pointer"
             >
               Cancel
             </button>
@@ -270,10 +284,10 @@ export function LoanDecisionModal({ isOpen, onClose, loan }) {
               type="submit"
               disabled={isSubmitting || !comments.trim()}
               className={cn(
-                'px-5 py-2 text-xs font-semibold text-white rounded-xl shadow-sm transition-all',
+                'px-5 py-2 text-xs font-semibold text-white rounded-xl shadow-xs transition-all cursor-pointer',
                 decision === 'decline' || decision === 'reject'
                   ? 'bg-rose-600 hover:bg-rose-700'
-                  : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20'
+                  : 'bg-[#00C471] hover:bg-[#00ad64]'
               )}
             >
               {isSubmitting ? 'Recording...' : `Confirm ${decision.toUpperCase()}`}

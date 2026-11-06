@@ -6,6 +6,7 @@
  * - Elevated white card container with rounded-2xl and 1px border #EAECF0.
  * - Clean light slate table headers, subtle row dividers, light row hover.
  * - Tabular numbers, clean pagination controls, and emerald loading states.
+ * - Integrates State 1 (EmptyState) and State 6 (NoSearchResults with Typo Tolerance).
  */
 
 import React, { useState, useMemo } from 'react';
@@ -14,10 +15,12 @@ import {
   ChevronRight,
   ArrowUpDown,
   Search,
-  Inbox,
-  Loader2
+  X
 } from 'lucide-react';
 import { cn } from '../../lib/utils.js';
+import { EmptyState } from './EmptyState.jsx';
+import { NoSearchResults } from './NoSearchResults.jsx';
+import { findClosestMatch, extractVocabulary } from '../../lib/typoMatcher.js';
 
 export function DataTable({
   columns = [],
@@ -27,6 +30,10 @@ export function DataTable({
   searchPlaceholder = 'Search records...',
   searchField = null,
   emptyMessage = 'No records found',
+  emptyTitle = null,
+  emptyDescription = null,
+  emptyAction = null,
+  emptyIcon = null,
   pagination = null,
   onRowClick = null,
   className = ''
@@ -60,6 +67,13 @@ export function DataTable({
     });
   }, [filteredData, sortConfig]);
 
+  // 3. Typo candidate suggestion when search yields 0 matches
+  const typoSuggestion = useMemo(() => {
+    if (!searchTerm || sortedData.length > 0 || data.length === 0) return null;
+    const vocabulary = extractVocabulary(data, searchField ? [searchField] : null);
+    return findClosestMatch(searchTerm, vocabulary);
+  }, [searchTerm, sortedData.length, data, searchField]);
+
   const handleSort = (key) => {
     setSortConfig((prev) => ({
       key,
@@ -81,8 +95,18 @@ export function DataTable({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={searchPlaceholder}
-              className="w-full pl-10 pr-3.5 py-2 bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] focus:border-[#00C471] rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/20 transition-all shadow-2xs"
+              className="w-full pl-10 pr-9 py-2 bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] focus:border-[#00C471] rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/20 transition-all shadow-2xs"
             />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                title="Clear search"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -136,11 +160,22 @@ export function DataTable({
                 ))
               ) : sortedData.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length} className="py-14 text-center text-slate-400">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <Inbox className="w-8 h-8 opacity-40 text-slate-400" />
-                      <p className="text-xs font-medium">{emptyMessage}</p>
-                    </div>
+                  <td colSpan={columns.length} className="p-4 sm:p-6 text-center">
+                    {searchTerm ? (
+                      <NoSearchResults
+                        query={searchTerm}
+                        suggestion={typoSuggestion}
+                        onApplySuggestion={(term) => setSearchTerm(term)}
+                        onClear={() => setSearchTerm('')}
+                      />
+                    ) : (
+                      <EmptyState
+                        icon={emptyIcon}
+                        title={emptyTitle || emptyMessage}
+                        description={emptyDescription}
+                        action={emptyAction}
+                      />
+                    )}
                   </td>
                 </tr>
               ) : (
@@ -202,26 +237,26 @@ export function DataTable({
               </span>{' '}
               entries
             </div>
-          <div className="flex items-center gap-2">
-            <button
-              disabled={pagination.page <= 1}
-              onClick={() => pagination.onPageChange(pagination.page - 1)}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#13221B] hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-slate-700 dark:text-slate-200 cursor-pointer shadow-2xs"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="px-2 font-medium text-slate-700 dark:text-slate-200">
-              {pagination.page} / {pagination.totalPages || 1}
-            </span>
-            <button
-              disabled={pagination.page >= (pagination.totalPages || 1)}
-              onClick={() => pagination.onPageChange(pagination.page + 1)}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#13221B] hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-slate-700 dark:text-slate-200 cursor-pointer shadow-2xs"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={pagination.page <= 1}
+                onClick={() => pagination.onPageChange(pagination.page - 1)}
+                className="p-1.5 rounded-lg border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#13221B] hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-slate-700 dark:text-slate-200 cursor-pointer shadow-2xs"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="px-2 font-medium text-slate-700 dark:text-slate-200">
+                {pagination.page} / {pagination.totalPages || 1}
+              </span>
+              <button
+                disabled={pagination.page >= (pagination.totalPages || 1)}
+                onClick={() => pagination.onPageChange(pagination.page + 1)}
+                className="p-1.5 rounded-lg border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#13221B] hover:bg-slate-50 dark:hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-slate-700 dark:text-slate-200 cursor-pointer shadow-2xs"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </div>
         );
       })()}
     </div>

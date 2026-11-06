@@ -95,6 +95,9 @@ export const PunchMap = ({ punches = [], officeGeofences = [], height = '500px' 
         if (punch.isClientVisit) {
           pinColor = '#2563eb'; // Blue for client site
           pinTitle = 'Client Site Punch';
+        } else if (punch.isFlagged && punch.flagReason === 'low_accuracy') {
+          pinColor = '#f59e0b'; // Amber for low GPS accuracy
+          pinTitle = `Low Accuracy (±${Math.round(punch.accuracy || 0)}m)`;
         } else if (punch.isFlagged) {
           pinColor = '#ef4444'; // Red for flagged / out of bounds
           pinTitle = `Flagged: ${punch.flagReason || 'Violation'}`;

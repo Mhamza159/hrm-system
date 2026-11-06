@@ -2,7 +2,8 @@ import { useSelector } from 'react-redux';
 import {
   selectCurrentUser,
   selectCurrentToken,
-  selectIsAuthenticated
+  selectIsAuthenticated,
+  selectIsSessionExpired
 } from '../features/auth/authSlice.js';
 
 export function useAuth() {
@@ -10,6 +11,7 @@ export function useAuth() {
   const token = useSelector(selectCurrentToken);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const isInitialized = useSelector((state) => state.auth.isInitialized);
+  const isSessionExpired = useSelector(selectIsSessionExpired);
 
   const hasRole = (role) => {
     if (!user || !user.roles) return false;
@@ -27,6 +29,7 @@ export function useAuth() {
     token,
     isAuthenticated,
     isInitialized,
+    isSessionExpired,
     isSuperAdmin,
     isHR,
     isDeptManager,

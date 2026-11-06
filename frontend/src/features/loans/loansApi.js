@@ -5,6 +5,8 @@
  * SPECIFICATION:
  * - Module: M10 Loans & Advances (BUILD-GUIDE Section 15 · Rows 10.1 - 10.6)
  * - Invariant: Monetary amounts transmitted in integer paisa (1 PKR = 100 paisa).
+ * - Cache: Unified cache tag invalidations ensuring automatic real-time sync across
+ *   Ledger Summary, Borrowing Lists, Personal Views, and Eligibility Limits.
  */
 
 import { baseApi } from '../../lib/baseApi.js';
@@ -18,7 +20,12 @@ export const loansApi = baseApi.injectEndpoints({
         method: 'POST',
         body
       }),
-      invalidatesTags: [{ type: 'Loans', id: 'LIST' }, { type: 'Loans', id: 'MY_LIST' }, 'Loan']
+      invalidatesTags: [
+        { type: 'Loans', id: 'LIST' },
+        { type: 'Loans', id: 'MY_LIST' },
+        { type: 'Loans', id: 'SUMMARY' },
+        'Loan'
+      ]
     }),
 
     // 10.2: Live Borrowing Limit & Eligibility
@@ -78,7 +85,11 @@ export const loansApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: 'Loan', id },
-        { type: 'Loans', id: 'LIST' }
+        { type: 'Loan', id: `schedule-${id}` },
+        { type: 'Loans', id: 'LIST' },
+        { type: 'Loans', id: 'MY_LIST' },
+        { type: 'Loans', id: 'SUMMARY' },
+        'Loan'
       ]
     }),
 
@@ -92,7 +103,10 @@ export const loansApi = baseApi.injectEndpoints({
       invalidatesTags: (result, error, { id }) => [
         { type: 'Loan', id },
         { type: 'Loan', id: `schedule-${id}` },
-        { type: 'Loans', id: 'LIST' }
+        { type: 'Loans', id: 'LIST' },
+        { type: 'Loans', id: 'MY_LIST' },
+        { type: 'Loans', id: 'SUMMARY' },
+        'Loan'
       ]
     }),
 

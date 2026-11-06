@@ -12,11 +12,13 @@
  *    - Uses an in-memory Mutex to queue concurrent outgoing requests while a single refresh is in-flight.
  *    - Invokes POST /api/v1/auth/refresh to rotate the 7-day cookie and acquire a new 15-minute access token.
  *    - Upon success, dispatches `setCredentials` to Redux and seamlessly replays the queued requests.
- *    - If refresh fails, dispatches `logout` to purge state and redirect to /login.
+ *    - If refresh fails, preserves unsubmitted drafts and dispatches `session-expired` + `expireSession`.
  */
 
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { setCredentials, logout } from '../features/auth/authSlice.js';
+import { setCredentials, expireSession, logout } from '../features/auth/authSlice.js';
+import { snapshotActiveForms } from './draftStorage.js';
+import { latencyTracker } from './networkMonitor.js';
 
 /**
  * Lightweight, zero-dependency in-memory Mutex lock
@@ -48,22 +50,21 @@ class Mutex {
     });
   }
 
-  async waitForUnlock() {
-    await this._locking;
+  waitForUnlock() {
+    return this._locking;
   }
 }
 
-// Global Mutex instance for synchronizing concurrent 401 re-auth requests
 const mutex = new Mutex();
 
-// Standard fetchBaseQuery instance
+/**
+ * Primary low-level fetchBaseQuery instance
+ */
 const baseQuery = fetchBaseQuery({
-  baseUrl: import.meta.env.VITE_API_BASE_URL || '/api/v1',
-  credentials: 'include', // Transmit cookies cross-origin & cross-subdomain
+  baseUrl: '/api/v1',
+  credentials: 'include',
   prepareHeaders: (headers, { getState }) => {
-    // 1. Extract short-lived in-memory accessToken from Redux state
-    const token = getState().auth.accessToken;
-    // 2. If present, inject Bearer header
+    const token = getState()?.auth?.accessToken;
     if (token) {
       headers.set('authorization', `Bearer ${token}`);
     }
@@ -73,54 +74,71 @@ const baseQuery = fetchBaseQuery({
 
 /**
  * Custom baseQuery wrapper that transparently handles 401 token refresh (Slice 1.4)
+ * and tracks request latency for Slow Network State telemetry.
  */
 const baseQueryWithReauth = async (args, api, extraOptions) => {
   // 1. Wait if another refresh operation is already locking the pipeline
   await mutex.waitForUnlock();
 
-  // 2. Execute the primary requested query
-  let result = await baseQuery(args, api, extraOptions);
+  // Track request latency for slow network detection
+  const tracker = latencyTracker.start();
 
-  // 3. Inspect if the server rejected the request with 401 Unauthorized
-  if (result.error && result.error.status === 401) {
-    const requestedUrl = typeof args === 'string' ? args : args.url;
+  let result;
+  try {
+    // 2. Execute the primary requested query
+    result = await baseQuery(args, api, extraOptions);
 
-    // Do NOT attempt refresh on public auth endpoints to avoid infinite loops
-    if (requestedUrl.includes('/auth/login') || requestedUrl.includes('/auth/refresh')) {
-      return result;
-    }
+    // 3. Inspect if the server rejected the request with 401 Unauthorized
+    if (result.error && result.error.status === 401) {
+      const requestedUrl = typeof args === 'string' ? args : args.url;
 
-    // Check if another request is currently refreshing the token
-    if (!mutex.isLocked()) {
-      const release = await mutex.acquire();
-      try {
-        // 4. Request a token rotation via POST /api/v1/auth/refresh
-        const refreshResult = await baseQuery(
-          { url: '/auth/refresh', method: 'POST' },
-          api,
-          extraOptions
-        );
-
-        if (refreshResult.data?.data) {
-          // 5. Success: Commit newly rotated accessToken and user profile to Redux
-          const { user, accessToken } = refreshResult.data.data;
-          api.dispatch(setCredentials({ user, accessToken }));
-
-          // 6. Seamlessly replay the initial request that previously failed with 401
-          result = await baseQuery(args, api, extraOptions);
-        } else {
-          // 7. Refresh token has expired or is invalid: terminate session
-          api.dispatch(logout());
-        }
-      } finally {
-        // 8. Release the mutex to let queued requests replay
-        release();
+      // Do NOT attempt refresh on public auth endpoints to avoid infinite loops
+      if (requestedUrl.includes('/auth/login') || requestedUrl.includes('/auth/refresh')) {
+        return result;
       }
-    } else {
-      // 9. Another call is already refreshing: wait until it finishes and replay
-      await mutex.waitForUnlock();
-      result = await baseQuery(args, api, extraOptions);
+
+      // Check if another request is currently refreshing the token
+      if (!mutex.isLocked()) {
+        const release = await mutex.acquire();
+        try {
+          // 4. Request a token rotation via POST /api/v1/auth/refresh
+          const refreshResult = await baseQuery(
+            { url: '/auth/refresh', method: 'POST' },
+            api,
+            extraOptions
+          );
+
+          if (refreshResult.data?.data) {
+            // 5. Success: Commit newly rotated accessToken and user profile to Redux
+            const { user, accessToken } = refreshResult.data.data;
+            api.dispatch(setCredentials({ user, accessToken }));
+
+            // 6. Seamlessly replay the initial request that previously failed with 401
+            result = await baseQuery(args, api, extraOptions);
+          } else {
+            // 7. Refresh token has expired or is invalid: preserve active drafts before terminating session
+            const currentUser = api.getState()?.auth?.user;
+            if (typeof window !== 'undefined') {
+              snapshotActiveForms(currentUser?.id || currentUser?._id || 'anon');
+              window.dispatchEvent(
+                new CustomEvent('session-expired', { detail: { user: currentUser } })
+              );
+            }
+            // Mark session expired so modal stays active without premature hard route redirect
+            api.dispatch(expireSession());
+          }
+        } finally {
+          // 8. Release the mutex to let queued requests replay
+          release();
+        }
+      } else {
+        // 9. Another call is already refreshing: wait until it finishes and replay
+        await mutex.waitForUnlock();
+        result = await baseQuery(args, api, extraOptions);
+      }
     }
+  } finally {
+    tracker.end();
   }
 
   return result;

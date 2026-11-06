@@ -70,8 +70,9 @@ export function MyLoansPage() {
             <RefreshButton onRefresh={refetch} isFetching={isFetching} />
             <Can I="loan.create" a="Loan">
               <button
+                type="button"
                 onClick={() => setIsApplyOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm shadow-emerald-500/20 hover:shadow-md transition-all"
+                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-[#00C471] hover:bg-[#00ad64] rounded-xl shadow-xs transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 Apply for Borrowing
@@ -84,7 +85,7 @@ export function MyLoansPage() {
       {/* KPI Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Outstanding Balance */}
-        <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs">
+        <div className="p-5 bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
               Outstanding Balance
@@ -93,7 +94,7 @@ export function MyLoansPage() {
               <TrendingDown className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
+          <div className="mt-2 text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
             PKR {totalOutstandingPkr.toLocaleString()}
           </div>
           <div className="mt-1 text-[11px] text-slate-500">
@@ -102,16 +103,16 @@ export function MyLoansPage() {
         </div>
 
         {/* Active Accounts */}
-        <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs">
+        <div className="p-5 bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
               Active Borrowings
             </span>
-            <div className="p-2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl">
+            <div className="p-2 bg-emerald-50 dark:bg-[#00C471]/15 text-[#00C471] rounded-xl">
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
+          <div className="mt-2 text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
             {activeLoans.length}
           </div>
           <div className="mt-1 text-[11px] text-slate-500">
@@ -120,7 +121,7 @@ export function MyLoansPage() {
         </div>
 
         {/* Total Lifetime Borrowed */}
-        <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs">
+        <div className="p-5 bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
               Total Lifetime Disbursed
@@ -129,7 +130,7 @@ export function MyLoansPage() {
               <Calendar className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
+          <div className="mt-2 text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
             PKR {totalBorrowedPkr.toLocaleString()}
           </div>
           <div className="mt-1 text-[11px] text-slate-500">
@@ -139,13 +140,13 @@ export function MyLoansPage() {
       </div>
 
       {/* Loans Table / Cards */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+      <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl shadow-xs overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-[#1A3125] flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-            <FileText className="w-4 h-4 text-emerald-600" />
+            <FileText className="w-4 h-4 text-[#00C471]" />
             My Borrowing History & Status
           </h2>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-slate-500 tabular-nums">
             Showing {loans.length} {loans.length === 1 ? 'record' : 'records'}
           </span>
         </div>
@@ -156,7 +157,7 @@ export function MyLoansPage() {
           </div>
         ) : loans.length === 0 ? (
           <div className="p-12 text-center space-y-3">
-            <div className="mx-auto w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+            <div className="mx-auto w-12 h-12 rounded-2xl bg-slate-100 dark:bg-[#0A110D] flex items-center justify-center text-slate-400">
               <DollarSign className="w-6 h-6" />
             </div>
             <p className="text-sm font-medium text-slate-900 dark:text-white">
@@ -167,33 +168,35 @@ export function MyLoansPage() {
             </p>
             <Can I="loan.create" a="Loan">
               <button
+                type="button"
                 onClick={() => setIsApplyOpen(true)}
-                className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 rounded-xl hover:bg-emerald-100 transition-colors"
+                className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#00C471] bg-emerald-50 dark:bg-[#00C471]/15 border border-emerald-200/80 dark:border-[#00C471]/30 rounded-xl hover:bg-emerald-100 dark:hover:bg-[#00C471]/25 transition-colors cursor-pointer"
               >
                 <Plus className="w-4 h-4" /> Apply Now
               </button>
             </Can>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="divide-y divide-slate-100 dark:divide-[#1A3125]">
             {loans.map((loan) => {
-              const amountPkr = loan.amount / 100;
-              const remainingPkr = loan.remainingBalance / 100;
+              const amountPkr = (loan.amount || 0) / 100;
+              const remainingPkr = (loan.remainingBalance || 0) / 100;
               const repaidPkr = (loan.totalRepaid || 0) / 100;
               const installmentPkr = (loan.monthlyInstallment || 0) / 100;
-              const progressPct = loan.amount > 0 ? Math.min(100, Math.round((loan.totalRepaid / loan.amount) * 100)) : 0;
+              const progressPct =
+                loan.amount > 0 ? Math.min(100, Math.round(((loan.totalRepaid || 0) / loan.amount) * 100)) : 0;
 
               return (
                 <div
                   key={loan._id}
-                  className="p-5 hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
+                  className="p-5 hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
                 >
                   <div className="space-y-1.5 min-w-[220px]">
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-xs font-bold text-slate-900 dark:text-white">
                         {loan.loanId}
                       </span>
-                      <span className="uppercase text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                      <span className="uppercase text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#1A3125] text-slate-600 dark:text-slate-300">
                         {loan.type}
                       </span>
                       <StatusBadge status={loan.status} />
@@ -212,19 +215,23 @@ export function MyLoansPage() {
                   <div className="grid grid-cols-3 gap-4 text-xs">
                     <div>
                       <span className="block text-slate-400 text-[10px]">Principal</span>
-                      <span className="font-semibold text-slate-900 dark:text-slate-100">
+                      <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
                         PKR {amountPkr.toLocaleString()}
                       </span>
                     </div>
                     <div>
                       <span className="block text-slate-400 text-[10px]">Monthly Deduct</span>
-                      <span className="font-semibold text-slate-900 dark:text-slate-100">
+                      <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
                         PKR {installmentPkr.toLocaleString()}
                       </span>
                     </div>
                     <div>
                       <span className="block text-slate-400 text-[10px]">Remaining</span>
-                      <span className="font-bold text-rose-600 dark:text-rose-400">
+                      <span
+                        className={`font-bold tabular-nums ${
+                          remainingPkr > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-400'
+                        }`}
+                      >
                         PKR {remainingPkr.toLocaleString()}
                       </span>
                     </div>
@@ -235,19 +242,22 @@ export function MyLoansPage() {
                     <div className="w-28 space-y-1">
                       <div className="flex justify-between text-[10px] text-slate-400">
                         <span>Repaid</span>
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">{progressPct}%</span>
+                        <span className="font-semibold text-slate-700 dark:text-slate-300 tabular-nums">
+                          {progressPct}%
+                        </span>
                       </div>
-                      <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                      <div className="w-full bg-slate-100 dark:bg-[#1A3125] h-1.5 rounded-full overflow-hidden">
                         <div
-                          className="bg-emerald-500 h-full rounded-full transition-all duration-500"
+                          className="bg-[#00C471] h-full rounded-full transition-all duration-500"
                           style={{ width: `${progressPct}%` }}
                         />
                       </div>
                     </div>
 
                     <button
+                      type="button"
                       onClick={() => setSelectedLoanId(loan._id)}
-                      className="p-2 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-xl transition-colors flex items-center gap-1 text-xs font-medium"
+                      className="p-2 text-slate-400 hover:text-[#00C471] dark:hover:text-[#00C471] hover:bg-emerald-50 dark:hover:bg-[#00C471]/15 rounded-xl transition-colors flex items-center gap-1 text-xs font-medium cursor-pointer"
                       title="View Installment Schedule"
                     >
                       <span>Schedule</span>

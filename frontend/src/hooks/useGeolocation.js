@@ -71,7 +71,7 @@ export const useGeolocation = (options = {}) => {
     [isSupported, options]
   );
 
-  const isLowAccuracy = location ? location.accuracy > 100 : false;
+  const isLowAccuracy = location ? location.accuracy > 250 : false;
 
   return {
     isSupported,

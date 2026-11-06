@@ -12,6 +12,8 @@ import mongoose from 'mongoose';
 import { Loan } from '../../models/loan.model.js';
 import { Employee } from '../../models/employee.model.js';
 import { User } from '../../models/user.model.js';
+import { Department } from '../../models/department.model.js';
+import { Designation } from '../../models/designation.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { assertSuperAdminIfApplicantIsHR, isApplicantHR, notifySuperAdmins, notifyHRManagers } from '../../utils/hrApprovalGuard.js';
@@ -61,8 +63,17 @@ export async function createLoan(employeeId, loanData, actor, { ip, userAgent } 
   // 4. Persist in initial status:
   // - If applicant is HR -> routes directly to Super Admin ('pending_admin')
   // - If applicant is regular employee -> routes to HR ('pending_hr') for verification before passing to Super Admin
+  const applicant = await Employee.findById(employeeId).populate('managerId');
+  const applicantName = applicant?.name || `${applicant?.firstName || ''} ${applicant?.lastName || ''}`.trim() || 'Employee';
+  const amountFormatted = (amount / 100).toLocaleString('en-PK');
   const isHrApplicant = await isApplicantHR(employeeId, actor?._id);
-  const initialStatus = isHrApplicant ? 'pending_admin' : 'pending_hr';
+
+  let initialStatus = 'pending_hr';
+  if (isHrApplicant) {
+    initialStatus = 'pending_admin';
+  } else if (applicant?.managerId) {
+    initialStatus = 'pending_recommendation';
+  }
 
   let loan;
   try {
@@ -110,10 +121,6 @@ export async function createLoan(employeeId, loanData, actor, { ip, userAgent } 
   });
 
   // 6. Notification Dispatch
-  const applicant = await Employee.findById(employeeId).populate('managerId');
-  const applicantName = applicant?.name || `${applicant?.firstName || ''} ${applicant?.lastName || ''}`.trim() || 'Employee';
-  const amountFormatted = (amount / 100).toLocaleString('en-PK');
-
   if (isHrApplicant) {
     // Executive Notification: HR staff member applied -> notify all Super Admins immediately
     await notifySuperAdmins({
@@ -122,23 +129,22 @@ export async function createLoan(employeeId, loanData, actor, { ip, userAgent } 
       body: `${applicantName} (HR Manager) applied for PKR ${amountFormatted} (${type}). Awaiting Super Admin disbursement authorization.`,
       link: '/loans/approvals'
     });
+  } else if (applicant?.managerId?.userId) {
+    // Manager Recommendation Flow: Notify direct manager to review & recommend
+    await notify(applicant.managerId.userId, {
+      type: 'leave',
+      title: `Borrowing Request Awaiting Recommendation`,
+      body: `${applicantName} applied for PKR ${amountFormatted} (${type}). Awaiting your manager recommendation.`,
+      link: '/loans/approvals'
+    }).catch(() => {});
   } else {
-    // Standard Employee Flow: Notify HR Managers immediately for review & verification
+    // Standard Employee Flow without direct manager: Notify HR Managers
     await notifyHRManagers({
       type: 'leave',
       title: `New ${type === 'advance' ? 'Salary Advance' : 'Loan'} Request`,
       body: `${applicantName} applied for PKR ${amountFormatted} (${type}). Awaiting HR review.`,
       link: '/loans/approvals'
     });
-    // If employee also has a direct manager, keep manager informed
-    if (applicant?.managerId?.userId) {
-      await notify(applicant.managerId.userId, {
-        type: 'leave',
-        title: `Team Member Borrowing Request`,
-        body: `${applicantName} applied for PKR ${amountFormatted} (${type}). Submitted to HR for processing.`,
-        link: '/loans/approvals'
-      }).catch(() => {});
-    }
   }
 
   return loan;
@@ -229,12 +235,22 @@ export async function getLoans(
     Loan.find(filter)
       .populate({
         path: 'employeeId',
-        select: 'firstName lastName name employeeCode email departmentId managerId userId',
-        populate: {
-          path: 'userId',
-          select: 'name email roles',
-          populate: { path: 'roles', select: 'name' }
-        }
+        select: 'name employeeCode email departmentId designationId managerId userId avatar',
+        populate: [
+          {
+            path: 'userId',
+            select: 'name email roles',
+            populate: { path: 'roles', select: 'name' }
+          },
+          {
+            path: 'departmentId',
+            select: 'name code'
+          },
+          {
+            path: 'designationId',
+            select: 'title code'
+          }
+        ]
       })
       .populate('recommendation.recommendedBy', 'name email')
       .populate('hrReview.reviewedBy', 'name email')
@@ -262,12 +278,22 @@ export async function getLoanById(id, userScope = 'all', actor = null) {
   const loan = await Loan.findById(id)
     .populate({
       path: 'employeeId',
-      select: 'firstName lastName name employeeCode email departmentId designationId managerId userId',
-      populate: {
-        path: 'userId',
-        select: 'name email roles',
-        populate: { path: 'roles', select: 'name' }
-      }
+      select: 'name employeeCode email departmentId designationId managerId userId avatar',
+      populate: [
+        {
+          path: 'userId',
+          select: 'name email roles',
+          populate: { path: 'roles', select: 'name' }
+        },
+        {
+          path: 'departmentId',
+          select: 'name code'
+        },
+        {
+          path: 'designationId',
+          select: 'title code'
+        }
+      ]
     })
     .populate('recommendation.recommendedBy', 'name email')
     .populate('hrReview.reviewedBy', 'name email')

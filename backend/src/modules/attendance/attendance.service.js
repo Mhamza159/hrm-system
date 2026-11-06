@@ -341,11 +341,12 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
     const punchAccuracy = location.accuracy || 0;
     const isMock = Boolean(location.isMock);
 
-    // 14.3 Accuracy & Mock GPS Detection
+    // 14.3 Accuracy & Mock GPS Detection (250m threshold accommodates indoor Wi-Fi / desktop browser geolocation)
+    const MAX_ALLOWED_ACCURACY_METERS = 250;
     if (isMock || punchAccuracy <= 0) {
       isFlagged = true;
       flagReason = isMock ? 'mock_gps' : 'mock_gps';
-    } else if (punchAccuracy > 100) {
+    } else if (punchAccuracy > MAX_ALLOWED_ACCURACY_METERS) {
       isFlagged = true;
       flagReason = 'low_accuracy';
     }

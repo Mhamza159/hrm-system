@@ -102,7 +102,7 @@ export const PunchLocationsMapPage = () => {
         </div>
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
           <div className="text-xs font-semibold text-rose-600 flex items-center gap-1">
-            <AlertTriangle className="w-3.5 h-3.5" /> Flagged Out-of-Bounds
+            <AlertTriangle className="w-3.5 h-3.5" /> Flagged for Review
           </div>
           <div className="text-2xl font-bold text-rose-600 mt-1">{flaggedCount}</div>
         </div>
@@ -124,7 +124,7 @@ export const PunchLocationsMapPage = () => {
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-full bg-rose-500 border border-white"></span>
-              Flagged Violation
+              Out-of-Bounds
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded-full bg-blue-600 border border-white"></span>

@@ -121,7 +121,8 @@ export const getEffectiveScopeForAction = (user, actionName, activeDelegations =
 
 /**
  * Express Middleware Factory checking required permission via CASL.
- * @param {string} requiredPermission - Permission action identifier (e.g. 'role.manage', 'user.manage')
+ * Supports a single permission string or an array of alternative permissions (OR check).
+ * @param {string|string[]} requiredPermission - Permission action identifier(s) (e.g. 'loan.recommend' or ['loan.recommend', 'loan.approve'])
  * @param {string} [subject='all'] - Subject entity type (e.g. 'Role', 'User', 'Employee')
  */
 export const checkPermission = (requiredPermission, subject = null) => {
@@ -150,27 +151,38 @@ export const checkPermission = (requiredPermission, subject = null) => {
     // 2. Build CASL Ability dynamically from user's current roles and delegations
     const ability = buildAbilityForUser(req.user, activeDelegations);
     const targetSubject = subject || 'all';
+    const permissionsToCheck = Array.isArray(requiredPermission) ? requiredPermission : [requiredPermission];
 
-    // 3. Evaluate whether ability permits 'manage all' or specific action
+    // 3. Evaluate whether ability permits 'manage all' or any of the specified permissions
     const isAllowed =
       ability.can('manage', 'all') ||
-      ability.can(requiredPermission, targetSubject) ||
-      ability.can(requiredPermission, 'all');
+      permissionsToCheck.some((perm) => ability.can(perm, targetSubject) || ability.can(perm, 'all'));
 
     if (!isAllowed) {
       throw new ApiError(
         403,
-        `Forbidden: You lack the required permission ('${requiredPermission}') to perform this action.`
+        `Forbidden: You lack the required permission ('${permissionsToCheck.join("' or '")}') to perform this action.`
       );
     }
 
     // 4. Attach ability and resolved horizontal data scope to request context
-    const effectiveScope = getEffectiveScopeForAction(req.user, requiredPermission, activeDelegations);
+    let effectiveScope = 'own';
+    const scopePriority = { all: 4, department: 3, team: 2, own: 1 };
+    let bestPriority = 0;
+    for (const perm of permissionsToCheck) {
+      if (ability.can('manage', 'all') || ability.can(perm, targetSubject) || ability.can(perm, 'all')) {
+        const sc = getEffectiveScopeForAction(req.user, perm, activeDelegations);
+        const p = scopePriority[sc] || 1;
+        if (p > bestPriority) {
+          bestPriority = p;
+          effectiveScope = sc;
+        }
+      }
+    }
     req.ability = ability;
     req.permissionScope = effectiveScope;
 
     // 5. Enforce horizontal scope hierarchy if subject parameter is an explicit scope specifier
-    const scopePriority = { all: 4, department: 3, team: 2, own: 1 };
     const isManageAll = ability.can('manage', 'all');
     if (!isManageAll && subject && scopePriority[subject] !== undefined) {
       const requiredPriority = scopePriority[subject];
@@ -178,7 +190,7 @@ export const checkPermission = (requiredPermission, subject = null) => {
       if (userPriority < requiredPriority) {
         throw new ApiError(
           403,
-          `Forbidden: Action '${requiredPermission}' requires '${subject}' scope, but your permission scope is limited to '${effectiveScope}'.`
+          `Forbidden: Action requires '${subject}' scope, but your permission scope is limited to '${effectiveScope}'.`
         );
       }
     }

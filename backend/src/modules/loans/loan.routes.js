@@ -96,11 +96,12 @@ router.get(
 
 // ==========================================
 // 10.3: Multi-Tier Approval Decision (Recommend / Forward / Approve / Reject)
+// Permitted for roles holding either 'loan.recommend' (Managers) OR 'loan.approve' (HR / Super Admin)
 // ==========================================
 router.patch(
   '/:id/decide',
   authenticate,
-  checkPermission('loan.recommend', 'team'),
+  checkPermission(['loan.recommend', 'loan.approve']),
   validate(approvalDecisionSchema),
   loanController.decideLoan
 );
