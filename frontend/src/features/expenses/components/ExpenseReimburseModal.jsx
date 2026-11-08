@@ -4,7 +4,7 @@
  * 
  * SPECIFICATION:
  * - Module: M11 Expense Claims (BUILD-GUIDE Section 16 · Row 11.4)
- * - Layer: Component (Frontend)
+ * - Design: Forest & Emerald Craft (DESIGN.md & docs/UI-REFERENCE.md)
  */
 
 import React, { useState, useEffect } from 'react';
@@ -15,7 +15,9 @@ import {
   CheckCircle,
   AlertCircle,
   FileSpreadsheet,
-  Banknote
+  Banknote,
+  User,
+  Briefcase
 } from 'lucide-react';
 import { useReimburseExpenseMutation } from '../expensesApi.js';
 
@@ -61,32 +63,43 @@ export default function ExpenseReimburseModal({ isOpen, onClose, expense = null 
   };
 
   const approvedAmount = expense.approvedAmount || expense.amount;
+  const emp = expense.employeeId || {};
   const applicantName =
-    expense.employeeId?.name ||
-    `${expense.employeeId?.firstName || ''} ${expense.employeeId?.lastName || ''}`.trim() ||
+    emp.name ||
+    `${emp.firstName || ''} ${emp.lastName || ''}`.trim() ||
     'Employee';
+  const initials = (applicantName || 'E')
+    .split(' ')
+    .filter(Boolean)
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase() || 'EM';
+  const empCode = emp.employeeCode || null;
+  const designationTitle = emp.designationId?.title || emp.designation || null;
+  const departmentName = emp.departmentId?.name || null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div className="relative w-full max-w-lg bg-white dark:bg-[#111D17] rounded-2xl shadow-2xl border border-slate-200 dark:border-[#1A3125] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-[#1A3125] bg-slate-50/60 dark:bg-[#162720]/40">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800/40 flex items-center justify-center text-blue-600 dark:text-blue-400">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
               <Banknote className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-base font-semibold text-slate-900 dark:text-white">
                 Disburse Reimbursement
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Claim {expense.claimNumber} • {applicantName}
+              <p className="text-xs text-slate-500 dark:text-[#7E9E8F]">
+                Claim <span className="font-mono">{expense.claimNumber}</span> • {applicantName}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#162720] transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -101,15 +114,51 @@ export default function ExpenseReimburseModal({ isOpen, onClose, expense = null 
             </div>
           )}
 
-          {/* Amount Card */}
-          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+          {/* Applicant Identification Card */}
+          <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-[#162720]/30 border border-slate-200 dark:border-[#1A3125] flex items-center gap-3">
+            {emp.avatar ? (
+              <img
+                src={emp.avatar}
+                alt={applicantName}
+                className="w-10 h-10 rounded-full object-cover border border-emerald-500/20 shrink-0"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-xs flex items-center justify-center border border-emerald-500/20 shrink-0">
+                {initials}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold text-xs text-slate-900 dark:text-white truncate">
+                  {applicantName}
+                </span>
+                {empCode && (
+                  <span className="font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-[#162720] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#1A3125]">
+                    {empCode}
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-[#7E9E8F] flex items-center gap-1.5 truncate mt-0.5">
+                {designationTitle && <span>{designationTitle}</span>}
+                {designationTitle && departmentName && <span className="text-slate-300 dark:text-slate-600">•</span>}
+                {departmentName && (
+                  <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
+                    {departmentName}
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+
+          {/* Payable Amount Card */}
+          <div className="p-4 rounded-xl bg-slate-50/70 dark:bg-[#162720]/40 border border-slate-200 dark:border-[#1A3125] flex items-center justify-between">
             <div>
               <span className="text-xs text-slate-500 dark:text-slate-400 block">Total Approved Payable</span>
-              <span className="text-lg font-bold text-slate-900 dark:text-white">
+              <span className="text-lg font-mono tabular-nums font-bold text-slate-900 dark:text-white">
                 PKR {(approvedAmount / 100).toLocaleString('en-PK')}
               </span>
             </div>
-            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300">
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
               Approved
             </span>
           </div>
@@ -125,14 +174,14 @@ export default function ExpenseReimburseModal({ isOpen, onClose, expense = null 
                 className={`p-3.5 rounded-xl border cursor-pointer transition flex flex-col items-start gap-1.5 ${
                   method === 'direct'
                     ? 'border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/30'
-                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                    : 'border-slate-200 dark:border-[#1A3125] hover:border-slate-300 dark:hover:border-slate-700'
                 }`}
               >
                 <div className="flex items-center gap-2 text-xs font-semibold text-slate-900 dark:text-white">
                   <CreditCard className="w-4 h-4 text-emerald-600" />
                   Direct Transfer / Cash
                 </div>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   Immediate bank transfer or cash voucher reimbursement.
                 </p>
               </div>
@@ -142,14 +191,14 @@ export default function ExpenseReimburseModal({ isOpen, onClose, expense = null 
                 className={`p-3.5 rounded-xl border cursor-pointer transition flex flex-col items-start gap-1.5 ${
                   method === 'payroll'
                     ? 'border-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/30'
-                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                    : 'border-slate-200 dark:border-[#1A3125] hover:border-slate-300 dark:hover:border-slate-700'
                 }`}
               >
                 <div className="flex items-center gap-2 text-xs font-semibold text-slate-900 dark:text-white">
                   <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
                   Attach to Next Payroll
                 </div>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   Adds as non-taxable earning addition in next monthly payslip.
                 </p>
               </div>
@@ -167,7 +216,7 @@ export default function ExpenseReimburseModal({ isOpen, onClose, expense = null 
                 placeholder="e.g. FT-HBL-982312 or Cash Voucher #812"
                 value={paymentReference}
                 onChange={(e) => setPaymentReference(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
               />
             </div>
           ) : (
@@ -186,24 +235,24 @@ export default function ExpenseReimburseModal({ isOpen, onClose, expense = null 
               placeholder="e.g. Approved and transferred via company treasury..."
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+              className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
             />
           </div>
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-[#1A3125]">
             <button
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="px-4 py-2 text-xs font-medium rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              className="px-4 py-2 text-xs font-medium rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162720] transition cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-5 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/20 transition disabled:opacity-50 flex items-center gap-1.5"
+              className="px-5 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/20 transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
             >
               {isLoading ? 'Processing...' : 'Confirm Reimbursement'}
             </button>
@@ -213,4 +262,3 @@ export default function ExpenseReimburseModal({ isOpen, onClose, expense = null 
     </div>
   );
 }
-

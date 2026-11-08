@@ -14,6 +14,8 @@ import { ExpenseCategory } from '../../models/expenseCategory.model.js';
 import { Expense } from '../../models/expense.model.js';
 import { Employee } from '../../models/employee.model.js';
 import { User } from '../../models/user.model.js';
+import { Department } from '../../models/department.model.js';
+import { Designation } from '../../models/designation.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { notify } from '../../services/notify.service.js';
@@ -320,7 +322,7 @@ export async function getMyExpenses(employeeId, query = {}) {
 
   const [expenses, total] = await Promise.all([
     Expense.find(filter)
-      .populate('categoryId', 'name code maxLimitPaisa')
+      .populate('categoryId', 'name code maxLimitPaisa requiresReceipt')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -341,7 +343,14 @@ export async function getMyExpenses(employeeId, query = {}) {
 
 export async function getExpenseById(id, user) {
   const expense = await Expense.findById(id)
-    .populate('employeeId', 'name firstName lastName email department designation')
+    .populate({
+      path: 'employeeId',
+      select: 'name firstName lastName employeeCode email departmentId designationId avatar userId',
+      populate: [
+        { path: 'departmentId', select: 'name code' },
+        { path: 'designationId', select: 'title code' }
+      ]
+    })
     .populate('categoryId', 'name code maxLimitPaisa requiresReceipt')
     .populate('approvalHistory.actorId', 'name email role')
     .lean();
@@ -405,8 +414,15 @@ export async function getPendingApprovals(user, query = {}) {
 
   const [expenses, total] = await Promise.all([
     Expense.find(filter)
-      .populate('employeeId', 'name firstName lastName email department designation')
-      .populate('categoryId', 'name code maxLimitPaisa')
+      .populate({
+        path: 'employeeId',
+        select: 'name firstName lastName employeeCode email departmentId designationId avatar userId',
+        populate: [
+          { path: 'departmentId', select: 'name code' },
+          { path: 'designationId', select: 'title code' }
+        ]
+      })
+      .populate('categoryId', 'name code maxLimitPaisa requiresReceipt')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)

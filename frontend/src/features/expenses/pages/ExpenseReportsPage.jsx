@@ -5,6 +5,7 @@
  * SPECIFICATION:
  * - Module: M11 Expense Claims (BUILD-GUIDE Section 16 · Row 11.5)
  * - Permission: Can I="report.view" a="Report"
+ * - Design: Forest & Emerald Craft (DESIGN.md & docs/UI-REFERENCE.md)
  */
 
 import React, { useState } from 'react';
@@ -77,20 +78,20 @@ export default function ExpenseReportsPage() {
         actions={
           <div className="flex items-center gap-3">
             <RefreshButton onRefresh={refetch} isFetching={isFetching} />
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-300">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-xs text-slate-700 dark:text-slate-300">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <input
                 type="month"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="bg-transparent border-none text-xs focus:outline-none"
+                className="bg-transparent border-none text-xs focus:outline-none cursor-pointer"
               />
             </div>
 
             <button
               onClick={handleExportCsv}
               disabled={breakdown.length === 0}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 shadow-sm transition disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white shadow-sm transition disabled:opacity-50 cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               Export CSV
@@ -101,46 +102,46 @@ export default function ExpenseReportsPage() {
 
       {/* KPI Overview Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-          <span className="text-xs font-medium text-slate-500 block mb-1">Total Claims Volume</span>
-          <div className="text-2xl font-bold text-slate-900 dark:text-white">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] shadow-2xs">
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">Total Claims Volume</span>
+          <div className="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white">
             {grandTotals.totalClaims || 0}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">Incurred during {selectedMonth}</span>
+          <span className="text-[11px] text-slate-400 dark:text-[#7E9E8F] mt-1 block">Incurred during {selectedMonth}</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-          <span className="text-xs font-medium text-slate-500 block mb-1">Total Incurred Outlay</span>
-          <div className="text-2xl font-bold text-slate-900 dark:text-white">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] shadow-2xs">
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">Total Incurred Outlay</span>
+          <div className="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white">
             PKR {((grandTotals.totalAmountPaisa || 0) / 100).toLocaleString('en-PK')}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">Gross submitted expenses</span>
+          <span className="text-[11px] text-slate-400 dark:text-[#7E9E8F] mt-1 block">Gross submitted expenses</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-          <span className="text-xs font-medium text-slate-500 block mb-1">Disbursed Reimbursements</span>
-          <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] shadow-2xs">
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">Disbursed Reimbursements</span>
+          <div className="text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
             PKR {((grandTotals.reimbursedAmountPaisa || 0) / 100).toLocaleString('en-PK')}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">Settled via wire or payroll</span>
+          <span className="text-[11px] text-slate-400 dark:text-[#7E9E8F] mt-1 block">Settled via wire or payroll</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-          <span className="text-xs font-medium text-slate-500 block mb-1">Pending Approval Pipeline</span>
-          <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] shadow-2xs">
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">Pending Approval Pipeline</span>
+          <div className="text-2xl font-bold font-mono tabular-nums text-amber-600 dark:text-amber-400">
             PKR {((grandTotals.pendingAmountPaisa || 0) / 100).toLocaleString('en-PK')}
           </div>
-          <span className="text-[11px] text-slate-400 mt-1 block">Awaiting manager/admin review</span>
+          <span className="text-[11px] text-slate-400 dark:text-[#7E9E8F] mt-1 block">Awaiting manager/admin review</span>
         </div>
       </div>
 
       {/* Category Breakdown Table */}
-      <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+      <div className="rounded-2xl bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] overflow-hidden shadow-2xs">
+        <div className="px-6 py-4 border-b border-slate-100 dark:border-[#1A3125] flex items-center justify-between">
           <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
             Category Breakdown & Budget Utilization
           </h3>
-          <span className="text-xs text-slate-500">{breakdown.length} spending categories active</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">{breakdown.length} spending categories active</span>
         </div>
 
         {isLoading ? (
@@ -150,8 +151,8 @@ export default function ExpenseReportsPage() {
         ) : breakdown.length === 0 ? (
           <div className="p-12 text-center">
             <Receipt className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-700 mb-3" />
-            <h4 className="text-sm font-medium text-slate-900 dark:text-white">No Expense Claims Recorded</h4>
-            <p className="text-xs text-slate-500 mt-1">
+            <h4 className="text-sm font-semibold text-slate-900 dark:text-white">No Expense Claims Recorded</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               There were no out-of-pocket corporate claims submitted for {selectedMonth}.
             </p>
           </div>
@@ -159,38 +160,38 @@ export default function ExpenseReportsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-slate-500 font-medium">
-                  <th className="py-3 px-6">Category</th>
-                  <th className="py-3 px-6">Code</th>
-                  <th className="py-3 px-6">Volume</th>
-                  <th className="py-3 px-6">Total Incurred</th>
-                  <th className="py-3 px-6">Authorized Approved</th>
-                  <th className="py-3 px-6">Reimbursed Payout</th>
-                  <th className="py-3 px-6">Pending</th>
+                <tr className="border-b border-slate-100 dark:border-[#1A3125] bg-slate-50/70 dark:bg-[#162720]/40 text-slate-500 dark:text-slate-400 font-medium">
+                  <th className="py-3.5 px-6">Category</th>
+                  <th className="py-3.5 px-6">Code</th>
+                  <th className="py-3.5 px-6">Volume</th>
+                  <th className="py-3.5 px-6">Total Incurred</th>
+                  <th className="py-3.5 px-6">Authorized Approved</th>
+                  <th className="py-3.5 px-6">Reimbursed Payout</th>
+                  <th className="py-3.5 px-6">Pending</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-100 dark:divide-[#1A3125]">
                 {breakdown.map((row) => (
-                  <tr key={row._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition">
+                  <tr key={row._id} className="hover:bg-slate-50/50 dark:hover:bg-[#162720]/30 transition">
                     <td className="py-3.5 px-6 font-semibold text-slate-900 dark:text-white">{row._id}</td>
                     <td className="py-3.5 px-6">
-                      <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                      <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-slate-100 dark:bg-[#162720] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-[#1A3125]">
                         {row.categoryCode}
                       </span>
                     </td>
                     <td className="py-3.5 px-6 font-medium text-slate-700 dark:text-slate-300">
                       {row.totalClaims} {row.totalClaims === 1 ? 'claim' : 'claims'}
                     </td>
-                    <td className="py-3.5 px-6 font-bold text-slate-900 dark:text-white">
+                    <td className="py-3.5 px-6 font-mono tabular-nums font-bold text-slate-900 dark:text-white">
                       PKR {(row.totalAmountPaisa / 100).toLocaleString('en-PK')}
                     </td>
-                    <td className="py-3.5 px-6 text-slate-700 dark:text-slate-300">
+                    <td className="py-3.5 px-6 font-mono tabular-nums text-slate-700 dark:text-slate-300">
                       PKR {(row.approvedAmountPaisa / 100).toLocaleString('en-PK')}
                     </td>
-                    <td className="py-3.5 px-6 font-semibold text-emerald-600 dark:text-emerald-400">
+                    <td className="py-3.5 px-6 font-mono tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
                       PKR {(row.reimbursedAmountPaisa / 100).toLocaleString('en-PK')}
                     </td>
-                    <td className="py-3.5 px-6 text-amber-600 dark:text-amber-400 font-medium">
+                    <td className="py-3.5 px-6 font-mono tabular-nums text-amber-600 dark:text-amber-400 font-medium">
                       PKR {(row.pendingAmountPaisa / 100).toLocaleString('en-PK')}
                     </td>
                   </tr>
@@ -203,4 +204,3 @@ export default function ExpenseReportsPage() {
     </div>
   );
 }
-
