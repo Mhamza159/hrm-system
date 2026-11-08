@@ -227,9 +227,9 @@ export const initOnboardingForEmployee = async ({ employee, templateId }) => {
     if (mgrEmp?.userId) managerUserId = mgrEmp.userId;
   }
   if (!managerUserId && employee.departmentId) {
-    const dept = await Department.findById(employee.departmentId).populate('departmentHead');
-    if (dept?.departmentHead?.userId) {
-      managerUserId = dept.departmentHead.userId;
+    const dept = await Department.findById(employee.departmentId);
+    if (dept?.headId) {
+      managerUserId = dept.headId;
     }
   }
 
@@ -751,9 +751,9 @@ export const initOffboardingForEmployee = async ({ employeeId }) => {
     if (mgrEmp?.userId) managerUserId = mgrEmp.userId;
   }
   if (!managerUserId && employee.departmentId) {
-    const dept = await Department.findById(employee.departmentId).populate('departmentHead');
-    if (dept?.departmentHead?.userId) {
-      managerUserId = dept.departmentHead.userId;
+    const dept = await Department.findById(employee.departmentId);
+    if (dept?.headId) {
+      managerUserId = dept.headId;
     }
   }
 

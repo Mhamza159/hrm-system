@@ -63,8 +63,9 @@ export const seedM15Recruitment = async () => {
     justification: 'M15 SEED: High concurrency backend lead required.',
     requestedBy: managerEmp._id,
     status: 'Approved',
-    approvedBy: managerEmp.userId,
-    decisionNotes: 'Approved during Q4 budget planning.'
+    decidedBy: hrEmp.userId || hrEmp._id,
+    decidedAt: new Date(),
+    decisionRemarks: 'Approved during Q4 budget planning.'
   });
 
   // 2. Jobs (1 Published, 1 Draft)
@@ -83,16 +84,22 @@ export const seedM15Recruitment = async () => {
       'Experience with Redis caching and pub/sub',
       'Strong architecture and clean code discipline'
     ],
-    skills: ['Node.js', 'React', 'MongoDB', 'Redis', 'Docker'],
+    responsibilities: [
+      'Architect and build resilient RESTful microservices',
+      'Collaborate with product and UI designers to ship responsive dashboards',
+      'Write comprehensive automated test suites and maintain 99.9% uptime'
+    ],
     employmentType: 'Full-time',
     location: 'Lahore, Pakistan (Hybrid)',
     minSalaryPaisa: 20000000,
     maxSalaryPaisa: 30000000,
-    openingsCount: 1,
+    minExperienceYears: 5,
     status: 'Published',
-    isInternalOnly: false,
-    postedBy: hrEmp._id
+    createdBy: hrEmp.userId || hrEmp._id
   });
+
+  reqApproved.jobId = publishedJob._id;
+  await reqApproved.save();
 
   const internalJob = await Job.create({
     title: 'M15 SEED: Lead Cloud DevOps Specialist',
@@ -101,15 +108,14 @@ export const seedM15Recruitment = async () => {
     designationId: desig._id,
     description: 'Internal mobility role for infrastructure automation, Kubernetes orchestration, and CI/CD security pipelines.',
     requirements: ['Kubernetes', 'Terraform', 'AWS', 'GitHub Actions'],
-    skills: ['Kubernetes', 'AWS', 'Docker', 'Linux'],
+    responsibilities: ['Maintain Kubernetes clusters', 'Automate multi-region deployments'],
     employmentType: 'Full-time',
     location: 'Islamabad, Pakistan',
     minSalaryPaisa: 25000000,
     maxSalaryPaisa: 35000000,
-    openingsCount: 1,
+    minExperienceYears: 4,
     status: 'Published',
-    isInternalOnly: true,
-    postedBy: hrEmp._id
+    createdBy: hrEmp.userId || hrEmp._id
   });
 
   // 3. Candidates across Pipeline stages
@@ -121,19 +127,21 @@ export const seedM15Recruitment = async () => {
     email: 'zainab.qureshi@m15seed.com',
     phone: '+92 300 1234567',
     cvUrl: '/uploads/resumes/zainab-qureshi-cv.pdf',
-    currentStage: 'Applied',
-    aiFitScore: 88,
-    aiScreeningRationale: 'Candidate possesses 6 years of deep Node.js and React full-stack experience with production distributed microservices.',
-    aiParsedProfile: {
-      name: 'Zainab Qureshi',
-      email: 'zainab.qureshi@m15seed.com',
-      phone: '+92 300 1234567',
-      yearsOfExperience: 6,
-      skills: ['Node.js', 'React', 'MongoDB', 'Docker', 'TypeScript'],
-      highestDegree: 'BS Computer Science (FAST-NUCES)'
+    cvText: 'Zainab Qureshi. 6 years experience in Node.js, React, MongoDB, Docker, TypeScript.',
+    stage: 'Applied',
+    aiScore: 88,
+    aiScreeningReason: 'Candidate possesses 6 years of deep Node.js and React full-stack experience with production distributed microservices.',
+    parsedProfile: {
+      candidateName: 'Zainab Qureshi',
+      parsedSkills: ['Node.js', 'React', 'MongoDB', 'Docker', 'TypeScript'],
+      totalExperienceYears: 6,
+      highestEducation: 'BS Computer Science (FAST-NUCES)',
+      executiveSummary: '6 years of deep Node.js and React full-stack experience with production distributed microservices.',
+      matchingStrengths: ['Node.js', 'React', 'MongoDB', 'Docker'],
+      missingSkills: []
     },
-    source: 'Careers Portal',
-    stageHistory: [{ stage: 'Applied', changedAt: new Date() }]
+    parsingStatus: 'completed',
+    stageHistory: [{ stage: 'Applied', timestamp: new Date() }]
   });
 
   const c2 = await Candidate.create({
@@ -142,21 +150,23 @@ export const seedM15Recruitment = async () => {
     email: 'kamran.siddiqui@m15seed.com',
     phone: '+92 321 7654321',
     cvUrl: '/uploads/resumes/kamran-siddiqui-cv.pdf',
-    currentStage: 'Screening',
-    aiFitScore: 68,
-    aiScreeningRationale: 'Candidate meets core React and JS requirements; partial backend background in Python with moderate Node exposure.',
-    aiParsedProfile: {
-      name: 'Kamran Siddiqui',
-      email: 'kamran.siddiqui@m15seed.com',
-      phone: '+92 321 7654321',
-      yearsOfExperience: 4,
-      skills: ['React', 'JavaScript', 'HTML5', 'Python', 'Git'],
-      highestDegree: 'BS Information Technology (PUCIT)'
+    cvText: 'Kamran Siddiqui. 4 years experience in React, JavaScript, HTML5, Python, Git.',
+    stage: 'Shortlisted',
+    aiScore: 68,
+    aiScreeningReason: 'Candidate meets core React and JS requirements; partial backend background in Python with moderate Node exposure.',
+    parsedProfile: {
+      candidateName: 'Kamran Siddiqui',
+      parsedSkills: ['React', 'JavaScript', 'HTML5', 'Python', 'Git'],
+      totalExperienceYears: 4,
+      highestEducation: 'BS Information Technology (PUCIT)',
+      executiveSummary: 'Frontend React specialist with 4 years experience and secondary Python scripting skills.',
+      matchingStrengths: ['React'],
+      missingSkills: ['Node.js', 'MongoDB', 'Redis']
     },
-    source: 'LinkedIn',
+    parsingStatus: 'completed',
     stageHistory: [
-      { stage: 'Applied', changedAt: new Date(Date.now() - 86400000 * 2) },
-      { stage: 'Screening', changedAt: new Date(Date.now() - 86400000) }
+      { stage: 'Applied', timestamp: new Date(Date.now() - 86400000 * 2) },
+      { stage: 'Shortlisted', timestamp: new Date(Date.now() - 86400000) }
     ]
   });
 
@@ -166,23 +176,26 @@ export const seedM15Recruitment = async () => {
     email: 'tariq.mehmood@m15seed.com',
     phone: '+92 333 9988776',
     cvUrl: '/uploads/resumes/tariq-mehmood-cv.pdf',
-    currentStage: 'Interview',
-    aiFitScore: 92,
-    aiScreeningRationale: 'Exceptional alignment with Node/React stack and high scale microservices architecture.',
-    aiParsedProfile: {
-      name: 'Tariq Mehmood',
-      email: 'tariq.mehmood@m15seed.com',
-      phone: '+92 333 9988776',
-      yearsOfExperience: 7,
-      skills: ['Node.js', 'React', 'MongoDB', 'Redis', 'AWS', 'Kubernetes'],
-      highestDegree: 'MS Software Engineering (LUMS)'
+    cvText: 'Tariq Mehmood. 7 years experience in Node.js, React, MongoDB, Redis, AWS, Kubernetes.',
+    stage: 'Interview',
+    aiScore: 92,
+    aiScreeningReason: 'Exceptional alignment with Node/React stack and high scale microservices architecture.',
+    parsedProfile: {
+      candidateName: 'Tariq Mehmood',
+      parsedSkills: ['Node.js', 'React', 'MongoDB', 'Redis', 'AWS', 'Kubernetes'],
+      totalExperienceYears: 7,
+      highestEducation: 'MS Software Engineering (LUMS)',
+      executiveSummary: 'Senior distributed systems lead with 7 years full-stack experience in high-concurrency Node.js and React.',
+      matchingStrengths: ['Node.js', 'React', 'MongoDB', 'Redis'],
+      missingSkills: []
     },
-    source: 'Referral',
+    parsingStatus: 'completed',
     referredBy: devEmp._id,
+    referralNotes: 'Ex-colleague from previous fintech employer; top-tier system architect.',
     stageHistory: [
-      { stage: 'Applied', changedAt: new Date(Date.now() - 86400000 * 5) },
-      { stage: 'Screening', changedAt: new Date(Date.now() - 86400000 * 3) },
-      { stage: 'Interview', changedAt: new Date(Date.now() - 86400000 * 1) }
+      { stage: 'Applied', timestamp: new Date(Date.now() - 86400000 * 5) },
+      { stage: 'Shortlisted', timestamp: new Date(Date.now() - 86400000 * 3) },
+      { stage: 'Interview', timestamp: new Date(Date.now() - 86400000 * 1) }
     ]
   });
 
@@ -192,23 +205,30 @@ export const seedM15Recruitment = async () => {
     email: 'asim.raza@m15seed.com',
     phone: '+92 345 5544332',
     cvUrl: '/uploads/resumes/asim-raza-cv.pdf',
-    currentStage: 'Assessment',
-    aiFitScore: 82,
-    testAssignmentUrl: 'https://app.codesignal.com/assessment/hrm-fullstack-dev-01',
-    aiScreeningRationale: 'Solid technical background in full-stack JavaScript with strong algorithm problem-solving abilities.',
-    aiParsedProfile: {
-      name: 'Asim Raza',
-      email: 'asim.raza@m15seed.com',
-      phone: '+92 345 5544332',
-      yearsOfExperience: 5,
-      skills: ['Node.js', 'React', 'PostgreSQL', 'Docker'],
-      highestDegree: 'BS Computer Science (COMSATS)'
+    cvText: 'Asim Raza. 5 years experience in Node.js, React, PostgreSQL, Docker.',
+    stage: 'Technical_Test',
+    aiScore: 82,
+    technicalTest: {
+      testUrl: 'https://app.codesignal.com/assessment/hrm-fullstack-dev-01',
+      status: 'Pending_Submission',
+      assignedDate: new Date(Date.now() - 86400000 * 1),
+      notes: 'Complete 3 coding challenges within 48 hours.'
     },
-    source: 'Careers Portal',
+    aiScreeningReason: 'Solid technical background in full-stack JavaScript with strong algorithm problem-solving abilities.',
+    parsedProfile: {
+      candidateName: 'Asim Raza',
+      parsedSkills: ['Node.js', 'React', 'PostgreSQL', 'Docker'],
+      totalExperienceYears: 5,
+      highestEducation: 'BS Computer Science (COMSATS)',
+      executiveSummary: 'Full-stack engineer with 5 years experience specializing in high-throughput APIs and Dockerization.',
+      matchingStrengths: ['Node.js', 'React', 'Docker'],
+      missingSkills: ['Redis']
+    },
+    parsingStatus: 'completed',
     stageHistory: [
-      { stage: 'Applied', changedAt: new Date(Date.now() - 86400000 * 6) },
-      { stage: 'Interview', changedAt: new Date(Date.now() - 86400000 * 3) },
-      { stage: 'Assessment', changedAt: new Date(Date.now() - 86400000 * 1) }
+      { stage: 'Applied', timestamp: new Date(Date.now() - 86400000 * 6) },
+      { stage: 'Interview', timestamp: new Date(Date.now() - 86400000 * 3) },
+      { stage: 'Technical_Test', timestamp: new Date(Date.now() - 86400000 * 1) }
     ]
   });
 
@@ -218,43 +238,51 @@ export const seedM15Recruitment = async () => {
     email: 'danyal.ali@m15seed.com',
     phone: '+92 312 1122334',
     cvUrl: '/uploads/resumes/danyal-ali-cv.pdf',
-    currentStage: 'Offer',
-    aiFitScore: 95,
+    cvText: 'Danyal Ali. 8 years experience in Node.js, React, MongoDB, System Architecture, Kafka.',
+    stage: 'Offer',
+    aiScore: 95,
     offerDetails: {
       baseSalaryPaisa: 25000000,
       joiningDate: new Date(Date.now() + 86400000 * 14),
       probationMonths: 3,
       allowances: [
-        { title: 'Medical Allowance', amountPaisa: 2000000 },
-        { title: 'Fuel & Commute', amountPaisa: 1500000 }
+        { name: 'Medical Allowance', amountPaisa: 2000000 },
+        { name: 'Fuel & Commute', amountPaisa: 1500000 }
       ],
-      issuedBy: hrEmp._id,
+      letterUrl: `/api/v1/recruitment/candidates/seeded/offer/pdf`,
       issuedAt: new Date(),
       status: 'Issued'
     },
-    aiScreeningRationale: 'Top rank candidate across all technical interviews and architectural domain assessments.',
-    aiParsedProfile: {
-      name: 'Danyal Ali',
-      email: 'danyal.ali@m15seed.com',
-      phone: '+92 312 1122334',
-      yearsOfExperience: 8,
-      skills: ['Node.js', 'React', 'MongoDB', 'System Architecture', 'Kafka'],
-      highestDegree: 'BS Computer Science (NUST)'
+    aiScreeningReason: 'Top rank candidate across all technical interviews and architectural domain assessments.',
+    parsedProfile: {
+      candidateName: 'Danyal Ali',
+      parsedSkills: ['Node.js', 'React', 'MongoDB', 'System Architecture', 'Kafka'],
+      totalExperienceYears: 8,
+      highestEducation: 'BS Computer Science (NUST)',
+      executiveSummary: 'Staff engineer with 8 years building distributed real-time platforms.',
+      matchingStrengths: ['Node.js', 'React', 'MongoDB'],
+      missingSkills: []
     },
-    source: 'Careers Portal',
+    parsingStatus: 'completed',
     stageHistory: [
-      { stage: 'Applied', changedAt: new Date(Date.now() - 86400000 * 10) },
-      { stage: 'Interview', changedAt: new Date(Date.now() - 86400000 * 5) },
-      { stage: 'Offer', changedAt: new Date() }
+      { stage: 'Applied', timestamp: new Date(Date.now() - 86400000 * 10) },
+      { stage: 'Interview', timestamp: new Date(Date.now() - 86400000 * 5) },
+      { stage: 'Offer', timestamp: new Date() }
     ]
   });
+
+  // Update offer letter URL with real ID
+  c5.offerDetails.letterUrl = `/api/v1/recruitment/candidates/${c5._id}/offer/pdf`;
+  await c5.save();
 
   // 4. Interview for Tariq
   await Interview.deleteMany({ candidateId: c3._id });
   await Interview.create({
     candidateId: c3._id,
     jobId: publishedJob._id,
-    roundName: 'Technical Architecture & Coding Round',
+    roundNumber: 1,
+    roundType: 'Technical',
+    durationMinutes: 60,
     interviewers: [managerEmp._id, devEmp._id],
     scheduledDate: new Date(Date.now() + 86400000 * 2),
     meetingLink: 'https://meet.google.com/hrm-tech-interview',
