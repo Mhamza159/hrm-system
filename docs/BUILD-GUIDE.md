@@ -393,21 +393,21 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 ## 24. M15 — Recruitment & AI Screening
 
-| ID | Feature | Backend | Frontend | Test | ☐ |
+| ID | Feature | Backend | Frontend | Test | ☑ |
 | --- | --- | --- | --- | --- | --- |
-| 15.1 | Job requisition | `requisition.model.js`, `POST /requisitions` (manager) | `RequisitionForm.jsx` | Request bane | ☐ |
-| 15.2 | Position approval | `PATCH /requisitions/:id/decide` (Super Admin) | Approvals list | Approve par job draft | ☐ |
-| 15.3 | Job post + careers page | `job.model.js`, CRUD, `GET /public/jobs` | `JobsPage.jsx`, `CareersPublicPage.jsx` (bina login) | Public link khule | ☐ |
-| 15.4 | Application form + CV | `candidate.model.js`, `POST /public/jobs/:id/apply` (rate limit, file check) | `ApplyPage.jsx` | Application save | ☐ |
-| 15.5 | AI CV parsing | `services/ai.service.js`: CV text → skills, tajurba, taleem (JSON) | Parsed details card | Fields sahi | ☐ |
-| 15.6 | AI match score + wajah | `POST /candidates/:id/screen` | Score badge + reason | Score aur wajah | ☐ |
-| 15.7 | Pipeline board | `PATCH /candidates/:id/stage` | `CandidatePipelinePage.jsx` (Kanban drag) | Stage badle | ☐ |
-| 15.8 | Interview schedule + feedback | `POST /candidates/:id/interviews`, `PATCH /interviews/:id/feedback` | `InterviewScheduler.jsx`, `FeedbackForm.jsx` | Interviewer ko notification | ☐ |
-| 15.9 | Technical test link | candidate.testLink, email | "Send test" button | Email jaye | ☐ |
-| 15.10 | Offer letter | `POST /candidates/:id/offer` (PDF + email) | Offer dialog | PDF sahi | ☐ |
-| 15.11 | Hire → employee | `POST /candidates/:id/hire` → 3.2 + 18.2 | "Convert to Employee" | Employee + checklist bane | ☐ |
-| 15.12 | Andarooni jobs + referral | `GET /jobs/internal`, `POST /referrals` | `InternalJobsPage.jsx` | Referral darj | ☐ |
-| 15.13 | Insani faisla lazmi | AI sirf score de, stage HR badle | — | Auto reject na ho | ☐ |
+| 15.1 | Job requisition | `requisition.model.js`, `POST /requisitions` (manager) | `RequisitionForm.jsx` | Request bane | ☑ |
+| 15.2 | Position approval | `PATCH /requisitions/:id/decide` (Super Admin) | Approvals list | Approve par job draft | ☑ |
+| 15.3 | Job post + careers page | `job.model.js`, CRUD, `GET /public/jobs` | `JobsPage.jsx`, `CareersPublicPage.jsx` (bina login) | Public link khule | ☑ |
+| 15.4 | Application form + CV | `candidate.model.js`, `POST /public/jobs/:id/apply` (rate limit, file check) | `ApplyPage.jsx` | Application save | ☑ |
+| 15.5 | AI CV parsing | `services/ai.service.js`: CV text → skills, tajurba, taleem (JSON) | Parsed details card | Fields sahi | ☑ |
+| 15.6 | AI match score + wajah | `POST /candidates/:id/screen` | Score badge + reason | Score aur wajah | ☑ |
+| 15.7 | Pipeline board | `PATCH /candidates/:id/stage` | `CandidatePipelinePage.jsx` (Kanban drag) | Stage badle | ☑ |
+| 15.8 | Interview schedule + feedback | `POST /candidates/:id/interviews`, `PATCH /interviews/:id/feedback` | `InterviewScheduler.jsx`, `FeedbackForm.jsx` | Interviewer ko notification | ☑ |
+| 15.9 | Technical test link | candidate.testLink, email | "Send test" button | Email jaye | ☑ |
+| 15.10 | Offer letter | `POST /candidates/:id/offer` (PDF + email) | Offer dialog | PDF sahi | ☑ |
+| 15.11 | Hire → employee | `POST /candidates/:id/hire` → 3.2 + 18.2 | "Convert to Employee" | Employee + checklist bane | ☑ |
+| 15.12 | Andarooni jobs + referral | `GET /jobs/internal`, `POST /referrals` | `InternalJobsPage.jsx` | Referral darj | ☑ |
+| 15.13 | Insani faisla lazmi | AI sirf score de, stage HR badle | — | Auto reject na ho | ☑ |
 
 ## 25. M16 — HR Chatbot
 
