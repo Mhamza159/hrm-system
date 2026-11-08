@@ -17,6 +17,7 @@ import {
   Receipt,
   Check
 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   useCreateExpenseCategoryMutation,
   useUpdateExpenseCategoryMutation
@@ -91,9 +92,11 @@ export default function ExpenseCategoryModal({ isOpen, onClose, category = null 
 
     try {
       if (isEditing) {
-        await updateCategory({ id: category._id, data: payload }).unwrap();
+        await updateCategory({ id: category._id, ...payload }).unwrap();
+        toast.success(`Expense category '${payload.name}' updated successfully.`);
       } else {
         await createCategory(payload).unwrap();
+        toast.success(`Expense category '${payload.name}' created successfully.`);
       }
       onClose();
     } catch (err) {

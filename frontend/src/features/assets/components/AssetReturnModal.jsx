@@ -28,6 +28,7 @@ export const AssetReturnModal = ({ isOpen, onClose, asset }) => {
     : null;
   const deptName = custodian?.departmentId?.name || custodian?.departmentId?.code || null;
   const desigTitle = custodian?.designationId?.title || custodian?.designationId?.code || null;
+  const roleName = custodian?.userId?.roles?.[0]?.name || custodian?.role || null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -111,11 +112,16 @@ export const AssetReturnModal = ({ isOpen, onClose, asset }) => {
                         {custodian.employeeCode}
                       </span>
                     )}
+                    {roleName && (
+                      <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/40">
+                        {roleName}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex-wrap">
-                    {desigTitle && <span>{desigTitle}</span>}
+                    {desigTitle && <span className="font-medium text-slate-800 dark:text-slate-200">{desigTitle}</span>}
                     {desigTitle && deptName && <span>•</span>}
-                    {deptName && <span className="font-medium text-slate-700 dark:text-slate-300">{deptName}</span>}
+                    {deptName && <span>{deptName}</span>}
                   </div>
                 </div>
               </div>

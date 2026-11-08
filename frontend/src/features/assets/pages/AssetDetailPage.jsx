@@ -101,6 +101,11 @@ export const AssetDetailPage = () => {
     : null;
   const deptName = custodian?.departmentId?.name || custodian?.departmentId?.code || null;
   const desigTitle = custodian?.designationId?.title || custodian?.designationId?.code || null;
+  const roleName = custodian?.userId?.roles?.[0]?.name || custodian?.role || null;
+
+  const lastAssignment = asset?.history?.slice().reverse().find((h) => h.action === 'assigned');
+  const handoverDate = lastAssignment?.date || asset?.assignedDate || null;
+  const handoverCondition = lastAssignment?.condition || asset?.condition || 'good';
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -304,20 +309,26 @@ export const AssetDetailPage = () => {
                     <UserCheck className="w-3 h-3" />
                     Active Custodian
                   </span>
+                  {roleName && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/40">
+                      <Shield className="w-3 h-3 text-amber-500" />
+                      Role: {roleName}
+                    </span>
+                  )}
                 </div>
 
                 {/* Designation & Department */}
-                <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-400 flex-wrap">
+                <div className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-400 flex-wrap">
                   {desigTitle && (
-                    <span className="flex items-center gap-1">
-                      <Briefcase className="w-3.5 h-3.5 text-slate-400" />
-                      {desigTitle}
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-[#162820] text-emerald-800 dark:text-[#00C471] font-semibold border border-emerald-200 dark:border-[#1A3125]">
+                      <Briefcase className="w-3.5 h-3.5 text-[#00C471]" />
+                      Designation: {desigTitle}
                     </span>
                   )}
                   {deptName && (
-                    <span className="flex items-center gap-1">
-                      <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                      {deptName}
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-[#162820] text-slate-700 dark:text-slate-300 font-medium border border-slate-200 dark:border-[#1A3125]">
+                      <Building2 className="w-3.5 h-3.5 text-blue-500" />
+                      Department: {deptName}
                     </span>
                   )}
                 </div>
@@ -348,14 +359,14 @@ export const AssetDetailPage = () => {
               <div>
                 <p className="text-slate-400 text-[11px] font-medium">Handover Date</p>
                 <p className="font-semibold text-slate-800 dark:text-slate-200 font-mono tabular-nums mt-0.5">
-                  {asset.assignedDate ? new Date(asset.assignedDate).toLocaleDateString() : 'N/A'}
+                  {handoverDate ? new Date(handoverDate).toLocaleDateString() : 'N/A'}
                 </p>
               </div>
 
               <div>
                 <p className="text-slate-400 text-[11px] font-medium">Handover Condition</p>
                 <span className="inline-block mt-0.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 dark:bg-[#162820] text-emerald-700 dark:text-[#00C471] border border-emerald-200 dark:border-[#1A3125] capitalize">
-                  {asset.condition || 'Good Condition'}
+                  {handoverCondition}
                 </span>
               </div>
 

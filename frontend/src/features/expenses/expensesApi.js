@@ -39,10 +39,10 @@ export const expensesApi = baseApi.injectEndpoints({
     }),
 
     updateExpenseCategory: builder.mutation({
-      query: ({ id, ...body }) => ({
+      query: ({ id, data, ...rest }) => ({
         url: `/expenses/categories/${id}`,
         method: "PUT",
-        body,
+        body: data || rest,
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: "ExpenseCategory", id },

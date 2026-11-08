@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from 'react';
-import { X, UserCheck, Calendar, AlertCircle, Mail, Phone, Building2, Briefcase, CheckCircle2 } from 'lucide-react';
+import { X, UserCheck, Calendar, AlertCircle, Mail, Phone, Building2, Briefcase, Shield, CheckCircle2 } from 'lucide-react';
 import { useAssignAssetMutation } from '../assetApi.js';
 import { useGetEmployeesQuery } from '../../employees/employeesApi.js';
 import { toast } from 'sonner';
@@ -33,6 +33,7 @@ export const AssetAssignModal = ({ isOpen, onClose, asset }) => {
     : null;
   const deptName = selectedEmp?.departmentId?.name || selectedEmp?.departmentId?.code || selectedEmp?.department || null;
   const desigTitle = selectedEmp?.designationId?.title || selectedEmp?.designationId?.code || selectedEmp?.designation || null;
+  const roleName = selectedEmp?.userId?.roles?.[0]?.name || selectedEmp?.role || null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -101,69 +102,92 @@ export const AssetAssignModal = ({ isOpen, onClose, asset }) => {
               onChange={(e) => setEmployeeId(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-50 dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] text-slate-900 dark:text-white focus:outline-hidden focus:border-[#00C471]"
             >
-              <option value="">-- Choose employee --</option>
+              <option value="">-- Choose employee custodian --</option>
               {employees.map((emp) => {
                 const name = emp.name || `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || emp.employeeCode;
+                const desig = emp.designationId?.title || emp.designation || '';
                 const dept = emp.departmentId?.name || emp.department || '';
+                const role = emp.userId?.roles?.[0]?.name || '';
+                const details = [desig, dept, role && role !== desig ? `Role: ${role}` : null].filter(Boolean).join(' · ');
+
                 return (
                   <option key={emp._id || emp.id} value={emp._id || emp.id}>
-                    {name} ({emp.employeeCode}) {dept ? `· ${dept}` : ''}
+                    {name} ({emp.employeeCode}){details ? ` · ${details}` : ''}
                   </option>
                 );
               })}
             </select>
           </div>
 
-          {/* Real-time Employee Preview Card (T004) */}
+          {/* Real-time Employee Preview Card with Complete Details (Designation, Role, Department) */}
           {selectedEmp && (
-            <div className="p-3.5 rounded-xl border border-emerald-200 dark:border-[#1A3125] bg-emerald-50/50 dark:bg-[#162820]/60 space-y-2 animate-in fade-in duration-200">
-              <div className="flex items-center gap-3">
+            <div className="p-4 rounded-xl border border-emerald-200 dark:border-[#1A3125] bg-emerald-50/40 dark:bg-[#162820]/60 space-y-3 animate-in fade-in duration-200">
+              <div className="flex items-start gap-3.5">
                 <div className="relative shrink-0">
                   {selectedEmp.avatar ? (
                     <img
                       src={selectedEmp.avatar}
                       alt={selectedEmpName}
-                      className="w-10 h-10 rounded-full object-cover border border-emerald-300 dark:border-emerald-700"
+                      className="w-12 h-12 rounded-xl object-cover border-2 border-emerald-500/40"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-[#111D17] text-emerald-700 dark:text-[#00C471] font-bold text-xs flex items-center justify-center border border-emerald-300 dark:border-[#1A3125]">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-[#111D17] text-emerald-700 dark:text-[#00C471] font-bold text-sm flex items-center justify-center border-2 border-emerald-500/40">
                       {(selectedEmpName?.[0] || 'U').toUpperCase()}
                     </div>
                   )}
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#00C471] ring-2 ring-white dark:ring-[#111D17]" />
+                  <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#00C471] ring-2 ring-white dark:ring-[#111D17] flex items-center justify-center text-white text-[8px]">
+                    ✓
+                  </span>
                 </div>
 
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-bold text-slate-900 dark:text-white text-xs truncate">
+                    <p className="font-bold text-slate-900 dark:text-white text-xs">
                       {selectedEmpName}
                     </p>
                     {selectedEmp.employeeCode && (
-                      <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-white dark:bg-[#111D17] text-emerald-700 dark:text-[#00C471] font-semibold border border-emerald-200 dark:border-[#1A3125]">
+                      <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-[#111D17] text-emerald-700 dark:text-[#00C471] font-semibold border border-emerald-200 dark:border-[#1A3125]">
                         {selectedEmp.employeeCode}
                       </span>
                     )}
+                    {roleName && (
+                      <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/40 font-medium">
+                        <Shield className="w-2.5 h-2.5 text-amber-500" />
+                        {roleName}
+                      </span>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 flex-wrap">
-                    {desigTitle && <span>{desigTitle}</span>}
-                    {desigTitle && deptName && <span>•</span>}
-                    {deptName && <span className="font-medium text-slate-700 dark:text-slate-300">{deptName}</span>}
+
+                  {/* Designation & Department Pills */}
+                  <div className="flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300 flex-wrap pt-0.5">
+                    {desigTitle && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] font-medium text-slate-800 dark:text-slate-200">
+                        <Briefcase className="w-3 h-3 text-[#00C471]" />
+                        {desigTitle}
+                      </span>
+                    )}
+                    {deptName && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-slate-400">
+                        <Building2 className="w-3 h-3 text-blue-500" />
+                        {deptName}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
 
               {(selectedEmp.email || selectedEmp.phone) && (
-                <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400 pt-1.5 border-t border-emerald-100 dark:border-[#1A3125] flex-wrap">
+                <div className="flex items-center gap-4 text-[11px] text-slate-500 dark:text-slate-400 pt-2 border-t border-emerald-100 dark:border-[#1A3125] flex-wrap">
                   {selectedEmp.email && (
-                    <span className="flex items-center gap-1 truncate">
+                    <span className="flex items-center gap-1.5">
                       <Mail className="w-3 h-3 text-slate-400" />
-                      {selectedEmp.email}
+                      <span>{selectedEmp.email}</span>
                     </span>
                   )}
                   {selectedEmp.phone && (
-                    <span className="flex items-center gap-1 font-mono tabular-nums">
+                    <span className="flex items-center gap-1.5 font-mono tabular-nums">
                       <Phone className="w-3 h-3 text-slate-400" />
-                      {selectedEmp.phone}
+                      <span>{selectedEmp.phone}</span>
                     </span>
                   )}
                 </div>

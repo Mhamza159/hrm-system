@@ -70,10 +70,11 @@ export const createAsset = async ({ assetData, user, ipAddress, userAgent }) => 
   const populatedAsset = await Asset.findById(asset._id)
     .populate({
       path: 'assignedTo',
-      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status',
+      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status userId',
       populate: [
         { path: 'departmentId', select: 'name code' },
-        { path: 'designationId', select: 'title code' }
+        { path: 'designationId', select: 'title code grade' },
+        { path: 'userId', select: 'roles email', populate: { path: 'roles', select: 'name' } }
       ]
     })
     .populate('history.performedBy', 'name email avatar')
@@ -160,10 +161,11 @@ export const getAssets = async ({ query = {}, user }) => {
     Asset.find(filter)
       .populate({
         path: 'assignedTo',
-        select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status',
+        select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status userId',
         populate: [
           { path: 'departmentId', select: 'name code' },
-          { path: 'designationId', select: 'title code' }
+          { path: 'designationId', select: 'title code grade' },
+          { path: 'userId', select: 'roles email', populate: { path: 'roles', select: 'name' } }
         ]
       })
       .populate('history.performedBy', 'name email avatar')
@@ -205,19 +207,21 @@ export const getAssetById = async (id, user) => {
   const asset = await Asset.findOne({ _id: id, isDeleted: false })
     .populate({
       path: 'assignedTo',
-      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status',
+      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status userId',
       populate: [
         { path: 'departmentId', select: 'name code' },
-        { path: 'designationId', select: 'title code' }
+        { path: 'designationId', select: 'title code grade' },
+        { path: 'userId', select: 'roles email', populate: { path: 'roles', select: 'name' } }
       ]
     })
     .populate('history.performedBy', 'name email avatar')
     .populate({
       path: 'history.employeeId',
-      select: 'name firstName lastName employeeCode departmentId designationId avatar',
+      select: 'name firstName lastName employeeCode departmentId designationId avatar userId',
       populate: [
         { path: 'departmentId', select: 'name code' },
-        { path: 'designationId', select: 'title code' }
+        { path: 'designationId', select: 'title code grade' },
+        { path: 'userId', select: 'roles email', populate: { path: 'roles', select: 'name' } }
       ]
     })
     .populate('issues.reportedBy', 'name employeeCode email avatar')
@@ -285,10 +289,11 @@ export const updateAsset = async ({ id, updateData, user, ipAddress, userAgent }
   const populatedAsset = await Asset.findById(asset._id)
     .populate({
       path: 'assignedTo',
-      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status',
+      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status userId',
       populate: [
         { path: 'departmentId', select: 'name code' },
-        { path: 'designationId', select: 'title code' }
+        { path: 'designationId', select: 'title code grade' },
+        { path: 'userId', select: 'roles email', populate: { path: 'roles', select: 'name' } }
       ]
     })
     .populate('history.performedBy', 'name email avatar')
@@ -414,10 +419,11 @@ export const assignAsset = async ({ id, employeeId, assignedDate, notes = '', co
   const populatedAsset = await Asset.findById(asset._id)
     .populate({
       path: 'assignedTo',
-      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status',
+      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status userId',
       populate: [
         { path: 'departmentId', select: 'name code' },
-        { path: 'designationId', select: 'title code' }
+        { path: 'designationId', select: 'title code grade' },
+        { path: 'userId', select: 'roles email', populate: { path: 'roles', select: 'name' } }
       ]
     })
     .populate('history.performedBy', 'name email avatar')
@@ -488,10 +494,11 @@ export const returnAsset = async ({ id, returnDate, condition = 'good', notes = 
   const populatedAsset = await Asset.findById(asset._id)
     .populate({
       path: 'assignedTo',
-      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status',
+      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status userId',
       populate: [
         { path: 'departmentId', select: 'name code' },
-        { path: 'designationId', select: 'title code' }
+        { path: 'designationId', select: 'title code grade' },
+        { path: 'userId', select: 'roles email', populate: { path: 'roles', select: 'name' } }
       ]
     })
     .populate('history.performedBy', 'name email avatar')
@@ -560,10 +567,11 @@ export const sendAssetForRepair = async ({ id, repairData, user, ipAddress, user
   const populatedAsset = await Asset.findById(asset._id)
     .populate({
       path: 'assignedTo',
-      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status',
+      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status userId',
       populate: [
         { path: 'departmentId', select: 'name code' },
-        { path: 'designationId', select: 'title code' }
+        { path: 'designationId', select: 'title code grade' },
+        { path: 'userId', select: 'roles email', populate: { path: 'roles', select: 'name' } }
       ]
     })
     .populate('history.performedBy', 'name email avatar')
@@ -633,10 +641,11 @@ export const completeAssetRepair = async ({ id, repairId, updateData, user, ipAd
   const populatedAsset = await Asset.findById(asset._id)
     .populate({
       path: 'assignedTo',
-      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status',
+      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status userId',
       populate: [
         { path: 'departmentId', select: 'name code' },
-        { path: 'designationId', select: 'title code' }
+        { path: 'designationId', select: 'title code grade' },
+        { path: 'userId', select: 'roles email', populate: { path: 'roles', select: 'name' } }
       ]
     })
     .populate('history.performedBy', 'name email avatar')

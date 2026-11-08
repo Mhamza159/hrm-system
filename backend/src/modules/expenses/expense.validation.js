@@ -45,6 +45,13 @@ export const updateExpenseCategorySchema = z.object({
   }),
   body: z.object({
     name: z.string().trim().min(2).max(100).optional(),
+    code: z
+      .string()
+      .trim()
+      .min(2)
+      .max(30)
+      .transform((val) => val.toUpperCase())
+      .optional(),
     description: z.string().trim().max(500).optional(),
     maxLimitPaisa: z.number().int().min(0).optional(),
     requiresReceipt: z.boolean().optional(),

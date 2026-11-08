@@ -343,6 +343,7 @@ export const AssetsPage = () => {
                     : null;
                   const deptName = custodian?.departmentId?.name || custodian?.departmentId?.code || null;
                   const desigTitle = custodian?.designationId?.title || custodian?.designationId?.code || null;
+                  const roleName = custodian?.userId?.roles?.[0]?.name || null;
 
                   return (
                     <tr
@@ -396,10 +397,15 @@ export const AssetsPage = () => {
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-500">
-                                {desigTitle && <span>{desigTitle}</span>}
-                                {desigTitle && deptName && <span>•</span>}
-                                {deptName && <span className="text-slate-500 dark:text-slate-400">{deptName}</span>}
+                              <div className="flex items-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-500 flex-wrap">
+                                {desigTitle && <span className="font-medium text-slate-700 dark:text-slate-300">{desigTitle}</span>}
+                                {desigTitle && (deptName || roleName) && <span>•</span>}
+                                {deptName && <span>{deptName}</span>}
+                                {roleName && roleName !== desigTitle && (
+                                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900/40">
+                                    {roleName}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
