@@ -14,6 +14,8 @@ import { AssetRequest } from '../../models/assetRequest.model.js';
 import { Employee } from '../../models/employee.model.js';
 import { User } from '../../models/user.model.js';
 import { Role } from '../../models/role.model.js';
+import { Department } from '../../models/department.model.js';
+import { Designation } from '../../models/designation.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { notify } from '../../services/notify.service.js';
@@ -65,7 +67,19 @@ export const createAsset = async ({ assetData, user, ipAddress, userAgent }) => 
     userAgent
   }).catch((err) => console.error('[Audit Error]', err.message));
 
-  return asset;
+  const populatedAsset = await Asset.findById(asset._id)
+    .populate({
+      path: 'assignedTo',
+      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status',
+      populate: [
+        { path: 'departmentId', select: 'name code' },
+        { path: 'designationId', select: 'title code' }
+      ]
+    })
+    .populate('history.performedBy', 'name email avatar')
+    .lean();
+
+  return populatedAsset || asset;
 };
 
 export const escapeRegex = (str) => {
@@ -142,15 +156,29 @@ export const getAssets = async ({ query = {}, user }) => {
     }
   }
 
-  const [assets, total] = await Promise.all([
+  const [assets, total, totalAll, availableCount, assignedCount, repairCount] = await Promise.all([
     Asset.find(filter)
-      .populate('assignedTo', 'name employeeCode departmentId email phone')
-      .populate('history.performedBy', 'name email')
+      .populate({
+        path: 'assignedTo',
+        select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status',
+        populate: [
+          { path: 'departmentId', select: 'name code' },
+          { path: 'designationId', select: 'title code' }
+        ]
+      })
+      .populate('history.performedBy', 'name email avatar')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean(),
-    Asset.countDocuments(filter)
+    Asset.countDocuments(filter),
+    Asset.countDocuments({ isDeleted: false }),
+    Asset.countDocuments({ isDeleted: false, status: 'available' }),
+    Asset.countDocuments({ isDeleted: false, status: 'assigned' }),
+    Asset.countDocuments({
+      isDeleted: false,
+      $or: [{ status: 'under_repair' }, { hasOpenIssue: true }]
+    })
   ]);
 
   return {
@@ -160,6 +188,12 @@ export const getAssets = async ({ query = {}, user }) => {
       limit,
       total,
       pages: Math.ceil(total / limit)
+    },
+    stats: {
+      total: totalAll,
+      available: availableCount,
+      assigned: assignedCount,
+      inRepair: repairCount
     }
   };
 };
@@ -169,10 +203,24 @@ export const getAssets = async ({ query = {}, user }) => {
  */
 export const getAssetById = async (id, user) => {
   const asset = await Asset.findOne({ _id: id, isDeleted: false })
-    .populate('assignedTo', 'name employeeCode departmentId email phone designationId')
-    .populate('history.performedBy', 'name email')
-    .populate('history.employeeId', 'name employeeCode')
-    .populate('issues.reportedBy', 'name employeeCode email')
+    .populate({
+      path: 'assignedTo',
+      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status',
+      populate: [
+        { path: 'departmentId', select: 'name code' },
+        { path: 'designationId', select: 'title code' }
+      ]
+    })
+    .populate('history.performedBy', 'name email avatar')
+    .populate({
+      path: 'history.employeeId',
+      select: 'name firstName lastName employeeCode departmentId designationId avatar',
+      populate: [
+        { path: 'departmentId', select: 'name code' },
+        { path: 'designationId', select: 'title code' }
+      ]
+    })
+    .populate('issues.reportedBy', 'name employeeCode email avatar')
     .lean();
 
   if (!asset) {
@@ -234,7 +282,19 @@ export const updateAsset = async ({ id, updateData, user, ipAddress, userAgent }
     userAgent
   }).catch((err) => console.error('[Audit Error]', err.message));
 
-  return asset;
+  const populatedAsset = await Asset.findById(asset._id)
+    .populate({
+      path: 'assignedTo',
+      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status',
+      populate: [
+        { path: 'departmentId', select: 'name code' },
+        { path: 'designationId', select: 'title code' }
+      ]
+    })
+    .populate('history.performedBy', 'name email avatar')
+    .lean();
+
+  return populatedAsset || asset;
 };
 
 /**
@@ -351,7 +411,19 @@ export const assignAsset = async ({ id, employeeId, assignedDate, notes = '', co
     }).catch((err) => console.error('[Notify Error]', err.message));
   }
 
-  return asset;
+  const populatedAsset = await Asset.findById(asset._id)
+    .populate({
+      path: 'assignedTo',
+      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status',
+      populate: [
+        { path: 'departmentId', select: 'name code' },
+        { path: 'designationId', select: 'title code' }
+      ]
+    })
+    .populate('history.performedBy', 'name email avatar')
+    .lean();
+
+  return populatedAsset || asset;
 };
 
 /**
@@ -413,7 +485,19 @@ export const returnAsset = async ({ id, returnDate, condition = 'good', notes = 
     userAgent
   }).catch((err) => console.error('[Audit Error]', err.message));
 
-  return asset;
+  const populatedAsset = await Asset.findById(asset._id)
+    .populate({
+      path: 'assignedTo',
+      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status',
+      populate: [
+        { path: 'departmentId', select: 'name code' },
+        { path: 'designationId', select: 'title code' }
+      ]
+    })
+    .populate('history.performedBy', 'name email avatar')
+    .lean();
+
+  return populatedAsset || asset;
 };
 
 /**
@@ -473,7 +557,19 @@ export const sendAssetForRepair = async ({ id, repairData, user, ipAddress, user
     userAgent
   }).catch((err) => console.error('[Audit Error]', err.message));
 
-  return asset;
+  const populatedAsset = await Asset.findById(asset._id)
+    .populate({
+      path: 'assignedTo',
+      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status',
+      populate: [
+        { path: 'departmentId', select: 'name code' },
+        { path: 'designationId', select: 'title code' }
+      ]
+    })
+    .populate('history.performedBy', 'name email avatar')
+    .lean();
+
+  return populatedAsset || asset;
 };
 
 /**
@@ -534,7 +630,19 @@ export const completeAssetRepair = async ({ id, repairId, updateData, user, ipAd
     userAgent
   }).catch((err) => console.error('[Audit Error]', err.message));
 
-  return asset;
+  const populatedAsset = await Asset.findById(asset._id)
+    .populate({
+      path: 'assignedTo',
+      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status',
+      populate: [
+        { path: 'departmentId', select: 'name code' },
+        { path: 'designationId', select: 'title code' }
+      ]
+    })
+    .populate('history.performedBy', 'name email avatar')
+    .lean();
+
+  return populatedAsset || asset;
 };
 
 /**

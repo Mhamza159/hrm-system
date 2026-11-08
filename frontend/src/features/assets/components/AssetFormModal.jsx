@@ -5,10 +5,11 @@
  * SPECIFICATION:
  * - Module: M23 Asset Management (BUILD-GUIDE Section 20 · Row 23.1)
  * - Financial Invariant: All costs entered in PKR and saved in minor currency units (paisa).
+ * - Design System: Forest & Emerald (#111D17 dark surface, #1A3125 dark border, #00C471 emerald accent).
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Laptop, ShieldCheck, DollarSign, Calendar, Cpu, HardDrive } from 'lucide-react';
+import { X, Laptop, ShieldCheck, DollarSign, Calendar, Cpu, HardDrive, AlertCircle } from 'lucide-react';
 import { useCreateAssetMutation, useUpdateAssetMutation } from '../assetApi.js';
 import { toast } from 'sonner';
 
@@ -103,39 +104,39 @@ export const AssetFormModal = ({ isOpen, onClose, asset = null }) => {
     e.preventDefault();
     setFormError('');
 
-    if (!isEditing && !formData.assetTag.trim()) {
-      setFormError('Asset tag is required (e.g. AST-LPT-001).');
-      return;
-    }
     if (!formData.name.trim()) {
       setFormError('Asset name is required.');
       return;
     }
-    if (!isEditing && !formData.serialNumber.trim()) {
-      setFormError('Serial number or license ID is required.');
+    if (!formData.assetTag.trim() && !isEditing) {
+      setFormError('Asset Tag is required.');
+      return;
+    }
+    if (!formData.serialNumber.trim() && !isEditing) {
+      setFormError('Serial Number is required.');
       return;
     }
 
     const payload = {
       name: formData.name.trim(),
       type: formData.type,
-      modelNumber: formData.modelNumber.trim(),
-      vendorName: formData.vendorName.trim(),
-      purchaseDate: formData.purchaseDate || null,
-      purchaseCostPaisa: formData.purchaseCostPkr ? Math.round(parseFloat(formData.purchaseCostPkr) * 100) : 0,
-      warrantyExpiresAt: formData.warrantyExpiresAt || null,
-      licenseExpiresAt: formData.licenseExpiresAt || null,
+      modelNumber: formData.modelNumber.trim() || undefined,
+      vendorName: formData.vendorName.trim() || undefined,
+      purchaseDate: formData.purchaseDate || undefined,
+      purchaseCostPaisa: formData.purchaseCostPkr ? Math.round(parseFloat(formData.purchaseCostPkr) * 100) : undefined,
+      warrantyExpiresAt: formData.warrantyExpiresAt || undefined,
+      licenseExpiresAt: formData.licenseExpiresAt || undefined,
       specifications: {
-        processor: formData.processor.trim(),
-        ramGb: formData.ramGb ? parseInt(formData.ramGb, 10) : null,
-        storageGb: formData.storageGb ? parseInt(formData.storageGb, 10) : null,
-        os: formData.os.trim(),
-        licenseKey: formData.licenseKey.trim()
+        processor: formData.processor.trim() || undefined,
+        ramGb: formData.ramGb ? parseInt(formData.ramGb, 10) : undefined,
+        storageGb: formData.storageGb ? parseInt(formData.storageGb, 10) : undefined,
+        os: formData.os.trim() || undefined,
+        licenseKey: formData.licenseKey.trim() || undefined
       }
     };
 
     if (!isEditing) {
-      payload.assetTag = formData.assetTag.toUpperCase().trim();
+      payload.assetTag = formData.assetTag.trim().toUpperCase();
       payload.serialNumber = formData.serialNumber.trim();
     }
 
@@ -154,26 +155,26 @@ export const AssetFormModal = ({ isOpen, onClose, asset = null }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-      <div className="bg-white dark:bg-[#0F111A] border border-slate-200 dark:border-[#1E2235] w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+      <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-[#1E2235]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-[#1A3125]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-100 dark:border-emerald-800">
-              <Laptop className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-[#162820] text-emerald-600 dark:text-[#00C471] flex items-center justify-center border border-emerald-100 dark:border-[#1A3125]">
+              <Laptop className="w-5 h-5 text-[#00C471]" />
             </div>
             <div>
               <h3 className="font-semibold text-slate-900 dark:text-white text-base">
                 {isEditing ? 'Edit Asset Details' : 'Register New Asset'}
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 {isEditing ? `Modifying specifications for ${asset.assetTag}` : 'Add company hardware or software to registry'}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-[#162820] cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -182,8 +183,9 @@ export const AssetFormModal = ({ isOpen, onClose, asset = null }) => {
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-4">
           {formError && (
-            <div className="p-3 text-xs bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 rounded-xl">
-              {formError}
+            <div className="p-3 text-xs bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 rounded-xl flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{formError}</span>
             </div>
           )}
 
@@ -199,7 +201,7 @@ export const AssetFormModal = ({ isOpen, onClose, asset = null }) => {
                 onChange={handleChange}
                 disabled={isEditing}
                 placeholder="e.g. AST-LPT-001"
-                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#151926] border border-slate-200 dark:border-[#1E2235] text-slate-900 dark:text-white uppercase font-mono disabled:opacity-60 focus:outline-hidden focus:border-emerald-500"
+                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] text-slate-900 dark:text-white uppercase font-mono disabled:opacity-60 focus:outline-hidden focus:border-[#00C471]"
               />
             </div>
 
@@ -213,7 +215,7 @@ export const AssetFormModal = ({ isOpen, onClose, asset = null }) => {
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="e.g. ThinkPad T14 Gen 4"
-                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#151926] border border-slate-200 dark:border-[#1E2235] text-slate-900 dark:text-white focus:outline-hidden focus:border-emerald-500"
+                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] text-slate-900 dark:text-white focus:outline-hidden focus:border-[#00C471]"
               />
             </div>
 
@@ -225,7 +227,7 @@ export const AssetFormModal = ({ isOpen, onClose, asset = null }) => {
                 name="type"
                 value={formData.type}
                 onChange={handleChange}
-                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#151926] border border-slate-200 dark:border-[#1E2235] text-slate-900 dark:text-white focus:outline-hidden focus:border-emerald-500"
+                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] text-slate-900 dark:text-white focus:outline-hidden focus:border-[#00C471]"
               >
                 {ASSET_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>
@@ -246,7 +248,7 @@ export const AssetFormModal = ({ isOpen, onClose, asset = null }) => {
                 onChange={handleChange}
                 disabled={isEditing}
                 placeholder="e.g. PF-29XA01"
-                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#151926] border border-slate-200 dark:border-[#1E2235] text-slate-900 dark:text-white font-mono disabled:opacity-60 focus:outline-hidden focus:border-emerald-500"
+                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] text-slate-900 dark:text-white font-mono disabled:opacity-60 focus:outline-hidden focus:border-[#00C471]"
               />
             </div>
 
@@ -260,7 +262,7 @@ export const AssetFormModal = ({ isOpen, onClose, asset = null }) => {
                 value={formData.modelNumber}
                 onChange={handleChange}
                 placeholder="e.g. 21HD0006US"
-                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#151926] border border-slate-200 dark:border-[#1E2235] text-slate-900 dark:text-white focus:outline-hidden focus:border-emerald-500"
+                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] text-slate-900 dark:text-white focus:outline-hidden focus:border-[#00C471]"
               />
             </div>
 
@@ -274,7 +276,7 @@ export const AssetFormModal = ({ isOpen, onClose, asset = null }) => {
                 value={formData.vendorName}
                 onChange={handleChange}
                 placeholder="e.g. Sharaf DG / Dell Direct"
-                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#151926] border border-slate-200 dark:border-[#1E2235] text-slate-900 dark:text-white focus:outline-hidden focus:border-emerald-500"
+                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] text-slate-900 dark:text-white focus:outline-hidden focus:border-[#00C471]"
               />
             </div>
 
@@ -289,7 +291,7 @@ export const AssetFormModal = ({ isOpen, onClose, asset = null }) => {
                 onChange={handleChange}
                 placeholder="e.g. 250000"
                 min="0"
-                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#151926] border border-slate-200 dark:border-[#1E2235] text-slate-900 dark:text-white focus:outline-hidden focus:border-emerald-500"
+                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] text-slate-900 dark:text-white font-mono tabular-nums focus:outline-hidden focus:border-[#00C471]"
               />
             </div>
 
@@ -302,7 +304,7 @@ export const AssetFormModal = ({ isOpen, onClose, asset = null }) => {
                 name="purchaseDate"
                 value={formData.purchaseDate}
                 onChange={handleChange}
-                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#151926] border border-slate-200 dark:border-[#1E2235] text-slate-900 dark:text-white focus:outline-hidden focus:border-emerald-500"
+                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] text-slate-900 dark:text-white font-mono tabular-nums focus:outline-hidden focus:border-[#00C471]"
               />
             </div>
 
@@ -315,7 +317,7 @@ export const AssetFormModal = ({ isOpen, onClose, asset = null }) => {
                 name="warrantyExpiresAt"
                 value={formData.warrantyExpiresAt}
                 onChange={handleChange}
-                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#151926] border border-slate-200 dark:border-[#1E2235] text-slate-900 dark:text-white focus:outline-hidden focus:border-emerald-500"
+                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] text-slate-900 dark:text-white font-mono tabular-nums focus:outline-hidden focus:border-[#00C471]"
               />
             </div>
 
@@ -328,13 +330,13 @@ export const AssetFormModal = ({ isOpen, onClose, asset = null }) => {
                 name="licenseExpiresAt"
                 value={formData.licenseExpiresAt}
                 onChange={handleChange}
-                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#151926] border border-slate-200 dark:border-[#1E2235] text-slate-900 dark:text-white focus:outline-hidden focus:border-emerald-500"
+                className="w-full px-3.5 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] text-slate-900 dark:text-white font-mono tabular-nums focus:outline-hidden focus:border-[#00C471]"
               />
             </div>
           </div>
 
           {/* Technical Specifications */}
-          <div className="pt-2 border-t border-slate-100 dark:border-[#1E2235]">
+          <div className="pt-2 border-t border-slate-100 dark:border-[#1A3125]">
             <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2">
               Hardware / Software Specs
             </h4>
@@ -347,7 +349,7 @@ export const AssetFormModal = ({ isOpen, onClose, asset = null }) => {
                   value={formData.processor}
                   onChange={handleChange}
                   placeholder="e.g. Core i7 13th Gen"
-                  className="w-full px-3 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-[#151926] border border-slate-200 dark:border-[#1E2235] text-slate-900 dark:text-white"
+                  className="w-full px-3 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] text-slate-900 dark:text-white focus:outline-hidden focus:border-[#00C471]"
                 />
               </div>
               <div>
@@ -359,7 +361,7 @@ export const AssetFormModal = ({ isOpen, onClose, asset = null }) => {
                   onChange={handleChange}
                   placeholder="e.g. 32"
                   min="1"
-                  className="w-full px-3 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-[#151926] border border-slate-200 dark:border-[#1E2235] text-slate-900 dark:text-white"
+                  className="w-full px-3 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] text-slate-900 dark:text-white font-mono tabular-nums focus:outline-hidden focus:border-[#00C471]"
                 />
               </div>
               <div>
@@ -371,7 +373,7 @@ export const AssetFormModal = ({ isOpen, onClose, asset = null }) => {
                   onChange={handleChange}
                   placeholder="e.g. 512"
                   min="1"
-                  className="w-full px-3 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-[#151926] border border-slate-200 dark:border-[#1E2235] text-slate-900 dark:text-white"
+                  className="w-full px-3 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] text-slate-900 dark:text-white font-mono tabular-nums focus:outline-hidden focus:border-[#00C471]"
                 />
               </div>
               <div>
@@ -382,7 +384,7 @@ export const AssetFormModal = ({ isOpen, onClose, asset = null }) => {
                   value={formData.os}
                   onChange={handleChange}
                   placeholder="e.g. Ubuntu 24.04 LTS"
-                  className="w-full px-3 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-[#151926] border border-slate-200 dark:border-[#1E2235] text-slate-900 dark:text-white"
+                  className="w-full px-3 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] text-slate-900 dark:text-white focus:outline-hidden focus:border-[#00C471]"
                 />
               </div>
               <div className="md:col-span-2">
@@ -393,26 +395,26 @@ export const AssetFormModal = ({ isOpen, onClose, asset = null }) => {
                   value={formData.licenseKey}
                   onChange={handleChange}
                   placeholder="XXXXX-XXXXX-XXXXX-XXXXX"
-                  className="w-full px-3 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-[#151926] border border-slate-200 dark:border-[#1E2235] text-slate-900 dark:text-white font-mono"
+                  className="w-full px-3 py-1.5 rounded-lg text-xs bg-slate-50 dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] text-slate-900 dark:text-white font-mono focus:outline-hidden focus:border-[#00C471]"
                 />
               </div>
             </div>
           </div>
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-[#1E2235]">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-[#1A3125]">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all"
+              className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162820] rounded-xl transition-all cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl transition-all flex items-center gap-1.5 shadow-xs"
+              className="px-5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer hover:shadow-emerald-500/20"
             >
               {isSubmitting ? 'Saving...' : isEditing ? 'Save Changes' : 'Register Asset'}
             </button>
@@ -424,4 +426,3 @@ export const AssetFormModal = ({ isOpen, onClose, asset = null }) => {
 };
 
 export default AssetFormModal;
-

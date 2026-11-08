@@ -42,7 +42,7 @@ export const getAssets = asyncHandler(async (req, res) => {
     success: true,
     statusCode: 200,
     data: result.assets,
-    meta: result.pagination,
+    meta: { ...result.pagination, stats: result.stats },
     message: 'Assets retrieved successfully.'
   });
 });
