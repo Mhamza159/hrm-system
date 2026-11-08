@@ -29,7 +29,8 @@ const earningItemSchema = new mongoose.Schema(
         'overtime',
         'bonus',
         'arrears',
-        'encashment'
+        'encashment',
+        'reimbursement'
       ],
       required: true
     },

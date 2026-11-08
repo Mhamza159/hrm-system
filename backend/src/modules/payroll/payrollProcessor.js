@@ -275,7 +275,9 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
       if (payableAmount > 0) {
         earnings.push({
           name: `Expense Reimbursement (${exp.claimNumber})`,
+          category: 'reimbursement',
           amount: payableAmount,
+          description: `Corporate expense reimbursement for claim ${exp.claimNumber}`,
           isTaxable: false
         });
         expenseReimbursementTotal += payableAmount;

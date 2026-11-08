@@ -109,7 +109,7 @@ export const adjustPayslipLineItemSchema = z.object({
     type: z.enum(['earning', 'deduction']),
     name: z.string().trim().min(2, 'Item name must be at least 2 characters'),
     category: z.enum([
-      'basic', 'house_rent', 'medical', 'conveyance', 'allowance', 'overtime', 'bonus', 'arrears', 'encashment',
+      'basic', 'house_rent', 'medical', 'conveyance', 'allowance', 'overtime', 'bonus', 'arrears', 'encashment', 'reimbursement',
       'tax', 'eobi', 'pessi', 'provident_fund', 'unpaid_leave', 'late_penalty', 'loan_installment', 'advance', 'manual'
     ]),
     amount: z.number().int('Amount must be integer paisa').min(0),
