@@ -206,7 +206,15 @@ export const baseApi = createApi({
     'PerformanceProgress',
     'Clients',
     'Projects',
-    'Timesheets'
+    'Timesheets',
+    'Requisitions',
+    'Requisition',
+    'Jobs',
+    'Job',
+    'Candidates',
+    'Candidate',
+    'Interviews',
+    'Interview'
   ],
   endpoints: () => ({})
 });

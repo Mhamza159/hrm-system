@@ -34,6 +34,7 @@ import {
   Award,
   Network,
   UserCheck,
+  UserPlus,
   User,
   FileCheck,
   Megaphone,
@@ -164,6 +165,16 @@ export function Sidebar({ isOpen = false, onClose }) {
     },
     {
       type: 'group',
+      name: 'Recruitment & ATS',
+      icon: UserPlus,
+      children: [
+        { name: 'Job Openings', path: '/recruitment/jobs', permission: 'recruitment.job.view' },
+        { name: 'Candidate Pipeline', path: '/recruitment/pipeline', permission: 'recruitment.candidate.view' },
+        { name: 'Internal Jobs & Referrals', path: '/jobs/internal', permission: 'recruitment.referral.submit' }
+      ]
+    },
+    {
+      type: 'group',
       name: 'Projects & Timesheets',
       icon: FolderKanban,
       children: [
@@ -225,7 +236,8 @@ export function Sidebar({ isOpen = false, onClose }) {
     'Loans & Advances': false,
     Expenses: false,
     Assets: false,
-    'Projects & Timesheets': false
+    'Projects & Timesheets': false,
+    'Recruitment & ATS': false
   });
 
   // Auto-expand group if the active route is within its children

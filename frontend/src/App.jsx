@@ -80,6 +80,11 @@ import { TimesheetApprovalsPage } from './features/projects/pages/TimesheetAppro
 import { TimesheetCompliancePage } from './features/projects/pages/TimesheetCompliancePage.jsx';
 import { UtilizationReportPage } from './features/projects/pages/UtilizationReportPage.jsx';
 import { ProjectProfitabilityPage } from './features/projects/pages/ProjectProfitabilityPage.jsx';
+import { JobsPage } from './features/recruitment/pages/JobsPage.jsx';
+import { CandidatePipelinePage } from './features/recruitment/pages/CandidatePipelinePage.jsx';
+import { CareersPublicPage } from './features/recruitment/pages/CareersPublicPage.jsx';
+import { ApplyPage } from './features/recruitment/pages/ApplyPage.jsx';
+import { InternalJobsPage } from './features/recruitment/pages/InternalJobsPage.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
 import { useRefreshTokenMutation } from './features/auth/authApi.js';
@@ -124,6 +129,8 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/verify-otp" element={<OtpPage />} />
+        <Route path="/careers" element={<CareersPublicPage />} />
+        <Route path="/careers/:slug/apply" element={<ApplyPage />} />
 
         {/* Change Password (Accessible when authenticated, mandatory when mustChangePassword === true) */}
         <Route
@@ -758,6 +765,32 @@ export default function App() {
             element={
               <ProtectedRoute requiredPermission="report.utilization" managerOnly={true}>
                 <UtilizationReportPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Recruitment & AI Resume Screening (Module M15) */}
+          <Route
+            path="recruitment/jobs"
+            element={
+              <ProtectedRoute requiredPermission="recruitment.job.view">
+                <JobsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="recruitment/pipeline"
+            element={
+              <ProtectedRoute requiredPermission="recruitment.candidate.view">
+                <CandidatePipelinePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="jobs/internal"
+            element={
+              <ProtectedRoute requiredPermission="recruitment.referral.submit">
+                <InternalJobsPage />
               </ProtectedRoute>
             }
           />

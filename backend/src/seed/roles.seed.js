@@ -113,7 +113,19 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'project.manage', subject: 'Project', scope: 'all' },
       { action: 'timesheet.log', subject: 'Project', scope: 'own' },
       { action: 'timesheet.compliance', subject: 'Project', scope: 'all' },
-      { action: 'report.utilization', subject: 'Project', scope: 'all' }
+      { action: 'report.utilization', subject: 'Project', scope: 'all' },
+      { action: 'recruitment.requisition.view', subject: 'Recruitment', scope: 'all' },
+      { action: 'recruitment.job.view', subject: 'Recruitment', scope: 'all' },
+      { action: 'recruitment.job.manage', subject: 'Recruitment', scope: 'all' },
+      { action: 'recruitment.candidate.view', subject: 'Recruitment', scope: 'all' },
+      { action: 'recruitment.candidate.screen', subject: 'Recruitment', scope: 'all' },
+      { action: 'recruitment.candidate.stage', subject: 'Recruitment', scope: 'all' },
+      { action: 'recruitment.interview.manage', subject: 'Recruitment', scope: 'all' },
+      { action: 'recruitment.interview.evaluate', subject: 'Recruitment', scope: 'all' },
+      { action: 'recruitment.offer.manage', subject: 'Recruitment', scope: 'all' },
+      { action: 'recruitment.offer.view', subject: 'Recruitment', scope: 'all' },
+      { action: 'recruitment.hire', subject: 'Recruitment', scope: 'all' },
+      { action: 'recruitment.referral.submit', subject: 'Recruitment', scope: 'own' }
     ]
   },
   {
@@ -169,7 +181,15 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'project.manage', subject: 'Project', scope: 'department' },
       { action: 'timesheet.log', subject: 'Project', scope: 'own' },
       { action: 'timesheet.approve', subject: 'Project', scope: 'team' },
-      { action: 'report.utilization', subject: 'Project', scope: 'department' }
+      { action: 'report.utilization', subject: 'Project', scope: 'department' },
+      { action: 'recruitment.requisition.create', subject: 'Recruitment', scope: 'department' },
+      { action: 'recruitment.requisition.view', subject: 'Recruitment', scope: 'department' },
+      { action: 'recruitment.job.view', subject: 'Recruitment', scope: 'all' },
+      { action: 'recruitment.candidate.view', subject: 'Recruitment', scope: 'department' },
+      { action: 'recruitment.candidate.screen', subject: 'Recruitment', scope: 'department' },
+      { action: 'recruitment.interview.manage', subject: 'Recruitment', scope: 'department' },
+      { action: 'recruitment.interview.evaluate', subject: 'Recruitment', scope: 'own' },
+      { action: 'recruitment.referral.submit', subject: 'Recruitment', scope: 'own' }
     ]
   },
   {
@@ -208,7 +228,9 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'performance.peer.manage', subject: 'Performance', scope: 'own' },
       { action: 'project.view', subject: 'Project', scope: 'own' },
       { action: 'timesheet.log', subject: 'Project', scope: 'own' },
-      { action: 'report.utilization', subject: 'Project', scope: 'own' }
+      { action: 'report.utilization', subject: 'Project', scope: 'own' },
+      { action: 'recruitment.job.view', subject: 'Recruitment', scope: 'all' },
+      { action: 'recruitment.referral.submit', subject: 'Recruitment', scope: 'own' }
     ]
   }
 ];

@@ -792,6 +792,112 @@ export const PERMISSIONS_CATALOGUE = [
         defaultScope: 'all'
       }
     ]
+  },
+  {
+    module: 'recruitment',
+    label: 'Recruitment & AI Screening',
+    subject: 'Recruitment',
+    description: 'Job requisitions, public openings, candidate applications, AI resume screening, Kanban stages, interviews, offer letters, and hiring.',
+    actions: [
+      {
+        action: 'recruitment.requisition.create',
+        label: 'Create Job Requisitions',
+        description: 'Raise headcount requests for approval with salary bands and criteria.',
+        allowedScopes: ['team', 'department', 'all'],
+        defaultScope: 'department'
+      },
+      {
+        action: 'recruitment.requisition.view',
+        label: 'View Job Requisitions',
+        description: 'Inspect pending and decided job requisitions.',
+        allowedScopes: ['own', 'team', 'department', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'recruitment.requisition.decide',
+        label: 'Approve or Reject Requisitions',
+        description: 'Executive decision-making on headcount requests and salary authorizations.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'recruitment.job.view',
+        label: 'View Job Openings',
+        description: 'Browse internal and published job positions.',
+        allowedScopes: ['own', 'department', 'all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'recruitment.job.manage',
+        label: 'Manage Job Openings',
+        description: 'Create, edit, publish, close, or archive job postings.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'recruitment.candidate.view',
+        label: 'View Candidates & Resumes',
+        description: 'Inspect candidate profiles, CV attachments, and stage timelines.',
+        allowedScopes: ['team', 'department', 'all'],
+        defaultScope: 'department'
+      },
+      {
+        action: 'recruitment.candidate.screen',
+        label: 'Run AI Candidate Screening',
+        description: 'Trigger AI resume parsing, score calculation, and fit reasoning.',
+        allowedScopes: ['department', 'all'],
+        defaultScope: 'department'
+      },
+      {
+        action: 'recruitment.candidate.stage',
+        label: 'Update Candidate Stage',
+        description: 'Transition candidates across Kanban stages or reject applications.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'recruitment.interview.manage',
+        label: 'Schedule & Manage Interviews',
+        description: 'Book interview rounds, assign panel members, and manage meeting links.',
+        allowedScopes: ['team', 'department', 'all'],
+        defaultScope: 'department'
+      },
+      {
+        action: 'recruitment.interview.evaluate',
+        label: 'Submit Interview Scorecards',
+        description: 'Submit technical, communication, cultural ratings and hiring recommendations.',
+        allowedScopes: ['own', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'recruitment.offer.manage',
+        label: 'Generate & Issue Offer Letters',
+        description: 'Configure compensation packages and issue formal PDF offer letters.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'recruitment.offer.view',
+        label: 'View & Download Offer Letters',
+        description: 'Inspect issued employment offers and download signed PDFs.',
+        allowedScopes: ['team', 'all'],
+        defaultScope: 'team'
+      },
+      {
+        action: 'recruitment.hire',
+        label: 'Execute One-Click Candidate Hire',
+        description: 'Convert candidate into active Employee (M3) and initiate onboarding (M18).',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'recruitment.referral.submit',
+        label: 'Submit Employee Referrals',
+        description: 'Submit peer candidate applications and track internal referral status.',
+        allowedScopes: ['own'],
+        defaultScope: 'own'
+      }
+    ]
   }
 ];
 
