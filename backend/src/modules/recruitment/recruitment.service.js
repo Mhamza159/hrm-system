@@ -48,6 +48,23 @@ export const generateUniqueJobSlug = async (title = 'job-opening') => {
   return slug;
 };
 
+/**
+ * Resolves the actor's associated departmentId from their user or employee profile.
+ */
+export const resolveActorDepartmentId = async (actor) => {
+  if (!actor) return null;
+  if (actor.departmentId) return actor.departmentId;
+  if (actor.employeeId) {
+    const emp = await Employee.findById(actor.employeeId).select('departmentId').lean();
+    return emp?.departmentId || null;
+  }
+  if (actor._id) {
+    const emp = await Employee.findOne({ userId: actor._id, isDeleted: false }).select('departmentId').lean();
+    return emp?.departmentId || null;
+  }
+  return null;
+};
+
 // =========================================================================
 // 15.1: JOB REQUISITIONS
 // =========================================================================
@@ -110,25 +127,28 @@ export const createRequisition = async (payload, actor) => {
 export const getRequisitions = async (query = {}, actor, permissionScope = 'all') => {
   const filter = { isDeleted: false };
 
-  if (query.status) {
+  if (typeof query.status === 'string' && query.status) {
     filter.status = query.status;
   }
 
   if (permissionScope === 'own') {
     filter.requestedBy = actor.employeeId || actor._id;
   } else if (permissionScope === 'department' || permissionScope === 'team') {
-    if (actor.departmentId) {
-      filter.departmentId = actor.departmentId;
+    const actorDept = await resolveActorDepartmentId(actor);
+    if (actorDept) {
+      filter.departmentId = actorDept;
+    } else {
+      filter.departmentId = new mongoose.Types.ObjectId();
     }
   }
 
-  if (query.departmentId) {
+  if (typeof query.departmentId === 'string' && mongoose.Types.ObjectId.isValid(query.departmentId)) {
     filter.departmentId = query.departmentId;
   }
 
   return await paginate(Requisition, filter, {
-    page: query.page || 1,
-    limit: query.limit || 20,
+    page: Math.max(1, parseInt(query.page, 10) || 1),
+    limit: Math.min(100, Math.max(1, parseInt(query.limit, 10) || 20)),
     sort: { createdAt: -1 },
     populate: [
       { path: 'departmentId', select: 'name code' },
@@ -245,23 +265,28 @@ export const createJob = async (payload, actor) => {
 export const getJobs = async (query = {}, actor, permissionScope = 'all') => {
   const filter = { isDeleted: false };
 
-  if (query.status) {
+  if (typeof query.status === 'string' && query.status) {
     filter.status = query.status;
   }
 
-  if (permissionScope === 'department' && actor.departmentId) {
-    filter.departmentId = actor.departmentId;
+  if (permissionScope === 'department') {
+    const actorDept = await resolveActorDepartmentId(actor);
+    if (actorDept) {
+      filter.departmentId = actorDept;
+    } else {
+      filter.departmentId = new mongoose.Types.ObjectId();
+    }
   }
 
-  if (query.departmentId) {
+  if (typeof query.departmentId === 'string' && mongoose.Types.ObjectId.isValid(query.departmentId)) {
     filter.departmentId = query.departmentId;
   }
 
   return await paginate(Job, filter, {
-    page: query.page || 1,
-    limit: query.limit || 20,
+    page: Math.max(1, parseInt(query.page, 10) || 1),
+    limit: Math.min(100, Math.max(1, parseInt(query.limit, 10) || 20)),
     sort: { createdAt: -1 },
-    search: query.search,
+    search: typeof query.search === 'string' ? query.search : '',
     searchFields: ['title', 'description', 'location'],
     populate: [
       { path: 'departmentId', select: 'name code' },
@@ -362,14 +387,25 @@ export const applyForJob = async (jobId, candidateData, file) => {
   let cvUrl = candidateData.cvUrl || '';
   let rawCvText = candidateData.cvText || '';
 
-  if (file) {
+  if (file && file.buffer) {
+    const rawExt = (file.originalname ? file.originalname.slice(file.originalname.lastIndexOf('.')) : '').toLowerCase();
+    const safeExts = ['.pdf', '.doc', '.docx', '.txt'];
+    const safeExt = safeExts.includes(rawExt) ? rawExt : '.pdf';
+
+    // Magic bytes check for PDF
+    if (safeExt === '.pdf') {
+      const header = file.buffer.toString('utf8', 0, 5);
+      if (!header.startsWith('%PDF')) {
+        throw new ApiError(400, 'Invalid file content: Provided file does not contain a valid PDF document header.');
+      }
+    }
+
     const uploadDir = path.resolve(process.cwd(), 'uploads', 'resumes');
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    const ext = path.extname(file.originalname) || '.pdf';
-    const filename = `cv_${Date.now()}_${crypto.randomBytes(4).toString('hex')}${ext}`;
+    const filename = `cv_${Date.now()}_${crypto.randomBytes(4).toString('hex')}${safeExt}`;
     const filePath = path.join(uploadDir, filename);
 
     fs.writeFileSync(filePath, file.buffer);
@@ -381,6 +417,11 @@ export const applyForJob = async (jobId, candidateData, file) => {
     } catch {
       rawCvText = `${candidateData.name} CV Document`;
     }
+  }
+
+  // Cap CV text length to prevent prompt bloat / memory DoS
+  if (rawCvText.length > 15000) {
+    rawCvText = rawCvText.slice(0, 15000);
   }
 
   // Fallback cvText if none extracted
@@ -455,22 +496,30 @@ export const applyForJob = async (jobId, candidateData, file) => {
 export const getCandidates = async (query = {}, actor, permissionScope = 'all') => {
   const filter = { isDeleted: false };
 
-  if (query.jobId) filter.jobId = query.jobId;
-  if (query.stage) filter.stage = query.stage;
+  if (typeof query.jobId === 'string' && mongoose.Types.ObjectId.isValid(query.jobId)) {
+    filter.jobId = query.jobId;
+  }
+  if (typeof query.stage === 'string' && query.stage) {
+    filter.stage = query.stage;
+  }
 
-  if (permissionScope === 'department' && actor.departmentId) {
-    // Only return candidates for jobs in actor's department
-    const deptJobs = await Job.find({ departmentId: actor.departmentId, isDeleted: false }).select('_id');
-    filter.jobId = { $in: deptJobs.map((j) => j._id) };
+  if (permissionScope === 'department') {
+    const actorDept = await resolveActorDepartmentId(actor);
+    if (actorDept) {
+      const deptJobs = await Job.find({ departmentId: actorDept, isDeleted: false }).select('_id');
+      filter.jobId = { $in: deptJobs.map((j) => j._id) };
+    } else {
+      filter.jobId = new mongoose.Types.ObjectId();
+    }
   }
 
   const sort = query.sortByScore ? { aiScore: -1, createdAt: -1 } : { createdAt: -1 };
 
   return await paginate(Candidate, filter, {
-    page: query.page || 1,
-    limit: query.limit || 50,
+    page: Math.max(1, parseInt(query.page, 10) || 1),
+    limit: Math.min(100, Math.max(1, parseInt(query.limit, 10) || 50)),
     sort,
-    search: query.search,
+    search: typeof query.search === 'string' ? query.search : '',
     searchFields: ['name', 'email', 'phone'],
     populate: [
       {
@@ -483,7 +532,7 @@ export const getCandidates = async (query = {}, actor, permissionScope = 'all') 
   });
 };
 
-export const getCandidateById = async (id) => {
+export const getCandidateById = async (id, actor = null, permissionScope = 'all') => {
   const candidate = await Candidate.findOne({ _id: id, isDeleted: false })
     .populate({
       path: 'jobId',
@@ -498,6 +547,20 @@ export const getCandidateById = async (id) => {
 
   if (!candidate) {
     throw new ApiError(404, 'Candidate not found.');
+  }
+
+  // Department scope verification
+  if (permissionScope === 'department' && actor) {
+    const actorDept = await resolveActorDepartmentId(actor);
+    const candDeptId = candidate.jobId?.departmentId?._id || candidate.jobId?.departmentId;
+    if (actorDept && candDeptId && String(actorDept) !== String(candDeptId)) {
+      throw new ApiError(403, 'Access denied. You can only view candidates within your assigned department.');
+    }
+  } else if (permissionScope === 'own' && actor) {
+    const actorEmpId = actor.employeeId;
+    if (!actorEmpId || String(candidate.referredBy?._id || candidate.referredBy) !== String(actorEmpId)) {
+      throw new ApiError(403, 'Access denied. You can only view candidates you referred.');
+    }
   }
 
   // Fetch candidate's interviews
@@ -759,22 +822,35 @@ export const issueOfferLetter = async (candidateId, offerPayload, actor) => {
 // 15.11: ONE-CLICK HIRE TO M3 EMPLOYEE & M18 ONBOARDING
 // =========================================================================
 
-export const hireCandidate = async (candidateId, payload, actor) => {
-  const candidate = await Candidate.findOne({ _id: candidateId, isDeleted: false }).populate('jobId');
-  if (!candidate) {
-    throw new ApiError(404, 'Candidate not found.');
-  }
+export const hireCandidate = async (candidateId, payload = {}, actor) => {
+  // 1. Atomically claim candidate in 'Offer' stage to prevent double-click / concurrent race conditions
+  const candidate = await Candidate.findOneAndUpdate(
+    { _id: candidateId, stage: 'Offer', isDeleted: false },
+    { $set: { stage: 'Hiring_In_Progress' } },
+    { new: true }
+  ).populate('jobId');
 
-  if (candidate.stage === 'Hired') {
-    throw new ApiError(400, 'Candidate is already hired.');
+  if (!candidate) {
+    const existing = await Candidate.findById(candidateId).lean();
+    if (!existing || existing.isDeleted) {
+      throw new ApiError(404, 'Candidate not found.');
+    }
+    if (existing.stage === 'Hired') {
+      throw new ApiError(400, 'Candidate is already hired.');
+    }
+    if (existing.stage === 'Hiring_In_Progress') {
+      throw new ApiError(409, 'Candidate hire conversion is already in progress. Please wait.');
+    }
+    throw new ApiError(400, `Cannot hire candidate in stage '${existing.stage}'. Candidate must be in 'Offer' stage.`);
   }
 
   const job = candidate.jobId;
   if (!job) {
+    await Candidate.updateOne({ _id: candidateId }, { $set: { stage: 'Offer' } });
     throw new ApiError(400, 'Candidate must be linked to a valid job opening.');
   }
 
-  // 1. Prepare Employee payload for Module M3 createEmployee
+  // 2. Prepare Employee payload for Module M3 createEmployee
   const salaryPaisa = payload.initialSalaryPaisa || candidate.offerDetails?.baseSalaryPaisa || job.minSalaryPaisa || 5000000;
   const joiningDate = payload.joiningDate || candidate.offerDetails?.joiningDate || new Date();
 
@@ -801,10 +877,17 @@ export const hireCandidate = async (candidateId, payload, actor) => {
     skills: candidate.parsedProfile?.parsedSkills || []
   };
 
-  // 2. Invoke M3 createEmployee (handles employeeCode, leaves, and M18 onboarding)
-  const newEmployee = await employeeService.createEmployee(newEmployeeData, actor);
+  let newEmployee;
+  try {
+    // 3. Invoke M3 createEmployee (handles employeeCode, leaves, and M18 onboarding)
+    newEmployee = await employeeService.createEmployee(newEmployeeData, actor);
+  } catch (err) {
+    // Revert atomic lock on failure
+    await Candidate.updateOne({ _id: candidateId }, { $set: { stage: 'Offer' } });
+    throw err;
+  }
 
-  // 3. Update Candidate record to Hired
+  // 4. Update Candidate record to Hired
   candidate.stage = 'Hired';
   candidate.hiredEmployeeId = newEmployee._id;
   candidate.stageHistory.push({

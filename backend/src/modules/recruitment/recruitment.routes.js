@@ -20,17 +20,24 @@ import * as v from './recruitment.validation.js';
 const router = Router();
 
 // Multer memory storage configuration for candidate CV documents (PDF, DOC, DOCX <= 5MB)
+const ALLOWED_MIMES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain'
+];
+
+const ALLOWED_EXTS = ['.pdf', '.doc', '.docx', '.txt'];
+
 const uploadResume = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
   fileFilter: (req, file, cb) => {
-    const allowedMimes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain'
-    ];
-    if (allowedMimes.includes(file.mimetype) || file.originalname.match(/\.(pdf|doc|docx|txt)$/i)) {
+    const ext = (file.originalname ? file.originalname.slice(file.originalname.lastIndexOf('.')) : '').toLowerCase();
+    const isMimeAllowed = ALLOWED_MIMES.includes(file.mimetype);
+    const isExtAllowed = ALLOWED_EXTS.includes(ext);
+
+    if (isMimeAllowed && isExtAllowed) {
       cb(null, true);
     } else {
       cb(new ApiError(400, 'Invalid file format. Only PDF, DOC, and DOCX resumes up to 5MB are accepted.'), false);
@@ -45,6 +52,18 @@ const publicApplyLimiter = rateLimit({
   message: {
     success: false,
     message: 'Too many job applications submitted from this IP address. Please try again after 15 minutes.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Rate limiter for AI screening triggers to prevent API/resource exhaustion
+const screeningLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 30,
+  message: {
+    success: false,
+    message: 'Too many candidate screening requests. Please wait a few minutes before trying again.'
   },
   standardHeaders: true,
   legacyHeaders: false
@@ -76,9 +95,9 @@ router.use(authenticate);
 router.get('/jobs/internal', recruitmentController.getInternalJobs);
 router.post(
   '/referrals',
+  checkPermission('recruitment.referral.submit', 'own'),
   uploadResume.single('cv'),
   validate(v.submitReferralSchema),
-  checkPermission('recruitment.referral.submit', 'own'),
   recruitmentController.submitReferral
 );
 
@@ -154,6 +173,7 @@ router.patch(
 // 15.6: AI Screening
 router.post(
   '/candidates/:id/screen',
+  screeningLimiter,
   checkPermission('recruitment.candidate.screen', 'department'),
   recruitmentController.screenCandidate
 );

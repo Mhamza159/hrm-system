@@ -8,6 +8,7 @@
  */
 
 import { asyncHandler } from '../../utils/asyncHandler.js';
+import { ApiError } from '../../utils/ApiError.js';
 import * as recruitmentService from './recruitment.service.js';
 import { streamOfferLetterPdf } from '../../services/offerPdf.service.js';
 
@@ -116,7 +117,7 @@ export const getCandidates = asyncHandler(async (req, res) => {
 });
 
 export const getCandidateById = asyncHandler(async (req, res) => {
-  const result = await recruitmentService.getCandidateById(req.params.id);
+  const result = await recruitmentService.getCandidateById(req.params.id, req.user, req.permissionScope);
   res.status(200).json({
     success: true,
     data: result
@@ -182,7 +183,10 @@ export const issueOfferLetter = asyncHandler(async (req, res) => {
 });
 
 export const downloadOfferLetterPdf = asyncHandler(async (req, res) => {
-  const { candidate } = await recruitmentService.getCandidateById(req.params.id);
+  const { candidate } = await recruitmentService.getCandidateById(req.params.id, req.user, req.permissionScope);
+  if (!candidate?.offerDetails || candidate.offerDetails.status !== 'Issued') {
+    throw new ApiError(404, 'No offer letter has been issued for this candidate yet.');
+  }
   streamOfferLetterPdf(res, {
     candidate,
     job: candidate.jobId,
