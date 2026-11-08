@@ -30,15 +30,16 @@ import {
   ShieldAlert,
   Sparkles,
   FileText,
-  CreditCard
+  CreditCard,
+  Receipt
 } from 'lucide-react';
 import { useGetPrePayrollAuditQuery, useGeneratePayrollRunMutation } from '../payrollApi.js';
 import { toast } from 'sonner';
 
 export function PrePayrollAuditModal({ isOpen, onClose, onSuccess }) {
   const now = new Date();
-  const [selectedMonth, setSelectedMonth] = useState(7); // Default to July 2026 for review
-  const [selectedYear, setSelectedYear] = useState(2026);
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [step, setStep] = useState(1); // 1 = Audit Table, 2 = Confirmation
   const [expandedRow, setExpandedRow] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -389,6 +390,11 @@ export function PrePayrollAuditModal({ isOpen, onClose, onSuccess }) {
                                     </h4>
                                     <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
                                       Base Gross: PKR {(emp.baseGrossPaisa / 100).toLocaleString()} • EOBI: -PKR {(emp.eobiPaisa / 100).toLocaleString()} • Tax: -PKR {(emp.taxWithheldPaisa / 100).toLocaleString()}
+                                      {emp.expenseReimbursementPaisa > 0 && (
+                                        <span className="text-emerald-600 dark:text-emerald-400 font-bold ml-1">
+                                          • Expenses: +PKR {(emp.expenseReimbursementPaisa / 100).toLocaleString()}
+                                        </span>
+                                      )}
                                     </span>
                                   </div>
 
@@ -522,6 +528,31 @@ export function PrePayrollAuditModal({ isOpen, onClose, onSuccess }) {
                                         </div>
                                       </div>
                                     )}
+
+                                    {/* 5. Approved Expenses Queued for Payroll (If Any) */}
+                                    {emp.expenseReimbursementPaisa > 0 && (
+                                      <div className="p-3 rounded-xl bg-emerald-500/10 dark:bg-[#162820] border border-emerald-500/20 dark:border-emerald-800/40 space-y-2 md:col-span-3">
+                                        <div className="flex items-center justify-between text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                                          <span className="flex items-center gap-1.5">
+                                            <Receipt className="w-3.5 h-3.5 text-emerald-500" />
+                                            Approved Expenses Queued for Payroll (+PKR {(emp.expenseReimbursementPaisa / 100).toLocaleString()})
+                                          </span>
+                                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Attached to Salary (Non-taxable)</span>
+                                        </div>
+                                        <div className="space-y-1">
+                                          {(emp.expensesBreakdown || emp.auditBreakdown?.expenses || []).map((expItem, idx) => (
+                                            <div key={idx} className="flex items-center justify-between text-[11px] p-1.5 rounded bg-white dark:bg-[#111D17] border border-emerald-500/10">
+                                              <span className="text-slate-700 dark:text-slate-300 font-medium">
+                                                {expItem.category} <span className="font-mono text-slate-400 dark:text-slate-500">({expItem.claimNumber})</span>
+                                              </span>
+                                              <span className="text-emerald-600 font-mono font-bold">
+                                                +PKR {(expItem.amountPaisa / 100).toLocaleString()}
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               </td>
@@ -568,6 +599,14 @@ export function PrePayrollAuditModal({ isOpen, onClose, onSuccess }) {
                   +PKR {((projectedTotals.totalOvertimePaisa || 0) / 100).toLocaleString()}
                 </span>
               </div>
+              {projectedTotals.totalExpensesPaisa > 0 && (
+                <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
+                  <span>Total Expense Claims Attached:</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                    +PKR {((projectedTotals.totalExpensesPaisa || 0) / 100).toLocaleString()}
+                  </span>
+                </div>
+              )}
               <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
                 <span>Total Deductions (Lates, Unpaid, Tax, EOBI):</span>
                 <span className="font-semibold text-rose-600 dark:text-rose-400">

@@ -1278,6 +1278,7 @@ export class PayrollService {
 
     let totalGrossPaisa = 0;
     let totalOvertimePaisa = 0;
+    let totalExpensesPaisa = 0;
     let totalDeductionsPaisa = 0;
     let totalNetPaisa = 0;
 
@@ -1437,13 +1438,35 @@ export class PayrollService {
         }
       }
 
+      // C3. Query approved expense claims queued for payroll
+      const { Expense } = await import('../../models/expense.model.js');
+      const approvedExpenses = await Expense.find({
+        employeeId: emp._id,
+        status: 'approved',
+        'reimbursement.method': 'payroll'
+      }).populate('categoryId');
+
+      let expenseReimbursementPaisa = 0;
+      const expensesTimeline = [];
+      for (const exp of approvedExpenses) {
+        const payable = exp.approvedAmount || exp.amount;
+        if (payable > 0) {
+          expenseReimbursementPaisa += payable;
+          expensesTimeline.push({
+            claimNumber: exp.claimNumber,
+            category: exp.categoryId?.name || 'General Expense',
+            amountPaisa: payable
+          });
+        }
+      }
+
       // D. Projected Gross & Tax/Statutory Calculations
-      const projectedGrossPaisa = baseGross + overtimePayPaisa + encashmentPayPaisa;
-      const taxableGross = Math.max(0, projectedGrossPaisa - unpaidLeavePaisa);
+      // Note: non-taxable expense reimbursements are excluded from taxable base
+      const taxableMonthlyGross = Math.max(0, (baseGross + overtimePayPaisa + encashmentPayPaisa) - unpaidLeavePaisa);
 
       let taxWithheldPaisa = 0;
       try {
-        const taxResult = await calculateAnnualIncomeTax(taxableGross);
+        const taxResult = await calculateAnnualIncomeTax(taxableMonthlyGross);
         taxWithheldPaisa = taxResult.monthlyTaxPaisa || 0;
       } catch {
         taxWithheldPaisa = 0;
@@ -1455,7 +1478,7 @@ export class PayrollService {
       try {
         const statutory = await calculateStatutoryContributions({
           basicSalaryPaisa: basicSalary,
-          grossSalaryPaisa: projectedGrossPaisa,
+          grossSalaryPaisa: baseGross + overtimePayPaisa + encashmentPayPaisa,
           eobiEnabled: structure.eobiEnabled,
           pessiEnabled: structure.pessiEnabled,
           pfEnabled: structure.providentFundEnabled,
@@ -1467,11 +1490,13 @@ export class PayrollService {
         // default statutory safe fallback
       }
 
+      const projectedGrossPaisa = baseGross + overtimePayPaisa + encashmentPayPaisa + expenseReimbursementPaisa;
       const projectedDeductionsPaisa = unpaidLeavePaisa + latePenaltyPaisa + taxWithheldPaisa + eobiEmployeePaisa + pfEmployeePaisa + loanDeductionPaisa;
       const projectedNetPaisa = Math.max(0, projectedGrossPaisa - projectedDeductionsPaisa);
 
       totalGrossPaisa += projectedGrossPaisa;
       totalOvertimePaisa += overtimePayPaisa;
+      totalExpensesPaisa += expenseReimbursementPaisa;
       totalDeductionsPaisa += projectedDeductionsPaisa;
       totalNetPaisa += projectedNetPaisa;
 
@@ -1496,6 +1521,8 @@ export class PayrollService {
         encashmentPayPaisa,
         loanDeductionPaisa,
         loanRecoveries,
+        expenseReimbursementPaisa,
+        expensesBreakdown: expensesTimeline,
         taxWithheldPaisa,
         eobiPaisa: eobiEmployeePaisa,
         providentFundPaisa: pfEmployeePaisa,
@@ -1509,7 +1536,8 @@ export class PayrollService {
           approvedOvertime: overtimeTimeline,
           absences: absencesTimeline,
           encashments: encashmentsTimeline,
-          loans: loanRecoveries
+          loans: loanRecoveries,
+          expenses: expensesTimeline
         }
       });
     }
@@ -1523,6 +1551,7 @@ export class PayrollService {
       projectedTotals: {
         totalGrossPaisa,
         totalOvertimePaisa,
+        totalExpensesPaisa,
         totalDeductionsPaisa,
         totalNetPaisa
       },
