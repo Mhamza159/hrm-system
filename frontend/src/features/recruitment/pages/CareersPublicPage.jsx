@@ -23,7 +23,6 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { useGetPublicJobsQuery } from '../recruitmentApi.js';
-import { useGetDepartmentsQuery } from '../../departments/departmentsApi.js';
 
 export const CareersPublicPage = () => {
   const navigate = useNavigate();
@@ -37,10 +36,16 @@ export const CareersPublicPage = () => {
     departmentId: selectedDept,
     employmentType: selectedType
   });
-  const { data: deptRes } = useGetDepartmentsQuery({ limit: 100 });
 
   const jobs = jobsRes?.data?.items || [];
-  const departments = deptRes?.data?.items || deptRes?.data || [];
+  // Derive departments from public jobs to avoid unauthenticated 401 on /api/v1/departments
+  const departments = Array.from(
+    new Map(
+      jobs
+        .filter((j) => j.departmentId && (j.departmentId._id || j.departmentId.name))
+        .map((j) => [j.departmentId._id || j.departmentId.name, j.departmentId])
+    ).values()
+  );
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans">
@@ -293,3 +298,4 @@ export const CareersPublicPage = () => {
 };
 
 export default CareersPublicPage;
+

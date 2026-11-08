@@ -254,7 +254,7 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
           )}
 
           {/* Technical Test Status Banner */}
-          {candidate?.technicalTest?.status !== 'Not_Sent' && (
+          {Boolean(candidate?.technicalTest?.status && candidate?.technicalTest?.status !== 'Not_Sent') && (
             <div className="p-3.5 rounded-xl border border-blue-200 dark:border-blue-900/40 bg-blue-50/50 dark:bg-blue-950/20 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
@@ -264,9 +264,11 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
                   {candidate.technicalTest?.status}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-400">
-                Link: <a href={candidate.technicalTest?.testUrl} target="_blank" rel="noreferrer" className="text-blue-500 underline">{candidate.technicalTest?.testUrl}</a>
-              </p>
+              {candidate.technicalTest?.testUrl && (
+                <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                  Link: <a href={candidate.technicalTest.testUrl} target="_blank" rel="noreferrer" className="text-blue-500 underline">{candidate.technicalTest.testUrl}</a>
+                </p>
+              )}
             </div>
           )}
 
@@ -278,7 +280,7 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
                   <CheckCircle2 className="w-3.5 h-3.5" /> Formal Offer Issued
                 </span>
                 <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-0.5">
-                  Base Salary: PKR {((candidate.offerDetails.baseSalaryPaisa || 0) / 100).toLocaleString('en-PK')} • Joining: {new Date(candidate.offerDetails.joiningDate).toLocaleDateString('en-PK')}
+                  Base Salary: PKR {((candidate.offerDetails?.baseSalaryPaisa || 0) / 100).toLocaleString('en-PK')} • Joining: {candidate.offerDetails?.joiningDate ? new Date(candidate.offerDetails.joiningDate).toLocaleDateString('en-PK') : 'TBD'}
                 </p>
               </div>
 
@@ -523,3 +525,4 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
 };
 
 export default CandidateDetailModal;
+

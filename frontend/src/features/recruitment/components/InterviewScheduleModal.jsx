@@ -231,3 +231,4 @@ export const InterviewScheduleModal = ({ isOpen, onClose, candidate }) => {
     </div>
   );
 };
+

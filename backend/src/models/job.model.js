@@ -113,3 +113,4 @@ jobSchema.index({ status: 1, closingDate: 1 });
 
 export const Job = mongoose.model('Job', jobSchema);
 export default Job;
+

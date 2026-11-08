@@ -67,6 +67,13 @@ const authSlice = createSlice({
     },
 
     /**
+     * Mark initial authentication probe settled without clearing global store
+     */
+    setInitialized: (state) => {
+      state.isInitialized = true;
+    },
+
+    /**
      * Invalidate all client-side authentication credentials
      */
     logout: (state) => {
@@ -79,7 +86,7 @@ const authSlice = createSlice({
   }
 });
 
-export const { setCredentials, setAccessToken, updateUser, expireSession, logout } = authSlice.actions;
+export const { setCredentials, setAccessToken, updateUser, expireSession, setInitialized, logout } = authSlice.actions;
 
 // Selectors
 export const selectCurrentUser = (state) => state.auth.user;

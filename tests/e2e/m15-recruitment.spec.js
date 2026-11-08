@@ -86,3 +86,4 @@ test.describe('Module M15 — Recruitment & AI Screening E2E (All 4 Roles + Publ
     await expect(page.getByRole('button', { name: /My Referrals/i })).toBeVisible();
   });
 });
+

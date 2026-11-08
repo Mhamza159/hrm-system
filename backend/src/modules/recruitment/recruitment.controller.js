@@ -218,3 +218,4 @@ export const submitReferral = asyncHandler(async (req, res) => {
     message: 'Candidate referral submitted successfully.'
   });
 });
+

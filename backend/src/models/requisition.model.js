@@ -106,3 +106,4 @@ requisitionSchema.index({ requestedBy: 1, isDeleted: 1 });
 
 export const Requisition = mongoose.model('Requisition', requisitionSchema);
 export default Requisition;
+

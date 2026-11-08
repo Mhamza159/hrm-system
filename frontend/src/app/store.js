@@ -21,3 +21,5 @@ export const store = configureStore({
     getDefaultMiddleware().concat(baseApi.middleware)
 });
 
+
+if (typeof window !== undefined) { window.store = store; }

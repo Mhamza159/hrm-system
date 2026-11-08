@@ -176,3 +176,4 @@ candidateSchema.index({ aiScore: -1 });
 
 export const Candidate = mongoose.model('Candidate', candidateSchema);
 export default Candidate;
+

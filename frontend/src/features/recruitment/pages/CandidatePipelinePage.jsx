@@ -240,3 +240,4 @@ export const CandidatePipelinePage = () => {
 };
 
 export default CandidatePipelinePage;
+

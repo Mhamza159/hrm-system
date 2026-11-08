@@ -88,7 +88,7 @@ import { InternalJobsPage } from './features/recruitment/pages/InternalJobsPage.
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
 import { useRefreshTokenMutation } from './features/auth/authApi.js';
-import { setCredentials, logout } from './features/auth/authSlice.js';
+import { setCredentials, setInitialized, logout } from './features/auth/authSlice.js';
 import { useAuth } from './hooks/useAuth.js';
 
 export default function App() {
@@ -110,12 +110,12 @@ export default function App() {
               })
             );
           } else {
-            dispatch(logout());
+            dispatch(setInitialized());
           }
         })
         .catch(() => {
           // If no active refresh cookie or expired, finalize initialization in unauthenticated state
-          dispatch(logout());
+          dispatch(setInitialized());
         });
     }
   }, [isInitialized, triggerRefresh, dispatch]);

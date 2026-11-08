@@ -165,3 +165,4 @@ export const ScorecardModal = ({ isOpen, onClose, interview, candidateName }) =>
     </div>
   );
 };
+

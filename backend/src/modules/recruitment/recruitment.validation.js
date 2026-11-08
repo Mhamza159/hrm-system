@@ -192,3 +192,4 @@ export const submitReferralSchema = z.object({
     referralNotes: z.string().trim().min(5, 'Please provide notes on why you are referring this candidate')
   })
 });
+

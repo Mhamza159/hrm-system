@@ -131,3 +131,4 @@ export const AIScreeningBadge = ({ score, reason, strengths = [], missing = [] }
 };
 
 export default AIScreeningBadge;
+

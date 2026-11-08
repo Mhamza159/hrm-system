@@ -223,3 +223,4 @@ export const OfferLetterModal = ({ isOpen, onClose, candidate }) => {
     </div>
   );
 };
+

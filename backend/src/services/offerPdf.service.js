@@ -156,3 +156,4 @@ export const generateOfferLetterBuffer = async ({ candidate, job, offerDetails, 
     doc.end();
   });
 };
+
