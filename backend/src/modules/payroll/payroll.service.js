@@ -595,7 +595,42 @@ export class PayrollService {
                 disbursedBy: actor._id,
                 remarks: `Disbursed via Payroll ${yearMonth}`
               };
+              exp.approvalHistory.push({
+                stage: 'payroll_disbursement',
+                actorId: actor._id,
+                decision: 'reimbursed',
+                comments: `Disbursed in Payroll ${yearMonth} (Payslip Ref: #${slip._id.toString().slice(-6)})`,
+                timestamp: new Date()
+              });
               await exp.save();
+
+              // Record audit log for expense settlement
+              await recordAuditLog({
+                userId: actor._id,
+                actor,
+                action: 'EXPENSE_REIMBURSE',
+                entity: 'Expense',
+                entityId: exp._id,
+                meta: {
+                  method: 'payroll',
+                  payrollRunId: run._id,
+                  payslipId: slip._id,
+                  paymentReference: `PAYROLL-${yearMonth}-${slip._id.toString().slice(-6)}`
+                }
+              }).catch(() => {});
+
+              // Notify applicant of expense settlement in salary
+              const { Employee } = await import('../../models/employee.model.js');
+              const { notify } = await import('../../services/notify.service.js');
+              const applicantEmployee = await Employee.findById(exp.employeeId);
+              if (applicantEmployee?.userId) {
+                await notify(applicantEmployee.userId, {
+                  type: 'expense',
+                  title: 'Expense Disbursed via Payroll',
+                  body: `Your claim ${exp.claimNumber} of PKR ${((exp.approvedAmount || exp.amount) / 100).toLocaleString('en-PK')} has been disbursed in your ${yearMonth} salary payslip.`,
+                  link: '/payroll/my-payslips'
+                }).catch(() => {});
+              }
             }
           }
         }
@@ -1149,6 +1184,36 @@ export class PayrollService {
               loan.status = 'active';
             }
             await loan.save();
+          }
+        }
+      }
+
+      // Revert any expense claims settled by this run back to approved & payroll-queued status
+      const { Expense } = await import('../../models/expense.model.js');
+      const expenseEarnings = (slip.earnings || []).filter((e) =>
+        e.name?.startsWith('Expense Reimbursement')
+      );
+      for (const item of expenseEarnings) {
+        const match = item.name?.match(/\(([^)]+)\)/);
+        if (match && match[1]) {
+          const exp = await Expense.findOne({ claimNumber: match[1] });
+          if (exp && exp.status === 'reimbursed') {
+            exp.status = 'approved';
+            exp.reimbursement = {
+              method: 'payroll',
+              paymentReference: '',
+              disbursedAt: null,
+              disbursedBy: exp.reimbursement?.disbursedBy,
+              remarks: 'Reverted to payroll queue after payroll run was removed'
+            };
+            exp.approvalHistory.push({
+              stage: 'payroll_rollback',
+              actorId: actor?._id,
+              decision: 'payroll_reverted',
+              comments: `Payroll run for ${run.year}-${String(run.month).padStart(2, '0')} was removed. Claim reverted to approved status.`,
+              timestamp: new Date()
+            });
+            await exp.save();
           }
         }
       }

@@ -288,10 +288,21 @@ export default function ExpenseApprovalsPage() {
                       <td className="py-3.5 px-6 text-right">
                         {activeTab === 'approved' ? (
                           claim.reimbursement?.method === 'payroll' ? (
-                            <span className="px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 inline-flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5" />
-                              Queued for Payroll
-                            </span>
+                            <div className="inline-flex items-center gap-2">
+                              <span className="px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 inline-flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5" />
+                                Queued for Payroll
+                              </span>
+                              <Can I="expense.reimburse" a="Expense">
+                                <button
+                                  onClick={() => handleOpenReimburse(claim)}
+                                  className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#162720] border border-slate-200 dark:border-[#1A3125] transition cursor-pointer"
+                                  title="Switch to direct bank transfer"
+                                >
+                                  Switch to Direct
+                                </button>
+                              </Can>
+                            </div>
                           ) : (
                             <Can I="expense.reimburse" a="Expense">
                               <button

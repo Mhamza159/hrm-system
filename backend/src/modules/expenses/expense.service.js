@@ -16,6 +16,7 @@ import { Employee } from '../../models/employee.model.js';
 import { User } from '../../models/user.model.js';
 import { Department } from '../../models/department.model.js';
 import { Designation } from '../../models/designation.model.js';
+import { SalaryStructure } from '../../models/salaryStructure.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { notify } from '../../services/notify.service.js';
@@ -566,14 +567,42 @@ export async function decideExpense(id, decisionData, actor) {
 export async function reimburseExpense(id, data, actor) {
   const isPayroll = data.method === 'payroll';
 
-  // Atomic check-and-set:
-  // - Direct: status transitions immediately to 'reimbursed'
-  // - Payroll: claim is attached to upcoming payroll cycle (status stays 'approved' until payroll is finalized & paid)
-  const queryFilter = {
-    _id: id,
-    status: 'approved',
-    'reimbursement.method': { $ne: 'payroll' }
-  };
+  const existing = await Expense.findById(id);
+  if (!existing) {
+    throw new ApiError(404, 'Expense claim not found');
+  }
+
+  // Terminal State Guard: Only approved claims can be reimbursed
+  if (existing.status !== 'approved') {
+    throw new ApiError(
+      400,
+      `Cannot reimburse expense claim with status '${existing.status}'. Only 'approved' claims can be reimbursed.`
+    );
+  }
+
+  // Payroll Guard: If queueing for payroll, ensure employee has an active Salary Structure & is active
+  if (isPayroll) {
+    const salaryStructure = await SalaryStructure.findOne({
+      employeeId: existing.employeeId,
+      status: 'active',
+      isDeleted: false
+    });
+    if (!salaryStructure) {
+      throw new ApiError(
+        400,
+        'Cannot queue claim for payroll: Applicant does not have an active Salary Structure. Please disburse via direct payout or configure their salary structure first.'
+      );
+    }
+    const applicantEmp = await Employee.findById(existing.employeeId);
+    if (applicantEmp && ['Terminated', 'Resigned'].includes(applicantEmp.status)) {
+      throw new ApiError(
+        400,
+        `Cannot queue claim for payroll: Applicant is marked as '${applicantEmp.status}'. Please disburse via direct payout.`
+      );
+    }
+  }
+
+  const isSwitchingFromPayroll = existing.reimbursement?.method === 'payroll' && !isPayroll;
 
   const updateDoc = isPayroll
     ? {
@@ -608,27 +637,13 @@ export async function reimburseExpense(id, data, actor) {
             stage: 'reimbursement',
             actorId: actor._id,
             decision: 'reimbursed',
-            comments: `Reimbursed via DIRECT transfer. Ref: ${data.paymentReference || 'N/A'}`,
+            comments: `Reimbursed via DIRECT transfer.${isSwitchingFromPayroll ? ' (Switched from payroll queue)' : ''} Ref: ${data.paymentReference || 'N/A'}`,
             timestamp: new Date()
           }
         }
       };
 
-  const updatedExpense = await Expense.findOneAndUpdate(queryFilter, updateDoc, { new: true });
-
-  if (!updatedExpense) {
-    const existing = await Expense.findById(id);
-    if (!existing) {
-      throw new ApiError(404, 'Expense claim not found');
-    }
-    if (existing.reimbursement?.method === 'payroll') {
-      throw new ApiError(400, 'This expense claim has already been queued for reimbursement via payroll.');
-    }
-    throw new ApiError(
-      400,
-      `Cannot reimburse expense claim with status '${existing.status}'. Only 'approved' claims can be reimbursed.`
-    );
-  }
+  const updatedExpense = await Expense.findByIdAndUpdate(id, updateDoc, { new: true });
 
   // Audit Log
   await recordAuditLog({

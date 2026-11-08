@@ -55,7 +55,15 @@ export default function MyExpensesPage() {
     (e) => e.status === 'pending_manager' || e.status === 'pending_admin'
   ).length;
 
-  const renderStatusBadge = (status) => {
+  const renderStatusBadge = (status, reimbursement) => {
+    if (status === 'approved' && reimbursement?.method === 'payroll') {
+      return (
+        <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 inline-flex items-center gap-1">
+          <Clock className="w-3.5 h-3.5" />
+          Queued for Payroll
+        </span>
+      );
+    }
     switch (status) {
       case 'pending_manager':
         return (
@@ -230,7 +238,7 @@ export default function MyExpensesPage() {
                         <span className="text-slate-400 dark:text-slate-500 text-[11px] italic">No Receipt</span>
                       )}
                     </td>
-                    <td className="py-3.5 px-6">{renderStatusBadge(claim.status)}</td>
+                    <td className="py-3.5 px-6">{renderStatusBadge(claim.status, claim.reimbursement)}</td>
                   </tr>
                 ))}
               </tbody>
