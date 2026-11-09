@@ -255,4 +255,30 @@ describe('Module M17 — Security & Confidentiality Tests (Row 17.5)', () => {
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.data)).toBe(true);
   });
+
+  // --------------------------------------------------------------------------
+  // SEC-6 & SEC-7: Param Validation & XSS Sanitization Defense
+  // --------------------------------------------------------------------------
+  it('SEC-6: should reject malformed ObjectId route parameters with HTTP 400 Bad Request', async () => {
+    const res = await request(app)
+      .get('/api/v1/attrition/scores/not-a-valid-hex-id')
+      .set('Authorization', `Bearer ${hrManagerToken}`);
+
+    expect(res.status).toBe(400);
+  });
+
+  it('SEC-7: should sanitize and strip XSS HTML/script payload from retention notes', async () => {
+    const res = await request(app)
+      .post(`/api/v1/attrition/${engScoreDoc._id.toString()}/notes`)
+      .set('Authorization', `Bearer ${hrManagerToken}`)
+      .send({
+        note: "<script>alert('xss')</script>Retention interview conducted with employee.",
+        actionTaken: 'One-on-One Wellness Check'
+      });
+
+    expect(res.status).toBe(201);
+    const addedNote = res.body.data.notes[res.body.data.notes.length - 1];
+    expect(addedNote.note).not.toContain('<script>');
+    expect(addedNote.note).toBe('Retention interview conducted with employee.');
+  });
 });

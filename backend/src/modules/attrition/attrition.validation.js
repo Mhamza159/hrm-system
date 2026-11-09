@@ -21,7 +21,16 @@ export const getAttritionQuerySchema = z.object({
   }).optional()
 });
 
+export const idParamSchema = z.object({
+  params: z.object({
+    id: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid ID format')
+  })
+});
+
 export const addRetentionNoteSchema = z.object({
+  params: z.object({
+    id: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid ID format')
+  }).optional(),
   body: z.object({
     note: z
       .string({ required_error: 'Retention note is required' })

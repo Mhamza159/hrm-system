@@ -9,6 +9,7 @@
  */
 
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { authenticate } from '../../middlewares/authenticate.js';
 import { checkPermission } from '../../middlewares/checkPermission.js';
 import { validate } from '../../middlewares/validate.js';
@@ -16,6 +17,18 @@ import * as attritionController from './attrition.controller.js';
 import * as v from './attrition.validation.js';
 
 const router = Router();
+
+// Rate limiter for manual recalculation to prevent resource exhaustion / DoS
+const calculateLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 10,
+  message: {
+    success: false,
+    message: 'Too many attrition recalculation requests. Please wait a few minutes before trying again.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 // All attrition routes require valid authentication
 router.use(authenticate);
@@ -26,6 +39,7 @@ router.use(authenticate);
  */
 router.post(
   '/calculate',
+  calculateLimiter,
   checkPermission('attrition.manage', 'Attrition'),
   attritionController.recalculateScores
 );
@@ -58,6 +72,7 @@ router.get(
 router.get(
   '/scores/:id',
   checkPermission('attrition.view', 'Attrition'),
+  validate(v.idParamSchema),
   attritionController.getScoreById
 );
 
@@ -79,6 +94,7 @@ router.post(
 router.get(
   '/:id/notes',
   checkPermission('attrition.view', 'Attrition'),
+  validate(v.idParamSchema),
   attritionController.getNotes
 );
 

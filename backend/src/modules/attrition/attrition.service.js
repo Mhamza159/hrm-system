@@ -218,38 +218,50 @@ export async function calculateEmployeeRisk(employeeId) {
   return savedScore;
 }
 
+// In-memory mutex to prevent concurrent calculation race conditions / DoS
+let isRecalculating = false;
+
 /**
  * 17.1: Batch recalculation for all active employees
  */
 export async function runWeeklyAttritionScoring() {
-  const activeEmployees = await Employee.find({
-    status: { $in: ['Active', 'Probation'] }
-  })
-    .select('_id')
-    .lean();
-
-  let evaluatedCount = 0;
-  let highRiskCount = 0;
-  let mediumRiskCount = 0;
-  let lowRiskCount = 0;
-
-  for (const emp of activeEmployees) {
-    const result = await calculateEmployeeRisk(emp._id);
-    if (result) {
-      evaluatedCount++;
-      if (result.riskLevel === 'High') highRiskCount++;
-      else if (result.riskLevel === 'Medium') mediumRiskCount++;
-      else lowRiskCount++;
-    }
+  if (isRecalculating) {
+    throw new ApiError(409, 'Attrition risk calculation is already in progress. Please wait a few moments.');
   }
 
-  return {
-    evaluatedCount,
-    highRiskCount,
-    mediumRiskCount,
-    lowRiskCount,
-    calculatedAt: new Date()
-  };
+  isRecalculating = true;
+  try {
+    const activeEmployees = await Employee.find({
+      status: { $in: ['Active', 'Probation'] }
+    })
+      .select('_id')
+      .lean();
+
+    let evaluatedCount = 0;
+    let highRiskCount = 0;
+    let mediumRiskCount = 0;
+    let lowRiskCount = 0;
+
+    for (const emp of activeEmployees) {
+      const result = await calculateEmployeeRisk(emp._id);
+      if (result) {
+        evaluatedCount++;
+        if (result.riskLevel === 'High') highRiskCount++;
+        else if (result.riskLevel === 'Medium') mediumRiskCount++;
+        else lowRiskCount++;
+      }
+    }
+
+    return {
+      evaluatedCount,
+      highRiskCount,
+      mediumRiskCount,
+      lowRiskCount,
+      calculatedAt: new Date()
+    };
+  } finally {
+    isRecalculating = false;
+  }
 }
 
 /**
@@ -443,8 +455,17 @@ export async function addRetentionNote(scoreId, notePayload, user) {
     throw new ApiError(403, 'Access denied: Cannot add notes for employees outside your department.');
   }
 
+  // Strip potential script tags (and content) / HTML tags to immunize against stored XSS
+  const sanitizedNote = (notePayload.note || '')
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<[^>]*>?/gm, '')
+    .trim();
+  if (!sanitizedNote) {
+    throw new ApiError(400, 'Retention note content cannot be empty or purely HTML tags.');
+  }
+
   const newNote = {
-    note: notePayload.note,
+    note: sanitizedNote,
     actionTaken: notePayload.actionTaken || 'One-on-One Wellness Check',
     authorId: user._id,
     authorName: user.name || user.email || 'HR Professional',
