@@ -64,9 +64,9 @@ Governed strictly by [`docs/BUILD-GUIDE.md`](file:///c:/Users/hamih/OneDrive/Des
 **Goal:** Integrate AI-powered workflows using OpenAI API (`gpt-4o-mini` / `gpt-4o`) via backend service adapter.
 **Scope:** 3 Modules · 27 Vertical Slice Features
 
-- [ ] **22. M15 Recruitment & AI Screening** · *BUILD-GUIDE Section 24* · **13 Features (15.1 to 15.13)**
+- [x] **22. M15 Recruitment & AI Screening** · *BUILD-GUIDE Section 24* · **13 Features (15.1 to 15.13)**
   - Department job requisition, executive position approval, public careers page & job postings, candidate application with CV upload, AI CV parsing (skills, experience, education), AI match score & rationale against job description, Kanban candidate pipeline board, interview scheduler with interviewer evaluation forms, technical assessment links, offer letter generation, one-click conversion of hired candidate to employee with onboarding checklist, internal job board & referral submission, human-in-the-loop decision mandate (AI assists, human decides).
-- [ ] **23. M16 HR Chatbot** · *BUILD-GUIDE Section 25* · **9 Features (16.1 to 16.9)**
+- [x] **23. M16 HR Chatbot** · *BUILD-GUIDE Section 25* · **9 Features (16.1 to 16.9)**
   - Company policy document uploader & text extraction, AI chat assistant API, company handbook knowledge retrieval, personal employee data queries (leave balance, latest payslip, pay date), quick actions (apply leave, download slip), human HR hand-off for unresolved queries, bilingual English & Roman Urdu natural language understanding, chat conversation history, chatbot toggle & data access controls.
 - [ ] **24. M17 Attrition Prediction** · *BUILD-GUIDE Section 26* · **5 Features (17.1 to 17.5)**
   - Weekly attrition risk calculation cron (signals: absences, tardiness, appraisal delays, survey trends, compensation stagnation), risk tier categorization (Low, Medium, High) with primary drivers, department-level retention analytics, retention recommendations & HR intervention notes, strict access scoping (confidential to HR & Super Admin).
