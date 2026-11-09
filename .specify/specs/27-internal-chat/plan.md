@@ -282,3 +282,4 @@ Add to `MODULE_PERMISSIONS`:
 2. **Direct Chat:** Pre-seeded conversation between Super Admin and HR Manager with initial messages.
 3. **Group Chat:** Pre-seeded group conversation ("Executive Committee" or "Project Phoenix") with 3 members and sample messages.
 4. **Archived Channel:** Sample archived channel to test read-only enforcement.
+

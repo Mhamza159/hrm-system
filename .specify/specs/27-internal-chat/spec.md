@@ -244,3 +244,4 @@ Per `docs/FRD.md` Section 11:
 - [ ] Given-When-Then specifications defined for all 4 standard roles.
 - [ ] Real-time Socket.IO and Mongoose text indexing verified via Context7 documentation.
 - [ ] Ready for architectural plan generation (`/speckit-plan`).
+

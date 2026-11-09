@@ -1042,6 +1042,35 @@ export const PERMISSIONS_CATALOGUE = [
         defaultScope: 'all'
       }
     ]
+  },
+  {
+    module: 'chat',
+    label: 'Internal Chat & Team Messaging',
+    subject: 'Chat',
+    description: 'Peer-to-peer 1-on-1 chats, group channels, automated department channels, and communication moderation.',
+    actions: [
+      {
+        action: 'chat.access',
+        label: 'Access Internal Chat & Send Messages',
+        description: 'Participate in direct 1-on-1 chats, group conversations, and department channels.',
+        allowedScopes: ['own', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'chat.create_group',
+        label: 'Create & Manage Custom Groups',
+        description: 'Create multi-user groups and manage group participants.',
+        allowedScopes: ['own', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'chat.archive',
+        label: 'Archive & Moderate Channels',
+        description: 'Lock or archive channels into read-only mode (Super Admin).',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      }
+    ]
   }
 ];
 

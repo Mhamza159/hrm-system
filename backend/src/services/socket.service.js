@@ -19,6 +19,8 @@ import { env } from '../config/env.js';
 import { Employee } from '../models/employee.model.js';
 
 let ioInstance = null;
+// Active online users tracking map: userId -> Set of socket IDs
+const activeUserSockets = new Map();
 
 /**
  * Initialize Socket.io Server bound to the underlying Node HTTP Server
@@ -83,6 +85,17 @@ export const initSocketIO = (httpServer) => {
   ioInstance.on('connection', async (socket) => {
     const { userId, departmentId } = socket.data.user;
 
+    // Track active presence
+    if (userId) {
+      const userKey = String(userId);
+      if (!activeUserSockets.has(userKey)) {
+        activeUserSockets.set(userKey, new Set());
+        // Broadcast online status on first connection
+        ioInstance.emit('chat:presence', { userId: userKey, status: 'online' });
+      }
+      activeUserSockets.get(userKey).add(socket.id);
+    }
+
     // Join isolated personal room for 1-to-1 alert delivery
     const userRoom = `user:${userId}`;
     socket.join(userRoom);
@@ -105,7 +118,48 @@ export const initSocketIO = (httpServer) => {
       }
     }
 
+    // Chat room join event
+    socket.on('chat:join', (conversationId) => {
+      if (conversationId) {
+        socket.join(`conversation:${conversationId}`);
+      }
+    });
+
+    // Chat room leave event
+    socket.on('chat:leave', (conversationId) => {
+      if (conversationId) {
+        socket.leave(`conversation:${conversationId}`);
+      }
+    });
+
+    // Real-time typing indicators
+    socket.on('chat:typing', ({ conversationId, isTyping }) => {
+      if (conversationId) {
+        socket.to(`conversation:${conversationId}`).emit('chat:typing', {
+          conversationId,
+          userId,
+          isTyping: Boolean(isTyping)
+        });
+      }
+    });
+
     socket.on('disconnect', (reason) => {
+      if (userId) {
+        const userKey = String(userId);
+        const userSockets = activeUserSockets.get(userKey);
+        if (userSockets) {
+          userSockets.delete(socket.id);
+          if (userSockets.size === 0) {
+            activeUserSockets.delete(userKey);
+            // Broadcast offline status with timestamp
+            ioInstance?.emit('chat:presence', {
+              userId: userKey,
+              status: 'offline',
+              lastSeen: new Date()
+            });
+          }
+        }
+      }
       // Clean room cleanup is automatically handled by the Socket.io engine
     });
   });
@@ -167,3 +221,37 @@ export const emitToCompany = (event, data) => {
   ioInstance.to('company:broadcast').emit(event, data);
   return true;
 };
+
+/**
+ * Emit an event strictly to participants connected to a conversation room
+ * @param {string|import('mongoose').Types.ObjectId} conversationId - Target conversation ID
+ * @param {string} event - Event name (e.g. 'chat:message')
+ * @param {Object} data - Payload data
+ * @returns {boolean} Whether emission was dispatched
+ */
+export const emitToConversation = (conversationId, event, data) => {
+  if (!ioInstance || !conversationId) {
+    return false;
+  }
+  const targetRoom = `conversation:${String(conversationId)}`;
+  ioInstance.to(targetRoom).emit(event, data);
+  return true;
+};
+
+/**
+ * Check if a specific user is currently connected via Socket.io
+ * @param {string} userId - User ID to check
+ * @returns {boolean}
+ */
+export const isUserOnline = (userId) => {
+  return activeUserSockets.has(String(userId));
+};
+
+/**
+ * Get set of all currently online user IDs
+ * @returns {string[]}
+ */
+export const getOnlineUserIds = () => {
+  return Array.from(activeUserSockets.keys());
+};
+

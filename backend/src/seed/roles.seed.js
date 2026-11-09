@@ -139,7 +139,9 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'rewards.manage', subject: 'Rewards', scope: 'all' },
       { action: 'feedback.submit', subject: 'Feedback', scope: 'all' },
       { action: 'feedback.manage', subject: 'Feedback', scope: 'all' },
-      { action: 'feedback.escalate', subject: 'Feedback', scope: 'all' }
+      { action: 'feedback.escalate', subject: 'Feedback', scope: 'all' },
+      { action: 'chat.access', subject: 'Chat', scope: 'all' },
+      { action: 'chat.create_group', subject: 'Chat', scope: 'all' }
     ]
   },
   {
@@ -211,7 +213,9 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'rewards.vote', subject: 'Rewards', scope: 'all' },
       { action: 'rewards.kudos', subject: 'Rewards', scope: 'all' },
       { action: 'rewards.respond', subject: 'Rewards', scope: 'all' },
-      { action: 'feedback.submit', subject: 'Feedback', scope: 'own' }
+      { action: 'feedback.submit', subject: 'Feedback', scope: 'own' },
+      { action: 'chat.access', subject: 'Chat', scope: 'own' },
+      { action: 'chat.create_group', subject: 'Chat', scope: 'own' }
     ]
   },
   {
@@ -258,7 +262,9 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'rewards.vote', subject: 'Rewards', scope: 'own' },
       { action: 'rewards.kudos', subject: 'Rewards', scope: 'own' },
       { action: 'rewards.respond', subject: 'Rewards', scope: 'own' },
-      { action: 'feedback.submit', subject: 'Feedback', scope: 'own' }
+      { action: 'feedback.submit', subject: 'Feedback', scope: 'own' },
+      { action: 'chat.access', subject: 'Chat', scope: 'own' },
+      { action: 'chat.create_group', subject: 'Chat', scope: 'own' }
     ]
   }
 ];

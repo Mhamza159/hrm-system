@@ -50,6 +50,7 @@ import {
   TrendingDown,
   Trophy,
   ShieldAlert,
+  MessageSquare,
   X
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -245,6 +246,7 @@ export function Sidebar({ isOpen = false, onClose }) {
         { name: 'Inquiry Committee', path: '/feedback/committee', permission: 'grievance.committee' }
       ]
     },
+        { type: 'link', name: 'Internal Chat', path: '/chat', icon: MessageSquare, permission: 'chat.access' },
     { type: 'link', name: 'Attrition Prediction', path: '/attrition', icon: TrendingDown, permission: 'attrition.view' },
     { type: 'link', name: 'Reports', path: '/reports', icon: BarChart3, permission: 'report.view', managerOnly: true },
     { type: 'link', name: 'Company Policies', path: '/policies', icon: BookOpen, permission: 'settings.view' },

@@ -96,6 +96,7 @@ import { SubmitFeedbackPage } from './features/feedback/pages/SubmitFeedbackPage
 import { TrackFeedbackPage } from './features/feedback/pages/TrackFeedbackPage.jsx';
 import { GrievanceAdminPage } from './features/feedback/pages/GrievanceAdminPage.jsx';
 import { CommitteeDashboardPage } from './features/feedback/pages/CommitteeDashboardPage.jsx';
+import { ChatPage } from './features/chat/pages/ChatPage.jsx';
 import { ChatbotWidget } from './features/chatbot/components/ChatbotWidget.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
@@ -927,6 +928,16 @@ export default function App() {
             element={
               <ProtectedRoute requiredPermission="grievance.committee">
                 <CommitteeDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Module M24: Internal Chat */}
+          <Route
+            path="chat"
+            element={
+              <ProtectedRoute requiredPermission="chat.access">
+                <ChatPage />
               </ProtectedRoute>
             }
           />
