@@ -280,3 +280,4 @@ All endpoints mounted at `/api/v1/feedback`:
 2. **HR Manager**: Assigned `feedback.submit`, `feedback.manage`, `feedback.escalate`. (No `grievance.committee` by default unless explicitly granted).
 3. **Department Manager**: Assigned `feedback.submit` (`own` scope). **Zero administrative access** (`None` in FRD Section 11; receives 403 on `/feedback` admin endpoints).
 4. **Employee**: Assigned `feedback.submit` (`own` scope). Can track via code or view own named submissions.
+

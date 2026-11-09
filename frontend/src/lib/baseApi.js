@@ -223,7 +223,8 @@ export const baseApi = createApi({
     'Awards',
     'Kudos',
     'Celebrations',
-    'Surveys'
+    'Surveys',
+    'Feedback'
   ],
   endpoints: () => ({})
 });

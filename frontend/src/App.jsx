@@ -92,6 +92,10 @@ import { AwardsPage } from './features/rewards/pages/AwardsPage.jsx';
 import { AppreciationWallPage } from './features/rewards/pages/AppreciationWallPage.jsx';
 import { CelebrationsWallPage } from './features/rewards/pages/CelebrationsWallPage.jsx';
 import { SurveysPage } from './features/rewards/pages/SurveysPage.jsx';
+import { SubmitFeedbackPage } from './features/feedback/pages/SubmitFeedbackPage.jsx';
+import { TrackFeedbackPage } from './features/feedback/pages/TrackFeedbackPage.jsx';
+import { GrievanceAdminPage } from './features/feedback/pages/GrievanceAdminPage.jsx';
+import { CommitteeDashboardPage } from './features/feedback/pages/CommitteeDashboardPage.jsx';
 import { ChatbotWidget } from './features/chatbot/components/ChatbotWidget.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
@@ -139,6 +143,7 @@ export default function App() {
         <Route path="/verify-otp" element={<OtpPage />} />
         <Route path="/careers" element={<CareersPublicPage />} />
         <Route path="/careers/:slug/apply" element={<ApplyPage />} />
+        <Route path="/feedback/track" element={<TrackFeedbackPage />} />
 
         {/* Change Password (Accessible when authenticated, mandatory when mustChangePassword === true) */}
         <Route
@@ -888,6 +893,40 @@ export default function App() {
             element={
               <ProtectedRoute requiredPermission="rewards.view">
                 <SurveysPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Module M21: Anonymous Feedback & Grievance */}
+          <Route
+            path="feedback/submit"
+            element={
+              <ProtectedRoute requiredPermission="feedback.submit">
+                <SubmitFeedbackPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="feedback/track"
+            element={
+              <ProtectedRoute>
+                <TrackFeedbackPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="feedback/admin"
+            element={
+              <ProtectedRoute requiredPermission="feedback.manage">
+                <GrievanceAdminPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="feedback/committee"
+            element={
+              <ProtectedRoute requiredPermission="grievance.committee">
+                <CommitteeDashboardPage />
               </ProtectedRoute>
             }
           />

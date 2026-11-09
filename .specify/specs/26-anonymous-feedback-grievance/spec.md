@@ -265,3 +265,4 @@ export const feedbackApi = baseApi.injectEndpoints({
 2. **Harassment Data Isolation**: Non-committee users querying feedback list must have `{ category: { $ne: 'Harassment' } }` automatically injected into the database query filter.
 3. **Internal Note Redaction**: `isPublicToComplainant: false` case notes must be stripped in public track endpoints.
 4. **Collision-Proof Codes**: `trackingCode` must have a unique index `{ trackingCode: 1 }` with retry on generation in the rare event of collision.
+

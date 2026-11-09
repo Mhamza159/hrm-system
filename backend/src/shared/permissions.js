@@ -1006,6 +1006,42 @@ export const PERMISSIONS_CATALOGUE = [
         defaultScope: 'all'
       }
     ]
+  },
+  {
+    module: 'feedback',
+    label: 'Anonymous Feedback & Grievance',
+    subject: 'Feedback',
+    description: 'Anonymous suggestions, formal grievance investigation, harassment committee channel, and case tracking.',
+    actions: [
+      {
+        action: 'feedback.submit',
+        label: 'Submit Feedback & Grievances',
+        description: 'Submit open suggestions or grievances anonymously or by name.',
+        allowedScopes: ['own', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'feedback.manage',
+        label: 'Manage General Grievances',
+        description: 'Investigate, add notes, and resolve general grievances and suggestions.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'grievance.committee',
+        label: 'Inquiry Committee Access (Harassment)',
+        description: 'Exclusive quarantined access to review, investigate, and resolve harassment complaints.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'feedback.escalate',
+        label: 'Escalate Grievance to Executive',
+        description: 'Escalate complex or blocked grievances to the Super Admin.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      }
+    ]
   }
 ];
 

@@ -447,12 +447,12 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 21.1 | Gumnaam mashwara | `feedback.model.js` (isAnonymous → userId save nahi, trackingCode) | `SubmitFeedbackPage.jsx` | DB mein user ka nishan na ho | ☐ |
-| 21.2 | Baqaida shikayat + case tracking | category, status, caseNotes[] | `GrievanceAdminPage.jsx` | Status badle | ☐ |
-| 21.3 | Harassment → sirf committee | permission `grievance.committee` | Committee ka alag view | HR/manager ko na dikhe | ☐ |
-| 21.4 | Gumnaam status update | `GET /feedback/track/:code` | `TrackFeedbackPage.jsx` | Code se status | ☐ |
-| 21.5 | Escalation | `PATCH /feedback/:id/escalate` → Super Admin | Escalate button | Super Admin ko nazar aaye | ☐ |
-| 21.6 | Manager apni team ki shikayat na dekhe | scope rule | — | Manager ko 403 | ☐ |
+| 21.1 | Gumnaam mashwara | `feedback.model.js` (isAnonymous → userId save nahi, trackingCode) | `SubmitFeedbackPage.jsx` | DB mein user ka nishan na ho | ☑ |
+| 21.2 | Baqaida shikayat + case tracking | category, status, caseNotes[] | `GrievanceAdminPage.jsx` | Status badle | ☑ |
+| 21.3 | Harassment → sirf committee | permission `grievance.committee` | Committee ka alag view | HR/manager ko na dikhe | ☑ |
+| 21.4 | Gumnaam status update | `GET /feedback/track/:code` | `TrackFeedbackPage.jsx` | Code se status | ☑ |
+| 21.5 | Escalation | `PATCH /feedback/:id/escalate` → Super Admin | Escalate button | Super Admin ko nazar aaye | ☑ |
+| 21.6 | Manager apni team ki shikayat na dekhe | scope rule | — | Manager ko 403 | ☑ |
 
 ## 29. M24 — Internal Chat
 

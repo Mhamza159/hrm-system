@@ -49,6 +49,7 @@ import {
   ListChecks,
   TrendingDown,
   Trophy,
+  ShieldAlert,
   X
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -233,6 +234,17 @@ export function Sidebar({ isOpen = false, onClose }) {
         { name: 'Pulse Surveys', path: '/rewards/surveys', permission: 'rewards.view' }
       ]
     },
+    {
+      type: 'group',
+      name: 'Feedback & Grievance',
+      icon: ShieldAlert,
+      children: [
+        { name: 'Submit Feedback', path: '/feedback/submit', permission: 'feedback.submit' },
+        { name: 'Track Case', path: '/feedback/track' },
+        { name: 'Grievance Admin', path: '/feedback/admin', permission: 'feedback.manage', hrOnly: true },
+        { name: 'Inquiry Committee', path: '/feedback/committee', permission: 'grievance.committee' }
+      ]
+    },
     { type: 'link', name: 'Attrition Prediction', path: '/attrition', icon: TrendingDown, permission: 'attrition.view' },
     { type: 'link', name: 'Reports', path: '/reports', icon: BarChart3, permission: 'report.view', managerOnly: true },
     { type: 'link', name: 'Company Policies', path: '/policies', icon: BookOpen, permission: 'settings.view' },
@@ -264,7 +276,8 @@ export function Sidebar({ isOpen = false, onClose }) {
     'Projects & Timesheets': false,
     'Recruitment & ATS': false,
     'AI Chatbot': false,
-    'Rewards & Engagement': false
+    'Rewards & Engagement': false,
+    'Feedback & Grievance': false
   });
 
   // Auto-expand group if the active route is within its children
