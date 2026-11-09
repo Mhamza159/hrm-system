@@ -47,6 +47,7 @@ import {
   ChevronDown,
   Laptop,
   ListChecks,
+  TrendingDown,
   X
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -220,6 +221,7 @@ export function Sidebar({ isOpen = false, onClose }) {
         { name: 'Unanswered Questions', path: '/chatbot/unanswered', permission: 'chatbot.unanswered.manage' }
       ]
     },
+    { type: 'link', name: 'Attrition Prediction', path: '/attrition', icon: TrendingDown, permission: 'attrition.view' },
     { type: 'link', name: 'Reports', path: '/reports', icon: BarChart3, permission: 'report.view', managerOnly: true },
     { type: 'link', name: 'Company Policies', path: '/policies', icon: BookOpen, permission: 'settings.view' },
     { type: 'link', name: 'Announcements', path: '/announcements', icon: Megaphone, permission: 'announcement.view' },

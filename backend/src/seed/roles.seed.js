@@ -128,7 +128,9 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'recruitment.referral.submit', subject: 'Recruitment', scope: 'own' },
       { action: 'chatbot.use', subject: 'Chatbot', scope: 'own' },
       { action: 'chatbot.policy.manage', subject: 'Chatbot', scope: 'all' },
-      { action: 'chatbot.unanswered.manage', subject: 'Chatbot', scope: 'all' }
+      { action: 'chatbot.unanswered.manage', subject: 'Chatbot', scope: 'all' },
+      { action: 'attrition.view', subject: 'Attrition', scope: 'all' },
+      { action: 'attrition.manage', subject: 'Attrition', scope: 'all' }
     ]
   },
   {
@@ -192,7 +194,9 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'recruitment.candidate.screen', subject: 'Recruitment', scope: 'department' },
       { action: 'recruitment.interview.manage', subject: 'Recruitment', scope: 'department' },
       { action: 'recruitment.interview.evaluate', subject: 'Recruitment', scope: 'own' },
-      { action: 'recruitment.referral.submit', subject: 'Recruitment', scope: 'own' }
+      { action: 'recruitment.referral.submit', subject: 'Recruitment', scope: 'own' },
+      { action: 'attrition.view', subject: 'Attrition', scope: 'team' },
+      { action: 'attrition.manage', subject: 'Attrition', scope: 'team' }
     ]
   },
   {

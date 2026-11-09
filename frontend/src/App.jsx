@@ -87,6 +87,7 @@ import { ApplyPage } from './features/recruitment/pages/ApplyPage.jsx';
 import { InternalJobsPage } from './features/recruitment/pages/InternalJobsPage.jsx';
 import { PolicyDocsPage } from './features/chatbot/pages/PolicyDocsPage.jsx';
 import { UnansweredQuestionsPage } from './features/chatbot/pages/UnansweredQuestionsPage.jsx';
+import { AttritionDashboardPage } from './features/attrition/pages/AttritionDashboardPage.jsx';
 import { ChatbotWidget } from './features/chatbot/components/ChatbotWidget.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
@@ -839,6 +840,16 @@ export default function App() {
             element={
               <ProtectedRoute requiredPermission="chatbot.unanswered.manage">
                 <UnansweredQuestionsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Module M17: Attrition Prediction */}
+          <Route
+            path="attrition"
+            element={
+              <ProtectedRoute requiredPermission="attrition.view">
+                <AttritionDashboardPage />
               </ProtectedRoute>
             }
           />

@@ -427,11 +427,11 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 17.1 | Weekly risk score | `jobs/attritionScore.job.js`, `attritionScore.model.js` (absences, late, increment ka waqt, appraisal, surveys) | — | Score bane | ☐ |
-| 17.2 | Risk levels + wajuhaat | score → Low/Medium/High, top factors | `AttritionDashboardPage.jsx` | Wajuhaat dikhein | ☐ |
-| 17.3 | Department trends | `GET /analytics/attrition/departments` | Chart | Trend sahi | ☐ |
-| 17.4 | Retention tajweezein + action notes | suggestions rules, `POST /attrition/:id/notes` | Notes panel | Note save | ☐ |
-| 17.5 | Scope aur khufia | manager = team, employee = koi rasai nahi | Menu chhupa | Employee ko 403 | ☐ |
+| 17.1 | Weekly risk score | `jobs/attritionScore.job.js`, `attritionScore.model.js` (absences, late, increment ka waqt, appraisal, surveys) | — | Score bane | ☑ |
+| 17.2 | Risk levels + wajuhaat | score → Low/Medium/High, top factors | `AttritionDashboardPage.jsx` | Wajuhaat dikhein | ☑ |
+| 17.3 | Department trends | `GET /analytics/attrition/departments` | Chart | Trend sahi | ☑ |
+| 17.4 | Retention tajweezein + action notes | suggestions rules, `POST /attrition/:id/notes` | Notes panel | Note save | ☑ |
+| 17.5 | Scope aur khufia | manager = team, employee = koi rasai nahi | Menu chhupa | Employee ko 403 | ☑ |
 
 ## 27. M20 — Rewards, Celebrations & Surveys
 

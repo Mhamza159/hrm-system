@@ -217,7 +217,9 @@ export const baseApi = createApi({
     'Interview',
     'Chatbot',
     'PolicyDoc',
-    'UnansweredQuestion'
+    'UnansweredQuestion',
+    'AttritionScore',
+    'AttritionAnalytics'
   ],
   endpoints: () => ({})
 });

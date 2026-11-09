@@ -934,6 +934,28 @@ export const PERMISSIONS_CATALOGUE = [
         defaultScope: 'all'
       }
     ]
+  },
+  {
+    module: 'attrition',
+    label: 'Attrition Prediction',
+    subject: 'Attrition',
+    description: 'Weekly flight risk scoring, department retention trends, and HR intervention action notes.',
+    actions: [
+      {
+        action: 'attrition.view',
+        label: 'View Attrition Risk Scores & Analytics',
+        description: 'Inspect employee flight risk scores, contributing factors, and department trends.',
+        allowedScopes: ['team', 'department', 'all'],
+        defaultScope: 'team'
+      },
+      {
+        action: 'attrition.manage',
+        label: 'Manage Attrition Scoring & Action Notes',
+        description: 'Trigger on-demand risk recalculation and record employee retention intervention notes.',
+        allowedScopes: ['team', 'department', 'all'],
+        defaultScope: 'team'
+      }
+    ]
   }
 ];
 
