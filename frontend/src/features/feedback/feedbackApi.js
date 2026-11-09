@@ -14,7 +14,11 @@ export const feedbackApi = baseApi.injectEndpoints({
         method: 'POST',
         body
       }),
-      invalidatesTags: [{ type: 'Feedback', id: 'LIST' }]
+      invalidatesTags: [
+        { type: 'Feedback', id: 'LIST' },
+        { type: 'Feedback', id: 'STATS' },
+        { type: 'Feedback', id: 'MY_LIST' }
+      ]
     }),
 
     // 21.2 & 21.3: List feedback/grievances (admin / committee)
@@ -57,7 +61,8 @@ export const feedbackApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: 'Feedback', id },
-        { type: 'Feedback', id: 'LIST' }
+        { type: 'Feedback', id: 'LIST' },
+        { type: 'Feedback', id: 'STATS' }
       ]
     }),
 
@@ -68,7 +73,10 @@ export const feedbackApi = baseApi.injectEndpoints({
         method: 'POST',
         body
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: 'Feedback', id }]
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Feedback', id },
+        { type: 'Feedback', id: 'LIST' }
+      ]
     }),
 
     // 21.5: Escalate grievance to Super Admin
@@ -80,7 +88,8 @@ export const feedbackApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: 'Feedback', id },
-        { type: 'Feedback', id: 'LIST' }
+        { type: 'Feedback', id: 'LIST' },
+        { type: 'Feedback', id: 'STATS' }
       ]
     }),
 

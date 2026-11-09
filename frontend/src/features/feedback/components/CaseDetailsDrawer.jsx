@@ -258,11 +258,12 @@ export default function CaseDetailsDrawer({ isOpen, onClose, caseId }) {
           <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex items-center justify-between gap-3">
             <button
               type="button"
+              disabled={caseItem?.isEscalated}
               onClick={() => setIsEscalateModalOpen(true)}
-              className="px-4 py-2 rounded-lg border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-xs font-semibold flex items-center gap-1.5 transition-all"
+              className="px-4 py-2 rounded-lg border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ArrowUpRight className="w-4 h-4" />
-              Escalate to Super Admin
+              {caseItem?.isEscalated ? 'Already Escalated' : 'Escalate to Super Admin'}
             </button>
 
             <button

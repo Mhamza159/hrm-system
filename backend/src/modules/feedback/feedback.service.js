@@ -7,10 +7,25 @@ import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { Feedback } from '../../models/feedback.model.js';
 import { User } from '../../models/user.model.js';
+import { Role } from '../../models/role.model.js';
 import { Department } from '../../models/department.model.js';
 import { AuditLog } from '../../models/auditLog.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { notify } from '../../services/notify.service.js';
+
+/**
+ * Helper to reliably resolve active Super Admin recipient IDs via PBAC roles
+ */
+async function getSuperAdminRecipientIds() {
+  try {
+    const saRole = await Role.findOne({ name: 'Super Admin' }).select('_id');
+    if (!saRole) return [];
+    const superAdmins = await User.find({ roles: saRole._id, isActive: true }).select('_id');
+    return superAdmins.map((a) => a._id);
+  } catch {
+    return [];
+  }
+}
 
 /**
  * Generate a collision-resistant tracking code (e.g. TRK-A8F2C1)
@@ -80,9 +95,9 @@ export async function submitFeedback(data, user) {
   // If case is Harassment, dispatch alert to Super Admin / Committee
   if (category === 'Harassment') {
     try {
-      const superAdmins = await User.find({ role: 'Super Admin', isActive: true }).select('_id');
-      for (const admin of superAdmins) {
-        await notify(admin._id, {
+      const superAdminIds = await getSuperAdminRecipientIds();
+      for (const adminId of superAdminIds) {
+        await notify(adminId, {
           type: 'system',
           title: 'Urgent: Harassment Complaint Filed',
           body: `A new harassment complaint (${trackingCode}) has been filed and quarantined.`,
@@ -411,9 +426,9 @@ export async function escalateFeedback(id, escalateData, user) {
 
   // Notify Super Admins
   try {
-    const superAdmins = await User.find({ role: 'Super Admin', isActive: true }).select('_id');
-    for (const admin of superAdmins) {
-      await notify(admin._id, {
+    const superAdminIds = await getSuperAdminRecipientIds();
+    for (const adminId of superAdminIds) {
+      await notify(adminId, {
         type: 'system',
         title: 'Grievance Escalated to Super Admin',
         body: `Case ${feedback.trackingCode} ("${feedback.title}") has been escalated: ${reason}`,

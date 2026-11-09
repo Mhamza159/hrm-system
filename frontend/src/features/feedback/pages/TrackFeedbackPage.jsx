@@ -31,9 +31,10 @@ export function TrackFeedbackPage() {
 
   useEffect(() => {
     const codeParam = searchParams.get('code');
-    if (codeParam) {
-      setInputCode(codeParam);
-      triggerTrack(codeParam);
+    if (codeParam && codeParam.trim()) {
+      const cleanCode = codeParam.trim().toUpperCase();
+      setInputCode(cleanCode);
+      triggerTrack(cleanCode);
     }
   }, [searchParams, triggerTrack]);
 
