@@ -14,9 +14,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import {
+  NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import {
+  Bot,
   LayoutDashboard,
   Users,
   Clock,
@@ -209,6 +211,15 @@ export function Sidebar({ isOpen = false, onClose }) {
         { name: 'Checklist Templates', path: '/onboarding/templates', permission: 'onboard.manage' }
       ]
     },
+    {
+      type: 'group',
+      name: 'AI Chatbot',
+      icon: Bot,
+      children: [
+        { name: 'Policy Handbooks', path: '/chatbot/policies', permission: 'chatbot.policy.manage' },
+        { name: 'Unanswered Questions', path: '/chatbot/unanswered', permission: 'chatbot.unanswered.manage' }
+      ]
+    },
     { type: 'link', name: 'Reports', path: '/reports', icon: BarChart3, permission: 'report.view', managerOnly: true },
     { type: 'link', name: 'Company Policies', path: '/policies', icon: BookOpen, permission: 'settings.view' },
     { type: 'link', name: 'Announcements', path: '/announcements', icon: Megaphone, permission: 'announcement.view' },
@@ -237,7 +248,8 @@ export function Sidebar({ isOpen = false, onClose }) {
     Expenses: false,
     Assets: false,
     'Projects & Timesheets': false,
-    'Recruitment & ATS': false
+    'Recruitment & ATS': false,
+    'AI Chatbot': false
   });
 
   // Auto-expand group if the active route is within its children

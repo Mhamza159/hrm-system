@@ -413,15 +413,15 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 16.1 | Policy documents | `policyDoc.model.js`, upload + text extract (HR) | `PolicyDocsPage.jsx` | Doc upload | ☐ |
-| 16.2 | Chat API | `POST /chatbot/ask` (AI + tools) | `ChatbotWidget.jsx` | Jawab aaye | ☐ |
-| 16.3 | Policy sawal | tool `searchPolicy` | — | Handbook se jawab | ☐ |
-| 16.4 | Zaati sawal | tools `getMyLeaveBalance`, `getMyLastPayslip`, `getNextPayDate` (sirf req.user) | — | Doosre ka data na de | ☐ |
-| 16.5 | Quick actions | tool `applyLeave` (confirm ke baad), `downloadSlip` | Action buttons in chat | Leave apply ho | ☐ |
-| 16.6 | HR ko hand-off | jawab na ho to `unanswered.model.js` + HR notify | "Ask HR" button | HR list mein | ☐ |
-| 16.7 | English + Roman Urdu | system prompt | — | Roman Urdu sawal ka jawab | ☐ |
-| 16.8 | Chat history | `chatMessage.model.js` | Widget history | Purani chat | ☐ |
-| 16.9 | On/off + data limits | settings `chatbot` (Super Admin) | Settings tab | Off par widget gayab | ☐ |
+| 16.1 | Policy documents | `policyDoc.model.js`, upload + text extract (HR) | `PolicyDocsPage.jsx` | Doc upload | ☑ |
+| 16.2 | Chat API | `POST /chatbot/ask` (AI + tools) | `ChatbotWidget.jsx` | Jawab aaye | ☑ |
+| 16.3 | Policy sawal | tool `searchPolicy` | — | Handbook se jawab | ☑ |
+| 16.4 | Zaati sawal | tools `getMyLeaveBalance`, `getMyLastPayslip`, `getNextPayDate` (sirf req.user) | — | Doosre ka data na de | ☑ |
+| 16.5 | Quick actions | tool `applyLeave` (confirm ke baad), `downloadSlip` | Action buttons in chat | Leave apply ho | ☑ |
+| 16.6 | HR ko hand-off | jawab na ho to `unanswered.model.js` + HR notify | "Ask HR" button | HR list mein | ☑ |
+| 16.7 | English + Roman Urdu | system prompt | — | Roman Urdu sawal ka jawab | ☑ |
+| 16.8 | Chat history | `chatMessage.model.js` | Widget history | Purani chat | ☑ |
+| 16.9 | On/off + data limits | settings `chatbot` (Super Admin) | Settings tab | Off par widget gayab | ☑ |
 
 ## 26. M17 — Attrition Prediction
 

@@ -898,6 +898,42 @@ export const PERMISSIONS_CATALOGUE = [
         defaultScope: 'own'
       }
     ]
+  },
+  {
+    module: 'chatbot',
+    label: 'HR Chatbot & Virtual Assistant',
+    subject: 'Chatbot',
+    description: 'AI-assisted conversational HR portal, policy handbook Q&A, and personal HR queries.',
+    actions: [
+      {
+        action: 'chatbot.use',
+        label: 'Access HR Chatbot Widget',
+        description: 'Send conversational queries regarding policies and personal HR records.',
+        allowedScopes: ['own'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'chatbot.manage',
+        label: 'Configure Chatbot System & Limits',
+        description: 'Global on/off toggle, rate limits, and LLM configuration.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'chatbot.policy.manage',
+        label: 'Manage Policy Documents & Handbooks',
+        description: 'Upload, update, and remove company policy files for chatbot grounding.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'chatbot.unanswered.manage',
+        label: 'Manage Unanswered Chatbot Questions',
+        description: 'Inspect escalated employee queries, provide answers, and resolve escalation tickets.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      }
+    ]
   }
 ];
 

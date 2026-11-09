@@ -85,6 +85,9 @@ import { CandidatePipelinePage } from './features/recruitment/pages/CandidatePip
 import { CareersPublicPage } from './features/recruitment/pages/CareersPublicPage.jsx';
 import { ApplyPage } from './features/recruitment/pages/ApplyPage.jsx';
 import { InternalJobsPage } from './features/recruitment/pages/InternalJobsPage.jsx';
+import { PolicyDocsPage } from './features/chatbot/pages/PolicyDocsPage.jsx';
+import { UnansweredQuestionsPage } from './features/chatbot/pages/UnansweredQuestionsPage.jsx';
+import { ChatbotWidget } from './features/chatbot/components/ChatbotWidget.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
 import { useRefreshTokenMutation } from './features/auth/authApi.js';
@@ -822,11 +825,30 @@ export default function App() {
             }
           />
 
+          {/* Module M16: HR Chatbot */}
+          <Route
+            path="chatbot/policies"
+            element={
+              <ProtectedRoute requiredPermission="chatbot.policy.manage">
+                <PolicyDocsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="chatbot/unanswered"
+            element={
+              <ProtectedRoute requiredPermission="chatbot.unanswered.manage">
+                <UnansweredQuestionsPage />
+              </ProtectedRoute>
+            }
+          />
+
         </Route>
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
+      <ChatbotWidget />
     </>
   );
 }

@@ -65,5 +65,7 @@ export const env = {
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || '',
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
   RESEND_FROM: process.env.RESEND_FROM || 'HRM Enterprise <onboarding@resend.dev>',
-  BREVO_API_KEY: process.env.BREVO_API_KEY || ''
+  BREVO_API_KEY: process.env.BREVO_API_KEY || '',
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY || ''
 };

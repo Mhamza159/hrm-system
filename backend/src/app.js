@@ -52,6 +52,7 @@ import auditRoutes from './modules/audit/audit.routes.js';
 import fileRoutes from './modules/files/file.routes.js';
 import { clientRouter, projectRouter, timesheetRouter, projectReportsRouter } from './modules/projects/project.routes.js';
 import recruitmentRoutes from './modules/recruitment/recruitment.routes.js';
+import chatbotRoutes from './modules/chatbot/chatbot.routes.js';
 import * as attendanceController from './modules/attendance/attendance.controller.js';
 import * as leaveController from './modules/leaves/leave.controller.js';
 import * as payrollController from './modules/payroll/payroll.controller.js';
@@ -166,6 +167,7 @@ app.get('/api/v1/reports/leaves', authenticate, checkPermission('report.export',
 app.use('/api/v1/clients', clientRouter);
 app.use('/api/v1/projects', projectRouter);
 app.use('/api/v1/recruitment', recruitmentRoutes);
+app.use('/api/v1/chatbot', chatbotRoutes);
 app.use('/api/v1/timesheets', timesheetRouter);
 app.use('/api/v1/reports', projectReportsRouter);
 app.use('/api/v1/reports', reportsRoutes);

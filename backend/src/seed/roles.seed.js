@@ -125,7 +125,10 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'recruitment.offer.manage', subject: 'Recruitment', scope: 'all' },
       { action: 'recruitment.offer.view', subject: 'Recruitment', scope: 'all' },
       { action: 'recruitment.hire', subject: 'Recruitment', scope: 'all' },
-      { action: 'recruitment.referral.submit', subject: 'Recruitment', scope: 'own' }
+      { action: 'recruitment.referral.submit', subject: 'Recruitment', scope: 'own' },
+      { action: 'chatbot.use', subject: 'Chatbot', scope: 'own' },
+      { action: 'chatbot.policy.manage', subject: 'Chatbot', scope: 'all' },
+      { action: 'chatbot.unanswered.manage', subject: 'Chatbot', scope: 'all' }
     ]
   },
   {
@@ -230,7 +233,9 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'timesheet.log', subject: 'Project', scope: 'own' },
       { action: 'report.utilization', subject: 'Project', scope: 'own' },
       { action: 'recruitment.job.view', subject: 'Recruitment', scope: 'all' },
-      { action: 'recruitment.referral.submit', subject: 'Recruitment', scope: 'own' }
+      { action: 'recruitment.referral.submit', subject: 'Recruitment', scope: 'own' },
+      { action: 'chatbot.use', subject: 'Chatbot', scope: 'own' },
+      { action: 'chatbot.use', subject: 'Chatbot', scope: 'own' }
     ]
   }
 ];
