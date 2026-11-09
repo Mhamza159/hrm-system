@@ -93,3 +93,4 @@ export default function EscalateModal({ isOpen, onClose, caseItem }) {
     </div>
   );
 }
+

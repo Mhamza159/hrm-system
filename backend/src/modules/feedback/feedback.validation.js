@@ -6,6 +6,19 @@
 import { z } from 'zod';
 
 const objectIdRegex = /^[0-9a-fA-F]{24}$/;
+const trackingCodeRegex = /^TRK-[A-Za-z0-9]{4,16}$/;
+
+export const idParamSchema = z.object({
+  params: z.object({
+    id: z.string().regex(objectIdRegex, 'Invalid feedback ID format')
+  })
+});
+
+export const trackCodeParamSchema = z.object({
+  params: z.object({
+    code: z.string().trim().regex(trackingCodeRegex, 'Invalid tracking code format')
+  })
+});
 
 export const submitFeedbackSchema = z.object({
   body: z.object({
@@ -30,7 +43,16 @@ export const submitFeedbackSchema = z.object({
       .regex(objectIdRegex, 'Invalid department ID format')
       .optional()
       .nullable(),
-    attachments: z.array(z.string().url('Invalid attachment URL')).max(5).optional().default([])
+    attachments: z
+      .array(
+        z
+          .string()
+          .url('Invalid attachment URL')
+          .refine((url) => url.startsWith('https://'), 'Attachments must use secure HTTPS URLs')
+      )
+      .max(5, 'Maximum 5 attachments allowed')
+      .optional()
+      .default([])
   })
 });
 
@@ -81,6 +103,6 @@ export const feedbackFilterSchema = z.object({
     category: z.enum(['Suggestion', 'Grievance', 'Workplace Issue', 'Harassment', 'Safety', 'Other']).optional(),
     priority: z.enum(['Low', 'Medium', 'High', 'Urgent']).optional(),
     isEscalated: z.coerce.boolean().optional(),
-    search: z.string().trim().optional()
+    search: z.string().trim().max(100, 'Search term too long').optional()
   }).optional()
 });

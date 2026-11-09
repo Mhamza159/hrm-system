@@ -30,34 +30,52 @@ async function generateUniqueTrackingCode() {
 
 /**
  * 21.1: Submit feedback or grievance
- * Invariant: If isAnonymous is true, submittedBy is strictly null in DB.
+ * Invariant: If isAnonymous is true, submittedBy and initial case note authorId
+ * are strictly sanitized to prevent any user identity leakage.
  */
 export async function submitFeedback(data, user) {
   const { title, description, category, priority, isAnonymous, departmentId, attachments } = data;
 
-  const trackingCode = await generateUniqueTrackingCode();
+  let feedback;
+  let trackingCode;
+  let attempts = 0;
+  while (attempts < 3) {
+    try {
+      trackingCode = await generateUniqueTrackingCode();
+      const initialAuthorId = isAnonymous
+        ? new mongoose.Types.ObjectId()
+        : (user?._id || new mongoose.Types.ObjectId());
 
-  const feedback = await Feedback.create({
-    title,
-    description,
-    category,
-    priority: priority || 'Medium',
-    isAnonymous: Boolean(isAnonymous),
-    trackingCode,
-    submittedBy: isAnonymous ? null : (user?._id || null),
-    departmentId: departmentId || null,
-    attachments: attachments || [],
-    status: 'Submitted',
-    caseNotes: [
-      {
-        note: `Case registered in category: ${category}.`,
-        authorId: user?._id || new mongoose.Types.ObjectId(),
-        authorRole: isAnonymous ? 'Anonymous Complainant' : (user?.role?.name || user?.role || 'Complainant'),
-        isPublicToComplainant: true,
-        createdAt: new Date()
+      feedback = await Feedback.create({
+        title,
+        description,
+        category,
+        priority: priority || 'Medium',
+        isAnonymous: Boolean(isAnonymous),
+        trackingCode,
+        submittedBy: isAnonymous ? null : (user?._id || null),
+        departmentId: departmentId || null,
+        attachments: attachments || [],
+        status: 'Submitted',
+        caseNotes: [
+          {
+            note: `Case registered in category: ${category}.`,
+            authorId: initialAuthorId,
+            authorRole: isAnonymous ? 'Anonymous Complainant' : (user?.role?.name || user?.role || 'Complainant'),
+            isPublicToComplainant: true,
+            createdAt: new Date()
+          }
+        ]
+      });
+      break;
+    } catch (err) {
+      if (err.code === 11000 && attempts < 2) {
+        attempts++;
+        continue;
       }
-    ]
-  });
+      throw err;
+    }
+  }
 
   // If case is Harassment, dispatch alert to Super Admin / Committee
   if (category === 'Harassment') {
@@ -98,14 +116,34 @@ function isUserSuperAdmin(user) {
   );
 }
 
+function isUserDepartmentManager(user) {
+  if (!user) return false;
+  if (isUserSuperAdmin(user)) return false;
+  const roleName = user.role?.name || user.role || '';
+  if (roleName === 'Department Manager') return true;
+  const roles = user.roles || [];
+  return roles.some((r) => (r?.name || r) === 'Department Manager');
+}
+
+function escapeRegex(string) {
+  return typeof string === 'string' ? string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '';
+}
+
+function getUserRoleName(user) {
+  return (
+    user?.role?.name ||
+    user?.role ||
+    (Array.isArray(user?.roles) ? user.roles[0]?.name || user.roles[0] : '') ||
+    'Investigator'
+  );
+}
+
 /**
  * 21.2 & 21.3 & 21.6: List feedback / grievances with isolation rules
  */
 export async function getFeedbackList(filterQuery, user, hasCommitteePermission) {
-  const roleName = user?.role?.name || user?.role || '';
-
   // 21.6: Department Manager Isolation Rule (FRD Section 11: None)
-  if (roleName === 'Department Manager') {
+  if (isUserDepartmentManager(user)) {
     throw new ApiError(403, 'Access denied: Department Managers have no access to grievance administration');
   }
 
@@ -132,10 +170,11 @@ export async function getFeedbackList(filterQuery, user, hasCommitteePermission)
     filter.category = { $ne: 'Harassment' };
   }
 
-  if (search) {
+  if (search && search.trim()) {
+    const safeRegex = escapeRegex(search.trim());
     filter.$or = [
-      { title: { $regex: search, $options: 'i' } },
-      { trackingCode: { $regex: search, $options: 'i' } }
+      { title: { $regex: safeRegex, $options: 'i' } },
+      { trackingCode: { $regex: safeRegex, $options: 'i' } }
     ];
   }
 
@@ -167,10 +206,8 @@ export async function getFeedbackList(filterQuery, user, hasCommitteePermission)
  * Retrieve single feedback by ID with security checks
  */
 export async function getFeedbackById(id, user, hasCommitteePermission) {
-  const roleName = user?.role?.name || user?.role || '';
-
   // 21.6: Department Manager Isolation
-  if (roleName === 'Department Manager') {
+  if (isUserDepartmentManager(user)) {
     throw new ApiError(403, 'Access denied: Department Managers have no access to grievance administration');
   }
 
@@ -200,11 +237,11 @@ export async function getFeedbackById(id, user, hasCommitteePermission) {
  * 21.4: Public or authenticated lookup by confidential tracking code
  */
 export async function getTrackedFeedbackByCode(code) {
-  if (!code) {
-    throw new ApiError(400, 'Tracking code is required');
+  if (!code || typeof code !== 'string') {
+    throw new ApiError(400, 'Valid tracking code is required');
   }
 
-  const formattedCode = code.trim().toUpperCase();
+  const formattedCode = String(code).trim().toUpperCase();
   const feedback = await Feedback.findOne({ trackingCode: formattedCode })
     .populate('departmentId', 'name')
     .lean();
@@ -245,11 +282,11 @@ export async function getTrackedFeedbackByCode(code) {
  * 21.2: Update case status and optional resolution note
  */
 export async function updateFeedbackStatus(id, updateData, user, hasCommitteePermission) {
-  const roleName = user?.role?.name || user?.role || '';
-  if (roleName === 'Department Manager') {
+  if (isUserDepartmentManager(user)) {
     throw new ApiError(403, 'Access denied: Department Managers have no access to grievance administration');
   }
 
+  const roleName = getUserRoleName(user);
   const feedback = await Feedback.findById(id);
   if (!feedback) {
     throw new ApiError(404, 'Case not found');
@@ -307,11 +344,11 @@ export async function updateFeedbackStatus(id, updateData, user, hasCommitteePer
  * 21.2: Add investigation case note
  */
 export async function addCaseNote(id, noteData, user, hasCommitteePermission) {
-  const roleName = user?.role?.name || user?.role || '';
-  if (roleName === 'Department Manager') {
+  if (isUserDepartmentManager(user)) {
     throw new ApiError(403, 'Access denied: Department Managers have no access to grievance administration');
   }
 
+  const roleName = getUserRoleName(user);
   const feedback = await Feedback.findById(id);
   if (!feedback) {
     throw new ApiError(404, 'Case not found');
@@ -342,11 +379,11 @@ export async function addCaseNote(id, noteData, user, hasCommitteePermission) {
  * 21.5: Escalate case to Super Admin
  */
 export async function escalateFeedback(id, escalateData, user) {
-  const roleName = user?.role?.name || user?.role || '';
-  if (roleName === 'Department Manager') {
+  if (isUserDepartmentManager(user)) {
     throw new ApiError(403, 'Access denied: Department Managers have no access to grievance administration');
   }
 
+  const roleName = getUserRoleName(user);
   const feedback = await Feedback.findById(id);
   if (!feedback) {
     throw new ApiError(404, 'Case not found');
@@ -424,9 +461,8 @@ export async function getMySubmissions(user, query) {
  * Summary metrics for dashboard
  */
 export async function getGrievanceStats(user, hasCommitteePermission) {
-  const roleName = user?.role?.name || user?.role || '';
-  if (roleName === 'Department Manager') {
-    throw new ApiError(403, 'Access denied');
+  if (isUserDepartmentManager(user)) {
+    throw new ApiError(403, 'Access denied: Department Managers have no access to grievance administration');
   }
 
   const isSuperAdmin = isUserSuperAdmin(user);

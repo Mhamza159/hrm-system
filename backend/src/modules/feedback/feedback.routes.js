@@ -23,12 +23,26 @@ const feedbackSubmissionLimiter = rateLimit({
   legacyHeaders: false
 });
 
+// Rate limiter for confidential tracking lookup to mitigate brute-force enumeration
+const trackingRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: { success: false, message: 'Too many tracking requests from this IP, please try again shortly.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
 // ==========================================
 // 1. PUBLIC / UNPROTECTED ROUTES (Row 21.4)
 // ==========================================
 
-// Public tracking lookup by confidential tracking code
-router.get('/track/:code', feedbackController.getTrackedFeedback);
+// Public tracking lookup by confidential tracking code (Throttled & Validated)
+router.get(
+  '/track/:code',
+  trackingRateLimiter,
+  validate(v.trackCodeParamSchema),
+  feedbackController.getTrackedFeedback
+);
 
 // ==========================================
 // 2. AUTHENTICATED USER ROUTES
@@ -45,7 +59,7 @@ router.post(
 );
 
 // Get submissions created by the currently logged-in user
-router.get('/my', feedbackController.getMySubmissions);
+router.get('/my', validate(v.feedbackFilterSchema), feedbackController.getMySubmissions);
 
 // ==========================================
 // 3. ADMINISTRATIVE & COMMITTEE ROUTES (Rows 21.2, 21.3, 21.5, 21.6)
@@ -70,6 +84,7 @@ router.get(
 router.get(
   '/:id',
   checkPermission(['feedback.manage', 'grievance.committee'], 'Feedback'),
+  validate(v.idParamSchema),
   feedbackController.getFeedbackById
 );
 
