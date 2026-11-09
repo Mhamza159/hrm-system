@@ -219,7 +219,11 @@ export const baseApi = createApi({
     'PolicyDoc',
     'UnansweredQuestion',
     'AttritionScore',
-    'AttritionAnalytics'
+    'AttritionAnalytics',
+    'Awards',
+    'Kudos',
+    'Celebrations',
+    'Surveys'
   ],
   endpoints: () => ({})
 });

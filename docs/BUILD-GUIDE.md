@@ -437,11 +437,11 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 20.1 | Employee of the Month: nomination + voting | `award.model.js`, `POST /awards/:id/nominate`, `/vote` | `AwardsPage.jsx` | Aik vote per user | ☐ |
-| 20.2 | Appreciation posts + badges | `appreciation.model.js` | `AppreciationWall.jsx` | Post dikhe | ☐ |
-| 20.3 | Birthday / anniversary wall + auto wishes | `jobs/celebrations.job.js` | `CelebrationsWall.jsx` | Subah wish jaye | ☐ |
-| 20.4 | Surveys aur polls | `survey.model.js`, `surveyResponse.model.js`, `POST /surveys/:id/respond` | `SurveysPage.jsx`, `SurveyForm.jsx` | Aik jawab per user | ☐ |
-| 20.5 | Survey results | `GET /surveys/:id/results` | `SurveyResultsPage.jsx` (charts) | Charts sahi | ☐ |
+| 20.1 | Employee of the Month: nomination + voting | `award.model.js`, `POST /awards/:id/nominate`, `/vote` | `AwardsPage.jsx` | Aik vote per user | ☑ |
+| 20.2 | Appreciation posts + badges | `appreciation.model.js` | `AppreciationWall.jsx` | Post dikhe | ☑ |
+| 20.3 | Birthday / anniversary wall + auto wishes | `jobs/celebrations.job.js` | `CelebrationsWall.jsx` | Subah wish jaye | ☑ |
+| 20.4 | Surveys aur polls | `survey.model.js`, `surveyResponse.model.js`, `POST /surveys/:id/respond` | `SurveysPage.jsx`, `SurveyForm.jsx` | Aik jawab per user | ☑ |
+| 20.5 | Survey results | `GET /surveys/:id/results` | `SurveyResultsPage.jsx` (charts) | Charts sahi | ☑ |
 
 ## 28. M21 — Anonymous Feedback & Grievance
 

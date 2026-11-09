@@ -48,6 +48,7 @@ import {
   Laptop,
   ListChecks,
   TrendingDown,
+  Trophy,
   X
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -221,6 +222,17 @@ export function Sidebar({ isOpen = false, onClose }) {
         { name: 'Unanswered Questions', path: '/chatbot/unanswered', permission: 'chatbot.unanswered.manage' }
       ]
     },
+    {
+      type: 'group',
+      name: 'Rewards & Engagement',
+      icon: Trophy,
+      children: [
+        { name: 'Awards & Honors', path: '/rewards/awards', permission: 'rewards.view' },
+        { name: 'Appreciation Wall', path: '/rewards/kudos', permission: 'rewards.view' },
+        { name: 'Celebration Wall', path: '/rewards/celebrations', permission: 'rewards.view' },
+        { name: 'Pulse Surveys', path: '/rewards/surveys', permission: 'rewards.view' }
+      ]
+    },
     { type: 'link', name: 'Attrition Prediction', path: '/attrition', icon: TrendingDown, permission: 'attrition.view' },
     { type: 'link', name: 'Reports', path: '/reports', icon: BarChart3, permission: 'report.view', managerOnly: true },
     { type: 'link', name: 'Company Policies', path: '/policies', icon: BookOpen, permission: 'settings.view' },
@@ -251,7 +263,8 @@ export function Sidebar({ isOpen = false, onClose }) {
     Assets: false,
     'Projects & Timesheets': false,
     'Recruitment & ATS': false,
-    'AI Chatbot': false
+    'AI Chatbot': false,
+    'Rewards & Engagement': false
   });
 
   // Auto-expand group if the active route is within its children

@@ -130,7 +130,13 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'chatbot.policy.manage', subject: 'Chatbot', scope: 'all' },
       { action: 'chatbot.unanswered.manage', subject: 'Chatbot', scope: 'all' },
       { action: 'attrition.view', subject: 'Attrition', scope: 'all' },
-      { action: 'attrition.manage', subject: 'Attrition', scope: 'all' }
+      { action: 'attrition.manage', subject: 'Attrition', scope: 'all' },
+      { action: 'rewards.view', subject: 'Rewards', scope: 'all' },
+      { action: 'rewards.nominate', subject: 'Rewards', scope: 'all' },
+      { action: 'rewards.vote', subject: 'Rewards', scope: 'all' },
+      { action: 'rewards.kudos', subject: 'Rewards', scope: 'all' },
+      { action: 'rewards.respond', subject: 'Rewards', scope: 'all' },
+      { action: 'rewards.manage', subject: 'Rewards', scope: 'all' }
     ]
   },
   {
@@ -196,7 +202,12 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'recruitment.interview.evaluate', subject: 'Recruitment', scope: 'own' },
       { action: 'recruitment.referral.submit', subject: 'Recruitment', scope: 'own' },
       { action: 'attrition.view', subject: 'Attrition', scope: 'team' },
-      { action: 'attrition.manage', subject: 'Attrition', scope: 'team' }
+      { action: 'attrition.manage', subject: 'Attrition', scope: 'team' },
+      { action: 'rewards.view', subject: 'Rewards', scope: 'all' },
+      { action: 'rewards.nominate', subject: 'Rewards', scope: 'team' },
+      { action: 'rewards.vote', subject: 'Rewards', scope: 'all' },
+      { action: 'rewards.kudos', subject: 'Rewards', scope: 'all' },
+      { action: 'rewards.respond', subject: 'Rewards', scope: 'all' }
     ]
   },
   {
@@ -239,7 +250,10 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'recruitment.job.view', subject: 'Recruitment', scope: 'all' },
       { action: 'recruitment.referral.submit', subject: 'Recruitment', scope: 'own' },
       { action: 'chatbot.use', subject: 'Chatbot', scope: 'own' },
-      { action: 'chatbot.use', subject: 'Chatbot', scope: 'own' }
+      { action: 'rewards.view', subject: 'Rewards', scope: 'own' },
+      { action: 'rewards.vote', subject: 'Rewards', scope: 'own' },
+      { action: 'rewards.kudos', subject: 'Rewards', scope: 'own' },
+      { action: 'rewards.respond', subject: 'Rewards', scope: 'own' }
     ]
   }
 ];

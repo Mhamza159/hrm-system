@@ -319,3 +319,4 @@ To be registered in `backend/src/shared/permissions.js` under module `rewards`:
   - `{ surveyId: 1, userHash: 1 }` — **Anonymity & Idempotency Invariant**: `userHash` guarantees single submission per user without storing the employee's ID when `isAnonymous: true`.
 - **Auxiliary Index**:
   - `{ surveyId: 1, submittedAt: -1 }`.
+

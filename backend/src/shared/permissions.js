@@ -956,6 +956,56 @@ export const PERMISSIONS_CATALOGUE = [
         defaultScope: 'team'
       }
     ]
+  },
+  {
+    module: 'rewards',
+    label: 'Rewards, Celebrations & Surveys',
+    subject: 'Rewards',
+    description: 'Employee recognition, Employee of the Month cycles, peer kudos, milestones, and pulse surveys.',
+    actions: [
+      {
+        action: 'rewards.view',
+        label: 'View Rewards, Kudos & Celebrations',
+        description: 'Access award cycles, peer recognition wall, celebration milestones, and available surveys.',
+        allowedScopes: ['own', 'team', 'department', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'rewards.nominate',
+        label: 'Nominate Employee of the Month',
+        description: 'Nominate team members for monthly award cycles with citations.',
+        allowedScopes: ['team', 'all'],
+        defaultScope: 'team'
+      },
+      {
+        action: 'rewards.vote',
+        label: 'Vote in Award Cycles',
+        description: 'Cast single ballot vote for shortlisted monthly award candidates.',
+        allowedScopes: ['own', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'rewards.kudos',
+        label: 'Give Kudos & React',
+        description: 'Send peer appreciation posts with recognition badges and like colleagues posts.',
+        allowedScopes: ['own', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'rewards.respond',
+        label: 'Respond to Surveys',
+        description: 'Complete and submit company pulse surveys and polls.',
+        allowedScopes: ['own', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'rewards.manage',
+        label: 'Manage Rewards & Surveys',
+        description: 'Create award cycles, announce winners, design pulse surveys, and view detailed response analytics.',
+        allowedScopes: ['department', 'all'],
+        defaultScope: 'all'
+      }
+    ]
   }
 ];
 

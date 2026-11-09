@@ -54,6 +54,7 @@ import { clientRouter, projectRouter, timesheetRouter, projectReportsRouter } fr
 import recruitmentRoutes from './modules/recruitment/recruitment.routes.js';
 import chatbotRoutes from './modules/chatbot/chatbot.routes.js';
 import attritionRoutes from './modules/attrition/attrition.routes.js';
+import rewardsRoutes from './modules/rewards/rewards.routes.js';
 import * as attendanceController from './modules/attendance/attendance.controller.js';
 import * as leaveController from './modules/leaves/leave.controller.js';
 import * as payrollController from './modules/payroll/payroll.controller.js';
@@ -170,6 +171,7 @@ app.use('/api/v1/projects', projectRouter);
 app.use('/api/v1/recruitment', recruitmentRoutes);
 app.use('/api/v1/chatbot', chatbotRoutes);
 app.use('/api/v1/attrition', attritionRoutes);
+app.use('/api/v1/rewards', rewardsRoutes);
 app.use('/api/v1/timesheets', timesheetRouter);
 app.use('/api/v1/reports', projectReportsRouter);
 app.use('/api/v1/reports', reportsRoutes);

@@ -19,6 +19,7 @@ import { initYearlyLeaveCron } from './jobs/yearlyLeave.job.js';
 import { initAssetExpiryJob } from './jobs/assetExpiry.job.js';
 import { initDeactivationJob } from './jobs/deactivate.job.js';
 import { initAttritionJob } from './jobs/attritionScore.job.js';
+import { initCelebrationsJob } from './jobs/celebrations.job.js';
 import { seedRolesAndAdmin } from './seed/roles.seed.js';
 
 const startServer = async () => {
@@ -41,6 +42,7 @@ const startServer = async () => {
     initAssetExpiryJob();
     initDeactivationJob();
     initAttritionJob();
+    initCelebrationsJob();
 
     // 5. Start HTTP & WebSocket Listener
     httpServer.listen(env.PORT, () => {

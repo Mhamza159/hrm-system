@@ -88,6 +88,10 @@ import { InternalJobsPage } from './features/recruitment/pages/InternalJobsPage.
 import { PolicyDocsPage } from './features/chatbot/pages/PolicyDocsPage.jsx';
 import { UnansweredQuestionsPage } from './features/chatbot/pages/UnansweredQuestionsPage.jsx';
 import { AttritionDashboardPage } from './features/attrition/pages/AttritionDashboardPage.jsx';
+import { AwardsPage } from './features/rewards/pages/AwardsPage.jsx';
+import { AppreciationWallPage } from './features/rewards/pages/AppreciationWallPage.jsx';
+import { CelebrationsWallPage } from './features/rewards/pages/CelebrationsWallPage.jsx';
+import { SurveysPage } from './features/rewards/pages/SurveysPage.jsx';
 import { ChatbotWidget } from './features/chatbot/components/ChatbotWidget.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
@@ -850,6 +854,40 @@ export default function App() {
             element={
               <ProtectedRoute requiredPermission="attrition.view">
                 <AttritionDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Module M20: Rewards, Celebrations & Surveys */}
+          <Route
+            path="rewards/awards"
+            element={
+              <ProtectedRoute requiredPermission="rewards.view">
+                <AwardsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="rewards/kudos"
+            element={
+              <ProtectedRoute requiredPermission="rewards.view">
+                <AppreciationWallPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="rewards/celebrations"
+            element={
+              <ProtectedRoute requiredPermission="rewards.view">
+                <CelebrationsWallPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="rewards/surveys"
+            element={
+              <ProtectedRoute requiredPermission="rewards.view">
+                <SurveysPage />
               </ProtectedRoute>
             }
           />

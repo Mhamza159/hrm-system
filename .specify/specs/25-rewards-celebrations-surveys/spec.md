@@ -209,3 +209,4 @@ surveyResponseSchema.index({ surveyId: 1, userHash: 1 }, { unique: true });
    - All survey filters and award statuses are Zod enum-validated.
 4. **PBAC Scoping Invariant**:
    - Regular employees cannot create surveys, delete peer kudos, or announce award winners (HTTP 403 Forbidden).
+
