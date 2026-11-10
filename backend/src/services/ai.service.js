@@ -83,27 +83,57 @@ export const heuristicResumeParser = (rawText = '') => {
 };
 
 /**
+ * Detect available AI Provider configuration (Google Gemini or OpenAI)
+ */
+export const getAiConfig = () => {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+
+  if (geminiKey && geminiKey.trim() !== '' && !geminiKey.startsWith('mock_')) {
+    return {
+      apiUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+      apiKey: geminiKey.trim(),
+      model: 'gemini-2.5-flash',
+      isConfigured: true,
+      provider: 'Gemini'
+    };
+  }
+
+  if (openaiKey && openaiKey.trim() !== '' && !openaiKey.startsWith('sk-placeholder')) {
+    return {
+      apiUrl: 'https://api.openai.com/v1/chat/completions',
+      apiKey: openaiKey.trim(),
+      model: 'gpt-4o-mini',
+      isConfigured: true,
+      provider: 'OpenAI'
+    };
+  }
+
+  return { isConfigured: false };
+};
+
+/**
  * Parses CV raw text into structured profile JSON
  */
 export const parseResumeText = async (resumeText = '') => {
   const fallback = heuristicResumeParser(resumeText);
-  const apiKey = process.env.OPENAI_API_KEY;
+  const aiConfig = getAiConfig();
 
-  if (!apiKey || apiKey.trim() === '' || apiKey.startsWith('sk-placeholder')) {
-    logger.info('OpenAI API key unset; using deterministic heuristic resume parser.');
+  if (!aiConfig.isConfigured) {
+    logger.info('No LLM API key configured (GEMINI_API_KEY / OPENAI_API_KEY); using deterministic heuristic resume parser.');
     return fallback;
   }
 
   try {
     const sanitizedText = String(resumeText || '').slice(0, 10000);
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(aiConfig.apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey.trim()}`
+        Authorization: `Bearer ${aiConfig.apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: aiConfig.model,
         messages: [
           {
             role: 'system',
@@ -213,21 +243,21 @@ export const screenCandidateFit = async ({
     screeningSummary: deterministicSummary
   };
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey || apiKey.trim() === '' || apiKey.startsWith('sk-placeholder')) {
+  const aiConfig = getAiConfig();
+  if (!aiConfig.isConfigured) {
     return fallback;
   }
 
   try {
     const sanitizedCvExcerpt = String(cvText || '').slice(0, 5000);
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(aiConfig.apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey.trim()}`
+        Authorization: `Bearer ${aiConfig.apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: aiConfig.model,
         messages: [
           {
             role: 'system',
