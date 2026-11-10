@@ -16,6 +16,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import PDFDocument from 'pdfkit';
+import { CandidateCv } from '../models/candidateCv.model.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -213,9 +214,23 @@ export const generateFallbackCvPdf = (res, candidate) => {
  * @param {Object} candidate - Populated candidate record
  */
 export const streamCandidateCv = async (res, candidate) => {
+  // 1. Check persistent binary database storage first (MongoDB Atlas)
+  // Guarantees resume retrieval across ephemeral container rebuilds & local/cloud parity
+  try {
+    const storedCv = await CandidateCv.findOne({ candidateId: candidate._id });
+    if (storedCv && storedCv.fileBuffer && storedCv.fileBuffer.length > 0) {
+      const safeFilename = `${(candidate.name || 'Candidate').replace(/[^a-zA-Z0-9_-]/g, '_')}_Resume.pdf`;
+      res.setHeader('Content-Type', storedCv.contentType || 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
+      return res.end(storedCv.fileBuffer);
+    }
+  } catch (dbErr) {
+    console.warn('[Recruitment] CandidateCv lookup notice:', dbErr.message);
+  }
+
   const cvUrl = candidate.cvUrl || '';
 
-  // 1. If remote URL (Cloudinary, AWS S3, etc.), redirect directly
+  // 2. If remote URL (Cloudinary, AWS S3, etc.), redirect directly
   if (cvUrl.startsWith('http://') || cvUrl.startsWith('https://')) {
     return res.redirect(cvUrl);
   }

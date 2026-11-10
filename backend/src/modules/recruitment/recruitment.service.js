@@ -15,6 +15,7 @@ import mongoose from 'mongoose';
 import { Requisition } from '../../models/requisition.model.js';
 import { Job } from '../../models/job.model.js';
 import { Candidate } from '../../models/candidate.model.js';
+import { CandidateCv } from '../../models/candidateCv.model.js';
 import { Interview } from '../../models/interview.model.js';
 import { Employee } from '../../models/employee.model.js';
 import { User } from '../../models/user.model.js';
@@ -546,6 +547,25 @@ export const applyForJob = async (jobId, candidateData, file) => {
       }
     ]
   });
+
+  // Persistent cloud storage in MongoDB Atlas (guarantees resume survives container wipes)
+  if (file && file.buffer) {
+    try {
+      await CandidateCv.findOneAndUpdate(
+        { candidateId: candidate._id },
+        {
+          candidateId: candidate._id,
+          filename: file.originalname || `${candidateData.name}_Resume${safeExt}`,
+          contentType: file.mimetype || 'application/pdf',
+          size: file.buffer.length,
+          fileBuffer: file.buffer
+        },
+        { upsert: true, new: true }
+      );
+    } catch (cvDbErr) {
+      console.warn('[Recruitment] CandidateCv binary persistence warning:', cvDbErr.message);
+    }
+  }
 
   // Automated candidate acknowledgment email
   try {
