@@ -450,8 +450,8 @@ export const applyForJob = async (jobId, candidateData, file) => {
         const publicId = `cv_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
         const cloudRes = await uploadBufferToCloudinary(file.buffer, {
           folder: 'hrm/resumes',
-          resource_type: 'auto',
-          public_id: publicId
+          resource_type: safeExt === '.pdf' ? 'raw' : 'auto',
+          public_id: `${publicId}${safeExt}`
         });
         if (cloudRes?.secure_url || cloudRes?.url) {
           cvUrl = cloudRes.secure_url || cloudRes.url;
@@ -478,9 +478,14 @@ export const applyForJob = async (jobId, candidateData, file) => {
       cvUrl = `/uploads/resumes/${filename}`;
     }
 
-    // Extract raw text heuristic from buffer if plain/utf8
+    // Extract raw text heuristic from buffer if plain/utf8 (guard binary PDF bytecode)
     try {
-      rawCvText = file.buffer.toString('utf8', 0, Math.min(file.buffer.length, 12000));
+      const header = file.buffer.toString('utf8', 0, 5);
+      if (header.startsWith('%PDF')) {
+        rawCvText = `Applicant: ${candidateData.name}\nEmail: ${candidateData.email}\nPhone: ${candidateData.phone || ''}\n${candidateData.linkedinUrl ? `LinkedIn: ${candidateData.linkedinUrl}\n` : ''}${candidateData.portfolioUrl ? `Portfolio: ${candidateData.portfolioUrl}\n` : ''}Target Job: ${job.title}\nCandidate submitted document: ${file.originalname || 'Resume.pdf'}`;
+      } else {
+        rawCvText = file.buffer.toString('utf8', 0, Math.min(file.buffer.length, 12000));
+      }
     } catch {
       rawCvText = `${candidateData.name} CV Document`;
     }

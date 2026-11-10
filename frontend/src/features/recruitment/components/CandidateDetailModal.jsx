@@ -77,28 +77,11 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
     skip: !isOpen || !candidateId
   });
 
-  const handleViewCv = async () => {
+  const handleViewCv = () => {
     if (!candidate?._id) return;
-    setIsLoadingCv(true);
-    try {
-      const apiBase = getApiBaseUrl();
-      const res = await fetch(`${apiBase}/recruitment/candidates/${candidate._id}/cv`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`
-        }
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || 'Failed to open candidate CV document');
-      }
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      window.open(blobUrl, '_blank');
-    } catch (err) {
-      toast.error(err.message || 'Failed to open CV document');
-    } finally {
-      setIsLoadingCv(false);
-    }
+    const apiBase = getApiBaseUrl();
+    const tokenParam = accessToken ? `?token=${encodeURIComponent(accessToken)}` : '';
+    window.open(`${apiBase}/recruitment/candidates/${candidate._id}/cv${tokenParam}`, '_blank', 'noopener,noreferrer');
   };
   const [screenCandidate, { isLoading: isScreening }] = useScreenCandidateMutation();
   const [updateCandidateStage] = useUpdateCandidateStageMutation();

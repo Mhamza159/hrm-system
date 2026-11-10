@@ -74,8 +74,10 @@ export const generateFallbackCvPdf = (res, candidate) => {
 
   const profile = candidate.parsedProfile || {};
 
-  // Executive Summary
-  if (profile.executiveSummary || candidate.cvText) {
+  // Executive Summary (filter out raw binary PDF bytecode)
+  const isBinaryPdf = candidate.cvText?.trim().startsWith('%PDF');
+  const summaryText = profile.executiveSummary || (!isBinaryPdf ? candidate.cvText?.slice(0, 500) : '');
+  if (summaryText) {
     doc
       .fontSize(12)
       .font('Helvetica-Bold')
@@ -83,7 +85,6 @@ export const generateFallbackCvPdf = (res, candidate) => {
       .text('EXECUTIVE PROFILE & SUMMARY')
       .moveDown(0.3);
 
-    const summaryText = profile.executiveSummary || candidate.cvText.slice(0, 500);
     doc
       .fontSize(9.5)
       .font('Helvetica')
