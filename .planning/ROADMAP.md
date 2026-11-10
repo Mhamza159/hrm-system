@@ -77,11 +77,11 @@ Governed strictly by [`docs/BUILD-GUIDE.md`](file:///c:/Users/hamih/OneDrive/Des
 **Goal:** Enhance workplace engagement, introduce internal real-time communication, provide full Urdu localization, and optimize PWA performance.
 **Scope:** 5 Modules · 31 Vertical Slice Features
 
-- [ ] **25. M20 Rewards, Celebrations & Surveys** · *BUILD-GUIDE Section 27* · **5 Features (20.1 to 20.5)**
+- [x] **25. M20 Rewards, Celebrations & Surveys** · *BUILD-GUIDE Section 27* · **5 Features (20.1 to 20.5)**
   - Employee of the Month nomination & voting, peer appreciation wall with badges, birthday & work anniversary automated morning greetings, pulse surveys & company polls, interactive survey analytics.
-- [ ] **26. M21 Anonymous Feedback & Grievance** · *BUILD-GUIDE Section 28* · **6 Features (21.1 to 21.6)**
+- [x] **26. M21 Anonymous Feedback & Grievance** · *BUILD-GUIDE Section 28* · **6 Features (21.1 to 21.6)**
   - Anonymous feedback submission with encrypted tracking code (no user ID logged), formal grievance case management, confidential harassment investigation committee portal, status inquiry via tracking code, case escalation to Super Admin, manager restriction from seeing complaints against their own team.
-- [ ] **27. M24 Internal Chat** · *BUILD-GUIDE Section 29* · **7 Features (24.1 to 24.7)**
+- [x] **27. M24 Internal Chat** · *BUILD-GUIDE Section 29* · **7 Features (24.1 to 24.7)**
   - Real-time 1-on-1 direct messaging (Socket.io), group conversations, automated department channels, file & image sharing, user presence indicators & read receipts, message history search, administrative channel moderation & archiving.
 - [ ] **28. M25 Training & Learning** · *BUILD-GUIDE Section 30* · **7 Features (25.1 to 25.7)**
   - Training course catalogue, executive training budget approval, employee self-enrollment & manager nomination, attendance & completion tracking, training certificate uploads, employee skill matrix & gap analysis, company training cost report.
