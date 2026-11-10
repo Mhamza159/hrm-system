@@ -458,13 +458,13 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 | ID | Feature | Backend | Frontend | Test | ☐ |
 | --- | --- | --- | --- | --- | --- |
-| 24.1 | One-to-one chat | `conversation.model.js`, `message.model.js`, socket `chat:message` | `ChatPage.jsx` | Live message | ☐ |
-| 24.2 | Group chat | `POST /conversations` (group) | New group dialog | Group mein sab ko | ☐ |
-| 24.3 | Department channels auto | department/employee change par member update | Channels list | Naya employee channel mein | ☐ |
-| 24.4 | File sharing | upload (0.6) | Attach button | File khule | ☐ |
-| 24.5 | Online status + read | socket `presence`, `chat:read` | Green dot, ticks | Status sahi | ☐ |
-| 24.6 | Message search | `GET /messages/search?q=` | Search box | Purana message mile | ☐ |
-| 24.7 | Admin: channel band/archive | `PATCH /conversations/:id/archive` | Admin menu | Archived mein message band | ☐ |
+| 24.1 | One-to-one chat | `conversation.model.js`, `message.model.js`, socket `chat:message` | `ChatPage.jsx` | Live message | ☑ |
+| 24.2 | Group chat | `POST /conversations` (group) | New group dialog | Group mein sab ko | ☑ |
+| 24.3 | Department channels auto | department/employee change par member update | Channels list | Naya employee channel mein | ☑ |
+| 24.4 | File sharing | upload (0.6) | Attach button | File khule | ☑ |
+| 24.5 | Online status + read | socket `presence`, `chat:read` | Green dot, ticks | Status sahi | ☑ |
+| 24.6 | Message search | `GET /messages/search?q=` | Search box | Purana message mile | ☑ |
+| 24.7 | Admin: channel band/archive | `PATCH /conversations/:id/archive` | Admin menu | Archived mein message band | ☑ |
 
 ## 30. M25 — Training & Learning
 
