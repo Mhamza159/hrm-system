@@ -982,6 +982,27 @@ export const issueOfferLetter = async (candidateId, offerPayload, actor) => {
     after: candidate.offerDetails
   });
 
+  // Dispatch formal offer letter email to candidate
+  try {
+    if (candidate.email) {
+      const baseSalaryFormatted = ((offerPayload.baseSalaryPaisa || 0) / 100).toLocaleString('en-PK');
+      const joiningDateFormatted = new Intl.DateTimeFormat('en-PK', {
+        timeZone: 'Asia/Karachi',
+        dateStyle: 'full'
+      }).format(new Date(candidate.offerDetails.joiningDate));
+
+      await emailService.sendOfferLetterEmail({
+        to: candidate.email,
+        candidateName: candidate.name,
+        jobTitle: candidate.jobId?.title || 'Offered Position',
+        baseSalaryFormatted,
+        joiningDateFormatted
+      });
+    }
+  } catch (emailErr) {
+    console.error('Candidate offer letter email notification failed:', emailErr.message);
+  }
+
   return candidate;
 };
 

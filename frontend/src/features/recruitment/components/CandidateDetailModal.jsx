@@ -327,10 +327,10 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
               </div>
 
               <a
-                href={`/api/v1/recruitment/candidates/${candidate._id}/offer/pdf`}
+                href={`${getApiBaseUrl()}/recruitment/candidates/${candidate._id}/offer/pdf${accessToken ? `?token=${encodeURIComponent(accessToken)}` : ''}`}
                 target="_blank"
                 rel="noreferrer"
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1"
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1 cursor-pointer transition-colors"
               >
                 <FileText className="w-3.5 h-3.5" /> Download PDF
               </a>

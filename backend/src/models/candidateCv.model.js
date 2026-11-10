@@ -44,3 +44,4 @@ const candidateCvSchema = new mongoose.Schema(
 
 export const CandidateCv =
   mongoose.models.CandidateCv || mongoose.model('CandidateCv', candidateCvSchema);
+

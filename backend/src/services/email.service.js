@@ -260,6 +260,46 @@ class EmailService {
 
     return this.sendMail({ to, subject, html });
   }
+
+  /**
+   * Dispatch candidate job offer letter notification
+   * @param {Object} params
+   * @returns {Promise<Object>}
+   */
+  async sendOfferLetterEmail({ to, candidateName, jobTitle, baseSalaryFormatted, joiningDateFormatted }) {
+    const subject = `Job Offer: ${jobTitle} — ELVARA HRM Enterprise`;
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 580px; margin: 0 auto; padding: 28px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px;">
+        <div style="margin-bottom: 20px; border-bottom: 2px solid #00C471; padding-bottom: 12px;">
+          <h2 style="color: #0f172a; margin: 0; font-size: 20px;">Formal Employment Offer</h2>
+          <p style="color: #00C471; font-weight: 600; font-size: 13px; margin: 4px 0 0 0;">ELVARA HRM · Talent Acquisition</p>
+        </div>
+        
+        <p style="color: #334155; font-size: 14px; line-height: 1.6;">Dear <strong>${candidateName}</strong>,</p>
+        <p style="color: #334155; font-size: 14px; line-height: 1.6;">
+          Congratulations! Following your successful evaluation through our recruitment process, we are pleased to offer you the position of <strong>${jobTitle}</strong> at ELVARA HRM Enterprise.
+        </p>
+
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #00C471; border-radius: 8px; padding: 18px; margin: 24px 0;">
+          <p style="margin: 0 0 10px 0; font-size: 13px; color: #475569;"><strong>Position:</strong> ${jobTitle}</p>
+          <p style="margin: 0 0 10px 0; font-size: 13px; color: #475569;"><strong>Base Compensation:</strong> PKR ${baseSalaryFormatted} / month</p>
+          <p style="margin: 0; font-size: 13px; color: #475569;"><strong>Expected Joining Date:</strong> ${joiningDateFormatted}</p>
+        </div>
+
+        <p style="color: #334155; font-size: 13px; line-height: 1.6;">
+          Your formal offer letter has been generated. Please coordinate with our Human Resources department to complete your onboarding formalities.
+        </p>
+
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+          <p style="color: #64748b; font-size: 12px; margin: 0;">
+            Welcome to the team! If you have any questions, please feel free to reach out to our Talent Acquisition team.
+          </p>
+        </div>
+      </div>
+    `;
+
+    return this.sendMail({ to, subject, html });
+  }
 }
 
 export const emailService = new EmailService();
