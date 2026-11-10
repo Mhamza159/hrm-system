@@ -40,6 +40,9 @@ import { AIScreeningBadge } from './AIScreeningBadge.jsx';
 import { InterviewScheduleModal } from './InterviewScheduleModal.jsx';
 import { ScorecardModal } from './ScorecardModal.jsx';
 import { OfferLetterModal } from './OfferLetterModal.jsx';
+import { usePermission } from '../../../hooks/usePermission.js';
+import { getApiBaseUrl } from '../../../lib/baseApi.js';
+import { useSelector } from 'react-redux';
 import { toast } from 'sonner';
 
 const resolveCvUrl = (url) => {
@@ -53,10 +56,13 @@ const resolveCvUrl = (url) => {
 };
 
 export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSuccess, onCandidateDeleted }) => {
+  const { can } = usePermission();
+  const accessToken = useSelector((state) => state.auth?.accessToken);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [selectedInterviewForScorecard, setSelectedInterviewForScorecard] = useState(null);
   const [isOfferOpen, setIsOfferOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isLoadingCv, setIsLoadingCv] = useState(false);
 
   // Technical Test prompt state
   const [isTestPromptOpen, setIsTestPromptOpen] = useState(false);
@@ -70,6 +76,30 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
   const { data: detailRes, isLoading } = useGetCandidateByIdQuery(candidateId, {
     skip: !isOpen || !candidateId
   });
+
+  const handleViewCv = async () => {
+    if (!candidate?._id) return;
+    setIsLoadingCv(true);
+    try {
+      const apiBase = getApiBaseUrl();
+      const res = await fetch(`${apiBase}/recruitment/candidates/${candidate._id}/cv`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to open candidate CV document');
+      }
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, '_blank');
+    } catch (err) {
+      toast.error(err.message || 'Failed to open CV document');
+    } finally {
+      setIsLoadingCv(false);
+    }
+  };
   const [screenCandidate, { isLoading: isScreening }] = useScreenCandidateMutation();
   const [updateCandidateStage] = useUpdateCandidateStageMutation();
   const [sendTechnicalTest, { isLoading: isSendingTest }] = useSendTechnicalTestMutation();
@@ -203,23 +233,17 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
                 <Phone className="w-3.5 h-3.5 text-slate-400" />
                 {candidate?.phone}
               </span>
-              {(() => {
-                const cvLink = resolveCvUrl(candidate?.resumeUrl || candidate?.cvUrl);
-                return cvLink ? (
-                  <a
-                    href={cvLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-[#00C471] hover:underline font-semibold"
-                  >
-                    <FileText className="w-3.5 h-3.5" /> View CV Document
-                  </a>
-                ) : (
-                  <span className="flex items-center gap-1.5 text-slate-400 italic">
-                    <FileText className="w-3.5 h-3.5" /> No CV Attached
-                  </span>
-                );
-              })()}
+              {can('recruitment.candidate.view') && (
+                <button
+                  type="button"
+                  disabled={isLoadingCv}
+                  onClick={handleViewCv}
+                  className="flex items-center gap-1.5 text-[#00C471] hover:underline font-semibold cursor-pointer disabled:opacity-50"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  {isLoadingCv ? 'Loading CV...' : 'View CV Document'}
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -229,15 +253,17 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
                 strengths={candidate?.parsedProfile?.matchingStrengths}
                 missing={candidate?.parsedProfile?.missingSkills}
               />
-              <button
-                type="button"
-                disabled={isScreening}
-                onClick={handleRunAIScreen}
-                className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-emerald-50 dark:bg-[#162820] text-emerald-700 dark:text-[#00C471] border border-emerald-200 dark:border-[#1A3125] hover:bg-emerald-100 cursor-pointer flex items-center gap-1 disabled:opacity-50"
-              >
-                <Sparkles className="w-3 h-3" />
-                {isScreening ? 'Screening...' : 'Re-screen'}
-              </button>
+              {can('recruitment.candidate.screen') && (
+                <button
+                  type="button"
+                  disabled={isScreening}
+                  onClick={handleRunAIScreen}
+                  className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-emerald-50 dark:bg-[#162820] text-emerald-700 dark:text-[#00C471] border border-emerald-200 dark:border-[#1A3125] hover:bg-emerald-100 cursor-pointer flex items-center gap-1 disabled:opacity-50"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  {isScreening ? 'Screening...' : 'Re-screen'}
+                </button>
+              )}
             </div>
           </div>
 
@@ -334,13 +360,15 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
               <h4 className="font-bold text-slate-900 dark:text-white uppercase tracking-wider text-[11px]">
                 Interview Rounds ({interviews.length})
               </h4>
-              <button
-                type="button"
-                onClick={() => setIsScheduleOpen(true)}
-                className="text-xs font-semibold text-[#00C471] hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                + Schedule Round
-              </button>
+              {can('recruitment.interview.manage') && (
+                <button
+                  type="button"
+                  onClick={() => setIsScheduleOpen(true)}
+                  className="text-xs font-semibold text-[#00C471] hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  + Schedule Round
+                </button>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -407,13 +435,15 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
                         </span>
                       )}
 
-                      <button
-                        type="button"
-                        onClick={() => setSelectedInterviewForScorecard(iv)}
-                        className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-100 dark:bg-[#162820] text-slate-700 dark:text-slate-200 hover:bg-slate-200 cursor-pointer"
-                      >
-                        {hasScorecards ? 'View Evaluation' : 'Submit Scorecard'}
-                      </button>
+                      {can('recruitment.interview.evaluate') && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedInterviewForScorecard(iv)}
+                          className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-100 dark:bg-[#162820] text-slate-700 dark:text-slate-200 hover:bg-slate-200 cursor-pointer"
+                        >
+                          {hasScorecards ? 'View Evaluation' : 'Submit Scorecard'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -433,23 +463,27 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
               Recruitment Actions
             </h4>
             <div className="flex items-center gap-2 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setIsTestPromptOpen(true)}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/40 hover:bg-blue-100 cursor-pointer flex items-center gap-1.5"
-              >
-                <Send className="w-3.5 h-3.5" /> Send Technical Test
-              </button>
+              {can('recruitment.candidate.stage') && (
+                <button
+                  type="button"
+                  onClick={() => setIsTestPromptOpen(true)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/40 hover:bg-blue-100 cursor-pointer flex items-center gap-1.5"
+                >
+                  <Send className="w-3.5 h-3.5" /> Send Technical Test
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={() => setIsOfferOpen(true)}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-900/40 hover:bg-purple-100 cursor-pointer flex items-center gap-1.5"
-              >
-                <FileText className="w-3.5 h-3.5" /> Configure Offer
-              </button>
+              {can('recruitment.offer.manage') && (
+                <button
+                  type="button"
+                  onClick={() => setIsOfferOpen(true)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-900/40 hover:bg-purple-100 cursor-pointer flex items-center gap-1.5"
+                >
+                  <FileText className="w-3.5 h-3.5" /> Configure Offer
+                </button>
+              )}
 
-              {candidate?.stage !== 'Hired' && (
+              {can('recruitment.hire') && candidate?.stage !== 'Hired' && (
                 <button
                   type="button"
                   disabled={isHiring}
@@ -461,7 +495,7 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
                 </button>
               )}
 
-              {candidate?.stage !== 'Rejected' && (
+              {can('recruitment.candidate.stage') && candidate?.stage !== 'Rejected' && (
                 <button
                   type="button"
                   onClick={() => setIsRejectOpen(true)}
@@ -471,13 +505,15 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
                 </button>
               )}
 
-              <button
-                type="button"
-                onClick={() => setIsDeleteOpen(true)}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 border border-rose-200 dark:border-rose-900/40 hover:bg-rose-100 cursor-pointer flex items-center gap-1.5"
-              >
-                <Trash2 className="w-3.5 h-3.5" /> Delete Candidate
-              </button>
+              {can('recruitment.candidate.stage') && (
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteOpen(true)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 border border-rose-200 dark:border-rose-900/40 hover:bg-rose-100 cursor-pointer flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Delete Candidate
+                </button>
+              )}
             </div>
           </div>
         </div>

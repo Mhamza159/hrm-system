@@ -11,6 +11,7 @@ import { asyncHandler } from '../../utils/asyncHandler.js';
 import { ApiError } from '../../utils/ApiError.js';
 import * as recruitmentService from './recruitment.service.js';
 import { streamOfferLetterPdf } from '../../services/offerPdf.service.js';
+import { streamCandidateCv } from '../../services/cvPdf.service.js';
 
 // 15.1: Create Requisition
 export const createRequisition = asyncHandler(async (req, res) => {
@@ -239,5 +240,18 @@ export const submitReferral = asyncHandler(async (req, res) => {
     data: candidate,
     message: 'Candidate referral submitted successfully.'
   });
+});
+
+export const getMyReferrals = asyncHandler(async (req, res) => {
+  const items = await recruitmentService.getMyReferrals(req.user);
+  res.status(200).json({
+    success: true,
+    data: { items }
+  });
+});
+
+export const getCandidateCv = asyncHandler(async (req, res) => {
+  const { candidate } = await recruitmentService.getCandidateById(req.params.id, req.user, req.permissionScope);
+  await streamCandidateCv(res, candidate);
 });
 

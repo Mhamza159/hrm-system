@@ -271,8 +271,16 @@ export const recruitmentApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: [
         { type: 'Candidates', id: 'LIST' },
+        { type: 'Candidates', id: 'MY_REFERRALS' },
         { type: 'Jobs', id: 'INTERNAL_LIST' }
       ]
+    }),
+
+    getMyReferrals: builder.query({
+      query: () => ({
+        url: '/recruitment/referrals/my'
+      }),
+      providesTags: [{ type: 'Candidates', id: 'MY_REFERRALS' }]
     })
   })
 });
@@ -301,6 +309,7 @@ export const {
   useIssueOfferLetterMutation,
   useHireCandidateMutation,
   useGetInternalJobsQuery,
-  useSubmitReferralMutation
+  useSubmitReferralMutation,
+  useGetMyReferralsQuery
 } = recruitmentApi;
 

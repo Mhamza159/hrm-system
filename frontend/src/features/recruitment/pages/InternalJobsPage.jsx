@@ -20,11 +20,13 @@ import {
   ArrowRight,
   Clock
 } from 'lucide-react';
-import { useGetInternalJobsQuery, useGetCandidatesQuery } from '../recruitmentApi.js';
+import { useGetInternalJobsQuery, useGetMyReferralsQuery } from '../recruitmentApi.js';
+import { usePermission } from '../../../hooks/usePermission.js';
 import { EmployeeReferralModal } from '../components/EmployeeReferralModal.jsx';
 import { RefreshButton } from '../components/RefreshButton.jsx';
 
 export const InternalJobsPage = () => {
+  const { can } = usePermission();
   const [activeTab, setActiveTab] = useState('openings'); // 'openings' | 'my-referrals'
   const [search, setSearch] = useState('');
   const [selectedJobForReferral, setSelectedJobForReferral] = useState(null);
@@ -36,16 +38,13 @@ export const InternalJobsPage = () => {
     refetch: refetchJobs
   } = useGetInternalJobsQuery({ search });
   const {
-    data: candRes,
-    isFetching: isFetchingCands,
-    refetch: refetchCands
-  } = useGetCandidatesQuery();
+    data: myRefRes,
+    isFetching: isFetchingReferrals,
+    refetch: refetchReferrals
+  } = useGetMyReferralsQuery();
 
   const jobs = jobsRes?.data?.items || [];
-  const allCandidates = candRes?.data?.items || [];
-
-  // Filter candidates referred by the current user (where referredBy exists)
-  const myReferrals = allCandidates.filter((c) => Boolean(c.referredBy));
+  const myReferrals = myRefRes?.data?.items || [];
 
   return (
     <div className="space-y-6">
@@ -65,9 +64,9 @@ export const InternalJobsPage = () => {
           <RefreshButton
             onRefresh={() => {
               if (activeTab === 'openings') return refetchJobs();
-              return refetchCands();
+              return refetchReferrals();
             }}
-            isFetching={isFetchingJobs || isFetchingCands}
+            isFetching={isFetchingJobs || isFetchingReferrals}
           />
 
           <button
@@ -142,12 +141,14 @@ export const InternalJobsPage = () => {
                     Min {job.minExperienceYears} yrs exp
                   </span>
 
-                  <button
-                    onClick={() => setSelectedJobForReferral(job)}
-                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#00C471] hover:bg-[#00B065] text-slate-950 font-medium transition cursor-pointer flex items-center gap-1.5"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Refer Candidate
-                  </button>
+                  {can('recruitment.referral.submit') && (
+                    <button
+                      onClick={() => setSelectedJobForReferral(job)}
+                      className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-[#00C471] hover:bg-[#00B065] text-slate-950 font-medium transition cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Refer Candidate
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

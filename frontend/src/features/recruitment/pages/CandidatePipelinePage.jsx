@@ -33,6 +33,7 @@ import {
 import { AIScreeningBadge } from '../components/AIScreeningBadge.jsx';
 import { CandidateDetailModal } from '../components/CandidateDetailModal.jsx';
 import { RefreshButton } from '../components/RefreshButton.jsx';
+import { usePermission } from '../../../hooks/usePermission.js';
 import { toast } from 'sonner';
 
 const STAGES = [
@@ -45,6 +46,7 @@ const STAGES = [
 ];
 
 export const CandidatePipelinePage = () => {
+  const { can } = usePermission();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -211,10 +213,12 @@ export const CandidatePipelinePage = () => {
                 {colCandidates.map((cand) => (
                   <div
                     key={cand._id}
-                    draggable
+                    draggable={can('recruitment.candidate.stage')}
                     onDragStart={(e) => handleDragStart(e, cand)}
                     onClick={() => setSelectedCandidateId(cand._id)}
-                    className="p-3 rounded-xl bg-white dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] hover:border-[#00C471]/60 shadow-xs hover:shadow-md transition cursor-pointer space-y-2 group"
+                    className={`p-3 rounded-xl bg-white dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] hover:border-[#00C471]/60 shadow-xs hover:shadow-md transition space-y-2 group ${
+                      can('recruitment.candidate.stage') ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-1.5">
                       <div>
@@ -240,17 +244,19 @@ export const CandidatePipelinePage = () => {
                         {cand.referredBy && (
                           <span className="text-amber-500 font-semibold">Referral</span>
                         )}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCandidateToDelete(cand);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition cursor-pointer"
-                          title="Delete Candidate"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
+                        {can('recruitment.candidate.stage') && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCandidateToDelete(cand);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition cursor-pointer"
+                            title="Delete Candidate"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

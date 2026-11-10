@@ -93,9 +93,14 @@ router.use(authenticate);
 
 // 15.12: Internal Job Board & Employee Referrals
 router.get('/jobs/internal', recruitmentController.getInternalJobs);
+router.get(
+  '/referrals/my',
+  checkPermission('recruitment.referral.submit', 'Recruitment'),
+  recruitmentController.getMyReferrals
+);
 router.post(
   '/referrals',
-  checkPermission('recruitment.referral.submit', 'own'),
+  checkPermission('recruitment.referral.submit', 'Recruitment'),
   uploadResume.single('cv'),
   validate(v.submitReferralSchema),
   recruitmentController.submitReferral
@@ -104,14 +109,14 @@ router.post(
 // 15.1: Requisitions
 router.get(
   '/requisitions',
-  checkPermission('recruitment.requisition.view', 'own'),
+  checkPermission('recruitment.requisition.view', 'Recruitment'),
   recruitmentController.getRequisitions
 );
 
 router.post(
   '/requisitions',
   validate(v.createRequisitionSchema),
-  checkPermission('recruitment.requisition.create', 'department'),
+  checkPermission('recruitment.requisition.create', 'Recruitment'),
   recruitmentController.createRequisition
 );
 
@@ -119,66 +124,73 @@ router.post(
 router.patch(
   '/requisitions/:id/decide',
   validate(v.decideRequisitionSchema),
-  checkPermission('recruitment.requisition.decide', 'all'),
+  checkPermission('recruitment.requisition.decide', 'Recruitment'),
   recruitmentController.decideRequisition
 );
 
 // 15.3: Jobs Management
 router.get(
   '/jobs',
-  checkPermission('recruitment.job.view', 'all'),
+  checkPermission('recruitment.job.view', 'Recruitment'),
   recruitmentController.getJobs
 );
 
 router.post(
   '/jobs',
   validate(v.createJobSchema),
-  checkPermission('recruitment.job.manage', 'all'),
+  checkPermission('recruitment.job.manage', 'Recruitment'),
   recruitmentController.createJob
 );
 
 router.get(
   '/jobs/:id',
-  checkPermission('recruitment.job.view', 'all'),
+  checkPermission('recruitment.job.view', 'Recruitment'),
   recruitmentController.getJobById
 );
 
 router.patch(
   '/jobs/:id',
   validate(v.updateJobSchema),
-  checkPermission('recruitment.job.manage', 'all'),
+  checkPermission('recruitment.job.manage', 'Recruitment'),
   recruitmentController.updateJob
 );
 
 router.delete(
   '/jobs/:id',
-  checkPermission('recruitment.job.manage', 'all'),
+  checkPermission('recruitment.job.manage', 'Recruitment'),
   recruitmentController.deleteJob
 );
 
 // 15.7: Candidates & Pipeline Board
 router.get(
   '/candidates',
-  checkPermission('recruitment.candidate.view', 'department'),
+  checkPermission('recruitment.candidate.view', 'Recruitment'),
   recruitmentController.getCandidates
 );
 
 router.get(
   '/candidates/:id',
-  checkPermission('recruitment.candidate.view', 'department'),
+  checkPermission('recruitment.candidate.view', 'Recruitment'),
   recruitmentController.getCandidateById
+);
+
+// Secure Candidate CV Document View & Fallback Stream
+router.get(
+  '/candidates/:id/cv',
+  checkPermission('recruitment.candidate.view', 'Recruitment'),
+  recruitmentController.getCandidateCv
 );
 
 router.patch(
   '/candidates/:id/stage',
   validate(v.updateCandidateStageSchema),
-  checkPermission('recruitment.candidate.stage', 'all'),
+  checkPermission('recruitment.candidate.stage', 'Recruitment'),
   recruitmentController.updateCandidateStage
 );
 
 router.delete(
   '/candidates/:id',
-  checkPermission('recruitment.candidate.stage', 'all'),
+  checkPermission('recruitment.candidate.stage', 'Recruitment'),
   recruitmentController.deleteCandidate
 );
 
@@ -186,7 +198,7 @@ router.delete(
 router.post(
   '/candidates/:id/screen',
   screeningLimiter,
-  checkPermission('recruitment.candidate.screen', 'department'),
+  checkPermission('recruitment.candidate.screen', 'Recruitment'),
   recruitmentController.screenCandidate
 );
 
@@ -194,14 +206,14 @@ router.post(
 router.post(
   '/candidates/:id/interviews',
   validate(v.scheduleInterviewSchema),
-  checkPermission('recruitment.interview.manage', 'department'),
+  checkPermission('recruitment.interview.manage', 'Recruitment'),
   recruitmentController.scheduleInterview
 );
 
 router.post(
   '/interviews/:id/scorecard',
   validate(v.submitScorecardSchema),
-  checkPermission('recruitment.interview.evaluate', 'own'),
+  checkPermission('recruitment.interview.evaluate', 'Recruitment'),
   recruitmentController.submitScorecard
 );
 
@@ -209,7 +221,7 @@ router.post(
 router.post(
   '/candidates/:id/technical-test',
   validate(v.sendTechnicalTestSchema),
-  checkPermission('recruitment.candidate.stage', 'all'),
+  checkPermission('recruitment.candidate.stage', 'Recruitment'),
   recruitmentController.assignTechnicalTest
 );
 
@@ -217,13 +229,13 @@ router.post(
 router.post(
   '/candidates/:id/offer',
   validate(v.issueOfferSchema),
-  checkPermission('recruitment.offer.manage', 'all'),
+  checkPermission('recruitment.offer.manage', 'Recruitment'),
   recruitmentController.issueOfferLetter
 );
 
 router.get(
   '/candidates/:id/offer/pdf',
-  checkPermission('recruitment.offer.view', 'team'),
+  checkPermission('recruitment.offer.view', 'Recruitment'),
   recruitmentController.downloadOfferLetterPdf
 );
 
@@ -231,7 +243,7 @@ router.get(
 router.post(
   '/candidates/:id/hire',
   validate(v.hireCandidateSchema),
-  checkPermission('recruitment.hire', 'all'),
+  checkPermission('recruitment.hire', 'Recruitment'),
   recruitmentController.hireCandidate
 );
 

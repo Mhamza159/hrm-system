@@ -21,21 +21,22 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { env } from '../config/env.js';
 
 export const authenticate = asyncHandler(async (req, res, next) => {
-  // 1. Extract Authorization header from incoming HTTP request
+  // 1. Extract Authorization header or query parameter from incoming HTTP request
+  let token = null;
   const authHeader = req.headers.authorization;
 
-  // 2. Validate header presence and Bearer schema format
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (req.query?.token) {
+    token = req.query.token;
+  }
+
+  // 2. Validate token presence
+  if (!token) {
     throw new ApiError(401, 'Authentication token missing or malformed. Please sign in.');
   }
 
-  // 3. Extract the raw JWT token string from "Bearer <token>"
-  const token = authHeader.split(' ')[1];
-  if (!token) {
-    throw new ApiError(401, 'Authentication token missing. Please sign in.');
-  }
-
-  // 4. Cryptographically verify token signature and expiration
+  // 3. Cryptographically verify token signature and expiration
   let decoded;
   try {
     decoded = jwt.verify(token, env.JWT_ACCESS_SECRET);

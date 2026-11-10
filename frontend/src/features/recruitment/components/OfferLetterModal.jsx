@@ -10,9 +10,12 @@
 import React, { useState } from 'react';
 import { X, FileText, Plus, Trash2, CheckCircle2, Download, AlertCircle, DollarSign } from 'lucide-react';
 import { useIssueOfferLetterMutation } from '../recruitmentApi.js';
+import { useSelector } from 'react-redux';
+import { getApiBaseUrl } from '../../../lib/baseApi.js';
 import { toast } from 'sonner';
 
 export const OfferLetterModal = ({ isOpen, onClose, candidate }) => {
+  const accessToken = useSelector((state) => state.auth?.accessToken);
   const [baseSalaryPkr, setBaseSalaryPkr] = useState('200000');
   const [joiningDate, setJoiningDate] = useState(
     new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -192,7 +195,7 @@ export const OfferLetterModal = ({ isOpen, onClose, candidate }) => {
 
           <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-[#1A3125]">
             <a
-              href={`/api/v1/recruitment/candidates/${candidate._id}/offer/pdf`}
+              href={`${getApiBaseUrl()}/recruitment/candidates/${candidate._id}/offer/pdf${accessToken ? `?token=${accessToken}` : ''}`}
               target="_blank"
               rel="noreferrer"
               className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-white flex items-center gap-1.5"

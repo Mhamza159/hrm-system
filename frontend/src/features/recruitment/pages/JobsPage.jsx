@@ -35,6 +35,7 @@ import {
   useDeleteJobMutation
 } from '../recruitmentApi.js';
 import { useAuth } from '../../../hooks/useAuth.js';
+import { usePermission } from '../../../hooks/usePermission.js';
 import { RequisitionModal } from '../components/RequisitionModal.jsx';
 import { RefreshButton } from '../components/RefreshButton.jsx';
 import { toast } from 'sonner';
@@ -72,12 +73,9 @@ export const JobsPage = () => {
   const [updateJob] = useUpdateJobMutation();
   const [deleteJob, { isLoading: isDeletingJob }] = useDeleteJobMutation();
 
+  const { can, isSuperAdmin } = usePermission();
   const jobs = jobsRes?.data?.items || [];
   const requisitions = reqsRes?.data?.items || [];
-
-  const isSuperAdmin = user?.roles?.some((r) => r.name === 'Super Admin' || r === 'Super Admin');
-  const isHRManager = user?.roles?.some((r) => r.name === 'HR Manager' || r === 'HR Manager');
-  const isDeptManager = user?.roles?.some((r) => r.name === 'Department Manager' || r === 'Department Manager');
 
   const pendingReqsCount = requisitions.filter((r) => r.status === 'Pending_Approval').length;
   const publishedJobsCount = jobs.filter((j) => j.status === 'Published').length;
@@ -151,7 +149,7 @@ export const JobsPage = () => {
             isFetching={isFetchingJobs || isFetchingReqs}
           />
 
-          {(isDeptManager || isHRManager || isSuperAdmin) && (
+          {can('recruitment.requisition.create') && (
             <button
               onClick={() => setIsReqModalOpen(true)}
               className="px-3.5 py-2 rounded-xl text-xs font-semibold border border-slate-300 dark:border-[#1A3125] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#162820] transition cursor-pointer flex items-center gap-2"
@@ -161,13 +159,15 @@ export const JobsPage = () => {
             </button>
           )}
 
-          <button
-            onClick={() => navigate('/recruitment/pipeline')}
-            className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#00C471] hover:bg-[#00B065] text-slate-950 font-medium transition cursor-pointer flex items-center gap-2 shadow-sm"
-          >
-            <Layers className="w-4 h-4" />
-            Candidate Pipeline
-          </button>
+          {can('recruitment.candidate.view') && (
+            <button
+              onClick={() => navigate('/recruitment/pipeline')}
+              className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#00C471] hover:bg-[#00B065] text-slate-950 font-medium transition cursor-pointer flex items-center gap-2 shadow-sm"
+            >
+              <Layers className="w-4 h-4" />
+              Candidate Pipeline
+            </button>
+          )}
         </div>
       </div>
 
@@ -249,20 +249,22 @@ export const JobsPage = () => {
           Job Openings ({jobs.length})
         </button>
 
-        <button
-          onClick={() => setActiveTab('requisitions')}
-          className={`px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-2 ${
-            activeTab === 'requisitions'
-              ? 'bg-emerald-50 dark:bg-[#162820] text-emerald-700 dark:text-[#00C471] border border-emerald-200 dark:border-[#1A3125]'
-              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          <FileCheck className="w-3.5 h-3.5" />
-          Headcount Requisitions ({requisitions.length})
-          {pendingReqsCount > 0 && (
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-          )}
-        </button>
+        {can('recruitment.requisition.view') && (
+          <button
+            onClick={() => setActiveTab('requisitions')}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center gap-2 ${
+              activeTab === 'requisitions'
+                ? 'bg-emerald-50 dark:bg-[#162820] text-emerald-700 dark:text-[#00C471] border border-emerald-200 dark:border-[#1A3125]'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <FileCheck className="w-3.5 h-3.5" />
+            Headcount Requisitions ({requisitions.length})
+            {pendingReqsCount > 0 && (
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            )}
+          </button>
+        )}
       </div>
 
       {/* Tab 1: Job Openings */}
@@ -360,7 +362,7 @@ export const JobsPage = () => {
                     View Pipeline <ArrowRight className="w-3.5 h-3.5" />
                   </button>
 
-                  {(isHRManager || isSuperAdmin) && (
+                  {can('recruitment.job.manage') && (
                     <div className="flex items-center gap-1.5">
                       {job.status === 'Draft' && (
                         <>
@@ -486,7 +488,7 @@ export const JobsPage = () => {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        {req.status === 'Pending_Approval' && isSuperAdmin ? (
+                        {req.status === 'Pending_Approval' && can('recruitment.requisition.decide') ? (
                           <div className="flex items-center justify-end gap-2">
                             <button
                               onClick={() => {

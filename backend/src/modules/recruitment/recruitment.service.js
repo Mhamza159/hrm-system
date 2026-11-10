@@ -26,6 +26,7 @@ import { recordAuditLog } from '../../services/audit.service.js';
 import { notify } from '../../services/notify.service.js';
 import { emailService } from '../../services/email.service.js';
 import { parseResumeText, screenCandidateFit } from '../../services/ai.service.js';
+import { isCloudinaryConfigured, uploadBufferToCloudinary } from '../../config/cloudinary.js';
 import * as employeeService from '../employees/employee.service.js';
 
 /**
@@ -443,16 +444,39 @@ export const applyForJob = async (jobId, candidateData, file) => {
       }
     }
 
-    const uploadDir = path.resolve(process.cwd(), 'uploads', 'resumes');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    // 1. Cloudinary upload if configured (persistent cloud media across Render deploys)
+    if (isCloudinaryConfigured()) {
+      try {
+        const publicId = `cv_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+        const cloudRes = await uploadBufferToCloudinary(file.buffer, {
+          folder: 'hrm/resumes',
+          resource_type: 'auto',
+          public_id: publicId
+        });
+        if (cloudRes?.secure_url || cloudRes?.url) {
+          cvUrl = cloudRes.secure_url || cloudRes.url;
+        }
+      } catch (cloudErr) {
+        console.warn('[Recruitment] Cloudinary CV upload failed, falling back to disk:', cloudErr.message);
+      }
     }
 
-    const filename = `cv_${Date.now()}_${crypto.randomBytes(4).toString('hex')}${safeExt}`;
-    const filePath = path.join(uploadDir, filename);
+    // 2. Local disk fallback
+    if (!cvUrl) {
+      const filename = `cv_${Date.now()}_${crypto.randomBytes(4).toString('hex')}${safeExt}`;
+      const uploadDirs = [
+        path.resolve(process.cwd(), 'uploads', 'resumes'),
+        path.resolve(process.cwd(), 'backend', 'uploads', 'resumes')
+      ];
 
-    fs.writeFileSync(filePath, file.buffer);
-    cvUrl = `/uploads/resumes/${filename}`;
+      for (const dir of uploadDirs) {
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+        }
+        fs.writeFileSync(path.join(dir, filename), file.buffer);
+      }
+      cvUrl = `/uploads/resumes/${filename}`;
+    }
 
     // Extract raw text heuristic from buffer if plain/utf8
     try {
@@ -1067,4 +1091,28 @@ export const submitReferral = async (referralData, file, actor) => {
   });
 
   return candidate;
+};
+
+export const getMyReferrals = async (actor) => {
+  let referrerEmployeeId = actor?.employeeId;
+  if (!referrerEmployeeId && actor?._id) {
+    const actorEmp = await Employee.findOne({ userId: actor._id, isDeleted: false });
+    if (actorEmp) referrerEmployeeId = actorEmp._id;
+  }
+
+  if (!referrerEmployeeId) {
+    return [];
+  }
+
+  return await Candidate.find({
+    referredBy: referrerEmployeeId,
+    isDeleted: false
+  })
+    .populate({
+      path: 'jobId',
+      select: 'title departmentId status',
+      populate: { path: 'departmentId', select: 'name code' }
+    })
+    .sort({ createdAt: -1 })
+    .lean();
 };
