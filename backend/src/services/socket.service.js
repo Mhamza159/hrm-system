@@ -17,6 +17,7 @@ import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
 import { Employee } from '../models/employee.model.js';
+import { Conversation } from '../models/conversation.model.js';
 
 let ioInstance = null;
 // Active online users tracking map: userId -> Set of socket IDs
@@ -118,10 +119,27 @@ export const initSocketIO = (httpServer) => {
       }
     }
 
-    // Chat room join event
-    socket.on('chat:join', (conversationId) => {
-      if (conversationId) {
-        socket.join(`conversation:${conversationId}`);
+    // Chat room join event with PBAC verification
+    socket.on('chat:join', async (conversationId) => {
+      if (!conversationId || typeof conversationId !== 'string') return;
+      try {
+        const isSuperAdmin = socket.data.user?.roles?.some(
+          (r) => (r.name || r) === 'Super Admin'
+        );
+        const conv = await Conversation.findById(conversationId).select('participants').lean();
+        if (!conv) return;
+
+        const isMember = conv.participants?.some(
+          (p) => p.toString() === String(socket.data.user.userId)
+        );
+
+        if (isMember || isSuperAdmin) {
+          socket.join(`conversation:${conversationId}`);
+        } else {
+          console.warn(`[Socket.io] Blocked unauthorized join to conversation:${conversationId} by user ${socket.data.user.userId}`);
+        }
+      } catch (err) {
+        console.warn(`[Socket.io] chat:join validation error: ${err.message}`);
       }
     });
 
@@ -132,9 +150,9 @@ export const initSocketIO = (httpServer) => {
       }
     });
 
-    // Real-time typing indicators
+    // Real-time typing indicators with room membership enforcement
     socket.on('chat:typing', ({ conversationId, isTyping }) => {
-      if (conversationId) {
+      if (conversationId && socket.rooms.has(`conversation:${conversationId}`)) {
         socket.to(`conversation:${conversationId}`).emit('chat:typing', {
           conversationId,
           userId,

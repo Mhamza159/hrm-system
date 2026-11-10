@@ -36,8 +36,7 @@ const conversationSchema = new Schema(
     ],
     // Deterministic key for 1-to-1 conversations: [minId, maxId].join('_')
     directKey: {
-      type: String,
-      default: null
+      type: String
     },
     admin: {
       type: Schema.Types.ObjectId,
@@ -77,7 +76,10 @@ const conversationSchema = new Schema(
 
 // Indexes
 conversationSchema.index({ participants: 1 });
-conversationSchema.index({ directKey: 1 }, { unique: true, sparse: true });
+conversationSchema.index(
+  { directKey: 1 },
+  { unique: true, partialFilterExpression: { directKey: { $type: 'string' } } }
+);
 conversationSchema.index({ type: 1, departmentId: 1 });
 conversationSchema.index({ updatedAt: -1 });
 

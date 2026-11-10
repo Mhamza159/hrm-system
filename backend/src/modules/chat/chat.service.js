@@ -162,23 +162,41 @@ export const getOrCreateDirectConversation = async (currentUserId, targetUserId)
     .lean();
 
   if (!conv) {
-    const newConv = await Conversation.create({
-      type: 'direct',
-      directKey,
-      participants: [currentUserId, targetUserId],
-      lastMessageAt: new Date()
-    });
+    try {
+      const newConv = await Conversation.create({
+        type: 'direct',
+        directKey,
+        participants: [currentUserId, targetUserId],
+        lastMessageAt: new Date()
+      });
 
-    conv = await Conversation.findById(newConv._id)
-      .populate({
-        path: 'participants',
-        select: 'email employeeId',
-        populate: {
-          path: 'employeeId',
-          select: 'name avatar departmentId'
-        }
-      })
-      .lean();
+      conv = await Conversation.findById(newConv._id)
+        .populate({
+          path: 'participants',
+          select: 'email employeeId',
+          populate: {
+            path: 'employeeId',
+            select: 'name avatar departmentId'
+          }
+        })
+        .lean();
+    } catch (err) {
+      // In concurrent race conditions / double-click, intercept duplicate key error and fetch winner
+      if (err.code === 11000) {
+        conv = await Conversation.findOne({ directKey })
+          .populate({
+            path: 'participants',
+            select: 'email employeeId',
+            populate: {
+              path: 'employeeId',
+              select: 'name avatar departmentId'
+            }
+          })
+          .lean();
+      } else {
+        throw err;
+      }
+    }
   }
 
   return formatConversation(conv, currentUserId);
@@ -254,17 +272,31 @@ export const syncDepartmentChannels = async (userId) => {
   });
 
   if (!deptConv) {
-    deptConv = await Conversation.create({
-      type: 'department',
-      name: `${department.name} Channel`,
-      description: `Official collaboration channel for ${department.name}`,
-      departmentId: department._id,
-      participants: [userId],
-      lastMessageAt: new Date()
+    try {
+      deptConv = await Conversation.create({
+        type: 'department',
+        name: `${department.name} Channel`,
+        description: `Official collaboration channel for ${department.name}`,
+        departmentId: department._id,
+        participants: [userId],
+        lastMessageAt: new Date()
+      });
+    } catch (err) {
+      if (err.code === 11000) {
+        deptConv = await Conversation.findOne({
+          type: 'department',
+          departmentId: department._id
+        });
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  if (deptConv && !deptConv.participants.some((p) => p.toString() === userId.toString())) {
+    await Conversation.findByIdAndUpdate(deptConv._id, {
+      $addToSet: { participants: userId }
     });
-  } else if (!deptConv.participants.some((p) => p.toString() === userId.toString())) {
-    deptConv.participants.push(userId);
-    await deptConv.save();
   }
 
   const populated = await Conversation.findById(deptConv._id)
