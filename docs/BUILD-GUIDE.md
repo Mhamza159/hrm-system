@@ -408,6 +408,10 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 | 15.11 | Hire → employee | `POST /candidates/:id/hire` → 3.2 + 18.2 | "Convert to Employee" | Employee + checklist bane | ☑ |
 | 15.12 | Andarooni jobs + referral | `GET /jobs/internal`, `POST /referrals` | `InternalJobsPage.jsx` | Referral darj | ☑ |
 | 15.13 | Insani faisla lazmi | AI sirf score de, stage HR badle | — | Auto reject na ho | ☑ |
+| 15.14 | Headcount requisition attribution | Deep populate requestedBy (Name, Code, Designation, Role) | `JobsPage.jsx` Requisitions Tab card attribution | Super admin manager details dekhe | ☑ |
+| 15.15 | Closed job lockdown & deletion | Reject republish (`400`), `DELETE /jobs/:id` soft delete | `JobsPage.jsx` Delete action, Publish button hide | Closed jobs republish na hon | ☑ |
+| 15.16 | Kanban candidate deletion & CV resolution | `DELETE /candidates/:id`, absolute resume URL resolver | `CandidatePipelinePage.jsx`, `CandidateDetailModal.jsx` | Candidate delete & CV khule | ☑ |
+| 15.17 | Anti-collision scheduling & scorecard lock | ±45m window check, immutable ratings (`400` duplicate) | `InterviewScheduleModal.jsx`, `ScorecardModal.jsx` | Schedule collision block & rating lock | ☑ |
 
 ## 25. M16 — HR Chatbot
 

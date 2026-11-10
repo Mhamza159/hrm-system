@@ -153,7 +153,14 @@ export const getRequisitions = async (query = {}, actor, permissionScope = 'all'
     populate: [
       { path: 'departmentId', select: 'name code' },
       { path: 'designationId', select: 'title code grade' },
-      { path: 'requestedBy', select: 'name employeeCode email' },
+      {
+        path: 'requestedBy',
+        select: 'name employeeCode email designationId userId',
+        populate: [
+          { path: 'designationId', select: 'title code' },
+          { path: 'userId', select: 'roles email', populate: { path: 'roles', select: 'name' } }
+        ]
+      },
       { path: 'decidedBy', select: 'email name' },
       { path: 'jobId', select: 'title slug status' }
     ]
@@ -168,7 +175,14 @@ export const decideRequisition = async (id, { decision, remarks }, actor) => {
   const requisition = await Requisition.findOne({ _id: id, isDeleted: false })
     .populate('departmentId')
     .populate('designationId')
-    .populate('requestedBy');
+    .populate({
+      path: 'requestedBy',
+      select: 'name employeeCode email designationId userId',
+      populate: [
+        { path: 'designationId', select: 'title code' },
+        { path: 'userId', select: 'roles email', populate: { path: 'roles', select: 'name' } }
+      ]
+    });
 
   if (!requisition) {
     throw new ApiError(404, 'Requisition not found.');
@@ -315,6 +329,11 @@ export const updateJob = async (id, payload, actor) => {
     throw new ApiError(404, 'Job opening not found.');
   }
 
+  // Guard: Closed jobs cannot be republished
+  if (job.status === 'Closed' && payload.status === 'Published') {
+    throw new ApiError(400, 'Closed jobs cannot be republished. A new requisition or job opening must be initiated.');
+  }
+
   Object.assign(job, payload);
   await job.save();
 
@@ -327,6 +346,30 @@ export const updateJob = async (id, payload, actor) => {
   });
 
   return job;
+};
+
+export const deleteJob = async (id, actor) => {
+  const job = await Job.findOne({ _id: id, isDeleted: false });
+  if (!job) {
+    throw new ApiError(404, 'Job opening not found.');
+  }
+
+  if (job.status === 'Published') {
+    throw new ApiError(400, 'Active published jobs cannot be deleted. Please close the job before deleting.');
+  }
+
+  job.isDeleted = true;
+  await job.save();
+
+  await recordAuditLog({
+    actor,
+    action: 'recruitment.job.delete',
+    entity: 'Job',
+    entityId: job._id,
+    after: { isDeleted: true }
+  });
+
+  return { message: 'Job opening deleted successfully.' };
 };
 
 export const getPublicJobs = async (query = {}) => {
@@ -604,6 +647,32 @@ export const updateCandidateStage = async (id, { stage, notes }, actor) => {
   return candidate;
 };
 
+export const deleteCandidate = async (candidateId, actor) => {
+  const candidate = await Candidate.findOne({ _id: candidateId, isDeleted: false });
+  if (!candidate) {
+    throw new ApiError(404, 'Candidate not found.');
+  }
+
+  candidate.isDeleted = true;
+  await candidate.save();
+
+  // Cascade cancellation to scheduled interviews
+  await Interview.updateMany(
+    { candidateId: candidate._id, status: 'Scheduled', isDeleted: false },
+    { $set: { status: 'Cancelled' } }
+  );
+
+  await recordAuditLog({
+    actor,
+    action: 'recruitment.candidate.delete',
+    entity: 'Candidate',
+    entityId: candidate._id,
+    after: { isDeleted: true }
+  });
+
+  return { message: 'Candidate application deleted successfully.' };
+};
+
 // 15.6: Re-run AI Screening
 export const screenCandidate = async (candidateId, actor) => {
   const candidate = await Candidate.findOne({ _id: candidateId, isDeleted: false }).populate('jobId');
@@ -654,13 +723,39 @@ export const scheduleInterview = async (candidateId, payload, actor) => {
     throw new ApiError(404, 'Candidate not found.');
   }
 
+  // Anti-Collision Check: Prevent double-booking for the same candidate within +/- 45 minutes
+  const targetDate = new Date(payload.scheduledDate);
+  const targetStart = targetDate.getTime();
+  const bufferMs = 45 * 60 * 1000;
+  const conflictWindowStart = new Date(targetStart - bufferMs);
+  const conflictWindowEnd = new Date(targetStart + bufferMs);
+
+  const existingConflict = await Interview.findOne({
+    candidateId,
+    status: 'Scheduled',
+    isDeleted: false,
+    scheduledDate: { $gte: conflictWindowStart, $lte: conflictWindowEnd }
+  });
+
+  if (existingConflict) {
+    const conflictTime = new Intl.DateTimeFormat('en-PK', {
+      timeZone: 'Asia/Karachi',
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }).format(new Date(existingConflict.scheduledDate));
+    throw new ApiError(
+      400,
+      `Candidate already has an interview scheduled at ${conflictTime} (PKT). Please select a non-overlapping time.`
+    );
+  }
+
   const interview = await Interview.create({
     candidateId,
     jobId: candidate.jobId,
     roundNumber: payload.roundNumber || 1,
     roundType: payload.roundType || 'Technical',
     interviewers: payload.interviewers,
-    scheduledDate: new Date(payload.scheduledDate),
+    scheduledDate: targetDate,
     durationMinutes: payload.durationMinutes || 45,
     meetingLink: payload.meetingLink || '',
     status: 'Scheduled'
@@ -687,12 +782,31 @@ export const scheduleInterview = async (candidateId, payload, actor) => {
       await notify(recipientUserIds, {
         type: 'system',
         title: `Interview Scheduled: ${candidate.name}`,
-        body: `Round ${interview.roundNumber} (${interview.roundType}) scheduled for ${new Date(payload.scheduledDate).toLocaleString('en-PK')}.`,
+        body: `Round ${interview.roundNumber} (${interview.roundType}) scheduled for ${targetDate.toLocaleString('en-PK')}.`,
         link: `/recruitment/pipeline`
       });
     }
   } catch (err) {
     console.error('Interview schedule notifications failed:', err.message);
+  }
+
+  // Dispatch candidate invitation email
+  try {
+    if (candidate.email) {
+      const job = await Job.findById(candidate.jobId).select('title').lean();
+      await emailService.sendInterviewScheduledEmail({
+        to: candidate.email,
+        candidateName: candidate.name,
+        jobTitle: job?.title || 'Applied Position',
+        roundNumber: interview.roundNumber,
+        roundType: interview.roundType,
+        scheduledDate: interview.scheduledDate,
+        durationMinutes: interview.durationMinutes,
+        meetingLink: interview.meetingLink
+      });
+    }
+  } catch (emailErr) {
+    console.error('Candidate interview email notification failed:', emailErr.message);
   }
 
   return interview;
@@ -714,10 +828,14 @@ export const submitScorecard = async (interviewId, scorecardData, actor) => {
     throw new ApiError(400, 'Scorecard evaluator must be an active employee.');
   }
 
-  // Remove previous scorecard if updating
-  interview.scorecards = interview.scorecards.filter(
-    (sc) => String(sc.interviewerId) !== String(interviewerEmpId)
+  // Immutability Check: Submitted ratings cannot be changed
+  const existingScorecard = interview.scorecards?.find(
+    (sc) => String(sc.interviewerId) === String(interviewerEmpId)
   );
+
+  if (existingScorecard) {
+    throw new ApiError(400, 'Interview evaluation is locked. Submitted ratings cannot be modified.');
+  }
 
   interview.scorecards.push({
     interviewerId: interviewerEmpId,

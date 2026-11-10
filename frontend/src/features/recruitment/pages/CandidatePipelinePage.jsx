@@ -21,15 +21,18 @@ import {
   Plus,
   ArrowLeft,
   ChevronRight,
-  CheckCircle2
+  CheckCircle2,
+  Trash2
 } from 'lucide-react';
 import {
   useGetCandidatesQuery,
   useGetJobsQuery,
-  useUpdateCandidateStageMutation
+  useUpdateCandidateStageMutation,
+  useDeleteCandidateMutation
 } from '../recruitmentApi.js';
 import { AIScreeningBadge } from '../components/AIScreeningBadge.jsx';
 import { CandidateDetailModal } from '../components/CandidateDetailModal.jsx';
+import { RefreshButton } from '../components/RefreshButton.jsx';
 import { toast } from 'sonner';
 
 const STAGES = [
@@ -49,13 +52,20 @@ export const CandidatePipelinePage = () => {
   const [search, setSearch] = useState('');
   const [minScoreFilter, setMinScoreFilter] = useState('');
   const [selectedCandidateId, setSelectedCandidateId] = useState(null);
+  const [candidateToDelete, setCandidateToDelete] = useState(null);
 
   const { data: jobsRes } = useGetJobsQuery({ limit: 100 });
-  const { data: candidatesRes, isLoading } = useGetCandidatesQuery({
+  const {
+    data: candidatesRes,
+    isLoading,
+    isFetching: isFetchingCandidates,
+    refetch: refetchCandidates
+  } = useGetCandidatesQuery({
     jobId: selectedJobId || undefined,
     search: search.trim() || undefined
   });
   const [updateCandidateStage] = useUpdateCandidateStageMutation();
+  const [deleteCandidate, { isLoading: isDeletingCandidate }] = useDeleteCandidateMutation();
 
   const jobs = jobsRes?.data?.items || [];
   let candidates = candidatesRes?.data?.items || [];
@@ -74,6 +84,20 @@ export const CandidatePipelinePage = () => {
       toast.success(`Moved ${candidate.name} to ${targetStage}.`);
     } catch (err) {
       toast.error('Failed to update stage.');
+    }
+  };
+
+  const handleDeleteCandidate = async () => {
+    if (!candidateToDelete) return;
+    try {
+      await deleteCandidate(candidateToDelete._id).unwrap();
+      toast.success(`Candidate ${candidateToDelete.name} has been removed.`);
+      setCandidateToDelete(null);
+      if (selectedCandidateId === candidateToDelete._id) {
+        setSelectedCandidateId(null);
+      }
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to remove candidate.');
     }
   };
 
@@ -115,7 +139,12 @@ export const CandidatePipelinePage = () => {
         </div>
 
         {/* Filter Controls */}
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <RefreshButton
+            onRefresh={() => refetchCandidates()}
+            isFetching={isFetchingCandidates}
+          />
+
           <select
             value={selectedJobId}
             onChange={(e) => setSearchParams(e.target.value ? { jobId: e.target.value } : {})}
@@ -207,9 +236,22 @@ export const CandidatePipelinePage = () => {
 
                     <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-100 dark:border-[#1A3125]/80">
                       <span>{cand.parsedProfile?.totalExperienceYears ? `${cand.parsedProfile.totalExperienceYears} yrs exp` : 'Profile parsed'}</span>
-                      {cand.referredBy && (
-                        <span className="text-amber-500 font-semibold">Referral</span>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {cand.referredBy && (
+                          <span className="text-amber-500 font-semibold">Referral</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCandidateToDelete(cand);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition cursor-pointer"
+                          title="Delete Candidate"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -230,11 +272,58 @@ export const CandidatePipelinePage = () => {
         isOpen={Boolean(selectedCandidateId)}
         onClose={() => setSelectedCandidateId(null)}
         candidateId={selectedCandidateId}
+        onCandidateDeleted={() => {
+          setSelectedCandidateId(null);
+          refetchCandidates();
+        }}
         onHiredSuccess={(emp) => {
           setSelectedCandidateId(null);
           navigate(`/employees/${emp._id || emp.id}`);
         }}
       />
+
+      {/* Candidate Deletion Confirmation Modal */}
+      {candidateToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] w-full max-w-md rounded-2xl p-6 space-y-4 shadow-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 flex items-center justify-center border border-rose-200 dark:border-rose-900/40">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
+                  Remove Candidate Application
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  This will archive the candidate from the pipeline board.
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Are you sure you want to delete <span className="font-semibold text-slate-900 dark:text-white">{candidateToDelete.name}</span>'s application for <span className="font-semibold text-slate-900 dark:text-white">{candidateToDelete.jobId?.title || 'this position'}</span>? Any active interview schedules will be cancelled.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setCandidateToDelete(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162820] cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingCandidate}
+                onClick={handleDeleteCandidate}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white cursor-pointer disabled:opacity-60"
+              >
+                {isDeletingCandidate ? 'Deleting...' : 'Delete Candidate'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

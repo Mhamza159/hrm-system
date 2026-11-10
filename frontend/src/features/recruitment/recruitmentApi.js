@@ -89,6 +89,17 @@ export const recruitmentApi = baseApi.injectEndpoints({
       ]
     }),
 
+    deleteJob: builder.mutation({
+      query: (id) => ({
+        url: `/recruitment/jobs/${id}`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Job', id },
+        { type: 'Jobs', id: 'LIST' }
+      ]
+    }),
+
     // 15.3: Public Jobs (No auth required)
     getPublicJobs: builder.query({
       query: (params = {}) => ({
@@ -155,6 +166,18 @@ export const recruitmentApi = baseApi.injectEndpoints({
       invalidatesTags: (result, error, { id }) => [
         { type: 'Candidate', id },
         { type: 'Candidates', id: 'LIST' }
+      ]
+    }),
+
+    deleteCandidate: builder.mutation({
+      query: (id) => ({
+        url: `/recruitment/candidates/${id}`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Candidate', id },
+        { type: 'Candidates', id: 'LIST' },
+        { type: 'Interviews', id: 'LIST' }
       ]
     }),
 
@@ -262,11 +285,13 @@ export const {
   useGetJobByIdQuery,
   useCreateJobMutation,
   useUpdateJobMutation,
+  useDeleteJobMutation,
   useGetPublicJobsQuery,
   useGetPublicJobBySlugQuery,
   useApplyForJobMutation,
   useGetCandidatesQuery,
   useGetCandidateByIdQuery,
+  useDeleteCandidateMutation,
   useScreenCandidateMutation,
   useUpdateCandidateStageMutation,
   useGetInterviewsQuery,

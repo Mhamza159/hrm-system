@@ -24,16 +24,19 @@ import {
   Layers,
   ArrowRight,
   Clock,
-  Sparkles
+  Sparkles,
+  Trash2
 } from 'lucide-react';
 import {
   useGetJobsQuery,
   useGetRequisitionsQuery,
   useDecideRequisitionMutation,
-  useUpdateJobMutation
+  useUpdateJobMutation,
+  useDeleteJobMutation
 } from '../recruitmentApi.js';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { RequisitionModal } from '../components/RequisitionModal.jsx';
+import { RefreshButton } from '../components/RefreshButton.jsx';
 import { toast } from 'sonner';
 
 export const JobsPage = () => {
@@ -48,14 +51,26 @@ export const JobsPage = () => {
   const [selectedReq, setSelectedReq] = useState(null);
   const [decisionAction, setDecisionAction] = useState(null); // 'approved' | 'rejected'
   const [decisionRemarks, setDecisionRemarks] = useState('');
+  const [jobToDelete, setJobToDelete] = useState(null);
 
-  const { data: jobsRes, isLoading: isLoadingJobs } = useGetJobsQuery({
+  const {
+    data: jobsRes,
+    isLoading: isLoadingJobs,
+    isFetching: isFetchingJobs,
+    refetch: refetchJobs
+  } = useGetJobsQuery({
     search,
     status: statusFilter
   });
-  const { data: reqsRes, isLoading: isLoadingReqs } = useGetRequisitionsQuery();
+  const {
+    data: reqsRes,
+    isLoading: isLoadingReqs,
+    isFetching: isFetchingReqs,
+    refetch: refetchReqs
+  } = useGetRequisitionsQuery();
   const [decideRequisition, { isLoading: isDeciding }] = useDecideRequisitionMutation();
   const [updateJob] = useUpdateJobMutation();
+  const [deleteJob, { isLoading: isDeletingJob }] = useDeleteJobMutation();
 
   const jobs = jobsRes?.data?.items || [];
   const requisitions = reqsRes?.data?.items || [];
@@ -90,11 +105,26 @@ export const JobsPage = () => {
   };
 
   const handleStatusToggle = async (job, newStatus) => {
+    if (job.status === 'Closed' && newStatus === 'Published') {
+      toast.error('Closed jobs cannot be republished. A new job opening must be initiated.');
+      return;
+    }
     try {
       await updateJob({ id: job._id, status: newStatus }).unwrap();
       toast.success(`Job '${job.title}' is now ${newStatus}.`);
     } catch (err) {
-      toast.error('Failed to update job status.');
+      toast.error(err?.data?.message || 'Failed to update job status.');
+    }
+  };
+
+  const handleDeleteJob = async () => {
+    if (!jobToDelete) return;
+    try {
+      await deleteJob(jobToDelete._id).unwrap();
+      toast.success(`Job '${jobToDelete.title}' has been deleted.`);
+      setJobToDelete(null);
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to delete job.');
     }
   };
 
@@ -112,7 +142,15 @@ export const JobsPage = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <RefreshButton
+            onRefresh={() => {
+              if (activeTab === 'jobs') return refetchJobs();
+              return refetchReqs();
+            }}
+            isFetching={isFetchingJobs || isFetchingReqs}
+          />
+
           {(isDeptManager || isHRManager || isSuperAdmin) && (
             <button
               onClick={() => setIsReqModalOpen(true)}
@@ -324,19 +362,41 @@ export const JobsPage = () => {
 
                   {(isHRManager || isSuperAdmin) && (
                     <div className="flex items-center gap-1.5">
-                      {job.status !== 'Published' ? (
-                        <button
-                          onClick={() => handleStatusToggle(job, 'Published')}
-                          className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-emerald-50 dark:bg-[#162820] text-[#00C471] border border-emerald-200 dark:border-[#1A3125] hover:bg-emerald-100 cursor-pointer"
-                        >
-                          Publish
-                        </button>
-                      ) : (
+                      {job.status === 'Draft' && (
+                        <>
+                          <button
+                            onClick={() => handleStatusToggle(job, 'Published')}
+                            className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-emerald-50 dark:bg-[#162820] text-[#00C471] border border-emerald-200 dark:border-[#1A3125] hover:bg-emerald-100 cursor-pointer"
+                          >
+                            Publish
+                          </button>
+                          <button
+                            onClick={() => setJobToDelete(job)}
+                            className="p-1 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
+                            title="Delete Draft Job"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
+
+                      {job.status === 'Published' && (
                         <button
                           onClick={() => handleStatusToggle(job, 'Closed')}
                           className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-100 dark:bg-[#162820] text-slate-600 dark:text-slate-300 hover:bg-slate-200 cursor-pointer"
                         >
                           Close
+                        </button>
+                      )}
+
+                      {job.status === 'Closed' && (
+                        <button
+                          onClick={() => setJobToDelete(job)}
+                          className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 border border-rose-200 dark:border-rose-900/40 hover:bg-rose-100 cursor-pointer flex items-center gap-1"
+                          title="Delete Closed Job"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Delete Job
                         </button>
                       )}
                     </div>
@@ -385,7 +445,26 @@ export const JobsPage = () => {
                         {req.departmentId?.name || '—'}
                       </td>
                       <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
-                        {req.requestedBy?.name || '—'}
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-slate-900 dark:text-white">
+                            {req.requestedBy?.name || 'Department Head'}
+                          </span>
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            {req.requestedBy?.employeeCode && (
+                              <span className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/40">
+                                {req.requestedBy.employeeCode}
+                              </span>
+                            )}
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                              {req.requestedBy?.designationId?.title || 'Dept Head'}
+                            </span>
+                            {req.requestedBy?.userId?.roles?.[0]?.name && (
+                              <span className="text-[9px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-[#162820] px-1.5 py-0.5 rounded border border-slate-200 dark:border-[#1A3125]">
+                                {req.requestedBy.userId.roles[0].name}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </td>
                       <td className="py-3 px-4 font-mono">
                         {req.openingsCount}
@@ -505,6 +584,48 @@ export const JobsPage = () => {
                 }`}
               >
                 {isDeciding ? 'Saving...' : `Confirm ${decisionAction === 'approved' ? 'Approval' : 'Rejection'}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Job Deletion Confirmation Modal */}
+      {jobToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] w-full max-w-md rounded-2xl p-6 space-y-4 shadow-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 flex items-center justify-center border border-rose-200 dark:border-rose-900/40">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-sm text-slate-900 dark:text-white">
+                  Delete Job Opening
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Are you sure you want to permanently delete the job opening <span className="font-semibold text-slate-900 dark:text-white">"{jobToDelete.title}"</span>? All associated listing data will be archived.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setJobToDelete(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162820] cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingJob}
+                onClick={handleDeleteJob}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white cursor-pointer disabled:opacity-60"
+              >
+                {isDeletingJob ? 'Deleting...' : 'Delete Job'}
               </button>
             </div>
           </div>

@@ -25,14 +25,16 @@ import {
   ChevronRight,
   Clock,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
 import {
   useGetCandidateByIdQuery,
   useScreenCandidateMutation,
   useUpdateCandidateStageMutation,
   useSendTechnicalTestMutation,
-  useHireCandidateMutation
+  useHireCandidateMutation,
+  useDeleteCandidateMutation
 } from '../recruitmentApi.js';
 import { AIScreeningBadge } from './AIScreeningBadge.jsx';
 import { InterviewScheduleModal } from './InterviewScheduleModal.jsx';
@@ -40,10 +42,21 @@ import { ScorecardModal } from './ScorecardModal.jsx';
 import { OfferLetterModal } from './OfferLetterModal.jsx';
 import { toast } from 'sonner';
 
-export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSuccess }) => {
+const resolveCvUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  const backendBase = import.meta.env.VITE_API_URL?.replace(/\/api\/v1\/?$/, '') || 'http://localhost:5000';
+  const cleanPath = url.startsWith('/') ? url : `/${url}`;
+  return `${backendBase}${cleanPath}`;
+};
+
+export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSuccess, onCandidateDeleted }) => {
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [selectedInterviewForScorecard, setSelectedInterviewForScorecard] = useState(null);
   const [isOfferOpen, setIsOfferOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   // Technical Test prompt state
   const [isTestPromptOpen, setIsTestPromptOpen] = useState(false);
@@ -61,6 +74,7 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
   const [updateCandidateStage] = useUpdateCandidateStageMutation();
   const [sendTechnicalTest, { isLoading: isSendingTest }] = useSendTechnicalTestMutation();
   const [hireCandidate, { isLoading: isHiring }] = useHireCandidateMutation();
+  const [deleteCandidate, { isLoading: isDeletingCandidate }] = useDeleteCandidateMutation();
 
   const candidate = detailRes?.data?.candidate;
   const interviews = detailRes?.data?.interviews || [];
@@ -113,6 +127,18 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
       setIsRejectOpen(false);
     } catch (err) {
       toast.error('Failed to reject candidate.');
+    }
+  };
+
+  const handleDeleteSubmit = async () => {
+    try {
+      await deleteCandidate(candidate._id).unwrap();
+      toast.success(`Candidate ${candidate.name} has been removed.`);
+      setIsDeleteOpen(false);
+      if (onCandidateDeleted) onCandidateDeleted(candidate._id);
+      onClose();
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to delete candidate.');
     }
   };
 
@@ -177,16 +203,23 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
                 <Phone className="w-3.5 h-3.5 text-slate-400" />
                 {candidate?.phone}
               </span>
-              {candidate?.cvUrl && (
-                <a
-                  href={candidate.cvUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1 text-[#00C471] hover:underline font-semibold"
-                >
-                  <FileText className="w-3.5 h-3.5" /> View CV Document
-                </a>
-              )}
+              {(() => {
+                const cvLink = resolveCvUrl(candidate?.resumeUrl || candidate?.cvUrl);
+                return cvLink ? (
+                  <a
+                    href={cvLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-[#00C471] hover:underline font-semibold"
+                  >
+                    <FileText className="w-3.5 h-3.5" /> View CV Document
+                  </a>
+                ) : (
+                  <span className="flex items-center gap-1.5 text-slate-400 italic">
+                    <FileText className="w-3.5 h-3.5" /> No CV Attached
+                  </span>
+                );
+              })()}
             </div>
 
             <div className="flex items-center gap-2">
@@ -311,45 +344,80 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
             </div>
 
             <div className="space-y-2">
-              {interviews.map((iv) => (
-                <div
-                  key={iv._id}
-                  className="p-3 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] flex items-center justify-between"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900 dark:text-white">
-                        Round {iv.roundNumber}: {iv.roundType}
-                      </span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#162820] text-slate-600 dark:text-slate-300 font-semibold">
-                        {iv.status}
-                      </span>
+              {interviews.map((iv) => {
+                const hasScorecards = iv.scorecards?.length > 0;
+                const avgRating = hasScorecards
+                  ? (
+                      iv.scorecards.reduce(
+                        (acc, s) => acc + ((s.technicalRating + s.communicationRating + s.culturalRating) / 3),
+                        0
+                      ) / iv.scorecards.length
+                    ).toFixed(1)
+                  : null;
+
+                const formattedPktDate = new Intl.DateTimeFormat('en-PK', {
+                  timeZone: 'Asia/Karachi',
+                  dateStyle: 'medium',
+                  timeStyle: 'short'
+                }).format(new Date(iv.scheduledDate));
+
+                return (
+                  <div
+                    key={iv._id}
+                    className="p-3 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] flex items-center justify-between gap-3"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900 dark:text-white">
+                          Round {iv.roundNumber}: {iv.roundType}
+                        </span>
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                            iv.status === 'Completed'
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-[#00C471] border border-emerald-200 dark:border-[#1A3125]'
+                              : iv.status === 'Cancelled'
+                              ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 border border-rose-200'
+                              : 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900/40'
+                          }`}
+                        >
+                          {iv.status}
+                        </span>
+                      </div>
+
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        {formattedPktDate} (PKT) • {iv.durationMinutes || 45} mins
+                      </p>
+
+                      <p className="text-[10px] text-slate-400">
+                        Interviewers: {iv.interviewers?.map((p) => p.name).join(', ') || 'Assigned'}
+                      </p>
+
+                      {iv.meetingLink && (
+                        <p className="text-[10px] text-slate-400">
+                          Meeting: <a href={iv.meetingLink} target="_blank" rel="noopener noreferrer" className="text-[#00C471] hover:underline font-mono">{iv.meetingLink}</a>
+                        </p>
+                      )}
                     </div>
-                    <p className="text-[11px] text-slate-500">
-                      {new Date(iv.scheduledDate).toLocaleString('en-PK')} ({iv.durationMinutes} mins)
-                    </p>
-                    <p className="text-[10px] text-slate-400">
-                      Panelists: {iv.interviewers?.map((p) => p.name).join(', ') || 'Assigned'}
-                    </p>
-                  </div>
 
-                  <div className="flex items-center gap-2">
-                    {iv.scorecards?.length > 0 && (
-                      <span className="text-[11px] font-bold text-amber-500 bg-amber-50 dark:bg-amber-950/40 px-2 py-1 rounded-lg border border-amber-200">
-                        {iv.scorecards.length} Scorecard(s)
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {hasScorecards && (
+                        <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-1 rounded-lg border border-amber-200 dark:border-amber-900/40">
+                          ⭐ {avgRating}/5.0
+                        </span>
+                      )}
 
-                    <button
-                      type="button"
-                      onClick={() => setSelectedInterviewForScorecard(iv)}
-                      className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-100 dark:bg-[#162820] text-slate-700 dark:text-slate-200 hover:bg-slate-200 cursor-pointer"
-                    >
-                      Submit Scorecard
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedInterviewForScorecard(iv)}
+                        className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-slate-100 dark:bg-[#162820] text-slate-700 dark:text-slate-200 hover:bg-slate-200 cursor-pointer"
+                      >
+                        {hasScorecards ? 'View Evaluation' : 'Submit Scorecard'}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {interviews.length === 0 && (
                 <p className="text-center py-4 text-slate-400 italic">
@@ -402,6 +470,14 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
                   <XCircle className="w-3.5 h-3.5" /> Reject Candidate
                 </button>
               )}
+
+              <button
+                type="button"
+                onClick={() => setIsDeleteOpen(true)}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-600 border border-rose-200 dark:border-rose-900/40 hover:bg-rose-100 cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete Candidate
+              </button>
             </div>
           </div>
         </div>
@@ -515,6 +591,49 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
                 className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-rose-600 text-white hover:bg-rose-700"
               >
                 Confirm Rejection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Candidate Deletion Confirmation Modal */}
+      {isDeleteOpen && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] w-full max-w-md rounded-2xl p-5 space-y-3 shadow-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 flex items-center justify-center border border-rose-200 dark:border-rose-900/40">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                  Delete Candidate Application
+                </h4>
+                <p className="text-[11px] text-slate-500">
+                  Permanent removal from pipeline
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Are you sure you want to delete <span className="font-semibold text-slate-900 dark:text-white">{candidate?.name}</span>? This will archive their submission and cancel any scheduled interviews.
+            </p>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsDeleteOpen(false)}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-[#162820]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingCandidate}
+                onClick={handleDeleteSubmit}
+                className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-60"
+              >
+                {isDeletingCandidate ? 'Deleting...' : 'Delete Candidate'}
               </button>
             </div>
           </div>

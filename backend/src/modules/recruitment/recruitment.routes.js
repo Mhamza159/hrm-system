@@ -150,6 +150,12 @@ router.patch(
   recruitmentController.updateJob
 );
 
+router.delete(
+  '/jobs/:id',
+  checkPermission('recruitment.job.manage', 'all'),
+  recruitmentController.deleteJob
+);
+
 // 15.7: Candidates & Pipeline Board
 router.get(
   '/candidates',
@@ -168,6 +174,12 @@ router.patch(
   validate(v.updateCandidateStageSchema),
   checkPermission('recruitment.candidate.stage', 'all'),
   recruitmentController.updateCandidateStage
+);
+
+router.delete(
+  '/candidates/:id',
+  checkPermission('recruitment.candidate.stage', 'all'),
+  recruitmentController.deleteCandidate
 );
 
 // 15.6: AI Screening

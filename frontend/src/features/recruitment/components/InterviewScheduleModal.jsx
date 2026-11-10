@@ -9,7 +9,7 @@
 
 import React, { useState } from 'react';
 import { X, Calendar, Clock, Video, Users, CheckCircle2, AlertCircle } from 'lucide-react';
-import { useScheduleInterviewMutation } from '../recruitmentApi.js';
+import { useScheduleInterviewMutation, useGetCandidateByIdQuery } from '../recruitmentApi.js';
 import { useGetEmployeesQuery } from '../../employees/employeesApi.js';
 import { toast } from 'sonner';
 
@@ -23,9 +23,23 @@ export const InterviewScheduleModal = ({ isOpen, onClose, candidate }) => {
   const [errorMsg, setErrorMsg] = useState('');
 
   const { data: empsRes } = useGetEmployeesQuery({ limit: 100, status: 'Active' });
+  const { data: detailRes } = useGetCandidateByIdQuery(candidate?._id, {
+    skip: !isOpen || !candidate?._id
+  });
   const [scheduleInterview, { isLoading }] = useScheduleInterviewMutation();
 
   const employees = empsRes?.data?.items || (Array.isArray(empsRes?.data) ? empsRes.data : []);
+  const existingInterviews = detailRes?.data?.interviews || [];
+
+  // Auto-advance round number based on existing rounds
+  React.useEffect(() => {
+    if (existingInterviews.length > 0) {
+      const maxRound = Math.max(...existingInterviews.map((iv) => iv.roundNumber || 1));
+      setRoundNumber(maxRound + 1);
+    } else {
+      setRoundNumber(1);
+    }
+  }, [existingInterviews.length]);
 
   if (!isOpen || !candidate) return null;
 
@@ -96,6 +110,34 @@ export const InterviewScheduleModal = ({ isOpen, onClose, candidate }) => {
             <div className="p-3 text-xs bg-rose-50 dark:bg-rose-950/40 border border-rose-200 text-rose-600 rounded-xl flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMsg}</span>
+            </div>
+          )}
+
+          {/* Schedule Transparency: Display previously scheduled rounds */}
+          {existingInterviews.length > 0 && (
+            <div className="p-3 bg-slate-50 dark:bg-[#162820]/40 rounded-xl border border-slate-200 dark:border-[#1A3125] space-y-2">
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                Existing Scheduled Rounds ({existingInterviews.length})
+              </span>
+              <div className="space-y-1.5 text-xs">
+                {existingInterviews.map((round) => (
+                  <div
+                    key={round._id}
+                    className="flex items-center justify-between text-slate-700 dark:text-slate-300 py-1 px-2 rounded-lg bg-white dark:bg-[#111D17] border border-slate-200/60 dark:border-[#1A3125]"
+                  >
+                    <span className="font-semibold text-slate-900 dark:text-white">
+                      Round {round.roundNumber}: {round.roundType}
+                    </span>
+                    <span className="font-mono text-[11px] text-slate-500">
+                      {new Intl.DateTimeFormat('en-PK', {
+                        timeZone: 'Asia/Karachi',
+                        dateStyle: 'short',
+                        timeStyle: 'short'
+                      }).format(new Date(round.scheduledDate))} ({round.status})
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

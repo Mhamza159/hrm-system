@@ -22,14 +22,24 @@ import {
 } from 'lucide-react';
 import { useGetInternalJobsQuery, useGetCandidatesQuery } from '../recruitmentApi.js';
 import { EmployeeReferralModal } from '../components/EmployeeReferralModal.jsx';
+import { RefreshButton } from '../components/RefreshButton.jsx';
 
 export const InternalJobsPage = () => {
   const [activeTab, setActiveTab] = useState('openings'); // 'openings' | 'my-referrals'
   const [search, setSearch] = useState('');
   const [selectedJobForReferral, setSelectedJobForReferral] = useState(null);
 
-  const { data: jobsRes, isLoading: isLoadingJobs } = useGetInternalJobsQuery({ search });
-  const { data: candRes } = useGetCandidatesQuery();
+  const {
+    data: jobsRes,
+    isLoading: isLoadingJobs,
+    isFetching: isFetchingJobs,
+    refetch: refetchJobs
+  } = useGetInternalJobsQuery({ search });
+  const {
+    data: candRes,
+    isFetching: isFetchingCands,
+    refetch: refetchCands
+  } = useGetCandidatesQuery();
 
   const jobs = jobsRes?.data?.items || [];
   const allCandidates = candRes?.data?.items || [];
@@ -52,6 +62,14 @@ export const InternalJobsPage = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <RefreshButton
+            onRefresh={() => {
+              if (activeTab === 'openings') return refetchJobs();
+              return refetchCands();
+            }}
+            isFetching={isFetchingJobs || isFetchingCands}
+          />
+
           <button
             onClick={() => setActiveTab('openings')}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${

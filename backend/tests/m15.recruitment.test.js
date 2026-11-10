@@ -50,7 +50,7 @@ describe('Module M15 — Recruitment & AI Screening Test Suite (Rows 15.1 - 15.1
   };
 
   beforeAll(async () => {
-    const testDbUri = env.MONGO_URI.replace('hrm_development', 'hrm_test_m15_recruitment');
+    const testDbUri = env.MONGO_URI.replace(/\/hrm_[a-zA-Z0-9_]+(\?|$)/, '/hrm_test_m15_recruitment$1');
     await mongoose.connect(testDbUri);
 
     // Clean test collections
@@ -240,7 +240,7 @@ describe('Module M15 — Recruitment & AI Screening Test Suite (Rows 15.1 - 15.1
   // =========================================================================
   it('15.4: Candidate submits public application with CV (Applied stage, 30-day throttle)', async () => {
     const resumeContent = Buffer.from(
-      'Ayesha Siddiqua\nSenior Full Stack Developer\n5 years of experience in Node.js, React, Express, MongoDB, Redis, Docker.\nBachelor of Science in Computer Science.'
+      '%PDF-1.4\nAyesha Siddiqua\nSenior Full Stack Developer\n5 years of experience in Node.js, React, Express, MongoDB, Redis, Docker.\nBachelor of Science in Computer Science.'
     );
 
     const res = await request(app)
@@ -424,7 +424,7 @@ describe('Module M15 — Recruitment & AI Screening Test Suite (Rows 15.1 - 15.1
   // 15.12: INTERNAL JOBS & EMPLOYEE REFERRAL
   // =========================================================================
   it('15.12: Active employee submits peer candidate referral', async () => {
-    const resumeContent = Buffer.from('Referral CV for Farhan Ali, Senior React Developer.');
+    const resumeContent = Buffer.from('%PDF-1.4\nReferral CV for Farhan Ali, Senior React Developer.');
 
     const res = await request(app)
       .post('/api/v1/recruitment/referrals')

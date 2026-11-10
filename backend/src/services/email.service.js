@@ -219,6 +219,47 @@ class EmailService {
     `;
     return this.sendMail({ to, subject, html });
   }
+
+  /**
+   * Dispatch interview schedule confirmation email to candidate (M15 Recruitment)
+   * @param {Object} params
+   * @returns {Promise<Object>}
+   */
+  async sendInterviewScheduledEmail({ to, candidateName, jobTitle, roundNumber, roundType, scheduledDate, durationMinutes, meetingLink }) {
+    const formattedDate = new Intl.DateTimeFormat('en-PK', {
+      timeZone: 'Asia/Karachi',
+      dateStyle: 'full',
+      timeStyle: 'short'
+    }).format(new Date(scheduledDate));
+
+    const subject = `Interview Invitation: ${jobTitle} — Round ${roundNumber} (${roundType})`;
+    const html = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px;">
+        <div style="margin-bottom: 20px; border-bottom: 2px solid #00C471; padding-bottom: 12px;">
+          <h2 style="color: #0f172a; margin: 0; font-size: 20px;">Interview Invitation</h2>
+          <p style="color: #00C471; font-weight: 600; font-size: 13px; margin: 4px 0 0 0;">ELVARA HRM · Talent Acquisition</p>
+        </div>
+        
+        <p style="color: #334155; font-size: 14px; line-height: 1.6;">Dear <strong>${candidateName}</strong>,</p>
+        <p style="color: #334155; font-size: 14px; line-height: 1.6;">
+          Thank you for your application for the <strong>${jobTitle}</strong> position. We are pleased to invite you to the upcoming interview stage.
+        </p>
+
+        <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #00C471; border-radius: 8px; padding: 18px; margin: 24px 0;">
+          <p style="margin: 0 0 10px 0; font-size: 13px; color: #475569;"><strong>Stage / Round:</strong> Round ${roundNumber} — ${roundType}</p>
+          <p style="margin: 0 0 10px 0; font-size: 13px; color: #475569;"><strong>Date & Time:</strong> ${formattedDate} (PKT)</p>
+          <p style="margin: 0 0 10px 0; font-size: 13px; color: #475569;"><strong>Duration:</strong> ${durationMinutes || 45} minutes</p>
+          ${meetingLink ? `<p style="margin: 0; font-size: 13px; color: #475569;"><strong>Meeting Link / Details:</strong> <a href="${meetingLink}" target="_blank" style="color: #00C471; font-weight: 600; text-decoration: underline;">${meetingLink}</a></p>` : ''}
+        </div>
+
+        <p style="color: #64748b; font-size: 12px; line-height: 1.5;">
+          Please ensure you have a quiet environment and stable internet connection. If you have any scheduling conflicts, reply directly to this notification.
+        </p>
+      </div>
+    `;
+
+    return this.sendMail({ to, subject, html });
+  }
 }
 
 export const emailService = new EmailService();

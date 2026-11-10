@@ -78,6 +78,15 @@ export const updateJob = asyncHandler(async (req, res) => {
   });
 });
 
+export const deleteJob = asyncHandler(async (req, res) => {
+  const result = await recruitmentService.deleteJob(req.params.id, req.user);
+  res.status(200).json({
+    success: true,
+    data: result,
+    message: 'Job opening deleted successfully.'
+  });
+});
+
 // 15.3: Public Careers
 export const getPublicJobs = asyncHandler(async (req, res) => {
   const result = await recruitmentService.getPublicJobs(req.query);
@@ -130,6 +139,15 @@ export const updateCandidateStage = asyncHandler(async (req, res) => {
     success: true,
     data: candidate,
     message: `Candidate stage updated to ${req.body.stage}.`
+  });
+});
+
+export const deleteCandidate = asyncHandler(async (req, res) => {
+  const result = await recruitmentService.deleteCandidate(req.params.id, req.user);
+  res.status(200).json({
+    success: true,
+    data: result,
+    message: 'Candidate application deleted successfully.'
   });
 });
 
