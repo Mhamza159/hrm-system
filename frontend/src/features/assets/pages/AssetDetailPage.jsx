@@ -131,7 +131,7 @@ export const AssetDetailPage = () => {
                   {asset.assetTag}
                 </span>
                 <span className="text-xs font-medium text-slate-400 capitalize">
-                  {asset.type.replace('_', ' ')}
+                  {asset.type?.replace?.('_', ' ') || asset.type || 'Equipment'}
                 </span>
                 {asset.hasOpenIssue && (
                   <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-0.5 rounded-full border border-rose-200 dark:border-rose-900/50">
@@ -452,7 +452,7 @@ export const AssetDetailPage = () => {
                       <div className="text-xs space-y-1.5">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold text-slate-900 dark:text-white capitalize">
-                            {event.action.replace('_', ' ')}
+                            {event.action?.replace?.('_', ' ') || event.action || 'Action'}
                           </span>
                           <span className="text-[11px] text-slate-400 font-mono tabular-nums">
                             {new Date(event.date).toLocaleString()}
@@ -552,7 +552,7 @@ export const AssetDetailPage = () => {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-bold text-slate-800 dark:text-slate-200 capitalize">
-                      {issue.issueType.replace('_', ' ')}
+                      {issue.issueType?.replace?.('_', ' ') || issue.issueType || 'Issue'}
                     </span>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 capitalize">
                       Severity: {issue.severity}

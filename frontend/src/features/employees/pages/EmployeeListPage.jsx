@@ -77,6 +77,32 @@ export default function EmployeeListPage() {
     status: selectedStatus || undefined,
     archived: activeTab === 'archived' ? 'true' : undefined
   });
+  const { data: activeCountData } = useGetEmployeesQuery({ limit: 1, archived: 'false' });
+  const { data: archivedCountData } = useGetEmployeesQuery({ limit: 1, archived: 'true' });
+
+  const activeCount = activeCountData?.data?.total ?? (activeTab === 'active' ? empData?.data?.total || 0 : 0);
+  const archivedCount = archivedCountData?.data?.total ?? (activeTab === 'archived' ? empData?.data?.total || 0 : 0);
+
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    setPage(1);
+    setSelectedStatus('');
+  };
+
+  const handleSearchChange = (val) => {
+    setSearchTerm(val);
+    setPage(1);
+  };
+
+  const handleStatusChange = (val) => {
+    setSelectedStatus(val);
+    setPage(1);
+  };
+
+  const handleDeptChange = (val) => {
+    setSelectedDept(val);
+    setPage(1);
+  };
 
   // Manual data reload handler
   const handleRefresh = async () => {
@@ -469,10 +495,7 @@ export default function EmployeeListPage() {
       <div className="flex items-center gap-2 border-b border-slate-200 dark:border-[#1A3125] pb-3">
         <button
           type="button"
-          onClick={() => {
-            setActiveTab('active');
-            setPage(1);
-          }}
+          onClick={() => handleTabChange('active')}
           className={cn(
             'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer',
             activeTab === 'active'
@@ -482,19 +505,19 @@ export default function EmployeeListPage() {
         >
           <Users className="w-4 h-4" />
           <span>Active Workforce</span>
-          {activeTab === 'active' && (
-            <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-white/20 text-white font-mono">
-              {total}
-            </span>
-          )}
+          <span
+            className={cn(
+              'ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-mono',
+              activeTab === 'active' ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+            )}
+          >
+            {activeCount}
+          </span>
         </button>
 
         <button
           type="button"
-          onClick={() => {
-            setActiveTab('archived');
-            setPage(1);
-          }}
+          onClick={() => handleTabChange('archived')}
           className={cn(
             'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer',
             activeTab === 'archived'
@@ -504,11 +527,14 @@ export default function EmployeeListPage() {
         >
           <Archive className="w-4 h-4" />
           <span>Archive Bucket</span>
-          {activeTab === 'archived' && (
-            <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-white/20 text-white font-mono">
-              {total}
-            </span>
-          )}
+          <span
+            className={cn(
+              'ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-mono',
+              activeTab === 'archived' ? 'bg-white/20 text-white' : 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+            )}
+          >
+            {archivedCount}
+          </span>
         </button>
       </div>
 
@@ -526,20 +552,20 @@ export default function EmployeeListPage() {
       )}
 
       {/* Filter Toolbar */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-3 bg-white dark:bg-[#111D17] p-3.5 rounded-2xl border border-slate-200 dark:border-[#1A3125] shadow-xs">
-        <div className="relative w-full md:w-80">
+      <div className="flex flex-col lg:flex-row items-center justify-between gap-3 bg-white dark:bg-[#111D17] p-3.5 rounded-2xl border border-slate-200 dark:border-[#1A3125] shadow-xs">
+        <div className="relative w-full lg:w-72">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search by code, name, email..."
             value={search}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="w-full text-xs pl-9 pr-8 py-2 rounded-xl bg-slate-50 dark:bg-[#0A110D] border border-slate-200 dark:border-[#1A3125] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471] transition-all"
           />
           {search && (
             <button
               type="button"
-              onClick={() => setSearchTerm('')}
+              onClick={() => handleSearchChange('')}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
@@ -547,26 +573,53 @@ export default function EmployeeListPage() {
           )}
         </div>
 
-        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto flex-wrap">
+        <div className="flex items-center gap-2.5 w-full lg:w-auto overflow-x-auto flex-wrap justify-start lg:justify-end">
+          {/* Quick Status Filter Pills */}
+          <div className="inline-flex p-1 bg-slate-100 dark:bg-[#0A110D] rounded-xl border border-slate-200 dark:border-[#1A3125]">
+            {[
+              { id: '', label: 'All' },
+              { id: 'Active', label: 'Active' },
+              { id: 'Probation', label: 'Probation' },
+              { id: 'Notice', label: 'Notice' },
+              { id: 'Suspended', label: 'Suspended' }
+            ].map((st) => (
+              <button
+                key={st.id}
+                type="button"
+                onClick={() => handleStatusChange(st.id)}
+                className={cn(
+                  'px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer',
+                  selectedStatus === st.id
+                    ? 'bg-white dark:bg-[#111D17] text-slate-900 dark:text-white shadow-xs font-semibold'
+                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                )}
+              >
+                {st.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Department Filter Dropdown */}
           <div className="relative">
             <select
               value={selectedDept}
-              onChange={(e) => setSelectedDept(e.target.value)}
+              onChange={(e) => handleDeptChange(e.target.value)}
               className="text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471] cursor-pointer transition-all"
             >
               <option value="">All Departments</option>
               {departments.map((dept) => (
                 <option key={dept._id} value={dept._id}>
-                  {dept.name}
+                  {dept.name} {typeof dept.headcount === 'number' ? `(${dept.headcount})` : ''}
                 </option>
               ))}
             </select>
           </div>
 
+          {/* Extended Status Filter Dropdown */}
           <div className="relative">
             <select
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
+              onChange={(e) => handleStatusChange(e.target.value)}
               className="text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471] cursor-pointer transition-all"
             >
               <option value="">All Statuses</option>
@@ -583,9 +636,9 @@ export default function EmployeeListPage() {
             <button
               type="button"
               onClick={() => {
-                setSearchTerm('');
-                setSelectedDept('');
-                setSelectedStatus('');
+                handleSearchChange('');
+                handleDeptChange('');
+                handleStatusChange('');
               }}
               className="flex items-center gap-1 text-xs px-2.5 py-2 rounded-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
               title="Reset all filters"

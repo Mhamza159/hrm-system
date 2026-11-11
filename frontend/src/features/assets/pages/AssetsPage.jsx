@@ -343,7 +343,9 @@ export const AssetsPage = () => {
                     : null;
                   const deptName = custodian?.departmentId?.name || custodian?.departmentId?.code || null;
                   const desigTitle = custodian?.designationId?.title || custodian?.designationId?.code || null;
-                  const roleName = custodian?.userId?.roles?.[0]?.name || null;
+                  const roleName =
+                    custodian?.userId?.roles?.[0]?.name ||
+                    (typeof custodian?.userId?.roles?.[0] === 'string' ? custodian.userId.roles[0] : null);
 
                   return (
                     <tr
@@ -352,22 +354,22 @@ export const AssetsPage = () => {
                       className="hover:bg-slate-50/80 dark:hover:bg-[#162820]/60 transition-colors cursor-pointer group"
                     >
                       <td className="py-3.5 px-4 font-mono font-bold text-[#00C471] dark:text-[#00C471] tracking-tight">
-                        {asset.assetTag}
+                        {asset.assetTag || 'TAG-PENDING'}
                       </td>
                       <td className="py-3.5 px-4">
                         <div>
                           <p className="font-semibold text-slate-900 dark:text-white group-hover:text-[#00C471] transition-colors">
-                            {asset.name}
+                            {asset.name || 'Unnamed Asset'}
                           </p>
                           <p className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
-                            {asset.modelNumber || asset.serialNumber}
+                            {asset.modelNumber || asset.serialNumber || 'No Serial'}
                             {asset.specifications?.ramGb ? ` · ${asset.specifications.ramGb}GB RAM` : ''}
                             {asset.specifications?.processor ? ` · ${asset.specifications.processor}` : ''}
                           </p>
                         </div>
                       </td>
                       <td className="py-3.5 px-4 capitalize text-slate-600 dark:text-slate-300">
-                        {asset.type.replace('_', ' ')}
+                        {asset.type?.replace?.('_', ' ') || asset.type || 'Equipment'}
                       </td>
                       <td className="py-3.5 px-4">
                         {custodian ? (
@@ -420,9 +422,9 @@ export const AssetsPage = () => {
                         {renderStatusBadge(asset.status, asset.hasOpenIssue)}
                       </td>
                       <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 text-[11px] font-mono tabular-nums">
-                        {asset.warrantyExpiresAt
+                        {asset.warrantyExpiresAt && !isNaN(new Date(asset.warrantyExpiresAt))
                           ? `Warranty: ${new Date(asset.warrantyExpiresAt).toLocaleDateString()}`
-                          : asset.licenseExpiresAt
+                          : asset.licenseExpiresAt && !isNaN(new Date(asset.licenseExpiresAt))
                           ? `License: ${new Date(asset.licenseExpiresAt).toLocaleDateString()}`
                           : 'No expiry registered'}
                       </td>

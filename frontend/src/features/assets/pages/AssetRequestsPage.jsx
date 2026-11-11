@@ -177,11 +177,11 @@ export const AssetRequestsPage = () => {
               <div>
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-bold text-xs uppercase px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300">
-                    {req.assetType.replace('_', ' ')}
+                    {req.assetType?.replace?.('_', ' ') || req.assetType || 'Equipment'}
                   </span>
                   <div className="flex items-center gap-1.5">
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 uppercase">
-                      Priority: {req.priority}
+                      Priority: {req.priority || 'medium'}
                     </span>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       req.status === 'approved'
@@ -197,7 +197,7 @@ export const AssetRequestsPage = () => {
 
                 <div className="mt-3 text-xs space-y-1">
                   <p className="font-semibold text-slate-800 dark:text-slate-200">
-                    Target Member: {req.employeeId?.name || `${req.employeeId?.firstName || ''} ${req.employeeId?.lastName || ''}`.trim()} ({req.employeeId?.employeeCode})
+                    Target Member: {req.employeeId ? (req.employeeId.name || `${req.employeeId.firstName || ''} ${req.employeeId.lastName || ''}`.trim() || 'Employee') : 'Unassigned'} {req.employeeId?.employeeCode ? `(${req.employeeId.employeeCode})` : ''}
                   </p>
                   <p className="text-[11px] text-slate-400">
                     Department: {req.departmentId?.name || 'Department'} · Requested by: {req.requestedBy?.name || 'Manager'}
@@ -214,7 +214,7 @@ export const AssetRequestsPage = () => {
 
                 {req.status === 'approved' && req.allocatedAssetId && (
                   <div className="mt-3 p-2.5 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800 text-[11px] text-emerald-700 dark:text-emerald-300">
-                    Allocated Asset: <span className="font-bold">{req.allocatedAssetId.name}</span> ({req.allocatedAssetId.assetTag})
+                    Allocated Asset: <span className="font-bold">{req.allocatedAssetId.name || 'Allocated Hardware'}</span> {req.allocatedAssetId.assetTag ? `(${req.allocatedAssetId.assetTag})` : ''}
                   </div>
                 )}
 

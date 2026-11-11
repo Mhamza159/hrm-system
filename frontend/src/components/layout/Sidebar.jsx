@@ -462,6 +462,7 @@ export function Sidebar({ isOpen = false, onClose }) {
                         <NavLink
                           key={child.path}
                           to={child.path}
+                          end={child.exact ?? true}
                           onClick={onClose}
                           className={({ isActive }) =>
                             cn(

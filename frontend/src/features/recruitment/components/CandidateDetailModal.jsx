@@ -26,7 +26,8 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  Trash2
+  Trash2,
+  Loader2
 } from 'lucide-react';
 import {
   useGetCandidateByIdQuery,
@@ -63,6 +64,7 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
   const [isOfferOpen, setIsOfferOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isLoadingCv, setIsLoadingCv] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
   // Technical Test prompt state
   const [isTestPromptOpen, setIsTestPromptOpen] = useState(false);
@@ -82,6 +84,58 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
     const apiBase = getApiBaseUrl();
     const tokenParam = accessToken ? `?token=${encodeURIComponent(accessToken)}` : '';
     window.open(`${apiBase}/recruitment/candidates/${candidate._id}/cv${tokenParam}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleDownloadOfferPdf = async () => {
+    if (!candidate?._id) return;
+    setIsDownloadingPdf(true);
+    try {
+      const apiBase = getApiBaseUrl();
+      let res = await fetch(`${apiBase}/recruitment/candidates/${candidate._id}/offer/pdf`, {
+        method: 'GET',
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+        credentials: 'include'
+      });
+
+      // If token expired, attempt transparent refresh once without logging out
+      if (res.status === 401) {
+        const refreshRes = await fetch(`${apiBase}/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+        if (refreshRes.ok) {
+          const refreshData = await refreshRes.json();
+          const newToken = refreshData?.data?.accessToken;
+          if (newToken) {
+            res = await fetch(`${apiBase}/recruitment/candidates/${candidate._id}/offer/pdf`, {
+              method: 'GET',
+              headers: { Authorization: `Bearer ${newToken}` },
+              credentials: 'include'
+            });
+          }
+        }
+      }
+
+      if (!res.ok) {
+        throw new Error('Failed to generate or download offer letter PDF.');
+      }
+
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = blobUrl;
+      const safeName = (candidate.name || 'Candidate').replace(/[^a-zA-Z0-9_-]/g, '_');
+      downloadLink.download = `Offer_Letter_${safeName}.pdf`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      window.URL.revokeObjectURL(blobUrl);
+      downloadLink.remove();
+      toast.success('Offer letter PDF downloaded successfully.');
+    } catch (err) {
+      toast.error(err?.message || 'Failed to download offer letter PDF.');
+    } finally {
+      setIsDownloadingPdf(false);
+    }
   };
   const [screenCandidate, { isLoading: isScreening }] = useScreenCandidateMutation();
   const [updateCandidateStage] = useUpdateCandidateStageMutation();
@@ -326,14 +380,22 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
                 </p>
               </div>
 
-              <a
-                href={`${getApiBaseUrl()}/recruitment/candidates/${candidate._id}/offer/pdf${accessToken ? `?token=${encodeURIComponent(accessToken)}` : ''}`}
-                target="_blank"
-                rel="noreferrer"
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1 cursor-pointer transition-colors"
+              <button
+                type="button"
+                disabled={isDownloadingPdf}
+                onClick={handleDownloadOfferPdf}
+                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1.5 cursor-pointer transition-colors disabled:opacity-60"
               >
-                <FileText className="w-3.5 h-3.5" /> Download PDF
-              </a>
+                {isDownloadingPdf ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Downloading...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-3.5 h-3.5" /> Download PDF
+                  </>
+                )}
+              </button>
             </div>
           )}
 

@@ -317,7 +317,7 @@ export const getEmployees = async (
   // 3. Faceted filters
   if (departmentId) conditions.departmentId = departmentId;
   if (designationId) conditions.designationId = designationId;
-  if (status) conditions.status = status;
+  if (status) conditions.status = new RegExp('^' + status.trim() + '$', 'i');
   if (employmentType) conditions.employmentType = employmentType;
   if (skill) conditions.skills = { $in: [skill.trim()] };
 
@@ -370,7 +370,7 @@ export const getEmployees = async (
  * @returns {Promise<Object>}
  */
 export const getEmployeeById = async (id, actor, permissionScope = 'all') => {
-  const employee = await Employee.findOne({ _id: id, isDeleted: false }).populate([
+  const employee = await Employee.findById(id).populate([
     { path: 'departmentId', select: 'name code description headId' },
     { path: 'designationId', select: 'title code grade description' },
     { path: 'shiftId', select: 'name code startTime endTime graceMinutes type' },
@@ -580,8 +580,10 @@ export const updateEmployeeStatus = async (id, { status, reason }, actor) => {
     throw new ApiError(404, 'Employee record not found');
   }
 
-  // Check asset exit clearance: ensure all company equipment returned before deletion
-  await assertEmployeeAssetClearance(id);
+  // Check asset exit clearance only when terminating employee
+  if (status === 'Terminated') {
+    await assertEmployeeAssetClearance(id);
+  }
 
   if (
     employee.email === 'mhamzaofficial159@gmail.com' ||

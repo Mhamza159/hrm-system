@@ -78,7 +78,7 @@ export const MyAssetsPage = () => {
                     {asset.assetTag}
                   </span>
                   <span className="text-[11px] font-semibold text-slate-400 capitalize">
-                    {asset.type.replace('_', ' ')}
+                    {asset.type?.replace?.('_', ' ') || asset.type || 'Equipment'}
                   </span>
                 </div>
 

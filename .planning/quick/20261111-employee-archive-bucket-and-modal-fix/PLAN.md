@@ -17,3 +17,4 @@ status: in-progress
    - In Archive Bucket: display archived employees with Revert (`RotateCcw`) and Permanent Delete (`Trash2`) actions.
    - For Permanent Delete: render a dedicated danger confirmation modal with operational Close (`X` and Cancel) buttons.
 4. **Verification**: Run frontend build and backend tests to ensure zero regressions.
+
