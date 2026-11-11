@@ -31,7 +31,7 @@ export function PinnedNoticeBoard() {
   }
 
   return (
-    <div className="bg-white dark:bg-[#111D17] border border-amber-300/80 dark:border-amber-600/40 rounded-2xl p-5 shadow-xs mb-6">
+    <div className="bg-white dark:bg-[#111D17] border border-amber-300/80 dark:border-amber-600/40 rounded-2xl p-5 shadow-xs">
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-[#1A3125]">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50 flex items-center justify-center">
@@ -58,7 +58,7 @@ export function PinnedNoticeBoard() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-1 gap-4">
         {pinnedItems.map((item) => (
           <div
             key={item._id}

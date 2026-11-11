@@ -47,14 +47,10 @@ export function DashboardSkeleton({
       </div>
 
       {/* 2. Top Metric KPI Row (4 Cards) */}
-      {variant === 'employee' ? (
-        <EmployeeTopCardsSkeleton />
-      ) : (
-        <StandardTopCardsSkeleton />
-      )}
+      <StandardTopCardsSkeleton />
 
-      {variant === 'admin' || variant === 'hr' || variant === 'manager' ? (
-        <AdminRowsSkeleton />
+      {variant === 'admin' || variant === 'hr' || variant === 'manager' || variant === 'employee' ? (
+        <AdminRowsSkeleton wideFirst={variant === 'employee'} />
       ) : (
         <>
       {/* 3. Middle Visual Analytics Row */}
@@ -104,16 +100,17 @@ export function DashboardSkeleton({
   );
 }
 
-// Admin, HR and manager: two rows of three cards, matching rows 2 and 3 of those dashboards.
-function AdminRowsSkeleton() {
+// Two rows of three-column cards, matching rows 2 and 3 of the dashboards.
+// wideFirst (employee): two cards per row, the first spanning two columns.
+function AdminRowsSkeleton({ wideFirst = false }) {
   return (
     <>
       {[0, 1].map((row) => (
         <div key={row} className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {[1, 2, 3].map((item) => (
+          {(wideFirst ? [1, 2] : [1, 2, 3]).map((item) => (
             <div
               key={item}
-              className="relative overflow-hidden rounded-2xl border border-[#EAECF0] bg-white p-5 dark:border-[#1A3125] dark:bg-[#111D17]"
+              className={`relative overflow-hidden rounded-2xl border border-[#EAECF0] bg-white p-5 dark:border-[#1A3125] dark:bg-[#111D17]${wideFirst && item === 1 ? ' lg:col-span-2' : ''}`}
             >
               <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 dark:via-emerald-400/5 to-transparent animate-shimmer pointer-events-none" />
               <div className="mb-4 h-4 w-40 rounded-md bg-slate-200 dark:bg-[#1A3125] animate-pulse" />
@@ -158,43 +155,6 @@ function StandardTopCardsSkeleton() {
           </div>
         </div>
       ))}
-    </div>
-  );
-}
-
-function EmployeeTopCardsSkeleton() {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {/* Punch in hero card skeleton */}
-      <div className="md:col-span-1 bg-white dark:bg-[#111D17] rounded-2xl p-5 border border-slate-200/80 dark:border-[#1A3125] shadow-xs relative overflow-hidden flex flex-col justify-between">
-        <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 dark:via-emerald-400/5 to-transparent animate-shimmer pointer-events-none" />
-        <div className="space-y-3">
-          <div className="h-3.5 w-32 bg-slate-200 dark:bg-[#1A3125] rounded-md animate-pulse" />
-          <div className="h-9 w-40 bg-slate-200 dark:bg-[#1A3125] rounded-lg animate-pulse" />
-          <div className="h-3 w-48 bg-slate-100 dark:bg-[#162820] rounded-md animate-pulse" />
-        </div>
-        <div className="mt-5 h-11 w-full bg-slate-200 dark:bg-[#1A3125] rounded-xl animate-pulse" />
-      </div>
-
-      {/* 2 stat cards */}
-      <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {[1, 2].map((item) => (
-          <div
-            key={item}
-            className="bg-white dark:bg-[#111D17] rounded-2xl p-5 border border-slate-200/80 dark:border-[#1A3125] shadow-xs relative overflow-hidden"
-          >
-            <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 dark:via-emerald-400/5 to-transparent animate-shimmer pointer-events-none" />
-            <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <div className="h-3 w-24 bg-slate-200 dark:bg-[#1A3125] rounded-md animate-pulse" />
-                <div className="h-7 w-28 bg-slate-200 dark:bg-[#1A3125] rounded-lg animate-pulse" />
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-[#162820] border border-slate-200/50 dark:border-[#1E3A2B] animate-pulse" />
-            </div>
-            <div className="mt-4 h-3 w-36 bg-slate-100 dark:bg-[#162820] rounded-md animate-pulse" />
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
