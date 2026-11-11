@@ -33,12 +33,13 @@ export function UpcomingDeadlinesCard({ items = [], title = 'Upcoming Deadlines'
         <ul className="max-h-80 divide-y divide-slate-100 overflow-y-auto dark:divide-[#1A3125]">
           {items.map((it) => {
             const d = new Date(it.date);
+            const validDate = it.date && !Number.isNaN(d.getTime());
             return (
               <li key={it._id}>
                 <Link to={it.link} className="flex items-center gap-3 py-3 hover:opacity-80">
                   <span className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-xl bg-slate-50 dark:bg-[#162820]">
-                    <span className="text-[10px] font-semibold uppercase text-slate-500 dark:text-slate-400">{part(d, { month: 'short' })}</span>
-                    <span className="font-mono text-sm font-semibold tabular-nums text-slate-900 dark:text-white">{part(d, { day: '2-digit' })}</span>
+                    <span className="text-[10px] font-semibold uppercase text-slate-500 dark:text-slate-400">{validDate ? part(d, { month: 'short' }) : '--'}</span>
+                    <span className="font-mono text-sm font-semibold tabular-nums text-slate-900 dark:text-white">{validDate ? part(d, { day: '2-digit' }) : '--'}</span>
                   </span>
                   <span className="min-w-0 flex-1 truncate text-xs font-semibold text-slate-900 dark:text-white">{it.title}</span>
                   <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold capitalize ${TYPE_PILL[it.type] || TYPE_PILL.checklist}`}>

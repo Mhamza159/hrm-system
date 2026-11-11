@@ -24,6 +24,8 @@ import { ManagerDashboard } from "./components/ManagerDashboard.jsx";
 import { EmployeeDashboard } from "./components/EmployeeDashboard.jsx";
 
 const TZ = "Asia/Karachi";
+const DATE_FMT = new Intl.DateTimeFormat("en-US", { timeZone: TZ, month: "short", day: "numeric", year: "numeric" });
+const TIME_FMT = new Intl.DateTimeFormat("en-US", { timeZone: TZ, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true });
 
 /** Date + live clock capsule (UI-REFERENCE §5), ticking every second in Asia/Karachi. */
 function DateClockCapsule() {
@@ -32,10 +34,10 @@ function DateClockCapsule() {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
-  const date = new Intl.DateTimeFormat("en-US", { timeZone: TZ, month: "short", day: "numeric", year: "numeric" }).format(now);
-  const time = new Intl.DateTimeFormat("en-US", { timeZone: TZ, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }).format(now);
+  const date = DATE_FMT.format(now);
+  const time = TIME_FMT.format(now);
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2 shadow-sm dark:border-[#1A3125] dark:bg-[#111D17]">
+    <div className="flex items-center gap-3 rounded-xl border border-[#EAECF0] bg-white px-4 py-2 shadow-sm dark:border-[#1A3125] dark:bg-[#111D17]">
       <CalendarDays className="h-4 w-4 text-slate-500" aria-hidden="true" />
       <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{date}</span>
       <span className="h-1 w-1 rounded-full bg-[#CBD5E1]" aria-hidden="true" />
@@ -89,18 +91,18 @@ export default function DashboardPage() {
           description="Here's your live operational overview and daily updates."
           actions={
             <div className="flex flex-wrap items-center gap-3">
-            <DateClockCapsule />
-            <button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#162820] hover:text-emerald-600 dark:hover:text-emerald-400 transition-all shadow-xs cursor-pointer disabled:opacity-50"
-            >
-              <RefreshCw
-                className={`w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 ${isRefreshing ? "animate-spin" : ""}`}
-              />
-              <span>Refresh</span>
-            </button>
-          </div>
+              <DateClockCapsule />
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#162820] hover:text-emerald-600 dark:hover:text-emerald-400 transition-all shadow-xs cursor-pointer disabled:opacity-50"
+              >
+                <RefreshCw
+                  className={`w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 ${isRefreshing ? "animate-spin" : ""}`}
+                />
+                <span>Refresh</span>
+              </button>
+            </div>
           }
         />
 

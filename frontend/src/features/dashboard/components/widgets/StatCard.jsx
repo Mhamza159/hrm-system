@@ -16,23 +16,29 @@ const SUB_TONE = {
 };
 
 function Sparkline({ series, label }) {
-  const W = 80;
+  const W = 120;
   const H = 28;
+  const PAD = 3; // keeps the 2px stroke and round caps inside the viewBox
   const min = Math.min(...series);
-  const range = Math.max(...series) - min || 1;
+  const range = Math.max(...series) - min;
   const points = series
-    .map((v, i) => `${(i / (series.length - 1)) * W},${H - 2 - ((v - min) / range) * (H - 4)}`)
+    .map((v, i) => {
+      const x = PAD + (i / (series.length - 1)) * (W - 2 * PAD);
+      const y = range ? H - PAD - ((v - min) / range) * (H - 2 * PAD) : H / 2; // flat series sits mid-height
+      return `${x},${y}`;
+    })
     .join(' ');
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="h-7 w-20 shrink-0 text-[#00C471]" role="img" aria-label={label}>
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="mt-2 h-7 w-full text-[#00C471]" role="img" aria-label={label}>
       <title>{label}</title>
-      <polyline points={points} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline points={points} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }
 
 export function StatCard({ label, value, sub, subTone = 'muted', icon: Icon, series }) {
-  const hasSeries = Array.isArray(series) && series.length >= 2;
+  const clean = Array.isArray(series) ? series.filter(Number.isFinite) : [];
+  const hasSeries = clean.length >= 2;
   return (
     <DashboardCard>
       <div className="flex items-start justify-between gap-3">
@@ -43,10 +49,13 @@ export function StatCard({ label, value, sub, subTone = 'muted', icon: Icon, ser
           </span>
         )}
       </div>
-      <div className="mt-2 flex items-end justify-between gap-3">
-        <p className="truncate font-mono text-[28px] font-semibold tabular-nums text-slate-900 dark:text-white">{value}</p>
-        {hasSeries && <Sparkline series={series} label={`${label} trend`} />}
-      </div>
+      <p
+        title={typeof value === 'string' || typeof value === 'number' ? String(value) : undefined}
+        className="mt-2 break-words font-mono text-2xl font-semibold tabular-nums text-slate-900 lg:text-[28px] dark:text-white"
+      >
+        {value}
+      </p>
+      {hasSeries && <Sparkline series={clean} label={`${label} trend`} />}
       {sub && <p className={cn('mt-1 truncate text-xs', SUB_TONE[subTone] || SUB_TONE.muted)}>{sub}</p>}
     </DashboardCard>
   );

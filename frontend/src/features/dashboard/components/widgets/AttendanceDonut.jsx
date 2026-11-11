@@ -18,8 +18,10 @@ const SEGMENTS = [
 const R = 40;
 const C = 2 * Math.PI * R;
 
-export function AttendanceDonut({ breakdown = {}, title = "Today's Attendance" }) {
-  const total = SEGMENTS.reduce((sum, s) => sum + (breakdown[s.key] || 0), 0);
+export function AttendanceDonut({ breakdown: rawBreakdown, title = "Today's Attendance" }) {
+  const breakdown = rawBreakdown ?? {};
+  const count = (key) => Math.max(0, Number(breakdown[key]) || 0);
+  const total = SEGMENTS.reduce((sum, s) => sum + count(s.key), 0);
   let offset = 0;
 
   return (
@@ -38,11 +40,11 @@ export function AttendanceDonut({ breakdown = {}, title = "Today's Attendance" }
             viewBox="0 0 100 100"
             className="h-32 w-32 shrink-0"
             role="img"
-            aria-label={`Attendance today: ${SEGMENTS.map((s) => `${breakdown[s.key] || 0} ${s.label}`).join(', ')}`}
+            aria-label={`Attendance today: ${SEGMENTS.map((s) => `${count(s.key)} ${s.label}`).join(', ')}`}
           >
             <g transform="rotate(-90 50 50)">
               {SEGMENTS.map((s) => {
-                const len = ((breakdown[s.key] || 0) / total) * C;
+                const len = (count(s.key) / total) * C;
                 if (!len) return null;
                 const circle = (
                   <circle
@@ -70,7 +72,7 @@ export function AttendanceDonut({ breakdown = {}, title = "Today's Attendance" }
               <li key={s.key} className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                 <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: s.color }} aria-hidden="true" />
                 <span className="flex-1">{s.label}</span>
-                <span className="font-mono font-semibold tabular-nums text-slate-900 dark:text-white">{breakdown[s.key] || 0}</span>
+                <span className="font-mono font-semibold tabular-nums text-slate-900 dark:text-white">{count(s.key)}</span>
               </li>
             ))}
           </ul>
