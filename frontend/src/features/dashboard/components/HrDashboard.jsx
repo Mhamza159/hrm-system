@@ -51,32 +51,28 @@ export function HrDashboard() {
       {/* 1. Operational Stat Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Active Employees"
+          label="Active Employees"
           value={kpis.activeEmployees || 0}
-          subtitle={`${kpis.todayPresent || 0} present today`}
+          sub={`${kpis.todayPresent || 0} present today`}
           icon={Users}
-          color="emerald"
         />
         <StatCard
-          title="Pending Leaves"
+          label="Pending Leaves"
           value={kpis.pendingLeavesCount || 0}
-          subtitle="Requests awaiting action"
+          sub="Requests awaiting action"
           icon={Calendar}
-          color="amber"
         />
         <StatCard
-          title="Punch Corrections"
+          label="Punch Corrections"
           value={kpis.pendingCorrectionsCount || 0}
-          subtitle="Missed check-in requests"
+          sub="Missed check-in requests"
           icon={Clock}
-          color="blue"
         />
         <StatCard
-          title="Probation Reviews"
+          label="Probation Reviews"
           value={kpis.probationReviewsCount || 0}
-          subtitle="Ending in next 30 days"
+          sub="Ending in next 30 days"
           icon={UserCheck}
-          color="purple"
         />
       </div>
 

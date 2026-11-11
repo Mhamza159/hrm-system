@@ -8,9 +8,9 @@
  * - Security: Enforces zero-leakage by dynamically mounting the persona-scoped dashboard
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { RefreshCw } from "lucide-react";
+import { CalendarDays, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "../../components/common/PageHeader.jsx";
 import { RoleBadge } from "../../components/common/RoleBadge.jsx";
@@ -22,6 +22,33 @@ import { AdminDashboard } from "./components/AdminDashboard.jsx";
 import { HrDashboard } from "./components/HrDashboard.jsx";
 import { ManagerDashboard } from "./components/ManagerDashboard.jsx";
 import { EmployeeDashboard } from "./components/EmployeeDashboard.jsx";
+
+const TZ = "Asia/Karachi";
+
+/** Date + live clock capsule (UI-REFERENCE §5), ticking every second in Asia/Karachi. */
+function DateClockCapsule() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const date = new Intl.DateTimeFormat("en-US", { timeZone: TZ, month: "short", day: "numeric", year: "numeric" }).format(now);
+  const time = new Intl.DateTimeFormat("en-US", { timeZone: TZ, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }).format(now);
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2 shadow-sm dark:border-[#1A3125] dark:bg-[#111D17]">
+      <CalendarDays className="h-4 w-4 text-slate-500" aria-hidden="true" />
+      <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{date}</span>
+      <span className="h-1 w-1 rounded-full bg-[#CBD5E1]" aria-hidden="true" />
+      <span className="flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 font-mono text-xs font-bold tabular-nums text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-400">
+        <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00C471] opacity-60" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#00C471]" />
+        </span>
+        {time}
+      </span>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const { user, isSuperAdmin } = useAuth();
@@ -61,6 +88,8 @@ export default function DashboardPage() {
           title={`Welcome back, ${userName} 👋`}
           description="Here's your live operational overview and daily updates."
           actions={
+            <div className="flex flex-wrap items-center gap-3">
+            <DateClockCapsule />
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
@@ -71,6 +100,7 @@ export default function DashboardPage() {
               />
               <span>Refresh</span>
             </button>
+          </div>
           }
         />
 

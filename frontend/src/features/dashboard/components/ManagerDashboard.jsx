@@ -49,32 +49,28 @@ export function ManagerDashboard() {
       {/* 1. Team KPI Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Team Members"
+          label="Team Members"
           value={kpis.teamCount || 0}
-          subtitle={`${kpis.todayPresent || 0} present today`}
+          sub={`${kpis.todayPresent || 0} present today`}
           icon={Users}
-          color="emerald"
         />
         <StatCard
-          title="Team Present Today"
+          label="Team Present Today"
           value={kpis.todayPresent || 0}
-          subtitle={`${kpis.todayLate || 0} late · ${kpis.todayOnLeave || 0} on leave`}
+          sub={`${kpis.todayLate || 0} late · ${kpis.todayOnLeave || 0} on leave`}
           icon={CalendarCheck2}
-          color="blue"
         />
         <StatCard
-          title="Pending Team Approvals"
+          label="Pending Team Approvals"
           value={kpis.pendingApprovals || 0}
-          subtitle="Leave & attendance requests"
+          sub="Leave & attendance requests"
           icon={Calendar}
-          color="amber"
         />
         <StatCard
-          title="Approved Overtime"
+          label="Approved Overtime"
           value={`${kpis.teamOvertimeHours || 0} hrs`}
-          subtitle="Team total this month"
+          sub="Team total this month"
           icon={Clock}
-          color="purple"
         />
       </div>
 

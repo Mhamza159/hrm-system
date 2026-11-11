@@ -1,89 +1,53 @@
 /**
  * @file StatCard.jsx
- * @description High-density KPI metric card adhering to enterprise HRM styling.
+ * @description KPI card: uppercase label, mono value, optional sub-line and sparkline.
+ * The sparkline renders only when a real series (>= 2 points) is supplied.
  */
 
 import React from 'react';
-import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { cn } from '../../../../lib/utils.js';
+import { DashboardCard } from './DashboardCard.jsx';
 
-export function StatCard({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  trend,
-  trendType = 'up', // 'up' | 'down' | 'neutral'
-  color = 'emerald' // 'emerald' | 'blue' | 'amber' | 'rose' | 'purple'
-}) {
-  const colorMap = {
-    emerald: {
-      bg: 'bg-emerald-50 dark:bg-emerald-950/30',
-      border: 'border-emerald-200 dark:border-emerald-800/50',
-      iconText: 'text-emerald-600 dark:text-emerald-400',
-      pill: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
-    },
-    blue: {
-      bg: 'bg-blue-50 dark:bg-blue-950/30',
-      border: 'border-blue-200 dark:border-blue-800/50',
-      iconText: 'text-blue-600 dark:text-blue-400',
-      pill: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
-    },
-    amber: {
-      bg: 'bg-amber-50 dark:bg-amber-950/30',
-      border: 'border-amber-200 dark:border-amber-800/50',
-      iconText: 'text-amber-600 dark:text-amber-400',
-      pill: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
-    },
-    rose: {
-      bg: 'bg-rose-50 dark:bg-rose-950/30',
-      border: 'border-rose-200 dark:border-rose-800/50',
-      iconText: 'text-rose-600 dark:text-rose-400',
-      pill: 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300'
-    },
-    purple: {
-      bg: 'bg-purple-50 dark:bg-purple-950/30',
-      border: 'border-purple-200 dark:border-purple-800/50',
-      iconText: 'text-purple-600 dark:text-purple-400',
-      pill: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300'
-    }
-  };
+const SUB_TONE = {
+  emerald: 'text-emerald-600 dark:text-emerald-400',
+  amber: 'text-amber-600 dark:text-amber-400',
+  rose: 'text-rose-600 dark:text-rose-400',
+  muted: 'text-slate-500 dark:text-slate-400',
+};
 
-  const scheme = colorMap[color] || colorMap.emerald;
-
+function Sparkline({ series, label }) {
+  const W = 80;
+  const H = 28;
+  const min = Math.min(...series);
+  const range = Math.max(...series) - min || 1;
+  const points = series
+    .map((v, i) => `${(i / (series.length - 1)) * W},${H - 2 - ((v - min) / range) * (H - 4)}`)
+    .join(' ');
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden transition-all hover:shadow-md">
-      <div className="flex items-start justify-between">
-        <div className="space-y-1">
-          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{title}</p>
-          <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{value}</p>
-        </div>
+    <svg viewBox={`0 0 ${W} ${H}`} className="h-7 w-20 shrink-0 text-[#00C471]" role="img" aria-label={label}>
+      <title>{label}</title>
+      <polyline points={points} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function StatCard({ label, value, sub, subTone = 'muted', icon: Icon, series }) {
+  const hasSeries = Array.isArray(series) && series.length >= 2;
+  return (
+    <DashboardCard>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</p>
         {Icon && (
-          <div className={`p-2.5 rounded-xl ${scheme.bg} ${scheme.border} border`}>
-            <Icon className={`w-5 h-5 ${scheme.iconText}`} />
-          </div>
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+            <Icon className="h-4 w-4" aria-hidden="true" />
+          </span>
         )}
       </div>
-
-      {(subtitle || trend) && (
-        <div className="mt-3.5 flex items-center gap-2 text-xs">
-          {trend && (
-            <span
-              className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md font-semibold text-[11px] ${
-                trendType === 'up'
-                  ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
-                  : trendType === 'down'
-                  ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-              }`}
-            >
-              {trendType === 'up' && <ArrowUpRight className="w-3 h-3" />}
-              {trendType === 'down' && <ArrowDownRight className="w-3 h-3" />}
-              {trend}
-            </span>
-          )}
-          {subtitle && <span className="text-slate-500 dark:text-slate-400 truncate">{subtitle}</span>}
-        </div>
-      )}
-    </div>
+      <div className="mt-2 flex items-end justify-between gap-3">
+        <p className="truncate font-mono text-[28px] font-semibold tabular-nums text-slate-900 dark:text-white">{value}</p>
+        {hasSeries && <Sparkline series={series} label={`${label} trend`} />}
+      </div>
+      {sub && <p className={cn('mt-1 truncate text-xs', SUB_TONE[subTone] || SUB_TONE.muted)}>{sub}</p>}
+    </DashboardCard>
   );
 }

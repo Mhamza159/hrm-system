@@ -51,32 +51,28 @@ export function AdminDashboard() {
       {/* 1. Executive Top KPI Stat Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Total Workforce"
+          label="Total Workforce"
           value={kpis.totalEmployees || 0}
-          subtitle={`${kpis.activeEmployees || 0} active staff members`}
+          sub={`${kpis.activeEmployees || 0} active staff members`}
           icon={Users}
-          color="emerald"
         />
         <StatCard
-          title="Today's Attendance"
+          label="Today's Attendance"
           value={`${kpis.attendanceRate || 0}%`}
-          subtitle={`${kpis.todayPresent || 0} in-office · ${kpis.todayLate || 0} late`}
+          sub={`${kpis.todayPresent || 0} in-office · ${kpis.todayLate || 0} late`}
           icon={CalendarCheck2}
-          color="blue"
         />
         <StatCard
-          title="Monthly Payroll Cost"
+          label="Monthly Payroll Cost"
           value={`PKR ${(kpis.monthlyPayrollCostPkr || 0).toLocaleString()}`}
-          subtitle={kpis.latestPayrollMonth ? `Run: ${kpis.latestPayrollMonth}` : 'No finalized runs'}
+          sub={kpis.latestPayrollMonth ? `Run: ${kpis.latestPayrollMonth}` : 'No finalized runs'}
           icon={DollarSign}
-          color="amber"
         />
         <StatCard
-          title="Departments & Units"
+          label="Departments & Units"
           value={kpis.totalDepartments || 0}
-          subtitle={`${kpis.pendingApprovals || 0} system pending requests`}
+          sub={`${kpis.pendingApprovals || 0} system pending requests`}
           icon={Building2}
-          color="purple"
         />
       </div>
 
