@@ -6,7 +6,7 @@ import { PunchCorrectionReviewModal } from '../../../attendance/components/Punch
 import { WFHReviewModal } from '../../../attendance/components/WFHReviewModal.jsx';
 import { LeaveDecideModal } from '../../../leaves/components/LeaveDecideModal.jsx';
 
-export function PendingList({ leaves = [], corrections = [], wfh = [], title = 'Pending Approvals', onRefresh }) {
+export function PendingList({ leaves = [], corrections = [], wfh = [], title = 'Pending Approvals', onRefresh, bare = false }) {
   const [activeTab, setActiveTab] = useState('leaves'); // 'leaves' | 'corrections' | 'wfh'
   const [selectedCorrection, setSelectedCorrection] = useState(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -54,10 +54,10 @@ export function PendingList({ leaves = [], corrections = [], wfh = [], title = '
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+    <div className={bare ? 'space-y-4' : 'bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4'}>
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{title}</h3>
-        <div className="flex items-center gap-1 p-0.5 bg-slate-100 dark:bg-slate-800/80 rounded-xl text-xs">
+        {!bare && <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{title}</h3>}
+        <div className="flex flex-wrap items-center gap-1 p-0.5 bg-slate-100 dark:bg-slate-800/80 rounded-xl text-xs">
           <button
             onClick={() => setActiveTab('leaves')}
             className={`px-3 py-1 rounded-lg font-medium transition-all ${

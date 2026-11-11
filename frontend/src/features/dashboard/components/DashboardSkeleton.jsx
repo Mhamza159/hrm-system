@@ -53,7 +53,7 @@ export function DashboardSkeleton({
         <StandardTopCardsSkeleton />
       )}
 
-      {variant === 'admin' ? (
+      {variant === 'admin' || variant === 'hr' ? (
         <AdminRowsSkeleton />
       ) : (
         <>
@@ -106,7 +106,7 @@ export function DashboardSkeleton({
   );
 }
 
-// Admin: two rows of three cards, matching AdminDashboard rows 2 and 3.
+// Admin and HR: two rows of three cards, matching rows 2 and 3 of those dashboards.
 function AdminRowsSkeleton() {
   return (
     <>
