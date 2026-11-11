@@ -92,6 +92,16 @@ describe('Dashboard recent activity', () => {
     expect(scoped).toHaveLength(8);
   });
 
+  it('hides out-of-team actor on an allowlisted module without an owner model', async () => {
+    await AuditLog.create({ actorId: xU, action: 'PROJECT_X', module: 'project', targetId: oid() });
+    const items = await getRecentActivity({ team });
+    expect(items.find((i) => i.module === 'project')).toBeUndefined();
+  });
+
+  it('formatActionLabel treats null as empty', () => {
+    expect(formatActionLabel(null)).toBe('');
+  });
+
   it('formatActionLabel falls back to title case', () => {
     expect(formatActionLabel('SOME_NEW_THING')).toBe('Some New Thing');
   });

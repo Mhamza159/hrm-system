@@ -26,6 +26,15 @@ describe('Audit service dashboard emit', () => {
     expect(log.details.code).toBe('CL');
   });
 
+  it('recordAuditLog accepts resource/resourceId aliases, entity wins', async () => {
+    const resourceId = new mongoose.Types.ObjectId();
+    const log = await recordAuditLog({ action: 'ASSET_REQUEST_X', resource: 'AssetRequest', resourceId });
+    expect(log.module).toBe('assetrequest');
+    expect(String(log.targetId)).toBe(String(resourceId));
+    const both = await recordAuditLog({ action: 'X', entity: 'Leave', resource: 'Asset' });
+    expect(both.module).toBe('leave');
+  });
+
   it('emits dashboard:changed with module only', async () => {
     await AuditService.log({ action: 'LEAVE_APPROVED', module: 'leave' });
     expect(emitToCompany).toHaveBeenCalledWith('dashboard:changed', { module: 'leave' });

@@ -50,8 +50,10 @@ export const recordAuditLog = async ({
   actorId,
   actor = null,
   action,
-  entity,
-  entityId,
+  entity: entityArg,
+  entityId: entityIdArg,
+  resource,
+  resourceId,
   before = null,
   after = null,
   ip = null,
@@ -59,6 +61,9 @@ export const recordAuditLog = async ({
   details = {},
   meta = {}
 }) => {
+  // resource/resourceId are aliases used by asset, onboarding and project writers; entity wins.
+  const entity = entityArg ?? resource;
+  const entityId = entityIdArg ?? resourceId;
   const actorEmail = actor?.email || 'system';
   const actorRole = actor?.roles?.[0]?.name || actor?.roles?.[0] || 'SYSTEM';
 

@@ -14,13 +14,16 @@ import { WFHRequest } from '../../models/wfh.model.js';
 import { Attendance } from '../../models/attendance.model.js';
 import { Expense } from '../../models/expense.model.js';
 import { AssetRequest } from '../../models/assetRequest.model.js';
+import Review from '../../models/review.model.js';
+import { Timesheet } from '../../models/timesheet.model.js';
 import Checklist from '../../models/checklist.model.js';
 
-// Stored spellings: recordAuditLog lowercases the entity name. Dev DB had leave, expense, review;
-// the rest are written by Task 2 / the asset and onboarding services.
+// Stored spellings: recordAuditLog stores the lowercased entity (or resource) name. Derived from the
+// writers: asset (AssetRequest), onboarding (Checklist), projects (Project, Timesheet), performance (Review).
+// There is no Goal audit writer. 'asset' (inventory) and 'client' are deliberately excluded.
 export const MANAGER_ACTIVITY_MODULES = [
-  'leave', 'attendancecorrection', 'wfhrequest', 'attendance',
-  'expense', 'assetrequest', 'checklist', 'review',
+  'leave', 'attendancecorrection', 'wfhrequest', 'attendance', 'expense',
+  'assetrequest', 'checklist', 'review', 'timesheet', 'project',
 ];
 
 // Modules whose targetId points at a record carrying `employeeId`.
@@ -32,13 +35,16 @@ const OWNER_MODELS = {
   expense: Expense,
   assetrequest: AssetRequest,
   checklist: Checklist,
-};
+  review: Review,
+  timesheet: Timesheet,
+}; // project has no top-level employeeId (members[]), so it uses the actor rule only
 
 const ACTION_LABELS = {
   LEAVE_APPLY: 'applied for leave',
   LEAVE_APPROVED: 'approved a leave request',
   LEAVE_APPROVE: 'approved a leave request',
   LEAVE_REJECTED: 'rejected a leave request',
+  LEAVE_REJECT: 'rejected a leave request',
   LEAVE_CANCEL: 'cancelled a leave request',
   LEAVE_AUTO_LAPSED: 'leave request lapsed automatically',
   EXPENSE_APPLY: 'submitted an expense',
@@ -55,9 +61,9 @@ const ACTION_LABELS = {
   OVERTIME_REJECTED: 'rejected overtime',
 };
 
-export const formatActionLabel = (action = '') =>
+export const formatActionLabel = (action) =>
   ACTION_LABELS[action] ||
-  String(action).toLowerCase().split('_').filter(Boolean)
+  String(action ?? '').toLowerCase().split('_').filter(Boolean)
     .map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
 
 const idSet = (ids) => new Set(ids.map(String));
