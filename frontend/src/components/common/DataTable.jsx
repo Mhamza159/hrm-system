@@ -33,7 +33,7 @@ export function DataTable({
   emptyTitle = null,
   emptyDescription = null,
   emptyAction = null,
-  emptyIcon = null,
+  emptyIcon = undefined,
   pagination = null,
   onRowClick = null,
   className = ''
@@ -170,7 +170,7 @@ export function DataTable({
                       />
                     ) : (
                       <EmptyState
-                        icon={emptyIcon}
+                        icon={emptyIcon || undefined}
                         title={emptyTitle || emptyMessage}
                         description={emptyDescription}
                         action={emptyAction}

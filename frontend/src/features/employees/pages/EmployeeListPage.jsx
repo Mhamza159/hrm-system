@@ -656,10 +656,35 @@ export default function EmployeeListPage() {
         data={employees}
         isLoading={isLoading}
         showSearch={false}
-        emptyMessage={
+        emptyIcon={Users}
+        emptyTitle={
           activeTab === 'archived'
-            ? 'Archive bucket is empty. No archived employees.'
-            : 'No employees found matching the specified filters.'
+            ? 'Archive Bucket Is Empty'
+            : selectedStatus
+            ? `No ${selectedStatus} Employees Found`
+            : selectedDept
+            ? 'No Employees in Selected Department'
+            : search
+            ? `No Employees Matching "${search}"`
+            : 'No Employees Found'
+        }
+        emptyDescription={
+          activeTab === 'archived'
+            ? 'There are currently no soft-deleted or archived employees in the system.'
+            : (selectedStatus || selectedDept || search)
+            ? 'Try selecting a different status filter, changing the department, or clearing your active filters.'
+            : 'Get started by onboarding your first team member to the organization.'
+        }
+        emptyAction={
+          (selectedStatus || selectedDept || search) ? {
+            label: 'Clear All Filters',
+            icon: RotateCcw,
+            onClick: () => {
+              handleSearchChange('');
+              handleDeptChange('');
+              handleStatusChange('');
+            }
+          } : undefined
         }
         pagination={{
           page,

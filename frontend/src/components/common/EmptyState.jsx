@@ -20,7 +20,7 @@ import { cn } from '../../lib/utils.js';
  * @param {string} [props.className]
  */
 export function EmptyState({
-  icon: Icon = Inbox,
+  icon = Inbox,
   title = 'No records found',
   description = 'There are no active records in this section yet. Create one to get started.',
   action = null,
@@ -28,6 +28,7 @@ export function EmptyState({
   compact = false,
   className = ''
 }) {
+  const Icon = icon || Inbox;
   const ActionIcon = action?.icon || Plus;
 
   return (
