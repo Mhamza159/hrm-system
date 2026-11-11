@@ -6,10 +6,10 @@
 import React from 'react';
 import { Cake, Sparkles, User } from 'lucide-react';
 
-export function BirthdaysCard({ birthdays = [], title = 'Upcoming Birthdays' }) {
+export function BirthdaysCard({ birthdays = [], title = 'Upcoming Birthdays', bare = false }) {
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-      <div className="flex items-center justify-between">
+    <div className={bare ? 'space-y-4' : 'bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4'}>
+      {!bare && <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="p-2 rounded-xl bg-pink-50 dark:bg-pink-950/40 border border-pink-200 dark:border-pink-800/40 text-pink-600 dark:text-pink-400">
             <Cake className="w-4 h-4" />
@@ -17,7 +17,7 @@ export function BirthdaysCard({ birthdays = [], title = 'Upcoming Birthdays' }) 
           <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{title}</h3>
         </div>
         <span className="text-xs text-slate-500 dark:text-slate-400">Next 14 Days</span>
-      </div>
+      </div>}
 
       <div className="space-y-3 max-h-72 overflow-y-auto">
         {birthdays.length === 0 ? (

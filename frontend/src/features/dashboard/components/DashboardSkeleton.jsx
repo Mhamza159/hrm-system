@@ -53,6 +53,10 @@ export function DashboardSkeleton({
         <StandardTopCardsSkeleton />
       )}
 
+      {variant === 'admin' ? (
+        <AdminRowsSkeleton />
+      ) : (
+        <>
       {/* 3. Middle Visual Analytics Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Chart Skeleton: Attendance Trend */}
@@ -96,7 +100,35 @@ export function DashboardSkeleton({
 
       {/* 4. Bottom Activity / Approvals / Notices Skeleton */}
       <BottomSectionSkeleton variant={variant} />
+        </>
+      )}
     </div>
+  );
+}
+
+// Admin: two rows of three cards, matching AdminDashboard rows 2 and 3.
+function AdminRowsSkeleton() {
+  return (
+    <>
+      {[0, 1].map((row) => (
+        <div key={row} className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="relative overflow-hidden rounded-2xl border border-[#EAECF0] bg-white p-5 dark:border-[#1A3125] dark:bg-[#111D17]"
+            >
+              <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/40 dark:via-emerald-400/5 to-transparent animate-shimmer pointer-events-none" />
+              <div className="mb-4 h-4 w-40 rounded-md bg-slate-200 dark:bg-[#1A3125] animate-pulse" />
+              <div className="space-y-3">
+                {[1, 2, 3, 4].map((line) => (
+                  <div key={line} className="h-8 w-full rounded-lg bg-slate-100 dark:bg-[#162820] animate-pulse" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+    </>
   );
 }
 

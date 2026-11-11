@@ -316,7 +316,8 @@ export const getAdminDashboardData = async () => {
     attendanceTrend,
     departmentCosts,
     recentActivity,
-    upcomingDeadlines
+    upcomingDeadlines,
+    upcomingBirthdays
   ] = await Promise.all([
     Employee.countDocuments({ isDeleted: false }),
     Employee.countDocuments({ isDeleted: false, status: { $in: ['Active', 'active', 'Probation', 'probation'] } }),
@@ -340,7 +341,8 @@ export const getAdminDashboardData = async () => {
     getAttendanceTrendData(7),
     getDepartmentCostDistribution(),
     getRecentActivity(),
-    getUpcomingDeadlines()
+    getUpcomingDeadlines(),
+    getUpcomingBirthdays(14)
   ]);
 
   const todayStatus = {
@@ -381,7 +383,8 @@ export const getAdminDashboardData = async () => {
     attendanceTrend,
     departmentCosts,
     recentActivity,
-    upcomingDeadlines
+    upcomingDeadlines,
+    upcomingBirthdays
   };
 };
 

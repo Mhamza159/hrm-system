@@ -10,7 +10,7 @@
 
 import React, { useState } from 'react';
 
-export function DepartmentCostChart({ data = [], title = 'Department Payroll Costs' }) {
+export function DepartmentCostChart({ data = [], title = 'Department Payroll Costs', bare = false }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
   const formattedData = data.map((d) => ({
@@ -33,8 +33,8 @@ export function DepartmentCostChart({ data = [], title = 'Department Payroll Cos
   const barWidth = Math.min(42, barSlotWidth * 0.6);
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-      <div className="flex items-center justify-between">
+    <div className={bare ? 'space-y-4' : 'bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4'}>
+      {!bare && <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{title}</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">Monthly gross allocation by department</p>
@@ -42,7 +42,7 @@ export function DepartmentCostChart({ data = [], title = 'Department Payroll Cos
         <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/40">
           PKR (Thousands)
         </span>
-      </div>
+      </div>}
 
       <div className="relative w-full h-56">
         {formattedData.length === 0 ? (
