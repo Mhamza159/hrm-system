@@ -40,21 +40,22 @@ export const getUpcomingDeadlines = async ({ team = null, days = 30, limit = 8 }
       .select('name endDate').sort({ endDate: 1 }).limit(limit).lean(),
     ReviewCycle.find({ status: 'Active', selfReviewDeadline: inWindow })
       .select('title selfReviewDeadline').sort({ selfReviewDeadline: 1 }).limit(limit).lean(),
-    // Due dates live on the checklist's tasks[] sub-documents, not on the checklist itself.
-    Checklist.find({
-      ...checklistScope, isDeleted: false, status: { $in: ['pending', 'in_progress'] },
-      tasks: { $elemMatch: { completed: false, dueDate: inWindow } },
-    }).select('tasks').limit(limit).lean(),
+    // Due dates live on the checklist's tasks[] sub-documents, so unwind and sort/limit per task.
+    Checklist.aggregate([
+      { $match: { ...checklistScope, isDeleted: false, status: { $in: ['pending', 'in_progress'] } } },
+      { $unwind: '$tasks' },
+      { $match: { 'tasks.completed': false, 'tasks.dueDate': inWindow } },
+      { $sort: { 'tasks.dueDate': 1 } },
+      { $limit: limit },
+      { $replaceRoot: { newRoot: '$tasks' } },
+    ]),
   ]);
-
-  const tasks = checklists.flatMap((c) => c.tasks)
-    .filter((t) => !t.completed && t.dueDate >= inWindow.$gte && t.dueDate <= inWindow.$lte);
 
   return [
     ...employees.map((e) => ({ _id: e._id, type: 'probation', title: `Probation ends: ${e.name}`, date: e.probationEndDate, link: `/employees/${e._id}` })),
     ...jobs.map((j) => ({ _id: j._id, type: 'job', title: `Job closes: ${j.title}`, date: j.closingDate, link: '/recruitment/jobs' })),
     ...projects.map((p) => ({ _id: p._id, type: 'project', title: `Project ends: ${p.name}`, date: p.endDate, link: '/projects' })),
     ...cycles.map((c) => ({ _id: c._id, type: 'review', title: `Self-review due: ${c.title}`, date: c.selfReviewDeadline, link: '/performance/cycles' })),
-    ...tasks.map((t) => ({ _id: t._id, type: 'checklist', title: `Task due: ${t.title}`, date: t.dueDate, link: '/onboarding' })),
+    ...checklists.map((t) => ({ _id: t._id, type: 'checklist', title: `Task due: ${t.title}`, date: t.dueDate, link: '/onboarding' })),
   ].sort((a, b) => a.date - b.date).slice(0, limit);
 };

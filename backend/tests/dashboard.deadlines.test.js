@@ -34,7 +34,9 @@ describe('Dashboard upcoming deadlines', () => {
   };
 
   beforeAll(async () => {
-    await mongoose.connect(env.MONGO_URI.replace('hrm_development', 'hrm_test_dash_deadlines'));
+    const uri = env.MONGO_URI.replace('hrm_development', 'hrm_test_dash_deadlines');
+    if (!uri.includes('hrm_test')) throw new Error('Refusing to run: not a hrm_test database');
+    await mongoose.connect(uri);
   });
   afterAll(async () => {
     await mongoose.disconnect();
@@ -82,5 +84,21 @@ describe('Dashboard upcoming deadlines', () => {
     const items = await getUpcomingDeadlines();
     expect(items).toHaveLength(8);
     expect(items[0].title).toBe('Probation ends: E0');
+  });
+
+  it('excludes items due yesterday (window starts at start of today)', async () => {
+    await Employee.collection.insertOne({ _id: oid(), name: 'Past', employeeCode: 'PA', status: 'Probation', isDeleted: false, probationEndDate: inDays(-1) });
+    expect(await getUpcomingDeadlines()).toHaveLength(0);
+  });
+
+  it('picks the soonest checklist tasks across more than 8 checklists', async () => {
+    const early = oid();
+    await Checklist.collection.insertMany(Array.from({ length: 10 }, (_, i) => ({
+      _id: oid(), employeeId: staffE, isDeleted: false, status: 'in_progress',
+      tasks: [{ _id: i === 9 ? early : oid(), title: `T${i}`, completed: false, dueDate: inDays(i === 9 ? 1 : 10 + i) }],
+    })));
+    const items = await getUpcomingDeadlines();
+    expect(items).toHaveLength(8);
+    expect(items[0]._id).toEqual(early);
   });
 });
