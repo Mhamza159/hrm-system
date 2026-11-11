@@ -240,6 +240,15 @@ export const verifyQrTokenAndDevice = async ({ qrToken, deviceId, deviceModel, u
 /**
  * 5.3: Web Clock-In
  */
+// Punch broadcast carries ids only; dashboards refetch their own data.
+export const buildPunchBroadcast = (attendance, employee) => ({
+  employeeId: String(attendance.employeeId ?? employee._id),
+  departmentId: employee.departmentId ? String(employee.departmentId) : null,
+  date: attendance.date
+});
+
+const emitDashboardChanged = () => emitToCompany('dashboard:changed', { module: 'attendance' });
+
 export const checkIn = async ({ user, source = 'web', location, ipAddress, userAgent, qrToken, deviceId, deviceModel, liveDescriptor, snapshot }) => {
   const employeeId = await resolveEmployeeId(user);
   const todayUtc = normalizeToUtcMidnight(new Date());
@@ -454,17 +463,10 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
   await attendance.save();
 
   // Socket notification
-  const payload = {
-    employeeId: String(employeeId),
-    employeeName: employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Employee',
-    departmentId: employee.departmentId ? String(employee.departmentId) : null,
-    checkIn: attendance.checkIn,
-    status: attendance.status,
-    flags: attendance.flags,
-    date: attendance.date
-  };
+  const payload = buildPunchBroadcast(attendance, employee);
 
   emitToCompany('attendance:punch', payload);
+  emitDashboardChanged();
   if (employee.departmentId) {
     emitToDepartment(employee.departmentId, 'attendance:punch', payload);
   }
@@ -551,18 +553,10 @@ export const checkOut = async ({ user, location, source = 'web', qrToken, device
 
   await attendance.save();
 
-  const payload = {
-    employeeId: String(employeeId),
-    employeeName: employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Employee',
-    departmentId: employee.departmentId ? String(employee.departmentId) : null,
-    checkOut: attendance.checkOut,
-    workDurationMinutes: attendance.workDurationMinutes,
-    status: attendance.status,
-    flags: attendance.flags,
-    date: attendance.date
-  };
+  const payload = buildPunchBroadcast(attendance, employee);
 
   emitToCompany('attendance:punch', payload);
+  emitDashboardChanged();
   if (employee.departmentId) {
     emitToDepartment(employee.departmentId, 'attendance:punch', payload);
   }
@@ -601,6 +595,7 @@ export const startBreak = async ({ user, type = 'meal' }) => {
   });
 
   await attendance.save();
+  emitDashboardChanged();
   return attendance;
 };
 
@@ -630,6 +625,7 @@ export const endBreak = async ({ user }) => {
   attendance.totalBreakMinutes = attendance.breaks.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
 
   await attendance.save();
+  emitDashboardChanged();
   return attendance;
 };
 
@@ -1061,6 +1057,8 @@ export const applyWFH = async ({ user, date, reason }) => {
   });
 
   await wfh.save();
+  recordAuditLog({ actor: user, action: 'WFH_REQUESTED', entity: 'WFHRequest', entityId: wfh._id, after: { date: targetDate, status: 'pending' } }).catch(() => {});
+  emitDashboardChanged();
 
   // Notify manager + HR Managers + Super Admin about new WFH request
   try {
@@ -1193,6 +1191,9 @@ export const decideWFH = async ({ requestId, user, decision, decisionReason }) =
       await existingAtt.save();
     }
   }
+
+  recordAuditLog({ actor: user, action: decision === 'approved' ? 'WFH_APPROVED' : 'WFH_REJECTED', entity: 'WFHRequest', entityId: wfh._id, after: { status: decision } }).catch(() => {});
+  emitDashboardChanged();
 
   // Notify applicant of manager decision (BUG-04 Fix)
   try {
@@ -1347,6 +1348,8 @@ export const applyCorrection = async ({ user, date, requestedCheckIn, requestedC
   });
 
   await correction.save();
+  recordAuditLog({ actor: user, action: 'CORRECTION_REQUESTED', entity: 'AttendanceCorrection', entityId: correction._id, after: { date: targetDate, status: 'pending' } }).catch(() => {});
+  emitDashboardChanged();
 
   // Notify manager + HR Managers + Super Admin about new attendance correction request
   try {
@@ -1502,6 +1505,9 @@ export const decideCorrection = async ({ correctionId, user, decision, decisionN
 
     await att.save();
   }
+
+  recordAuditLog({ actor: user, action: decision === 'approved' ? 'CORRECTION_APPROVED' : 'CORRECTION_REJECTED', entity: 'AttendanceCorrection', entityId: correction._id, after: { status: decision } }).catch(() => {});
+  emitDashboardChanged();
 
   // Notify applicant of decision (BUG-04 Fix)
   try {
@@ -1901,6 +1907,9 @@ export const decideOvertime = async ({ attendanceId, user, approved, reason }) =
   });
 
   await attendance.save();
+
+  recordAuditLog({ actor: user, action: approved ? 'OVERTIME_APPROVED' : 'OVERTIME_REJECTED', entity: 'Attendance', entityId: attendance._id, after: { overtimeApproved: Boolean(approved) } }).catch(() => {});
+  emitDashboardChanged();
 
   // Notify employee of overtime approval/revocation
   try {
