@@ -318,4 +318,34 @@ describe('Module M7 — Role-Based Dashboard Integration Tests (Slices 7.1, 7.2,
     expect(res.body.data.employee).toBeNull();
     expect(res.body.data.leaveBalances).toEqual([]);
   }, 15000);
+
+  it('7.1/7.2: admin and hr payloads include recentActivity and upcomingDeadlines arrays', async () => {
+    for (const [path, token] of [['/api/v1/dashboard/admin', superAdminToken], ['/api/v1/dashboard/hr', hrToken]]) {
+      const res = await request(app).get(path).set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.data.recentActivity)).toBe(true);
+      expect(Array.isArray(res.body.data.upcomingDeadlines)).toBe(true);
+    }
+  }, 15000);
+
+  it('7.3: manager payload has activity/deadlines arrays and team members carry todayStatus', async () => {
+    const res = await request(app).get('/api/v1/dashboard/manager').set('Authorization', `Bearer ${managerToken}`);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.data.recentActivity)).toBe(true);
+    expect(Array.isArray(res.body.data.upcomingDeadlines)).toBe(true);
+    const members = res.body.data.teamMembers;
+    expect(members.length).toBeGreaterThan(0);
+    expect(members.every((m) => typeof m.todayStatus === 'string')).toBe(true);
+    expect(members.find((m) => m.name === 'Usman Staff').todayStatus).toBe('present');
+  }, 15000);
+
+  it('7.3: manager with no employee record gets empty activity/deadlines, not 500', async () => {
+    const role = await Role.findOne({ name: 'Department Manager' });
+    const u = await User.create({ name: 'Orphan Mgr', email: 'orphan.mgr@hrm.local', passwordHash: 'dummy', roles: [role._id] });
+    const orphanToken = jwt.sign({ userId: u._id, email: u.email, roles: ['Department Manager'] }, env.JWT_ACCESS_SECRET, { expiresIn: '1h' });
+    const res = await request(app).get('/api/v1/dashboard/manager').set('Authorization', `Bearer ${orphanToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.recentActivity).toEqual([]);
+    expect(res.body.data.upcomingDeadlines).toEqual([]);
+  }, 15000);
 }, 35000);

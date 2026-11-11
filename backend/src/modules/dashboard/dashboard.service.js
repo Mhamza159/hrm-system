@@ -27,6 +27,8 @@ import { Designation } from '../../models/designation.model.js';
 import { LeaveType } from '../../models/leaveType.model.js';
 import { Expense } from '../../models/expense.model.js';
 import { getEmployeeLeaveBalance } from '../leaves/leave.service.js';
+import { getRecentActivity } from './dashboard.activity.js';
+import { getUpcomingDeadlines } from './dashboard.deadlines.js';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -312,7 +314,9 @@ export const getAdminDashboardData = async () => {
     latestPayrollRun,
     pendingLeavesCount,
     attendanceTrend,
-    departmentCosts
+    departmentCosts,
+    recentActivity,
+    upcomingDeadlines
   ] = await Promise.all([
     Employee.countDocuments({ isDeleted: false }),
     Employee.countDocuments({ isDeleted: false, status: { $in: ['Active', 'active', 'Probation', 'probation'] } }),
@@ -334,7 +338,9 @@ export const getAdminDashboardData = async () => {
       .lean(),
     Leave.countDocuments({ status: 'pending' }),
     getAttendanceTrendData(7),
-    getDepartmentCostDistribution()
+    getDepartmentCostDistribution(),
+    getRecentActivity(),
+    getUpcomingDeadlines()
   ]);
 
   const todayStatus = {
@@ -373,7 +379,9 @@ export const getAdminDashboardData = async () => {
     },
     todayBreakdown: todayStatus,
     attendanceTrend,
-    departmentCosts
+    departmentCosts,
+    recentActivity,
+    upcomingDeadlines
   };
 };
 
@@ -392,7 +400,9 @@ export const getHrDashboardData = async () => {
     pendingQueues,
     todayOnLeaveStaff,
     upcomingBirthdays,
-    probationDueEmployees
+    probationDueEmployees,
+    recentActivity,
+    upcomingDeadlines
   ] = await Promise.all([
     Employee.countDocuments({ isDeleted: false, status: { $in: ['Active', 'active', 'Probation', 'probation'] } }),
     Attendance.aggregate([
@@ -427,7 +437,9 @@ export const getHrDashboardData = async () => {
     })
       .select('name employeeCode probationEndDate departmentId')
       .populate('departmentId', 'name')
-      .lean()
+      .lean(),
+    getRecentActivity(),
+    getUpcomingDeadlines()
   ]);
 
   const todayStatus = {
@@ -476,8 +488,55 @@ export const getHrDashboardData = async () => {
       employeeCode: e.employeeCode,
       department: e.departmentId?.name || 'General',
       probationEndDate: e.probationEndDate
-    }))
+    })),
+    recentActivity,
+    upcomingDeadlines
   };
+};
+
+/**
+ * Resolves a manager's team (employees, user ids, managed depts) as real ObjectIds.
+ * Returns null when there is no manager employee or no team criteria.
+ */
+export const resolveManagerTeam = async (user) => {
+  let managerEmp = null;
+  if (user?.employeeId) {
+    managerEmp = await Employee.findById(user.employeeId).lean();
+  }
+  if (!managerEmp && user?._id) {
+    managerEmp = await Employee.findOne({ userId: user._id }).lean();
+  }
+
+  const managedDepts = managerEmp
+    ? await Department.find({ headId: managerEmp._id, isDeleted: false }).select('_id')
+    : [];
+  const managedDeptIds = managedDepts.map((d) => d._id);
+
+  const teamQuery = {
+    isDeleted: false,
+    status: { $in: ['Active', 'active', 'Probation', 'probation'] },
+    $or: []
+  };
+  if (managerEmp) {
+    teamQuery.$or.push({ managerId: managerEmp._id });
+  }
+  if (managedDeptIds.length > 0) {
+    teamQuery.$or.push({ departmentId: { $in: managedDeptIds } });
+  }
+  if (teamQuery.$or.length === 0) return null;
+
+  const teamMembers = await Employee.find(teamQuery)
+    .select('_id name employeeCode departmentId avatar designationId userId')
+    .populate('designationId', 'title')
+    .lean();
+
+  const managerEmpId = managerEmp._id;
+  const teamEmployeeIds = [managerEmpId, ...teamMembers.map((m) => m._id)]
+    .filter((id, i, arr) => arr.findIndex((x) => String(x) === String(id)) === i);
+  const userIds = [...teamMembers.map((m) => m.userId), user?._id].filter(Boolean);
+  const teamUserIds = [...new Set(userIds.map(String))].map((id) => new mongoose.Types.ObjectId(id));
+
+  return { managerEmp, managedDeptIds, teamMembers, teamEmployeeIds, teamUserIds, managerEmpId };
 };
 
 /**
@@ -492,52 +551,26 @@ export const getManagerDashboardData = async (user) => {
   const startOfMonth = dayjs.tz(`${currentMonth}-01`, TIMEZONE).startOf('month').toDate();
   const endOfMonth = dayjs.tz(`${currentMonth}-01`, TIMEZONE).endOf('month').toDate();
 
-  // Find manager employee record
-  let managerEmp = null;
-  if (user?.employeeId) {
-    managerEmp = await Employee.findById(user.employeeId).lean();
-  }
-  if (!managerEmp && user?._id) {
-    managerEmp = await Employee.findOne({ userId: user._id }).lean();
-  }
-
-  // Find managed departments and team employees
-  const managedDepts = managerEmp
-    ? await Department.find({ headId: managerEmp._id, isDeleted: false }).select('_id')
-    : [];
-  const managedDeptIds = managedDepts.map((d) => d._id);
-
-  const teamQuery = {
-    isDeleted: false,
-    status: { $in: ['Active', 'active', 'Probation', 'probation'] },
-    $or: []
-  };
-
-  if (managerEmp) {
-    teamQuery.$or.push({ managerId: managerEmp._id });
-  }
-  if (managedDeptIds.length > 0) {
-    teamQuery.$or.push({ departmentId: { $in: managedDeptIds } });
-  }
+  const resolved = await resolveManagerTeam(user);
 
   // If no team found, return safe empty state
-  if (teamQuery.$or.length === 0) {
+  if (!resolved) {
     return {
       kpis: { teamCount: 0, todayPresent: 0, todayLate: 0, todayAbsent: 0, todayOnLeave: 0, pendingApprovals: 0, teamOvertimeHours: 0 },
       teamMembers: [],
       pendingApprovals: [],
-      attendanceTrend: []
+      attendanceTrend: [],
+      recentActivity: [],
+      upcomingDeadlines: []
     };
   }
 
-  const teamMembers = await Employee.find(teamQuery)
-    .select('_id name employeeCode departmentId avatar designationId')
-    .populate('designationId', 'title')
-    .lean();
-
+  const { teamMembers, teamEmployeeIds, teamUserIds, managedDeptIds, managerEmpId } = resolved;
   const teamMemberIds = teamMembers.map((m) => m._id);
 
-  const [todayAttendanceRaw, pendingLeaves, pendingCorrections, pendingWFH, pendingExpenses, overtimeData, attendanceTrend] = await Promise.all([
+  const team = { managerEmpId, teamEmployeeIds, managedDeptIds, teamUserIds };
+
+  const [todayAttendanceRaw, pendingLeaves, pendingCorrections, pendingWFH, pendingExpenses, overtimeData, attendanceTrend, todayRows, recentActivity, upcomingDeadlines] = await Promise.all([
     Attendance.aggregate([
       {
         $match: {
@@ -600,8 +633,19 @@ export const getManagerDashboardData = async (user) => {
         }
       }
     ]),
-    getAttendanceTrendData(7, teamMemberIds)
+    getAttendanceTrendData(7, teamMemberIds),
+    Attendance.find({
+      employeeId: { $in: teamMemberIds },
+      $or: [
+        { date: todayStr },
+        { date: todayUtc },
+        { date: { $gte: todayStart, $lte: todayEnd } }
+      ]
+    }).select('employeeId status').lean(),
+    getRecentActivity({ team }),
+    getUpcomingDeadlines({ team })
   ]);
+  const statusByEmp = new Map(todayRows.map((r) => [String(r.employeeId), r.status]));
 
   const todayStatus = {
     present: 0,
@@ -673,9 +717,12 @@ export const getManagerDashboardData = async (user) => {
       name: m.name,
       employeeCode: m.employeeCode,
       designation: m.designationId?.title || 'Team Member',
-      avatar: m.avatar || null
+      avatar: m.avatar || null,
+      todayStatus: statusByEmp.get(String(m._id)) || 'not_marked'
     })),
-    attendanceTrend
+    attendanceTrend,
+    recentActivity,
+    upcomingDeadlines
   };
 };
 
