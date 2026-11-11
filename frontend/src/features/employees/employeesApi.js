@@ -83,6 +83,22 @@ export const employeesApi = baseApi.injectEndpoints({
       invalidatesTags: [{ type: 'Employee', id: 'LIST' }, 'Users']
     }),
 
+    restoreEmployee: builder.mutation({
+      query: (id) => ({
+        url: `/employees/${id}/restore`,
+        method: 'POST'
+      }),
+      invalidatesTags: [{ type: 'Employee', id: 'LIST' }, 'Users']
+    }),
+
+    permanentDeleteEmployee: builder.mutation({
+      query: (id) => ({
+        url: `/employees/${id}/permanent`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: [{ type: 'Employee', id: 'LIST' }, 'Users']
+    }),
+
     uploadDocument: builder.mutation({
       query: ({ id, formData }) => ({
         url: `/employees/${id}/documents`,
@@ -199,6 +215,8 @@ export const {
   useUpdateEmployeeMutation,
   useUpdateEmployeeStatusMutation,
   useDeleteEmployeeMutation,
+  useRestoreEmployeeMutation,
+  usePermanentDeleteEmployeeMutation,
   useUploadDocumentMutation,
   useDeleteDocumentMutation,
   useImportEmployeesMutation,

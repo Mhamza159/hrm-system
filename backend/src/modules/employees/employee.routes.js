@@ -173,6 +173,21 @@ router
     employeeController.deleteEmployee
   );
 
+// Employee Archive Actions: Revert & Permanent Delete
+router.post(
+  '/:id/restore',
+  authenticate,
+  checkPermission('employee.delete'),
+  employeeController.restoreEmployee
+);
+
+router.delete(
+  '/:id/permanent',
+  authenticate,
+  checkPermission('employee.delete'),
+  employeeController.permanentDeleteEmployee
+);
+
 // Employee Status Transition
 router.patch(
   '/:id/status',

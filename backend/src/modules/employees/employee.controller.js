@@ -90,6 +90,20 @@ export const deleteEmployee = asyncHandler(async (req, res) => {
     .json(apiResponse(200, result, 'Employee archived successfully'));
 });
 
+export const restoreEmployee = asyncHandler(async (req, res) => {
+  const result = await employeeService.restoreEmployee(req.params.id, req.user);
+  return res
+    .status(200)
+    .json(apiResponse(200, result, 'Employee reverted from archive successfully'));
+});
+
+export const permanentDeleteEmployee = asyncHandler(async (req, res) => {
+  const result = await employeeService.permanentDeleteEmployee(req.params.id, req.user);
+  return res
+    .status(200)
+    .json(apiResponse(200, result, 'Employee permanently deleted successfully'));
+});
+
 export const uploadDocument = asyncHandler(async (req, res) => {
   const result = await employeeService.uploadDocument(
     req.params.id,

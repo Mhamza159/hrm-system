@@ -262,12 +262,13 @@ export const createEmployee = async (payload, actor) => {
  * @returns {Promise<Object>}
  */
 export const getEmployees = async (
-  { page = 1, limit = 10, search, departmentId, designationId, status, employmentType, skill, forReporting = false },
+  { page = 1, limit = 10, search, departmentId, designationId, status, employmentType, skill, forReporting = false, archived = false, isDeleted = false },
   actor,
   permissionScope = 'all'
 ) => {
   // 1. Resolve horizontal data scope query conditions
-  const conditions = { isDeleted: false };
+  const isArchived = String(archived) === 'true' || String(isDeleted) === 'true';
+  const conditions = { isDeleted: isArchived };
 
   // Exclude Super Admin from general workforce directory and dashboards
   // Allow inclusion ONLY when specifically querying for reporting manager selection
@@ -661,6 +662,80 @@ export const deleteEmployee = async (id, actor) => {
   });
 
   return { message: 'Employee archived successfully' };
+};
+
+/**
+ * Restore an archived employee record and reactivate user account
+ * @param {string} id
+ * @param {Object} actor
+ * @returns {Promise<Object>}
+ */
+export const restoreEmployee = async (id, actor) => {
+  const employee = await Employee.findOne({ _id: id, isDeleted: true });
+  if (!employee) {
+    throw new ApiError(404, 'Archived employee record not found');
+  }
+
+  employee.isDeleted = false;
+  await employee.save();
+
+  if (employee.userId) {
+    await User.findByIdAndUpdate(employee.userId, {
+      isActive: true
+    });
+  }
+
+  await recordAuditLog({
+    actor,
+    action: 'employee.restore',
+    entity: 'Employee',
+    entityId: employee._id,
+    before: { isDeleted: true },
+    after: { isDeleted: false }
+  });
+
+  return { message: 'Employee reverted from archive successfully', employee };
+};
+
+/**
+ * Permanently delete employee record from database
+ * @param {string} id
+ * @param {Object} actor
+ * @returns {Promise<Object>}
+ */
+export const permanentDeleteEmployee = async (id, actor) => {
+  const employee = await Employee.findOne({ _id: id });
+  if (!employee) {
+    throw new ApiError(404, 'Employee record not found');
+  }
+
+  if (
+    employee.email === 'mhamzaofficial159@gmail.com' ||
+    employee.email === 'admin@hrm.company.pk' ||
+    employee.employeeCode === 'EMP-000'
+  ) {
+    throw new ApiError(403, 'Forbidden: Super Admin profile cannot be permanently deleted.');
+  }
+
+  // Ensure all company equipment returned before permanent employee deletion
+  await assertEmployeeAssetClearance(id);
+
+  if (employee.userId) {
+    await User.findByIdAndDelete(employee.userId);
+  }
+
+  await Employee.findByIdAndDelete(id);
+
+  await recordAuditLog({
+    actor,
+    action: 'employee.permanent_delete',
+    entity: 'Employee',
+    entityId: employee._id,
+    before: { employeeCode: employee.employeeCode, email: employee.email, name: employee.name },
+    after: null
+  });
+
+  return { message: 'Employee permanently deleted' };
 };
 
 /**

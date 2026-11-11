@@ -432,5 +432,53 @@ describe('Module M3 — Employee Management API Integration Tests (Slices 3.2 - 
       const existsInList = listRes.body.data.items.some((e) => e._id === createdEmployeeId);
       expect(existsInList).toBe(false);
     });
+
+    it('should include soft-deleted employee in archive bucket when ?archived=true', async () => {
+      const archiveRes = await request(app)
+        .get('/api/v1/employees?archived=true')
+        .set('Authorization', `Bearer ${hrToken}`);
+
+      expect(archiveRes.status).toBe(200);
+      const existsInArchive = archiveRes.body.data.items.some((e) => e._id === createdEmployeeId);
+      expect(existsInArchive).toBe(true);
+    });
+
+    it('should restore an archived employee back to active directory', async () => {
+      const restoreRes = await request(app)
+        .post(`/api/v1/employees/${createdEmployeeId}/restore`)
+        .set('Authorization', `Bearer ${hrToken}`);
+
+      expect(restoreRes.status).toBe(200);
+
+      // Verify active list now has the restored employee
+      const activeList = await request(app)
+        .get('/api/v1/employees')
+        .set('Authorization', `Bearer ${hrToken}`);
+
+      const existsInActive = activeList.body.data.items.some((e) => e._id === createdEmployeeId);
+      expect(existsInActive).toBe(true);
+    });
+
+    it('should permanently delete an employee', async () => {
+      // Re-archive first
+      await request(app)
+        .delete(`/api/v1/employees/${createdEmployeeId}`)
+        .set('Authorization', `Bearer ${hrToken}`);
+
+      // Permanently delete
+      const permRes = await request(app)
+        .delete(`/api/v1/employees/${createdEmployeeId}/permanent`)
+        .set('Authorization', `Bearer ${hrToken}`);
+
+      expect(permRes.status).toBe(200);
+
+      // Verify gone from archive as well
+      const archiveList = await request(app)
+        .get('/api/v1/employees?archived=true')
+        .set('Authorization', `Bearer ${hrToken}`);
+
+      const existsInArchive = archiveList.body.data.items.some((e) => e._id === createdEmployeeId);
+      expect(existsInArchive).toBe(false);
+    });
   });
 });

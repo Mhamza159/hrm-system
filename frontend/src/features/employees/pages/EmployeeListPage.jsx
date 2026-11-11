@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   UserPlus,
+  Users,
   Search,
   Filter,
   Eye,
@@ -26,12 +27,16 @@ import {
   KeyRound,
   RefreshCw,
   X,
-  RotateCcw
+  RotateCcw,
+  Archive,
+  AlertTriangle
 } from 'lucide-react';
 
 import {
   useGetEmployeesQuery,
-  useDeleteEmployeeMutation
+  useDeleteEmployeeMutation,
+  useRestoreEmployeeMutation,
+  usePermanentDeleteEmployeeMutation
 } from '../employeesApi.js';
 import { useAdminResetPasswordMutation } from '../../auth/authApi.js';
 import { useGetDepartmentsQuery } from '../../departments/departmentsApi.js';
@@ -47,14 +52,16 @@ export default function EmployeeListPage() {
   const navigate = useNavigate();
 
   // Filters & Search state
+  const [activeTab, setActiveTab] = useState('active'); // 'active' | 'archived'
   const [search, setSearchTerm] = useState('');
   const [selectedDept, setSelectedDept] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
-  // Archive modal state
+  // Archive & Permanent Delete modal states
   const [deleteId, setDeleteId] = useState(null);
+  const [permanentDeleteTarget, setPermanentDeleteTarget] = useState(null);
   const [resetTargetEmployee, setResetTargetEmployee] = useState(null);
 
   const { token, isSuperAdmin } = useAuth();
@@ -67,7 +74,8 @@ export default function EmployeeListPage() {
     limit,
     search: search.trim() || undefined,
     departmentId: selectedDept || undefined,
-    status: selectedStatus || undefined
+    status: selectedStatus || undefined,
+    archived: activeTab === 'archived' ? 'true' : undefined
   });
 
   // Manual data reload handler
@@ -77,7 +85,11 @@ export default function EmployeeListPage() {
       if (res?.error) {
         toast.error('Failed to reload employees');
       } else {
-        toast.success('Employee directory reloaded successfully');
+        toast.success(
+          activeTab === 'archived'
+            ? 'Archive bucket reloaded successfully'
+            : 'Employee directory reloaded successfully'
+        );
       }
     } catch {
       toast.error('Network error while reloading');
@@ -93,6 +105,8 @@ export default function EmployeeListPage() {
   };
 
   const [deleteEmployee, { isLoading: isDeleting }] = useDeleteEmployeeMutation();
+  const [restoreEmployee, { isLoading: isRestoring }] = useRestoreEmployeeMutation();
+  const [permanentDeleteEmployee, { isLoading: isPermanentDeleting }] = usePermanentDeleteEmployeeMutation();
   const [adminResetPassword, { isLoading: isResettingPassword }] = useAdminResetPasswordMutation();
 
   const departments = deptData?.data || [];
@@ -147,11 +161,33 @@ export default function EmployeeListPage() {
     if (!deleteId) return;
     try {
       await deleteEmployee(deleteId).unwrap();
-      toast.success('Employee archived successfully');
+      toast.success('Employee moved to archive bucket successfully');
       setDeleteId(null);
       refetch();
     } catch (err) {
       toast.error(err?.data?.message || 'Failed to archive employee');
+    }
+  };
+
+  const handleRestore = async (employee) => {
+    try {
+      await restoreEmployee(employee._id).unwrap();
+      toast.success(`Employee '${employee.name}' restored to active workforce successfully.`);
+      refetch();
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to restore employee from archive');
+    }
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!permanentDeleteTarget) return;
+    try {
+      await permanentDeleteEmployee(permanentDeleteTarget._id).unwrap();
+      toast.success(`Employee '${permanentDeleteTarget.name}' permanently deleted.`);
+      setPermanentDeleteTarget(null);
+      refetch();
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to permanently delete employee');
     }
   };
 
@@ -287,6 +323,45 @@ export default function EmployeeListPage() {
           return null;
         }
 
+        if (activeTab === 'archived') {
+          return (
+            <div className="flex items-center gap-1.5 justify-end">
+              <button
+                type="button"
+                onClick={() => navigate(`/employees/${row._id}`)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="View Archived Profile"
+              >
+                <Eye className="w-4 h-4" />
+              </button>
+
+              <Can I="employee.delete" a="Employee">
+                <button
+                  type="button"
+                  onClick={() => handleRestore(row)}
+                  disabled={isRestoring}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-800 transition-all cursor-pointer shadow-2xs"
+                  title="Revert employee from archive back to active workforce"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Revert</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPermanentDeleteTarget(row)}
+                  disabled={isPermanentDeleting}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 border border-rose-200 dark:border-rose-800 transition-all cursor-pointer shadow-2xs"
+                  title="Permanently Delete Employee"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete</span>
+                </button>
+              </Can>
+            </div>
+          );
+        }
+
         return (
           <div className="flex items-center gap-1 justify-end">
             <button
@@ -390,6 +465,66 @@ export default function EmployeeListPage() {
         }
       />
 
+      {/* Bucket View Switcher */}
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-[#1A3125] pb-3">
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('active');
+            setPage(1);
+          }}
+          className={cn(
+            'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer',
+            activeTab === 'active'
+              ? 'bg-[#00C471] text-white shadow-[0_2px_10px_rgba(0,196,113,0.25)]'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
+          )}
+        >
+          <Users className="w-4 h-4" />
+          <span>Active Workforce</span>
+          {activeTab === 'active' && (
+            <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-white/20 text-white font-mono">
+              {total}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('archived');
+            setPage(1);
+          }}
+          className={cn(
+            'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer',
+            activeTab === 'archived'
+              ? 'bg-amber-600 text-white shadow-[0_2px_10px_rgba(217,119,6,0.3)]'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
+          )}
+        >
+          <Archive className="w-4 h-4" />
+          <span>Archive Bucket</span>
+          {activeTab === 'archived' && (
+            <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-white/20 text-white font-mono">
+              {total}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Archive Bucket Notice */}
+      {activeTab === 'archived' && (
+        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-3 text-xs text-amber-800 dark:text-amber-200">
+          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <p className="font-semibold text-slate-900 dark:text-white">Employee Archive Bucket</p>
+            <p className="text-[11px] text-slate-600 dark:text-slate-300">
+              These employee accounts are currently soft-deleted and their system logins deactivated. You can revert an employee to restore them to the active workforce, or permanently delete them with complete record removal.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Filter Toolbar */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-3 bg-white dark:bg-[#111D17] p-3.5 rounded-2xl border border-slate-200 dark:border-[#1A3125] shadow-xs">
         <div className="relative w-full md:w-80">
@@ -468,7 +603,11 @@ export default function EmployeeListPage() {
         data={employees}
         isLoading={isLoading}
         showSearch={false}
-        emptyMessage="No employees found matching the specified filters."
+        emptyMessage={
+          activeTab === 'archived'
+            ? 'Archive bucket is empty. No archived employees.'
+            : 'No employees found matching the specified filters.'
+        }
         pagination={{
           page,
           limit,
@@ -483,12 +622,24 @@ export default function EmployeeListPage() {
       <ConfirmDialog
         isOpen={Boolean(deleteId)}
         title="Archive Employee Record"
-        message="Are you sure you want to archive this employee? Their login account will be deactivated, but historical payroll and attendance records will remain preserved."
+        message="Are you sure you want to archive this employee? Their login account will be deactivated and they will be moved to the archive bucket. Historical payroll and attendance records will remain preserved."
         confirmText="Archive Employee"
         confirmVariant="danger"
         isLoading={isDeleting}
         onConfirm={handleArchive}
         onClose={() => setDeleteId(null)}
+      />
+
+      {/* Confirmation Dialog for Permanently Deleting Employee from Archive Bucket */}
+      <ConfirmDialog
+        isOpen={Boolean(permanentDeleteTarget)}
+        title="Permanently Delete Employee"
+        message={`Are you sure you want to PERMANENTLY delete ${permanentDeleteTarget?.name} (${permanentDeleteTarget?.employeeCode})? This action cannot be undone and will permanently erase all their profile and identity records.`}
+        confirmText="Permanently Delete"
+        confirmVariant="danger"
+        isLoading={isPermanentDeleting}
+        onConfirm={handlePermanentDelete}
+        onClose={() => setPermanentDeleteTarget(null)}
       />
 
       {/* Confirmation Dialog for Emergency Password Reset */}
