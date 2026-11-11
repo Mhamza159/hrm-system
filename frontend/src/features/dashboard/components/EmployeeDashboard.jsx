@@ -34,7 +34,7 @@ const formatTime = (timeStr) => {
 };
 
 export function EmployeeDashboard() {
-  const { data: response, isLoading, error } = useGetEmployeeDashboardQuery();
+  const { data: response, isLoading, error } = useGetEmployeeDashboardQuery(undefined, { pollingInterval: 60000 });
   const data = response?.data;
 
   if (isLoading) {

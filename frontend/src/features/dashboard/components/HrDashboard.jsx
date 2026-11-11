@@ -27,7 +27,7 @@ import { formatDate, formatDateShort } from '../../../lib/formatters.js';
 import { DashboardSkeleton } from './DashboardSkeleton.jsx';
 
 export function HrDashboard() {
-  const { data: response, isLoading, error, refetch } = useGetHrDashboardQuery();
+  const { data: response, isLoading, error, refetch } = useGetHrDashboardQuery(undefined, { pollingInterval: 60000 });
   const data = response?.data;
 
   if (isLoading) {

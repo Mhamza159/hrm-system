@@ -25,7 +25,7 @@ import { PendingList } from './widgets/PendingList.jsx';
 import { DashboardSkeleton } from './DashboardSkeleton.jsx';
 
 export function ManagerDashboard() {
-  const { data: response, isLoading, error, refetch } = useGetManagerDashboardQuery();
+  const { data: response, isLoading, error, refetch } = useGetManagerDashboardQuery(undefined, { pollingInterval: 60000 });
   const data = response?.data;
 
   if (isLoading) {

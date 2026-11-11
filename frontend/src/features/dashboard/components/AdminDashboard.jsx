@@ -27,7 +27,7 @@ import { PinnedNoticeBoard } from '../../announcements/components/PinnedNoticeBo
 import { DashboardSkeleton } from './DashboardSkeleton.jsx';
 
 export function AdminDashboard() {
-  const { data: response, isLoading, error } = useGetAdminDashboardQuery();
+  const { data: response, isLoading, error } = useGetAdminDashboardQuery(undefined, { pollingInterval: 60000 });
   const data = response?.data;
 
   if (isLoading) {
