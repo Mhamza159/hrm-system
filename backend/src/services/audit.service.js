@@ -1,4 +1,5 @@
 import { AuditLog } from '../models/auditLog.model.js';
+import { emitToCompany } from './socket.service.js';
 
 export class AuditService {
   /**
@@ -18,7 +19,7 @@ export class AuditService {
     details = {}
   }) {
     try {
-      return await AuditLog.create({
+      const log = await AuditLog.create({
         actorId,
         actorEmail,
         actorRole,
@@ -30,6 +31,9 @@ export class AuditService {
         userAgent,
         details
       });
+      // Payload-free ping; auth entries (logins) are noise for dashboards.
+      if (String(module).toLowerCase() !== 'auth') emitToCompany('dashboard:changed', { module });
+      return log;
     } catch (error) {
       // Never let audit log failure crash business operations, log to stderr
       console.error('AuditLog writing failed:', error.message);
@@ -43,6 +47,7 @@ export class AuditService {
  */
 export const recordAuditLog = async ({
   userId,
+  actorId,
   actor = null,
   action,
   entity,
@@ -51,13 +56,14 @@ export const recordAuditLog = async ({
   after = null,
   ip = null,
   userAgent = null,
-  details = {}
+  details = {},
+  meta = {}
 }) => {
   const actorEmail = actor?.email || 'system';
   const actorRole = actor?.roles?.[0]?.name || actor?.roles?.[0] || 'SYSTEM';
 
   return await AuditService.log({
-    actorId: userId || actor?._id || null,
+    actorId: userId || actorId || actor?._id || null,
     actorEmail,
     actorRole,
     action,
@@ -69,6 +75,7 @@ export const recordAuditLog = async ({
     details: {
       before,
       after,
+      ...meta,
       ...details
     }
   });
