@@ -88,7 +88,7 @@ export function AdminDashboard() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <AttendanceDonut breakdown={data?.todayBreakdown} />
         <DashboardCard title="7-Day Attendance Trend" live>
-          <AttendanceChart bare data={trend} />
+          <AttendanceChart data={trend} />
         </DashboardCard>
         <RecentActivityCard items={data?.recentActivity || []} showViewAll />
       </div>
@@ -96,11 +96,11 @@ export function AdminDashboard() {
       {/* Row 3: cost, deadlines, birthdays */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <DashboardCard title="Department Cost">
-          <DepartmentCostChart bare data={data?.departmentCosts || []} />
+          <DepartmentCostChart data={data?.departmentCosts || []} />
         </DashboardCard>
         <UpcomingDeadlinesCard items={data?.upcomingDeadlines || []} />
         <DashboardCard title="Upcoming Birthdays">
-          <BirthdaysCard bare birthdays={data?.upcomingBirthdays || []} />
+          <BirthdaysCard birthdays={data?.upcomingBirthdays || []} />
         </DashboardCard>
       </div>
     </div>

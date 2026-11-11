@@ -91,7 +91,6 @@ export function HrDashboard() {
         <AttendanceDonut breakdown={data?.todayBreakdown} />
         <DashboardCard title="Pending Approvals Queue" live>
           <PendingList
-            bare
             leaves={data?.pendingLeaves || []}
             corrections={data?.pendingCorrections || []}
             wfh={data?.pendingWFH || []}
@@ -135,7 +134,7 @@ export function HrDashboard() {
         </DashboardCard>
         <UpcomingDeadlinesCard items={data?.upcomingDeadlines || []} />
         <DashboardCard title="Upcoming Birthdays">
-          <BirthdaysCard bare birthdays={data?.upcomingBirthdays || []} />
+          <BirthdaysCard birthdays={data?.upcomingBirthdays || []} />
         </DashboardCard>
       </div>
     </div>
