@@ -626,7 +626,7 @@ export const TeamAttendancePage = () => {
                         {/* Status Badge */}
                         <div className="shrink-0 flex items-center">
                           {att?.status ? (
-                            <AttendanceStatusBadge status={att.status} flags={att.flags} />
+                            <AttendanceStatusBadge status={att.status} flags={att.flags} presence={presence} checkOut={att?.checkOut} />
                           ) : (
                             <span className="px-2.5 py-1 rounded-md text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500">
                               Absent

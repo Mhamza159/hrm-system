@@ -605,6 +605,8 @@ export const startBreak = async ({ user, type = 'meal' }) => {
   });
 
   await attendance.save();
+  const payload = buildPunchBroadcast(attendance, { _id: employeeId });
+  emitToCompany('attendance:punch', payload);
   emitDashboardChanged();
   return attendance;
 };
@@ -635,6 +637,8 @@ export const endBreak = async ({ user }) => {
   attendance.totalBreakMinutes = attendance.breaks.reduce((acc, curr) => acc + (curr.durationMinutes || 0), 0);
 
   await attendance.save();
+  const payload = buildPunchBroadcast(attendance, { _id: employeeId });
+  emitToCompany('attendance:punch', payload);
   emitDashboardChanged();
   return attendance;
 };
