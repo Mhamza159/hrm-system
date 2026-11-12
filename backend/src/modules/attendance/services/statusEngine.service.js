@@ -8,25 +8,53 @@
  */
 
 /**
- * Parses time string (e.g. "09:30") into minutes from midnight
- * @param {string} timeStr - "HH:mm"
- * @returns {number} minutes
+ * Parses time string (e.g. "09:30", "9:30", "01:00 PM", "11:00 AM") into minutes from midnight
+ * @param {string} timeStr - "HH:mm" or "hh:mm AM/PM"
+ * @returns {number} minutes from midnight (0 - 1439)
  */
 export const parseTimeToMinutes = (timeStr) => {
   if (!timeStr || typeof timeStr !== 'string') return 540; // Default 09:00 (540 mins)
-  const [hours, minutes] = timeStr.split(':').map(Number);
-  return (hours || 0) * 60 + (minutes || 0);
+  const trimmed = timeStr.trim();
+  const match = trimmed.match(/^(\d{1,2}):(\d{2})(?:\s*([AaPp][Mm]))?$/);
+  if (!match) {
+    const [hours, minutes] = trimmed.split(':').map(Number);
+    return ((hours || 0) * 60 + (minutes || 0)) % 1440;
+  }
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const meridiem = match[3]?.toUpperCase();
+
+  if (meridiem === 'PM' && hours < 12) hours += 12;
+  if (meridiem === 'AM' && hours === 12) hours = 0;
+
+  return ((hours * 60) + minutes) % 1440;
 };
 
 /**
- * Extracts minutes from midnight for a given Date in local/PKT context
- * Note: Uses local Date getHours() and getMinutes()
- * @param {Date} date
- * @returns {number} minutes
+ * Extracts minutes from midnight for a given Date in the target timezone (default Asia/Karachi)
+ * @param {Date|string|number} date
+ * @param {string} [timeZone='Asia/Karachi']
+ * @returns {number} minutes from midnight (0 - 1439)
  */
-export const getDateMinutes = (date) => {
+export const getDateMinutes = (date, timeZone = 'Asia/Karachi') => {
+  if (!date) return 0;
   const d = new Date(date);
-  return d.getHours() * 60 + d.getMinutes();
+  if (Number.isNaN(d.getTime())) return 0;
+
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timeZone || 'Asia/Karachi',
+      hour: 'numeric',
+      minute: 'numeric',
+      hourCycle: 'h23'
+    }).formatToParts(d);
+
+    const hours = parseInt(parts.find((p) => p.type === 'hour')?.value || '0', 10);
+    const minutes = parseInt(parts.find((p) => p.type === 'minute')?.value || '0', 10);
+    return ((hours * 60) + minutes) % 1440;
+  } catch {
+    return (d.getHours() * 60 + d.getMinutes()) % 1440;
+  }
 };
 
 /**
@@ -37,9 +65,10 @@ export const getDateMinutes = (date) => {
  * @param {Object|null} params.shift - Assigned shift document (or null)
  * @param {Object|null} params.officeHours - Company officeHours setting
  * @param {Object|null} params.lateRules - Company lateRules setting
+ * @param {string} [params.timeZone='Asia/Karachi'] - Target timezone
  * @returns {{ status: string, flags: string[] }}
  */
-export const evaluateAttendanceStatus = ({ checkIn, shift, officeHours, lateRules }) => {
+export const evaluateAttendanceStatus = ({ checkIn, shift, officeHours, lateRules, timeZone = 'Asia/Karachi' }) => {
   const flags = [];
 
   const shiftStartStr = shift?.startTime || officeHours?.startTime || '09:00';
@@ -49,7 +78,7 @@ export const evaluateAttendanceStatus = ({ checkIn, shift, officeHours, lateRule
   const lateThresholdMinutes = lateRules?.lateThresholdMinutes ?? 30;
   const halfDayThresholdMinutes = shift?.halfDayMinutes ?? officeHours?.halfDayMinutes ?? 240;
 
-  const punchMins = getDateMinutes(checkIn);
+  const punchMins = getDateMinutes(checkIn, timeZone);
   const diffMinutes = punchMins - shiftStartMins;
 
   let status = 'present';
@@ -82,6 +111,7 @@ export const evaluateAttendanceStatus = ({ checkIn, shift, officeHours, lateRule
  * @param {Object|null} params.shift
  * @param {Object|null} params.officeHours
  * @param {Object|null} params.lateRules
+ * @param {string} [params.timeZone='Asia/Karachi']
  * @returns {{ workDurationMinutes: number, overtimeMinutes: number, isEarlyDeparture: boolean }}
  */
 export const calculateWorkMetrics = ({
@@ -90,7 +120,8 @@ export const calculateWorkMetrics = ({
   totalBreakMinutes = 0,
   shift,
   officeHours,
-  lateRules
+  lateRules,
+  timeZone = 'Asia/Karachi'
 }) => {
   if (!checkIn || !checkOut) {
     return { workDurationMinutes: 0, overtimeMinutes: 0, isEarlyDeparture: false };
@@ -121,7 +152,7 @@ export const calculateWorkMetrics = ({
 
   // Early departure check
   const graceMinutes = shift?.graceMinutes ?? lateRules?.graceMinutes ?? 15;
-  const punchOutMins = getDateMinutes(checkOut);
+  const punchOutMins = getDateMinutes(checkOut, timeZone);
   const isEarlyDeparture = punchOutMins < shiftEndMins - graceMinutes;
 
   return {

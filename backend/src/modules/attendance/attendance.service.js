@@ -37,9 +37,17 @@ import { assertSuperAdminIfApplicantIsHR } from '../../utils/hrApprovalGuard.js'
  * @param {Date|string} inputDate 
  * @returns {Date}
  */
-export const normalizeToUtcMidnight = (inputDate = new Date()) => {
+export const normalizeToUtcMidnight = (inputDate = new Date(), timeZone = 'Asia/Karachi') => {
   const d = new Date(inputDate);
-  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timeZone || 'Asia/Karachi',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  const parts = formatter.format(d);
+  const [year, month, day] = parts.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
 };
 
 /**
@@ -81,7 +89,7 @@ export const getShiftAndPolicies = async (employeeId) => {
   }
 
   const settingsDocs = await Setting.find({
-    key: { $in: ['officeHours', 'lateRules', 'workingDays'] }
+    key: { $in: ['officeHours', 'lateRules', 'workingDays', 'timeZone'] }
   }).lean();
 
   const settingsMap = {};
@@ -94,6 +102,7 @@ export const getShiftAndPolicies = async (employeeId) => {
     shift: employee.shiftId || null,
     officeHours: settingsMap.officeHours || null,
     lateRules: settingsMap.lateRules || null,
+    timeZone: settingsMap.timeZone || 'Asia/Karachi',
     workingDays: settingsMap.workingDays || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
   };
 };
@@ -320,7 +329,7 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
     kioskId = kiosk._id;
   }
 
-  const { employee, shift, officeHours, lateRules } = await getShiftAndPolicies(employeeId);
+  const { employee, shift, officeHours, lateRules, timeZone } = await getShiftAndPolicies(employeeId);
 
   const now = new Date();
   const isSuperAdmin =
@@ -328,7 +337,7 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
     employee?.employeeCode === 'EMP-000' ||
     employee?.email === 'mhamzaofficial159@gmail.com';
 
-  const evalResult = evaluateAttendanceStatus({ checkIn: now, shift, officeHours, lateRules });
+  const evalResult = evaluateAttendanceStatus({ checkIn: now, shift, officeHours, lateRules, timeZone });
   const status = isSuperAdmin ? 'present' : evalResult.status;
   const flags = isSuperAdmin ? ['flexible_executive'] : evalResult.flags;
 
@@ -515,7 +524,7 @@ export const checkOut = async ({ user, location, source = 'web', qrToken, device
     throw new ApiError(400, 'Already clocked out for today');
   }
 
-  const { employee, shift, officeHours, lateRules } = await getShiftAndPolicies(employeeId);
+  const { employee, shift, officeHours, lateRules, timeZone } = await getShiftAndPolicies(employeeId);
   const now = new Date();
 
   const metrics = calculateWorkMetrics({
@@ -524,7 +533,8 @@ export const checkOut = async ({ user, location, source = 'web', qrToken, device
     totalBreakMinutes: attendance.totalBreakMinutes || 0,
     shift,
     officeHours,
-    lateRules
+    lateRules,
+    timeZone
   });
 
   attendance.checkOut = now;
@@ -895,14 +905,15 @@ export const updateAttendanceRecord = async ({ attendanceId, user, checkIn, chec
 
   // Recalculate duration & overtime if both checkIn and checkOut exist
   if (attendance.checkIn && attendance.checkOut) {
-    const { shift, officeHours, lateRules } = await getShiftAndPolicies(attendance.employeeId);
+    const { shift, officeHours, lateRules, timeZone } = await getShiftAndPolicies(attendance.employeeId);
     const metrics = calculateWorkMetrics({
       checkIn: attendance.checkIn,
       checkOut: attendance.checkOut,
       totalBreakMinutes: attendance.totalBreakMinutes || 0,
       shift,
       officeHours,
-      lateRules
+      lateRules,
+      timeZone
     });
     attendance.workDurationMinutes = metrics.workDurationMinutes;
     attendance.overtimeMinutes = metrics.overtimeMinutes;
@@ -1459,7 +1470,7 @@ export const decideCorrection = async ({ correctionId, user, decision, decisionN
   if (decision === 'approved') {
     await assertMonthNotLocked(correction.date);
     let att = await Attendance.findOne({ employeeId: correction.employeeId, date: correction.date });
-    const { shift, officeHours, lateRules } = await getShiftAndPolicies(correction.employeeId);
+    const { shift, officeHours, lateRules, timeZone } = await getShiftAndPolicies(correction.employeeId);
 
     const previousValues = att ? { checkIn: att.checkIn, checkOut: att.checkOut, status: att.status } : {};
 
@@ -1475,7 +1486,7 @@ export const decideCorrection = async ({ correctionId, user, decision, decisionN
 
     if (correction.requestedCheckIn) {
       att.checkIn = correction.requestedCheckIn;
-      const statusRes = evaluateAttendanceStatus({ checkIn: att.checkIn, shift, officeHours, lateRules });
+      const statusRes = evaluateAttendanceStatus({ checkIn: att.checkIn, shift, officeHours, lateRules, timeZone });
       att.status = statusRes.status;
     }
     if (correction.requestedCheckOut) {
@@ -1489,7 +1500,8 @@ export const decideCorrection = async ({ correctionId, user, decision, decisionN
         totalBreakMinutes: att.totalBreakMinutes || 0,
         shift,
         officeHours,
-        lateRules
+        lateRules,
+        timeZone
       });
       att.workDurationMinutes = metrics.workDurationMinutes;
       att.overtimeMinutes = metrics.overtimeMinutes;
@@ -1780,7 +1792,12 @@ export const getAttendanceHistory = async ({ user, month, search, departmentId, 
     attLookup.set(key, a);
   });
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Karachi',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(new Date());
   const allDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   const items = employees.map((emp) => {
