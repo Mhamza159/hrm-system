@@ -1467,7 +1467,11 @@ export const getLeaveCalendar = async (query = {}, user) => {
       populate: [
         { path: 'departmentId', select: 'name' },
         { path: 'designationId', select: 'title' },
-        { path: 'userId', select: 'role roles email' }
+        {
+          path: 'userId',
+          select: 'email roles role',
+          populate: { path: 'roles', select: 'name' }
+        }
       ]
     })
     .populate('leaveTypeId', 'name code isPaid')

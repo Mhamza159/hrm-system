@@ -41,6 +41,20 @@ import { ExportLeaveModal } from '../components/ExportLeaveModal.jsx';
 import { usePermission } from '../../../hooks/usePermission.js';
 import { cn } from '../../../lib/utils.js';
 
+const getEmployeeRole = (emp) => {
+  if (!emp) return 'Employee';
+  const u = emp.userId;
+  if (Array.isArray(u?.roles) && u.roles.length > 0) {
+    const firstRole = u.roles[0];
+    if (typeof firstRole === 'object' && firstRole?.name) return firstRole.name;
+    if (typeof firstRole === 'string' && !/^[0-9a-fA-F]{24}$/.test(firstRole)) return firstRole;
+  }
+  if (typeof u?.role === 'object' && u.role?.name) return u.role.name;
+  if (typeof u?.role === 'string' && !/^[0-9a-fA-F]{24}$/.test(u.role)) return u.role;
+  if (typeof emp.role === 'string' && !/^[0-9a-fA-F]{24}$/.test(emp.role)) return emp.role;
+  return 'Employee';
+};
+
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function TeamLeaveCalendarPage() {
@@ -503,11 +517,8 @@ export function TeamLeaveCalendarPage() {
                   <Shield className="w-3.5 h-3.5 text-slate-400" />
                   <span>Role:</span>
                 </span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  {profileModalLeave.employeeId?.userId?.role ||
-                    (Array.isArray(profileModalLeave.employeeId?.userId?.roles)
-                      ? profileModalLeave.employeeId.userId.roles[0]
-                      : 'Employee')}
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/50">
+                  {getEmployeeRole(profileModalLeave.employeeId)}
                 </span>
               </div>
 

@@ -58,6 +58,7 @@ export function HolidaysPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedHoliday, setSelectedHoliday] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [restoreTarget, setRestoreTarget] = useState(null);
   const [permanentDeleteTarget, setPermanentDeleteTarget] = useState(null);
   const [showSeedConfirm, setShowSeedConfirm] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
@@ -139,12 +140,15 @@ export function HolidaysPage() {
     }
   };
 
-  const handleRestore = async (holiday) => {
+  const handleRestoreConfirm = async () => {
+    if (!restoreTarget) return;
     try {
-      await restoreHoliday(holiday._id).unwrap();
-      setFeedback({ type: 'success', message: `Holiday '${holiday.name}' restored to active schedule.` });
+      await restoreHoliday(restoreTarget._id).unwrap();
+      setFeedback({ type: 'success', message: `Holiday '${restoreTarget.name}' restored to active schedule.` });
     } catch (err) {
       setFeedback({ type: 'error', message: err?.data?.message || err?.message || 'Failed to restore holiday' });
+    } finally {
+      setRestoreTarget(null);
     }
   };
 
@@ -278,7 +282,7 @@ export function HolidaysPage() {
               <>
                 <button
                   type="button"
-                  onClick={() => handleRestore(row)}
+                  onClick={() => setRestoreTarget(row)}
                   disabled={isRestoring}
                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 transition-colors cursor-pointer"
                   title="Restore Holiday to Active List"
@@ -720,7 +724,7 @@ export function HolidaysPage() {
                           <>
                             <button
                               type="button"
-                              onClick={() => handleRestore(holiday)}
+                              onClick={() => setRestoreTarget(holiday)}
                               disabled={isRestoring}
                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 transition-colors cursor-pointer"
                               title="Restore Holiday"
@@ -777,18 +781,45 @@ export function HolidaysPage() {
         holiday={selectedHoliday}
       />
 
-      {/* 7. Confirm Deletion Dialog */}
+      {/* 7. Archive / Deactivate Confirmation Dialog */}
       <ConfirmDialog
         isOpen={Boolean(deleteTarget)}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
-        title="Delete Public Holiday?"
-        message={`Are you sure you want to deactivate '${deleteTarget?.name}'? Working day calculations will no longer exclude this date.`}
-        confirmText={isDeleting ? 'Deleting...' : 'Delete Holiday'}
+        title="Move Holiday to Archive?"
+        message={`Are you sure you want to archive '${deleteTarget?.name}'? It will move to the Archive tab and will no longer be excluded from employee leave deductions.`}
+        confirmText={isDeleting ? 'Archiving...' : 'Move to Archive'}
         isDestructive={true}
+        isLoading={isDeleting}
       />
 
-      {/* 8. Confirm Seed Dialog */}
+      {/* 8. Restore Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={Boolean(restoreTarget)}
+        onCancel={() => setRestoreTarget(null)}
+        onConfirm={handleRestoreConfirm}
+        title="Restore Public Holiday?"
+        message={`Restore '${restoreTarget?.name}' back to the active holiday calendar? It will be immediately recognized in workforce scheduling and excluded from leave deductions.`}
+        confirmText={isRestoring ? 'Restoring...' : 'Yes, Restore Holiday'}
+        isDestructive={false}
+        confirmVariant="primary"
+        isLoading={isRestoring}
+      />
+
+      {/* 9. Permanent Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={Boolean(permanentDeleteTarget)}
+        onCancel={() => setPermanentDeleteTarget(null)}
+        onConfirm={handlePermanentDeleteConfirm}
+        title="Permanently Delete Holiday?"
+        message={`Are you sure you want to permanently delete '${permanentDeleteTarget?.name}' from the database? This action is completely irreversible and cannot be undone.`}
+        confirmText={isPermanentDeleting ? 'Deleting Forever...' : 'Permanently Delete'}
+        isDestructive={true}
+        confirmVariant="danger"
+        isLoading={isPermanentDeleting}
+      />
+
+      {/* 10. Confirm Seed Dialog */}
       <ConfirmDialog
         isOpen={showSeedConfirm}
         onCancel={() => setShowSeedConfirm(false)}
