@@ -491,6 +491,25 @@ export const FaceEnrollmentsPage = () => {
                     </span>
                   </div>
 
+                  {user.collision?.hasConflict && (
+                    <div className="p-2.5 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-start gap-2 text-xs text-rose-700 dark:text-rose-300">
+                      <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5 animate-pulse" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-bold text-[11px] uppercase tracking-wide text-rose-800 dark:text-rose-200">
+                          Biometric Conflict Detected
+                        </p>
+                        <p className="text-[11px] truncate text-rose-600 dark:text-rose-400">
+                          Matches: <strong>{user.collision.conflictingEmployeeName}</strong> ({user.collision.conflictingEmployeeCode})
+                        </p>
+                        {user.collision.distance !== null && (
+                          <p className="text-[10px] font-mono text-rose-500/80">
+                            Distance: {user.collision.distance} (&lt; 0.50 threshold)
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Header: Photo + Profile Details */}
                   <div className="flex items-start gap-4">
                     {/* Captured Photo Frame */}
@@ -620,11 +639,20 @@ export const FaceEnrollmentsPage = () => {
                       <button
                         type="button"
                         onClick={() => handleApprove(user._id, employeeName)}
-                        disabled={isApproving}
-                        className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-95 disabled:opacity-50"
+                        disabled={isApproving || Boolean(user.collision?.hasConflict)}
+                        className={`flex-1 py-2 px-3 font-semibold text-xs rounded-xl transition flex items-center justify-center gap-1.5 shadow-xs ${
+                          user.collision?.hasConflict
+                            ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30 cursor-not-allowed opacity-80'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-95 disabled:opacity-50'
+                        }`}
+                        title={
+                          user.collision?.hasConflict
+                            ? `Cannot approve: duplicate biometric with ${user.collision.conflictingEmployeeName} (${user.collision.conflictingEmployeeCode})`
+                            : 'Approve Biometric'
+                        }
                       >
                         <Check className="w-3.5 h-3.5" />
-                        <span>Approve Biometric</span>
+                        <span>{user.collision?.hasConflict ? 'Approval Blocked' : 'Approve Biometric'}</span>
                       </button>
                       <button
                         type="button"
@@ -790,6 +818,12 @@ export const FaceEnrollmentsPage = () => {
                               {new Date(enrollment.enrolledAt).toLocaleDateString()}
                             </p>
                           )}
+                          {user.collision?.hasConflict && (
+                            <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-[10px] font-sans font-semibold mt-0.5">
+                              <AlertTriangle className="w-2.5 h-2.5 text-rose-500 shrink-0" />
+                              <span>Duplicate ({user.collision.conflictingEmployeeCode})</span>
+                            </div>
+                          )}
                         </div>
                       </td>
 
@@ -825,11 +859,19 @@ export const FaceEnrollmentsPage = () => {
                               <button
                                 type="button"
                                 onClick={() => handleApprove(user._id, employeeName)}
-                                disabled={isApproving}
-                                className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-xs transition cursor-pointer shadow-xs"
-                                title="Approve"
+                                disabled={isApproving || Boolean(user.collision?.hasConflict)}
+                                className={`px-2.5 py-1.5 rounded-lg font-semibold text-xs transition cursor-pointer shadow-xs ${
+                                  user.collision?.hasConflict
+                                    ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30 cursor-not-allowed opacity-80'
+                                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                }`}
+                                title={
+                                  user.collision?.hasConflict
+                                    ? `Cannot approve: duplicate biometric with ${user.collision.conflictingEmployeeName} (${user.collision.conflictingEmployeeCode})`
+                                    : 'Approve'
+                                }
                               >
-                                Approve
+                                {user.collision?.hasConflict ? 'Blocked' : 'Approve'}
                               </button>
                               <button
                                 type="button"
@@ -966,17 +1008,34 @@ export const FaceEnrollmentsPage = () => {
                   </div>
                 </div>
 
+                {selectedPhotoModal.user.collision?.hasConflict && (
+                  <div className="p-3 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-start gap-2 text-xs text-rose-700 dark:text-rose-300">
+                    <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold text-rose-800 dark:text-rose-200">Biometric Conflict Detected</p>
+                      <p className="text-[11px]">
+                        Matches {selectedPhotoModal.user.collision.conflictingEmployeeName} ({selectedPhotoModal.user.collision.conflictingEmployeeCode})
+                        {selectedPhotoModal.user.collision.distance !== null && ` · Dist: ${selectedPhotoModal.user.collision.distance}`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Quick actions inside inspector */}
                 {selectedPhotoModal.user.faceEnrollment?.status === 'pending' && (
                   <div className="flex items-center gap-2 pt-2">
                     <button
                       type="button"
                       onClick={() => handleApprove(selectedPhotoModal.user._id, selectedPhotoModal.details.name)}
-                      disabled={isApproving}
-                      className="flex-1 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                      disabled={isApproving || Boolean(selectedPhotoModal.user.collision?.hasConflict)}
+                      className={`flex-1 py-2 px-3 font-semibold rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-sm ${
+                        selectedPhotoModal.user.collision?.hasConflict
+                          ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30 cursor-not-allowed opacity-80'
+                          : 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
+                      }`}
                     >
                       <Check className="w-3.5 h-3.5" />
-                      <span>Approve Face</span>
+                      <span>{selectedPhotoModal.user.collision?.hasConflict ? 'Approval Blocked' : 'Approve Face'}</span>
                     </button>
                     <button
                       type="button"

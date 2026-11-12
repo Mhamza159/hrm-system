@@ -366,12 +366,17 @@ describe('Module M12 — Face Recognition Attendance E2E Test Suite', () => {
     });
 
     it('should allow HR Manager to reject face enrollment with mandatory reason', async () => {
-      // Re-enroll otherDeptEmployeeUser first
+      // Re-enroll otherDeptEmployeeUser first with their distinct face vectors
+      const otherDescriptors = [
+        createMockDescriptor(0.35),
+        createMockDescriptor(0.36),
+        createMockDescriptor(0.34)
+      ];
       await request(app)
         .post('/api/v1/attendance/face/enroll')
         .set('Authorization', `Bearer ${otherDeptEmployeeToken}`)
         .send({
-          descriptors: [enrolledDescriptorA, enrolledDescriptorB, enrolledDescriptorC]
+          descriptors: otherDescriptors
         });
 
       const res = await request(app)
