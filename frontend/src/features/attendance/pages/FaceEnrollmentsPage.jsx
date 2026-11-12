@@ -296,12 +296,40 @@ export const FaceEnrollmentsPage = () => {
       {/* Control Bar: Filters, Tabs, Search & View Switcher */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-2 bg-card border rounded-2xl shadow-xs">
         {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 scrollbar-none">
+        <div className="flex items-center gap-1.5 overflow-x-auto p-1 bg-slate-100/80 dark:bg-[#0A1610] rounded-2xl shrink-0 border border-slate-200/60 dark:border-emerald-950/40">
           {[
-            { id: 'pending', label: 'Pending Review', icon: Clock, count: counts.pending },
-            { id: 'approved', label: 'Approved', icon: CheckCircle2, count: counts.approved },
-            { id: 'rejected', label: 'Rejected', icon: XCircle, count: counts.rejected },
-            { id: 'all', label: 'All Records', icon: Filter, count: counts.all }
+            {
+              id: 'pending',
+              label: 'Pending Review',
+              icon: Clock,
+              count: counts.pending,
+              activeCls: 'bg-amber-500 text-white shadow-xs shadow-amber-500/25',
+              inactiveIconCls: 'text-amber-500'
+            },
+            {
+              id: 'approved',
+              label: 'Approved',
+              icon: CheckCircle2,
+              count: counts.approved,
+              activeCls: 'bg-[#00C471] text-white shadow-xs shadow-emerald-500/25',
+              inactiveIconCls: 'text-[#00C471]'
+            },
+            {
+              id: 'rejected',
+              label: 'Rejected',
+              icon: XCircle,
+              count: counts.rejected,
+              activeCls: 'bg-rose-600 text-white shadow-xs shadow-rose-600/25',
+              inactiveIconCls: 'text-rose-500'
+            },
+            {
+              id: 'all',
+              label: 'All Records',
+              icon: Filter,
+              count: counts.all,
+              activeCls: 'bg-slate-900 dark:bg-emerald-900/80 text-white shadow-xs',
+              inactiveIconCls: 'text-slate-500 dark:text-slate-400'
+            }
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -314,18 +342,18 @@ export const FaceEnrollmentsPage = () => {
                 }}
                 className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl transition-all whitespace-nowrap cursor-pointer ${
                   isActive
-                    ? 'bg-foreground text-background shadow-xs'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/70'
+                    ? tab.activeCls
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800/60'
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-background' : ''}`} />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : tab.inactiveIconCls}`} />
                 <span>{tab.label}</span>
                 {typeof tab.count === 'number' && (
                   <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold ${
+                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono font-bold leading-none ${
                       isActive
-                        ? 'bg-background/25 text-background'
-                        : 'bg-muted text-muted-foreground'
+                        ? 'bg-white/25 text-white'
+                        : 'bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                     }`}
                   >
                     {tab.count}
@@ -908,19 +936,19 @@ export const FaceEnrollmentsPage = () => {
 
       {/* ================= BIOMETRIC PHOTO INSPECTION LIGHTBOX MODAL ================= */}
       {selectedPhotoModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-card border rounded-3xl max-w-2xl w-full p-6 space-y-6 shadow-2xl animate-in fade-in zoom-in-95">
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-emerald-950/80 rounded-3xl max-w-2xl w-full p-6 space-y-6 shadow-2xl animate-in fade-in zoom-in-95">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-[#00C471] border border-emerald-200/80 dark:border-emerald-800/40 flex items-center justify-center shadow-xs">
                   <Camera className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-base text-foreground font-mono-title">
+                  <h3 className="font-bold text-base text-slate-900 dark:text-white font-mono-title">
                     Biometric Verification Inspector
                   </h3>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     High-resolution facial capture inspection & verification audit
                   </p>
                 </div>
@@ -928,7 +956,7 @@ export const FaceEnrollmentsPage = () => {
               <button
                 type="button"
                 onClick={() => setSelectedPhotoModal(null)}
-                className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer"
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/80 transition cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -937,7 +965,7 @@ export const FaceEnrollmentsPage = () => {
             {/* Modal Body: Photo with Biometric Oval Guide + Details */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
               {/* Photo Frame */}
-              <div className="relative aspect-4/3 rounded-2xl overflow-hidden bg-black border-2 border-emerald-500/40 shadow-inner flex items-center justify-center">
+              <div className="relative aspect-4/3 rounded-2xl overflow-hidden bg-slate-950 border-2 border-emerald-500/50 shadow-lg flex items-center justify-center">
                 <img
                   src={selectedPhotoModal.photoUrl}
                   alt={selectedPhotoModal.details.name}
@@ -945,75 +973,85 @@ export const FaceEnrollmentsPage = () => {
                 />
                 {/* Facial Inspection Guide Overlay */}
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                  <div className="w-32 h-44 border-2 border-dashed border-emerald-400/80 rounded-[50%] shadow-[0_0_20px_rgba(16,185,129,0.3)]" />
+                  <div className="w-32 h-44 border-2 border-dashed border-[#00C471] rounded-[50%] shadow-[0_0_24px_rgba(0,196,113,0.4)]" />
                 </div>
-                <div className="absolute bottom-2 left-2 right-2 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[10px] text-emerald-300 font-mono flex items-center justify-between">
-                  <span>320 × 240 RAW</span>
-                  <span>128-D VECTOR ALIGNED</span>
+                <div className="absolute bottom-2.5 left-2.5 right-2.5 bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] text-emerald-400 font-mono flex items-center justify-between border border-emerald-500/20">
+                  <span className="font-semibold">320 × 240 RAW</span>
+                  <span className="font-bold">128-D VECTOR ALIGNED</span>
                 </div>
               </div>
 
               {/* Identity & Technical Info */}
-              <div className="space-y-3 text-xs">
+              <div className="space-y-3.5 text-xs">
                 <div>
-                  <span className="text-[10px] uppercase font-mono text-muted-foreground tracking-wider">
+                  <span className="text-[10px] uppercase font-mono font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">
                     Employee Details
                   </span>
-                  <h4 className="text-lg font-extrabold text-foreground">
+                  <h4 className="text-lg font-extrabold text-slate-900 dark:text-white mt-0.5">
                     {selectedPhotoModal.details.name}
                   </h4>
-                  <p className="text-muted-foreground font-mono">{selectedPhotoModal.details.email}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">{selectedPhotoModal.details.email}</p>
                 </div>
 
-                <div className="p-3 bg-muted/50 border rounded-2xl space-y-2">
+                <div className="p-4 bg-slate-50 dark:bg-[#0A1610] border border-slate-200/80 dark:border-emerald-950/80 rounded-2xl space-y-2.5">
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Employee ID:</span>
-                    <span className="font-mono font-bold text-foreground">
+                    <span className="text-slate-500 dark:text-slate-400 font-medium">Employee ID:</span>
+                    <span className="font-mono text-xs font-bold text-slate-900 dark:text-white bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-800">
                       {selectedPhotoModal.details.code}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">System Role:</span>
-                    <span className="font-bold text-foreground">
+                    <span className="text-slate-500 dark:text-slate-400 font-medium">System Role:</span>
+                    <span className="font-bold text-slate-900 dark:text-white">
                       {selectedPhotoModal.details.role}
                     </span>
                   </div>
                   {selectedPhotoModal.details.designation && (
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Designation:</span>
-                      <span className="font-semibold text-foreground">
+                      <span className="text-slate-500 dark:text-slate-400 font-medium">Designation:</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">
                         {selectedPhotoModal.details.designation}
                       </span>
                     </div>
                   )}
                   {selectedPhotoModal.details.department && (
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Department:</span>
-                      <span className="font-medium text-foreground">
+                      <span className="text-slate-500 dark:text-slate-400 font-medium">Department:</span>
+                      <span className="font-medium text-slate-800 dark:text-slate-200">
                         {selectedPhotoModal.details.department}
                       </span>
                     </div>
                   )}
-                  <div className="flex justify-between items-center pt-1 border-t">
-                    <span className="text-muted-foreground">Status:</span>
-                    <span className="font-bold uppercase font-mono text-foreground">
-                      {selectedPhotoModal.user.faceEnrollment?.status || 'Pending'}
-                    </span>
+                  <div className="flex justify-between items-center pt-2 border-t border-slate-200/80 dark:border-slate-800">
+                    <span className="text-slate-500 dark:text-slate-400 font-medium">Status:</span>
+                    {selectedPhotoModal.user.faceEnrollment?.status === 'approved' ? (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50">
+                        Approved
+                      </span>
+                    ) : selectedPhotoModal.user.faceEnrollment?.status === 'rejected' ? (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50">
+                        Rejected
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">
+                        Pending Review
+                      </span>
+                    )}
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Descriptors:</span>
-                    <span className="font-mono font-semibold text-emerald-500">
+                    <span className="text-slate-500 dark:text-slate-400 font-medium">Descriptors:</span>
+                    <span className="font-mono font-bold text-xs text-[#00C471] bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-0.5 rounded-md border border-emerald-200/80 dark:border-emerald-800/40">
                       {selectedPhotoModal.user.faceEnrollment?.descriptors?.length || 0} vectors
                     </span>
                   </div>
                 </div>
 
                 {selectedPhotoModal.user.collision?.hasConflict && (
-                  <div className="p-3 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-start gap-2 text-xs text-rose-700 dark:text-rose-300">
-                    <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                  <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 flex items-start gap-2.5 text-xs text-rose-700 dark:text-rose-300">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-bold text-rose-800 dark:text-rose-200">Biometric Conflict Detected</p>
-                      <p className="text-[11px]">
+                      <p className="font-bold text-rose-900 dark:text-rose-200">Biometric Conflict Detected</p>
+                      <p className="text-[11px] text-rose-800 dark:text-rose-300 mt-0.5">
                         Matches {selectedPhotoModal.user.collision.conflictingEmployeeName} ({selectedPhotoModal.user.collision.conflictingEmployeeCode})
                         {selectedPhotoModal.user.collision.distance !== null && ` · Dist: ${selectedPhotoModal.user.collision.distance}`}
                       </p>
@@ -1023,15 +1061,15 @@ export const FaceEnrollmentsPage = () => {
 
                 {/* Quick actions inside inspector */}
                 {selectedPhotoModal.user.faceEnrollment?.status === 'pending' && (
-                  <div className="flex items-center gap-2 pt-2">
+                  <div className="flex items-center gap-2.5 pt-2">
                     <button
                       type="button"
                       onClick={() => handleApprove(selectedPhotoModal.user._id, selectedPhotoModal.details.name)}
                       disabled={isApproving || Boolean(selectedPhotoModal.user.collision?.hasConflict)}
-                      className={`flex-1 py-2 px-3 font-semibold rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-sm ${
+                      className={`flex-1 py-2.5 px-4 font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 shadow-md ${
                         selectedPhotoModal.user.collision?.hasConflict
                           ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30 cursor-not-allowed opacity-80'
-                          : 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
+                          : 'bg-[#00C471] hover:bg-[#049856] active:bg-[#038349] text-white shadow-emerald-500/20 cursor-pointer'
                       }`}
                     >
                       <Check className="w-3.5 h-3.5" />
@@ -1041,7 +1079,7 @@ export const FaceEnrollmentsPage = () => {
                       type="button"
                       onClick={() => handleOpenRejectModal(selectedPhotoModal.user, selectedPhotoModal.details.name)}
                       disabled={isRejecting}
-                      className="py-2 px-3 border border-rose-300 text-rose-600 hover:bg-rose-50 font-semibold rounded-xl text-xs transition cursor-pointer"
+                      className="py-2.5 px-4 border border-rose-200 dark:border-rose-800/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 font-semibold rounded-xl text-xs transition cursor-pointer"
                     >
                       Reject
                     </button>
@@ -1055,25 +1093,29 @@ export const FaceEnrollmentsPage = () => {
 
       {/* ================= REJECTION MODAL WITH PRESET REASONS ================= */}
       {rejectModalUser && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border rounded-3xl max-w-md w-full p-6 space-y-4 shadow-xl animate-in fade-in zoom-in-95">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-600 border border-rose-500/20">
-                <AlertTriangle className="w-6 h-6" />
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-emerald-950/80 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200/80 dark:border-rose-800/40 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 shadow-xs">
+                <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-foreground">Reject Biometric Enrollment</h3>
-                <p className="text-xs text-muted-foreground">For: {rejectModalUser.name}</p>
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                  Reject Biometric Enrollment
+                </h3>
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[11px] font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 mt-0.5">
+                  Target: {rejectModalUser.name}
+                </span>
               </div>
             </div>
 
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
               Select or provide a reason so the employee knows how to correct their photo when re-enrolling:
             </p>
 
             {/* Quick Reason Chips */}
             <div className="space-y-1.5">
-              <span className="text-[10px] uppercase font-mono text-muted-foreground font-semibold">
+              <span className="text-[10px] uppercase font-mono font-bold text-slate-500 dark:text-slate-400">
                 Quick Preset Reasons
               </span>
               <div className="flex flex-wrap gap-1.5">
@@ -1084,8 +1126,8 @@ export const FaceEnrollmentsPage = () => {
                     onClick={() => setRejectionReason(reason)}
                     className={`text-[11px] px-2.5 py-1 rounded-lg border transition text-left cursor-pointer ${
                       rejectionReason === reason
-                        ? 'bg-rose-500/15 border-rose-500/40 text-rose-600 dark:text-rose-400 font-semibold'
-                        : 'bg-muted/40 hover:bg-muted text-foreground/80'
+                        ? 'bg-rose-50 dark:bg-rose-950/50 border-rose-400 text-rose-600 dark:text-rose-300 font-semibold'
+                        : 'bg-slate-100/70 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700 hover:bg-slate-200/70 text-slate-700 dark:text-slate-300'
                     }`}
                   >
                     {reason}
@@ -1095,7 +1137,7 @@ export const FaceEnrollmentsPage = () => {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Rejection Note (Visible to Employee)
               </label>
               <textarea
@@ -1103,15 +1145,15 @@ export const FaceEnrollmentsPage = () => {
                 placeholder="Explain what was wrong with the biometric capture..."
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
-                className="w-full p-2.5 text-xs border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-rose-500/20"
+                className="w-full p-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/25 focus:border-rose-500 transition-all"
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t">
+            <div className="flex justify-end items-center gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setRejectModalUser(null)}
-                className="px-3.5 py-2 text-xs font-medium border rounded-xl hover:bg-muted transition cursor-pointer"
+                className="px-4 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
               >
                 Cancel
               </button>
@@ -1119,9 +1161,19 @@ export const FaceEnrollmentsPage = () => {
                 type="button"
                 onClick={handleConfirmReject}
                 disabled={isRejecting || !rejectionReason.trim()}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-xl transition shadow-xs disabled:opacity-50 cursor-pointer"
+                className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white text-xs font-bold rounded-xl transition shadow-md shadow-rose-600/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5"
               >
-                {isRejecting ? 'Rejecting...' : 'Confirm Rejection'}
+                {isRejecting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Rejecting...</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-3.5 h-3.5" />
+                    <span>Confirm Rejection</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -1130,24 +1182,31 @@ export const FaceEnrollmentsPage = () => {
 
       {/* ================= RESET MODAL ================= */}
       {resetModalUser && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-card border rounded-3xl max-w-md w-full p-6 space-y-4 shadow-xl animate-in fade-in zoom-in-95">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 border border-amber-500/20">
-                <RotateCcw className="w-6 h-6" />
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-emerald-950/80 rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200/80 dark:border-amber-800/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-xs">
+                <RotateCcw className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-bold text-foreground">Reset Biometric Enrollment</h3>
-                <p className="text-xs text-muted-foreground">For: {resetModalUser.name}</p>
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">
+                  Reset Biometric Enrollment
+                </h3>
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[11px] font-semibold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 mt-0.5">
+                  Target: {resetModalUser.name}
+                </span>
               </div>
             </div>
 
-            <p className="text-xs text-muted-foreground">
-              Resetting will clear the existing facial descriptors and require the employee to re-capture their face before using camera attendance.
-            </p>
+            <div className="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/30 text-xs text-amber-900 dark:text-amber-200/90 leading-relaxed flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <p>
+                Resetting will immediately clear all facial embedding vectors and require the employee to complete a fresh biometric enrollment before camera check-in.
+              </p>
+            </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Administrative Reason
               </label>
               <input
@@ -1155,15 +1214,15 @@ export const FaceEnrollmentsPage = () => {
                 placeholder="e.g. Employee changed appearance, requested fresh setup..."
                 value={resetReason}
                 onChange={(e) => setResetReason(e.target.value)}
-                className="w-full p-2.5 text-xs border rounded-xl bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500 transition-all"
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t">
+            <div className="flex justify-end items-center gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setResetModalUser(null)}
-                className="px-3.5 py-2 text-xs font-medium border rounded-xl hover:bg-muted transition cursor-pointer"
+                className="px-4 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
               >
                 Cancel
               </button>
@@ -1171,9 +1230,19 @@ export const FaceEnrollmentsPage = () => {
                 type="button"
                 onClick={handleConfirmReset}
                 disabled={isResetting || !resetReason.trim()}
-                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl transition shadow-xs disabled:opacity-50 cursor-pointer"
+                className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow-md shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5"
               >
-                {isResetting ? 'Resetting...' : 'Confirm Reset'}
+                {isResetting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Resetting...</span>
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Confirm Reset</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
