@@ -2560,6 +2560,80 @@ export const calculateEuclideanDistance = (vecA, vecB) => {
   return Math.sqrt(sum);
 };
 
+/**
+ * Scans all approved user face vectors across the organization to detect biometric duplicates.
+ * Guarantees strict 1:1 human-to-account biometric uniqueness.
+ *
+ * @param {Object} params
+ * @param {Array<Array<number>>} params.candidateDescriptors - 128-d vectors from camera capture
+ * @param {string|mongoose.Types.ObjectId} [params.excludeUserId] - User ID to exclude during self re-enrollment
+ * @param {number} [params.threshold] - Optional threshold override (defaults to DB setting or 0.50)
+ * @returns {Promise<{ hasConflict: boolean, conflictingUser: Object|null, minDistance: number, threshold: number }>}
+ */
+export const detectFaceCollision = async ({
+  candidateDescriptors = [],
+  excludeUserId = null,
+  threshold = null
+}) => {
+  if (!Array.isArray(candidateDescriptors) || !candidateDescriptors.length) {
+    return { hasConflict: false, conflictingUser: null, minDistance: Infinity, threshold: 0.50 };
+  }
+
+  let matchThreshold = threshold;
+  if (typeof matchThreshold !== 'number' || matchThreshold <= 0) {
+    const setting = await Setting.findOne({ key: 'faceAttendance' }).lean();
+    matchThreshold = setting?.value?.matchThreshold ?? 0.50;
+  }
+
+  const query = {
+    'faceEnrollment.status': 'approved',
+    isDeleted: { $ne: true }
+  };
+
+  if (excludeUserId) {
+    query._id = { $ne: excludeUserId };
+  }
+
+  const approvedUsers = await User.find(query)
+    .select('name email employeeId faceEnrollment')
+    .populate({
+      path: 'employeeId',
+      select: 'name employeeCode departmentId designationId avatar'
+    })
+    .lean();
+
+  let minDistance = Infinity;
+  let bestMatchUser = null;
+
+  for (const existingUser of approvedUsers) {
+    const existingDescriptors = existingUser?.faceEnrollment?.descriptors || [];
+    for (const candVec of candidateDescriptors) {
+      for (const existVec of existingDescriptors) {
+        const dist = calculateEuclideanDistance(candVec, existVec);
+        if (dist < minDistance) {
+          minDistance = dist;
+          bestMatchUser = existingUser;
+        }
+      }
+    }
+  }
+
+  const hasConflict = minDistance < matchThreshold && Boolean(bestMatchUser);
+
+  return {
+    hasConflict,
+    conflictingUser: hasConflict && bestMatchUser ? {
+      _id: bestMatchUser._id,
+      name: bestMatchUser.employeeId?.name || bestMatchUser.name || bestMatchUser.email,
+      email: bestMatchUser.email,
+      employeeCode: bestMatchUser.employeeId?.employeeCode || 'EMP-—',
+      avatar: bestMatchUser.employeeId?.avatar || null
+    } : null,
+    minDistance: Number.isFinite(minDistance) ? Number(minDistance.toFixed(4)) : Infinity,
+    threshold: matchThreshold
+  };
+};
+
 export const verifyFacePunch = async ({ user, liveDescriptor, snapshot }) => {
   const storedSnapshotUrl = await saveBase64Image(snapshot, 'attendance', `punch_${user?._id || 'emp'}`);
   const setting = await Setting.findOne({ key: 'faceAttendance' }).lean();
@@ -2627,6 +2701,44 @@ export const enrollFace = async (userId, { descriptors, photo }) => {
   const user = await User.findById(userId);
   if (!user || user.isDeleted) {
     throw new ApiError(404, 'User account not found');
+  }
+
+  if (!Array.isArray(descriptors) || !descriptors.length) {
+    throw new ApiError(400, 'At least one valid 128-dimensional face descriptor is required');
+  }
+
+  // 1:1 Biometric Uniqueness Ingestion Guard (FR-002)
+  const collision = await detectFaceCollision({
+    candidateDescriptors: descriptors,
+    excludeUserId: userId
+  });
+
+  if (collision.hasConflict && collision.conflictingUser) {
+    await recordAuditLog({
+      actor: { _id: user._id, name: user.name, email: user.email },
+      action: 'FACE_ENROLLMENT_COLLISION_BLOCKED',
+      entity: 'User',
+      entityId: user._id,
+      details: {
+        attemptedUserId: user._id,
+        conflictingUserId: collision.conflictingUser._id,
+        conflictingName: collision.conflictingUser.name,
+        conflictingCode: collision.conflictingUser.employeeCode,
+        minDistance: collision.minDistance,
+        threshold: collision.threshold
+      }
+    });
+
+    throw new ApiError(
+      409,
+      `This facial biometric is already registered to ${collision.conflictingUser.name} (${collision.conflictingUser.employeeCode}). Each employee must register a unique face.`,
+      [{
+        field: 'descriptors',
+        code: 'BIOMETRIC_COLLISION_DETECTED',
+        conflictingEmployee: collision.conflictingUser,
+        confidenceDistance: collision.minDistance
+      }]
+    );
   }
 
   user.faceEnrollment = {
@@ -2716,7 +2828,7 @@ export const getFaceEnrollments = async ({ status, search, page = 1, limit = 20 
   const limitNum = Math.max(1, Number(limit) || 20);
   const skip = (pageNum - 1) * limitNum;
 
-  const [users, total, countsAgg] = await Promise.all([
+  const [users, total, countsAgg, allApprovedUsers, setting] = await Promise.all([
     User.find(query)
       .select('name email employeeId faceEnrollment roles createdAt')
       .populate('roles', 'name')
@@ -2737,8 +2849,58 @@ export const getFaceEnrollments = async ({ status, search, page = 1, limit = 20 
     User.aggregate([
       { $match: { 'faceEnrollment.status': { $in: ['pending', 'approved', 'rejected'] } } },
       { $group: { _id: '$faceEnrollment.status', count: { $sum: 1 } } }
-    ])
+    ]),
+    User.find({
+      'faceEnrollment.status': 'approved',
+      isDeleted: { $ne: true }
+    })
+      .select('name email employeeId faceEnrollment')
+      .populate({ path: 'employeeId', select: 'name employeeCode avatar' })
+      .lean(),
+    Setting.findOne({ key: 'faceAttendance' }).lean()
   ]);
+
+  const matchThreshold = setting?.value?.matchThreshold ?? 0.50;
+
+  // Annotate each user with biometric collision intelligence
+  const enrichedUsers = users.map((u) => {
+    const candidateVectors = u.faceEnrollment?.descriptors || [];
+    let minDistance = Infinity;
+    let conflicting = null;
+
+    if (candidateVectors.length > 0) {
+      for (const appUser of allApprovedUsers) {
+        if (String(appUser._id) === String(u._id)) continue;
+        const appVectors = appUser.faceEnrollment?.descriptors || [];
+        for (const cVec of candidateVectors) {
+          for (const aVec of appVectors) {
+            const dist = calculateEuclideanDistance(cVec, aVec);
+            if (dist < minDistance) {
+              minDistance = dist;
+              conflicting = appUser;
+            }
+          }
+        }
+      }
+    }
+
+    const hasConflict = minDistance < matchThreshold && Boolean(conflicting);
+
+    return {
+      ...u,
+      collision: {
+        hasConflict,
+        conflictingUserId: hasConflict ? conflicting?._id : null,
+        conflictingEmployeeName: hasConflict
+          ? conflicting?.employeeId?.name || conflicting?.name || conflicting?.email
+          : null,
+        conflictingEmployeeCode: hasConflict
+          ? conflicting?.employeeId?.employeeCode || 'EMP-—'
+          : null,
+        distance: Number.isFinite(minDistance) ? Number(minDistance.toFixed(3)) : null
+      }
+    };
+  });
 
   const counts = {
     pending: 0,
@@ -2754,7 +2916,7 @@ export const getFaceEnrollments = async ({ status, search, page = 1, limit = 20 
   }
 
   return {
-    users,
+    users: enrichedUsers,
     counts,
     meta: {
       page: pageNum,
@@ -2773,6 +2935,45 @@ export const approveFaceEnrollment = async (targetUserId, actor) => {
 
   if (!user.faceEnrollment || user.faceEnrollment.status === 'none') {
     throw new ApiError(400, 'User does not have an active face enrollment');
+  }
+
+  const descriptors = user.faceEnrollment.descriptors || [];
+  if (!descriptors.length) {
+    throw new ApiError(400, 'Cannot approve enrollment: no facial descriptors found.');
+  }
+
+  // Authoritative Biometric Uniqueness Gate at Approval (FR-003)
+  const collision = await detectFaceCollision({
+    candidateDescriptors: descriptors,
+    excludeUserId: targetUserId
+  });
+
+  if (collision.hasConflict && collision.conflictingUser) {
+    await recordAuditLog({
+      actor,
+      action: 'FACE_ENROLLMENT_APPROVAL_COLLISION_BLOCKED',
+      entity: 'User',
+      entityId: user._id,
+      details: {
+        targetUserId: user._id,
+        conflictingUserId: collision.conflictingUser._id,
+        conflictingName: collision.conflictingUser.name,
+        conflictingCode: collision.conflictingUser.employeeCode,
+        minDistance: collision.minDistance,
+        threshold: collision.threshold
+      }
+    });
+
+    throw new ApiError(
+      409,
+      `Cannot approve: This facial biometric is already approved for ${collision.conflictingUser.name} (${collision.conflictingUser.employeeCode}). Please reject or reset this duplicate enrollment.`,
+      [{
+        field: 'descriptors',
+        code: 'BIOMETRIC_APPROVAL_COLLISION',
+        conflictingEmployee: collision.conflictingUser,
+        confidenceDistance: collision.minDistance
+      }]
+    );
   }
 
   user.faceEnrollment.status = 'approved';

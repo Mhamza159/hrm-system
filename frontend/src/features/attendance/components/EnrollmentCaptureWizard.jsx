@@ -4,6 +4,7 @@ import {
   RefreshCw,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   ArrowRight,
   UserCheck,
   ShieldCheck,
@@ -52,6 +53,7 @@ export const EnrollmentCaptureWizard = ({ onEnrollmentComplete }) => {
   const [capturedFrames, setCapturedFrames] = useState([]);
   const [isCapturing, setIsCapturing] = useState(false);
   const [cameraError, setCameraError] = useState(null);
+  const [submissionError, setSubmissionError] = useState(null);
   const [isFaceDetected, setIsFaceDetected] = useState(false);
   const detectionTimerRef = useRef(null);
 
@@ -164,6 +166,7 @@ export const EnrollmentCaptureWizard = ({ onEnrollmentComplete }) => {
   };
 
   const handleSubmitEnrollment = async (frames) => {
+    setSubmissionError(null);
     try {
       const descriptors = frames.map((f) => f.descriptor);
       const primaryPhoto = frames[0]?.photo || null;
@@ -179,11 +182,14 @@ export const EnrollmentCaptureWizard = ({ onEnrollmentComplete }) => {
       }
     } catch (err) {
       console.error('[Enrollment] Submission error:', err);
-      toast.error(err?.data?.message || 'Failed to submit face enrollment. Please try again.');
+      const errorMessage = err?.data?.message || err?.message || 'Failed to submit face enrollment. Please try again.';
+      setSubmissionError(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
   const handleReset = () => {
+    setSubmissionError(null);
     setCapturedFrames([]);
     setCurrentStepIndex(0);
   };
@@ -194,6 +200,27 @@ export const EnrollmentCaptureWizard = ({ onEnrollmentComplete }) => {
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
       {/* ================= LEFT / MAIN: OPTICAL BIOMETRIC HUD ================= */}
       <div className="lg:col-span-8 bg-card border border-border rounded-3xl p-5 sm:p-6 shadow-xs space-y-5">
+        {submissionError && (
+          <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-start gap-3 text-xs text-rose-700 dark:text-rose-300">
+            <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />
+            <div className="space-y-1 flex-1">
+              <p className="font-bold text-rose-800 dark:text-rose-200 text-sm">
+                Biometric Registration Conflict
+              </p>
+              <p className="text-xs leading-relaxed">{submissionError}</p>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="px-3 py-1.5 rounded-lg bg-rose-600 text-white font-semibold text-xs hover:bg-rose-700 transition"
+                >
+                  Clear & Re-capture
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Step Context Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4">
           <div className="space-y-0.5">

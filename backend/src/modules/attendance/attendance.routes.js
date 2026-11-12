@@ -448,6 +448,12 @@ router.patch(
   attendanceController.approveFaceEnrollment
 );
 router.post(
+  '/face/:userId/approve',
+  checkPermission('attendance.face.manage', 'all'),
+  validate(faceApprovalSchema),
+  attendanceController.approveFaceEnrollment
+);
+router.post(
   '/face/enrollments/:userId/approve',
   checkPermission('attendance.face.manage', 'all'),
   validate(faceApprovalSchema),
