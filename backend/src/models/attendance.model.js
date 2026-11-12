@@ -40,7 +40,8 @@ const attendanceAuditSchema = new mongoose.Schema(
     modifiedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true
+      required: false,
+      default: null
     },
     modifiedAt: {
       type: Date,
