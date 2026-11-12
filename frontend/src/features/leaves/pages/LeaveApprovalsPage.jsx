@@ -115,7 +115,7 @@ export function LeaveApprovalsPage() {
         {/* Top Control Bar: Status Tabs & Search */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
           {/* Status Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto p-1 bg-slate-100/80 dark:bg-slate-800/60 rounded-2xl shrink-0">
+          <div className="flex items-center gap-1.5 overflow-x-auto p-1 bg-slate-100/80 dark:bg-slate-800/60 rounded-2xl shrink-0 scrollbar-none">
             {STATUS_TABS.map((tab) => {
               const TabIcon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -126,14 +126,14 @@ export function LeaveApprovalsPage() {
                   className={cn(
                     'px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap',
                     isActive
-                      ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs border border-slate-200/60 dark:border-slate-700/60'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-transparent'
                   )}
                 >
-                  <TabIcon className="w-3.5 h-3.5" />
+                  <TabIcon className={cn('w-3.5 h-3.5', isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400')} />
                   <span>{tab.label}</span>
                   {tab.id === 'pending' && pendingCount > 0 && (
-                    <span className="px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-amber-500 text-white leading-none">
+                    <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-500 text-white leading-none">
                       {pendingCount}
                     </span>
                   )}
@@ -152,7 +152,7 @@ export function LeaveApprovalsPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search by name, email, or code..."
-                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs rounded-xl pl-9 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs rounded-xl pl-9 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all h-9"
               />
               {searchTerm && (
                 <button
@@ -173,7 +173,7 @@ export function LeaveApprovalsPage() {
                 refetchPendingBadge?.();
               }}
               disabled={isRefreshing}
-              className="px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-emerald-600 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center gap-2 shadow-xs transition active:scale-95 disabled:opacity-50 cursor-pointer shrink-0"
+              className="h-9 px-3.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-emerald-600 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center gap-1.5 shadow-xs transition active:scale-95 disabled:opacity-50 cursor-pointer shrink-0"
               title="Refresh Queue & Records"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin text-emerald-500' : ''}`} />
@@ -261,7 +261,7 @@ export function LeaveApprovalsPage() {
                     >
                       {/* Applicant & Email Column */}
                       <td className="py-3.5 px-3">
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden">
                             {applicant.avatar ? (
                               <img
@@ -273,17 +273,17 @@ export function LeaveApprovalsPage() {
                               (applicant.name || 'EM').slice(0, 2).toUpperCase()
                             )}
                           </div>
-                          <div className="space-y-0.5">
-                            <span className="font-semibold text-slate-900 dark:text-white block">
+                          <div className="space-y-0.5 min-w-0">
+                            <span className="font-semibold text-slate-900 dark:text-white block truncate">
                               {applicant.name || 'Employee'}
                             </span>
                             <div className="flex items-center gap-2">
-                              <span className="text-[11px] text-slate-400 font-mono">
+                              <span className="text-[11px] text-slate-400 font-mono whitespace-nowrap">
                                 {applicant.employeeCode || '—'}
                               </span>
                               {applicant.email && (
-                                <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                                  <Mail className="w-3 h-3" />
+                                <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                  <Mail className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                                   <span>{applicant.email}</span>
                                 </span>
                               )}
@@ -294,17 +294,17 @@ export function LeaveApprovalsPage() {
 
                       {/* Leave Type */}
                       <td className="py-3.5 px-3">
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">
+                        <span className="font-semibold text-slate-800 dark:text-slate-200 block whitespace-nowrap">
                           {type.name || 'Leave'}
                         </span>
-                        <span className="block text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase">
+                        <span className="inline-block text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider">
                           {type.code}
                         </span>
                       </td>
 
                       {/* Window & Days */}
                       <td className="py-3.5 px-3">
-                        <span className="text-slate-600 dark:text-slate-300 block font-medium">
+                        <span className="text-slate-600 dark:text-slate-300 block font-medium whitespace-nowrap">
                           {startStr === endStr ? startStr : `${startStr} → ${endStr}`}
                         </span>
                         <div className="flex items-center gap-1 mt-0.5">
@@ -341,7 +341,7 @@ export function LeaveApprovalsPage() {
                       <td className="py-3.5 px-3 text-center">
                         <span
                           className={cn(
-                            'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border',
+                            'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap',
                             badge.bg
                           )}
                         >
@@ -353,9 +353,10 @@ export function LeaveApprovalsPage() {
                       {/* Chain Step or Decision Record */}
                       <td className="py-3.5 px-3 text-center">
                         {isPending ? (
-                          <div className="inline-flex flex-col items-center gap-0.5">
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
-                              Step {currentStep?.step || 1}: {currentStep?.approverRole || 'Approver'}
+                          <div className="inline-flex flex-col items-center gap-1">
+                            <span className="px-3 py-1 rounded-full text-[11px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60 inline-flex items-center gap-1.5 whitespace-nowrap shadow-2xs">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                              <span>Step {currentStep?.step || 1}: {currentStep?.approverRole || 'Approver'}</span>
                             </span>
                             {step1?.status === 'approved' && currentStep?.step > 1 && (
                               <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
@@ -388,40 +389,43 @@ export function LeaveApprovalsPage() {
 
                       {/* Actions */}
                       <td className="py-3.5 px-3 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                           {isPending ? (
                             !isSuperAdmin && !isHR && step1?.status === 'approved' ? (
-                              <span className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center gap-1 cursor-not-allowed">
+                              <span className="h-8 px-3 text-xs font-semibold rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 inline-flex items-center gap-1.5 cursor-not-allowed">
                                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                                 <span>In HR Phase</span>
                               </span>
                             ) : (
                               <>
                                 <button
+                                  type="button"
                                   onClick={() => handleOpenDecision(leave, 'approve')}
-                                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-colors flex items-center gap-1 cursor-pointer"
+                                  className="h-8 px-3.5 text-xs font-bold rounded-xl bg-[#00C471] hover:bg-[#00B065] text-white shadow-xs transition-all inline-flex items-center gap-1.5 cursor-pointer active:scale-98"
                                   title="Inspect Audit & Decide"
                                 >
                                   <BarChart3 className="w-3.5 h-3.5" />
                                   <span>Audit & Decide</span>
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={() => handleOpenDecision(leave, 'reject')}
-                                  className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 dark:text-rose-300 border border-rose-200 dark:border-rose-800 transition-colors flex items-center gap-1 cursor-pointer"
+                                  className="h-8 px-3 text-xs font-semibold rounded-xl bg-white dark:bg-slate-900 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/70 transition-all inline-flex items-center gap-1.5 cursor-pointer active:scale-98"
                                   title="Reject Leave"
                                 >
-                                  <X className="w-3.5 h-3.5" />
+                                  <X className="w-3.5 h-3.5 text-rose-500" />
                                   <span>Reject</span>
                                 </button>
                               </>
                             )
                           ) : (
                             <button
+                              type="button"
                               onClick={() => handleOpenDecision(leave, 'approve')}
-                              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1 cursor-pointer"
+                              className="h-8 px-3.5 text-xs font-semibold rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
                               title="Inspect Attendance & Leave Audit Dossier"
                             >
-                              <BarChart3 className="w-3.5 h-3.5 text-emerald-600" />
+                              <BarChart3 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                               <span>Audit Dossier</span>
                             </button>
                           )}
