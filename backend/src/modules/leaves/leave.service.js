@@ -24,7 +24,11 @@ import { User } from '../../models/user.model.js';
 import { checkApprovalLimit } from '../../utils/approvalLimit.js';
 import ExcelJS from 'exceljs';
 import { calculateDeductibleDays } from './leaveCalculator.js';
-import { assertSuperAdminIfApplicantIsHR, isApplicantHR } from '../../utils/hrApprovalGuard.js';
+import {
+  assertSuperAdminIfApplicantIsManagerOrHR,
+  isApplicantManagerOrHR,
+  notifySuperAdmins
+} from '../../utils/hrApprovalGuard.js';
 
 /**
  * Helper to check whether user has a specific permission action across their roles
@@ -770,9 +774,16 @@ export const applyLeave = async (employeeId, data, actor) => {
   });
 
   // 8. Dispatch notification ONLY to Level 1 approver
-  // If Level 1 is Department Manager, only notify that manager (HR is NOT notified on apply)
+  // If Level 1 is Super Admin (e.g. HR or Department Manager applied), notify Super Admins directly
   const step1 = approvalChain[0];
-  if (step1?.approverId) {
+  if (step1?.approverRole === 'Super Admin') {
+    await notifySuperAdmins({
+      type: 'leave',
+      title: 'New Management Leave Application Awaiting Super Admin Review',
+      body: `${employee.name} applied for ${netDays} day(s) of ${leaveType.name} from ${start.toISOString().split('T')[0]} to ${end.toISOString().split('T')[0]}.`,
+      link: '/leaves/approvals'
+    }).catch((err) => console.error('[Notification Error - Super Admin]', err.message));
+  } else if (step1?.approverId) {
     notify(step1.approverId, {
       type: 'leave',
       title: 'New Leave Application',
@@ -878,9 +889,9 @@ export const getMyLeaves = async (employeeId, query = {}) => {
  * @returns {Promise<Array<Object>>}
  */
 export const buildApprovalChain = async (employee, netDays) => {
-  // If applicant is HR, the only approval tier is Super Admin
-  const isHrApplicant = await isApplicantHR(employee._id, employee.userId);
-  if (isHrApplicant) {
+  // If applicant is HR or Department Manager, the only approval tier is Super Admin
+  const isMgmtApplicant = await isApplicantManagerOrHR(employee._id, employee.userId);
+  if (isMgmtApplicant) {
     return [
       {
         step: 1,
@@ -1118,7 +1129,7 @@ export const decideLeave = async (leaveId, action, reason, user) => {
     throw new ApiError(404, 'Leave application record not found');
   }
 
-  await assertSuperAdminIfApplicantIsHR(leave.employeeId, user, 'leave application');
+  await assertSuperAdminIfApplicantIsManagerOrHR(leave.employeeId, user, 'leave application');
 
   if (leave.status !== 'pending') {
     throw new ApiError(400, `Cannot decide on leave with status '${leave.status}'. Only pending leaves can be approved or rejected.`);

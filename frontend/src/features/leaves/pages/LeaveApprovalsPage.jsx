@@ -391,7 +391,12 @@ export function LeaveApprovalsPage() {
                       <td className="py-3.5 px-3 text-right">
                         <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                           {isPending ? (
-                            !isSuperAdmin && !isHR && step1?.status === 'approved' ? (
+                            !isSuperAdmin && currentStep?.approverRole === 'Super Admin' ? (
+                              <span className="h-8 px-3 text-xs font-semibold rounded-xl bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-200/80 dark:border-purple-800/60 inline-flex items-center gap-1.5 cursor-not-allowed">
+                                <ShieldCheck className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                                <span>Super Admin Review</span>
+                              </span>
+                            ) : !isSuperAdmin && !isHR && step1?.status === 'approved' ? (
                               <span className="h-8 px-3 text-xs font-semibold rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 inline-flex items-center gap-1.5 cursor-not-allowed">
                                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                                 <span>In HR Phase</span>

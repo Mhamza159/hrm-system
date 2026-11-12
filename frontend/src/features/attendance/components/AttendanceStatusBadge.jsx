@@ -1,9 +1,10 @@
 /**
  * @file AttendanceStatusBadge.jsx
- * @description Accessible status badge for attendance presence states.
+ * @description Accessible status badge for attendance presence states with live presence awareness (on_break, clocked_out, online/late with blinking icon).
  */
 
 import React from 'react';
+import { Coffee, Clock3, LogOut } from 'lucide-react';
 
 const STATUS_CONFIG = {
   present: {
@@ -36,11 +37,67 @@ const STATUS_CONFIG = {
   }
 };
 
-export const AttendanceStatusBadge = ({ status = 'present', flags = [], className = '' }) => {
+export const AttendanceStatusBadge = ({
+  status = 'present',
+  flags = [],
+  presence,
+  checkOut,
+  className = ''
+}) => {
   const isWFH = flags?.includes('wfh') || status === 'wfh';
+
+  // 1. Live State: On Break takes highest active precedence
+  if (presence === 'on_break') {
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200/80 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800/70 shadow-2xs ${className}`}
+        title="Employee is currently on an active break"
+      >
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+        </span>
+        <Coffee className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+        <span>On Break</span>
+      </span>
+    );
+  }
+
+  // 2. Live State: Clocked Out
+  if (presence === 'clocked_out' || Boolean(checkOut)) {
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 shadow-2xs ${className}`}
+        title={status === 'late' ? 'Clocked out for the day (Arrived late)' : 'Clocked out for the day'}
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500" />
+        <LogOut className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+        <span>Clocked Out</span>
+      </span>
+    );
+  }
+
+  // 3. Live State: Punched In Late (Actively working) -> Blinking Late Icon & Ping Dot
+  if (status === 'late' || flags?.includes('late')) {
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/60 shadow-2xs ${className}`}
+        title="Active duty session — Arrived after shift grace period"
+      >
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+        </span>
+        <Clock3 className="w-3 h-3 text-amber-600 dark:text-amber-400 animate-pulse" />
+        <span>Late</span>
+      </span>
+    );
+  }
+
+  // 4. Default / WFH / Present on time / Other Statuses
   const effectiveStatus = isWFH ? 'wfh' : status;
   const config = STATUS_CONFIG[effectiveStatus] || {
-    label: effectiveStatus.replace('_', ' ').toUpperCase(),
+    label: (effectiveStatus || 'PRESENT').replace('_', ' ').toUpperCase(),
     className: 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800'
   };
 
