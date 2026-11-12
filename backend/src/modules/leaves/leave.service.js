@@ -247,6 +247,55 @@ export const createHoliday = async (data, actor) => {
 };
 
 /**
+ * 6.11: Restore archived holiday
+ */
+export const restoreHoliday = async (id, actor) => {
+  const holiday = await Holiday.findById(id);
+  if (!holiday) {
+    throw new ApiError(404, 'Holiday not found');
+  }
+
+  holiday.isActive = true;
+  await holiday.save();
+
+  if (actor) {
+    await recordAuditLog({
+      action: 'HOLIDAY_RESTORE',
+      actorId: actor._id,
+      entity: 'Holiday',
+      entityId: holiday._id,
+      meta: { name: holiday.name, date: holiday.date }
+    }).catch(err => console.error('[AuditLog Error]', err.message));
+  }
+
+  return holiday;
+};
+
+/**
+ * 6.11: Permanently delete holiday
+ */
+export const permanentDeleteHoliday = async (id, actor) => {
+  const holiday = await Holiday.findById(id);
+  if (!holiday) {
+    throw new ApiError(404, 'Holiday not found');
+  }
+
+  await Holiday.findByIdAndDelete(id);
+
+  if (actor) {
+    await recordAuditLog({
+      action: 'HOLIDAY_PERMANENT_DELETE',
+      actorId: actor._id,
+      entity: 'Holiday',
+      entityId: id,
+      meta: { name: holiday.name, date: holiday.date }
+    }).catch(err => console.error('[AuditLog Error]', err.message));
+  }
+
+  return { _id: id, deleted: true, name: holiday.name };
+};
+
+/**
  * 6.11: Get all holidays (filtered by year or month)
  * @param {Object} filter - Query parameters
  * @returns {Promise<Array>} List of holidays sorted by date
@@ -1412,7 +1461,15 @@ export const getLeaveCalendar = async (query = {}, user) => {
     startDate: { $lte: endOfMonth },
     endDate: { $gte: startOfMonth }
   })
-    .populate('employeeId', 'name employeeCode departmentId')
+    .populate({
+      path: 'employeeId',
+      select: 'name employeeCode email departmentId designationId userId',
+      populate: [
+        { path: 'departmentId', select: 'name' },
+        { path: 'designationId', select: 'title' },
+        { path: 'userId', select: 'role roles email' }
+      ]
+    })
     .populate('leaveTypeId', 'name code isPaid')
     .sort({ startDate: 1 })
     .lean();

@@ -186,7 +186,7 @@ export function MyLeavesPage() {
             : 'Self-Service Portal'
         }
         actions={
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             {/* Refresh Button */}
             <button
               type="button"
@@ -196,19 +196,20 @@ export function MyLeavesPage() {
                 if (canReviewApprovals) refetchApprovals();
               }}
               disabled={isAnyRefreshing}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/60 rounded-xl transition-all shadow-xs active:scale-95 disabled:opacity-50 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 h-9 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/60 rounded-xl transition-all shadow-xs active:scale-95 disabled:opacity-50 cursor-pointer whitespace-nowrap"
               title="Reload leave records and quotas"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isAnyRefreshing ? 'animate-spin text-emerald-500' : ''}`} />
               <span>{isAnyRefreshing ? 'Refreshing...' : 'Refresh'}</span>
             </button>
+
             {/* Year Selector */}
             <div className="relative">
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
                 aria-label="Filter by Year"
-                className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-xl pl-3.5 pr-8 py-2 hover:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 shadow-xs cursor-pointer transition-colors"
+                className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-xl pl-3 pr-8 h-9 hover:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 shadow-xs cursor-pointer transition-colors"
               >
                 {availableYears.map((yr) => (
                   <option key={yr} value={yr} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
@@ -222,7 +223,7 @@ export function MyLeavesPage() {
             {/* Leave Encashment Shortcut */}
             <Link
               to="/leaves/encashment"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-amber-400/60 dark:hover:border-amber-500/40 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 h-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-amber-400/60 dark:hover:border-amber-500/40 text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 text-xs font-semibold shadow-xs transition-colors cursor-pointer whitespace-nowrap"
               title="Request annual leave encashment and view payout history"
             >
               <Coins className="w-3.5 h-3.5 text-amber-500" />
@@ -231,14 +232,14 @@ export function MyLeavesPage() {
 
             {/* Primary Action Button by Role */}
             {isSuperAdmin ? (
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-xs">
+              <div className="inline-flex items-center gap-1.5 px-3.5 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold shadow-xs whitespace-nowrap">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 <span>Exempt from Quotas</span>
               </div>
             ) : (
               <button
                 onClick={() => setIsApplyModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-4 h-9 rounded-xl bg-[#00C471] hover:bg-[#049856] text-white text-xs font-bold shadow-sm shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
               >
                 <Plus className="w-4 h-4" />
                 <span>Apply for Leave</span>
@@ -579,20 +580,25 @@ export function MyLeavesPage() {
 
               {/* Status & Search Controls */}
               <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-1 p-0.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs">
-                  {['all', 'pending', 'approved', 'rejected'].map((st) => (
+                <div className="flex items-center gap-1.5 p-1 bg-slate-100/80 dark:bg-[#0A1610] rounded-2xl text-xs border border-slate-200/60 dark:border-emerald-950/40">
+                  {[
+                    { id: 'all', label: 'All', activeCls: 'bg-[#00C471] text-white shadow-xs shadow-emerald-500/20' },
+                    { id: 'pending', label: 'Pending', activeCls: 'bg-amber-500 text-white shadow-xs shadow-amber-500/20' },
+                    { id: 'approved', label: 'Approved', activeCls: 'bg-emerald-600 text-white shadow-xs shadow-emerald-600/20' },
+                    { id: 'rejected', label: 'Rejected', activeCls: 'bg-rose-600 text-white shadow-xs shadow-rose-600/20' }
+                  ].map((tab) => (
                     <button
-                      key={st}
+                      key={tab.id}
                       type="button"
-                      onClick={() => setHistoryStatus(st)}
+                      onClick={() => setHistoryStatus(tab.id)}
                       className={cn(
-                        'px-2.5 py-1 rounded-lg font-semibold capitalize transition-all cursor-pointer',
-                        historyStatus === st
-                          ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 shadow-xs'
-                          : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                        'px-3 py-1.5 rounded-xl font-bold capitalize transition-all cursor-pointer text-xs whitespace-nowrap',
+                        historyStatus === tab.id
+                          ? tab.activeCls
+                          : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800/60'
                       )}
                     >
-                      {st}
+                      {tab.label}
                     </button>
                   ))}
                 </div>

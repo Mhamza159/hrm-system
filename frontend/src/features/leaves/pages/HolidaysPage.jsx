@@ -28,7 +28,9 @@ import {
   RefreshCw,
   Clock,
   ShieldCheck,
-  ChevronDown
+  ChevronDown,
+  RotateCcw,
+  Archive
 } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
@@ -39,6 +41,8 @@ import { Can } from '../../../components/common/Can.jsx';
 import {
   useGetHolidaysQuery,
   useDeleteHolidayMutation,
+  useRestoreHolidayMutation,
+  usePermanentDeleteHolidayMutation,
   useSeedHolidaysMutation
 } from '../leavesApi.js';
 import { HolidayModal } from '../components/HolidayModal.jsx';
@@ -54,6 +58,7 @@ export function HolidaysPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedHoliday, setSelectedHoliday] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [permanentDeleteTarget, setPermanentDeleteTarget] = useState(null);
   const [showSeedConfirm, setShowSeedConfirm] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
 
@@ -61,13 +66,19 @@ export function HolidaysPage() {
   const rawHolidays = response?.data || [];
 
   const [deleteHoliday, { isLoading: isDeleting }] = useDeleteHolidayMutation();
+  const [restoreHoliday, { isLoading: isRestoring }] = useRestoreHolidayMutation();
+  const [permanentDeleteHoliday, { isLoading: isPermanentDeleting }] = usePermanentDeleteHolidayMutation();
   const [seedHolidays, { isLoading: isSeeding }] = useSeedHolidaysMutation();
 
-  // Metrics
-  const totalHolidays = rawHolidays.length;
-  const gazettedHolidays = rawHolidays.filter((h) => h.type === 'gazetted').length;
-  const lunarHolidays = rawHolidays.filter((h) => h.isLunar).length;
-  const optionalHolidays = rawHolidays.filter((h) => h.type === 'optional' || h.type === 'restricted').length;
+  // Metrics (scoped to active holidays for stat cards)
+  const activeHolidays = rawHolidays.filter((h) => h.isActive !== false);
+  const archivedHolidays = rawHolidays.filter((h) => h.isActive === false);
+
+  const totalHolidays = activeHolidays.length;
+  const gazettedHolidays = activeHolidays.filter((h) => h.type === 'gazetted').length;
+  const lunarHolidays = activeHolidays.filter((h) => h.isLunar).length;
+  const optionalHolidays = activeHolidays.filter((h) => h.type === 'optional' || h.type === 'restricted').length;
+  const archivedCount = archivedHolidays.length;
 
   const now = new Date();
   const upcoming = useMemo(() => {
@@ -79,10 +90,15 @@ export function HolidaysPage() {
   // Filtered dataset
   const filteredHolidays = useMemo(() => {
     return rawHolidays.filter((h) => {
-      // Category filter
-      if (categoryFilter === 'gazetted' && h.type !== 'gazetted') return false;
-      if (categoryFilter === 'lunar' && !h.isLunar) return false;
-      if (categoryFilter === 'optional' && h.type !== 'optional' && h.type !== 'restricted') return false;
+      // Archive vs Active partition
+      if (categoryFilter === 'archive') {
+        if (h.isActive !== false) return false;
+      } else {
+        if (h.isActive === false) return false;
+        if (categoryFilter === 'gazetted' && h.type !== 'gazetted') return false;
+        if (categoryFilter === 'lunar' && !h.isLunar) return false;
+        if (categoryFilter === 'optional' && h.type !== 'optional' && h.type !== 'restricted') return false;
+      }
 
       // Search filter
       if (searchQuery.trim()) {
@@ -115,11 +131,32 @@ export function HolidaysPage() {
     if (!deleteTarget) return;
     try {
       await deleteHoliday(deleteTarget._id).unwrap();
-      setFeedback({ type: 'success', message: `Holiday '${deleteTarget.name}' deleted successfully.` });
+      setFeedback({ type: 'success', message: `Holiday '${deleteTarget.name}' moved to Archive successfully.` });
     } catch (err) {
-      setFeedback({ type: 'error', message: err?.data?.message || err?.message || 'Failed to delete holiday' });
+      setFeedback({ type: 'error', message: err?.data?.message || err?.message || 'Failed to archive holiday' });
     } finally {
       setDeleteTarget(null);
+    }
+  };
+
+  const handleRestore = async (holiday) => {
+    try {
+      await restoreHoliday(holiday._id).unwrap();
+      setFeedback({ type: 'success', message: `Holiday '${holiday.name}' restored to active schedule.` });
+    } catch (err) {
+      setFeedback({ type: 'error', message: err?.data?.message || err?.message || 'Failed to restore holiday' });
+    }
+  };
+
+  const handlePermanentDeleteConfirm = async () => {
+    if (!permanentDeleteTarget) return;
+    try {
+      await permanentDeleteHoliday(permanentDeleteTarget._id).unwrap();
+      setFeedback({ type: 'success', message: `Holiday '${permanentDeleteTarget.name}' permanently deleted from database.` });
+    } catch (err) {
+      setFeedback({ type: 'error', message: err?.data?.message || err?.message || 'Failed to permanently delete holiday' });
+    } finally {
+      setPermanentDeleteTarget(null);
     }
   };
 
@@ -237,26 +274,46 @@ export function HolidaysPage() {
       accessor: (row) => (
         <div className="flex items-center justify-end gap-1.5">
           <Can I="leave.settings" a="Leave">
-            <button
-              onClick={() => handleEdit(row)}
-              className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-slate-200/60 dark:border-slate-800 transition-colors cursor-pointer"
-              title="Edit Holiday"
-            >
-              <Edit2 className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setDeleteTarget(row)}
-              disabled={!row.isActive}
-              className={cn(
-                'p-1.5 rounded-xl border border-slate-200/60 dark:border-slate-800 transition-colors cursor-pointer',
-                row.isActive
-                  ? 'text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40'
-                  : 'text-slate-400 cursor-not-allowed opacity-50'
-              )}
-              title="Delete Holiday"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
+            {row.isActive === false ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleRestore(row)}
+                  disabled={isRestoring}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 transition-colors cursor-pointer"
+                  title="Restore Holiday to Active List"
+                >
+                  <RotateCcw className="w-3 h-3 text-emerald-600" />
+                  <span>Restore</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPermanentDeleteTarget(row)}
+                  disabled={isPermanentDeleting}
+                  className="p-1.5 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/60 transition-colors cursor-pointer"
+                  title="Permanently Delete Holiday"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => handleEdit(row)}
+                  className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-slate-200/60 dark:border-slate-800 transition-colors cursor-pointer"
+                  title="Edit Holiday"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setDeleteTarget(row)}
+                  className="p-1.5 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-slate-200/60 dark:border-slate-800 transition-colors cursor-pointer"
+                  title="Archive Holiday"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </>
+            )}
           </Can>
         </div>
       )
@@ -275,14 +332,14 @@ export function HolidaysPage() {
           { label: 'Holidays' }
         ]}
         actions={
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
             {/* Year Selector */}
             <div className="relative">
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
                 aria-label="Filter by Year"
-                className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-semibold rounded-xl pl-3.5 pr-8 py-2 hover:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 shadow-xs cursor-pointer transition-colors"
+                className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white text-xs font-semibold rounded-xl pl-3.5 pr-8 h-9 hover:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 shadow-xs cursor-pointer transition-colors"
               >
                 {[currentYear - 1, currentYear, currentYear + 1].map((yr) => (
                   <option key={yr} value={yr}>
@@ -296,9 +353,10 @@ export function HolidaysPage() {
             <Can I="leave.settings" a="Leave">
               {/* Seed Standard Holidays Button */}
               <button
+                type="button"
                 onClick={() => setShowSeedConfirm(true)}
                 disabled={isSeeding}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/60 rounded-xl transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 h-9 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-emerald-500/60 rounded-xl transition-all shadow-xs disabled:opacity-50 cursor-pointer whitespace-nowrap"
                 title="Seed standard Pakistan official gazetted and public holidays"
               >
                 <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
@@ -307,8 +365,9 @@ export function HolidaysPage() {
 
               {/* Add Holiday Button */}
               <button
+                type="button"
                 onClick={handleCreate}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-sm shadow-emerald-600/20 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-4 h-9 text-xs font-bold text-white bg-[#00C471] hover:bg-[#049856] rounded-xl transition-all shadow-sm shadow-emerald-600/20 cursor-pointer whitespace-nowrap"
               >
                 <Plus className="w-4 h-4" />
                 <span>Add Holiday</span>
@@ -425,30 +484,62 @@ export function HolidaysPage() {
       <section className="rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* Category Filter Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none p-1 bg-slate-100/80 dark:bg-[#0A1610] rounded-2xl border border-slate-200/60 dark:border-emerald-950/40">
             {[
-              { id: 'all', label: 'All Holidays', count: totalHolidays },
-              { id: 'gazetted', label: 'Gazetted', count: gazettedHolidays },
-              { id: 'lunar', label: 'Lunar Festivals', count: lunarHolidays },
-              { id: 'optional', label: 'Optional / Cultural', count: optionalHolidays }
+              {
+                id: 'all',
+                label: 'All Holidays',
+                count: totalHolidays,
+                activeCls: 'bg-[#00C471] text-white shadow-xs shadow-emerald-500/20',
+                inactiveIcon: Flag
+              },
+              {
+                id: 'gazetted',
+                label: 'Gazetted',
+                count: gazettedHolidays,
+                activeCls: 'bg-blue-600 text-white shadow-xs shadow-blue-500/20',
+                inactiveIcon: Flag
+              },
+              {
+                id: 'lunar',
+                label: 'Lunar Festivals',
+                count: lunarHolidays,
+                activeCls: 'bg-purple-600 text-white shadow-xs shadow-purple-500/20',
+                inactiveIcon: Moon
+              },
+              {
+                id: 'optional',
+                label: 'Optional / Cultural',
+                count: optionalHolidays,
+                activeCls: 'bg-amber-500 text-white shadow-xs shadow-amber-500/20',
+                inactiveIcon: Sparkles
+              },
+              {
+                id: 'archive',
+                label: 'Archive',
+                count: archivedCount,
+                activeCls: 'bg-slate-700 dark:bg-slate-600 text-white shadow-xs',
+                inactiveIcon: Archive
+              }
             ].map((st) => (
               <button
                 key={st.id}
+                type="button"
                 onClick={() => setCategoryFilter(st.id)}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border whitespace-nowrap shadow-2xs cursor-pointer',
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
                   categoryFilter === st.id
-                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-xs'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    ? st.activeCls
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800/60'
                 )}
               >
                 <span>{st.label}</span>
                 <span
                   className={cn(
-                    'px-1.5 py-0.2 rounded-full text-[10px]',
+                    'px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold leading-none',
                     categoryFilter === st.id
-                      ? 'bg-white/20 dark:bg-slate-900/20 text-white dark:text-slate-900'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                      ? 'bg-white/25 text-white'
+                      : 'bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                   )}
                 >
                   {st.count}
@@ -625,26 +716,48 @@ export function HolidaysPage() {
 
                     <Can I="leave.settings" a="Leave">
                       <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleEdit(holiday)}
-                          className="p-1.5 rounded-xl text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-slate-200/60 dark:border-slate-800 transition-colors cursor-pointer"
-                          title="Edit Holiday"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => setDeleteTarget(holiday)}
-                          disabled={!holiday.isActive}
-                          className={cn(
-                            'p-1.5 rounded-xl border border-slate-200/60 dark:border-slate-800 transition-colors cursor-pointer',
-                            holiday.isActive
-                              ? 'text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40'
-                              : 'text-slate-400 cursor-not-allowed opacity-50'
-                          )}
-                          title="Delete Holiday"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {holiday.isActive === false ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleRestore(holiday)}
+                              disabled={isRestoring}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 transition-colors cursor-pointer"
+                              title="Restore Holiday"
+                            >
+                              <RotateCcw className="w-3 h-3 text-emerald-600" />
+                              <span>Restore</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setPermanentDeleteTarget(holiday)}
+                              disabled={isPermanentDeleting}
+                              className="p-1.5 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/60 transition-colors cursor-pointer"
+                              title="Permanently Delete Holiday"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleEdit(holiday)}
+                              className="p-1.5 rounded-xl text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-slate-200/60 dark:border-slate-800 transition-colors cursor-pointer"
+                              title="Edit Holiday"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteTarget(holiday)}
+                              className="p-1.5 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-slate-200/60 dark:border-slate-800 transition-colors cursor-pointer"
+                              title="Archive Holiday"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </Can>
                   </div>

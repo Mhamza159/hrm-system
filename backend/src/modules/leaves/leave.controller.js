@@ -156,7 +156,35 @@ export const deleteHoliday = asyncHandler(async (req, res) => {
     success: true,
     statusCode: 200,
     data: holiday,
-    message: 'Holiday deleted successfully'
+    message: 'Holiday archived successfully'
+  });
+});
+
+/**
+ * 6.11: Restore archived holiday
+ * POST /api/v1/holidays/:id/restore
+ */
+export const restoreHoliday = asyncHandler(async (req, res) => {
+  const holiday = await leaveService.restoreHoliday(req.params.id, req.user);
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data: holiday,
+    message: 'Holiday restored successfully'
+  });
+});
+
+/**
+ * 6.11: Permanently delete holiday
+ * DELETE /api/v1/holidays/:id/permanent
+ */
+export const permanentDeleteHoliday = asyncHandler(async (req, res) => {
+  const result = await leaveService.permanentDeleteHoliday(req.params.id, req.user);
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data: result,
+    message: 'Holiday permanently deleted'
   });
 });
 

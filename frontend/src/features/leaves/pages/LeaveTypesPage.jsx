@@ -241,8 +241,9 @@ export function LeaveTypesPage() {
         actions={
           <Can I="leave.settings" a="Leave">
             <button
+              type="button"
               onClick={handleCreate}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-sm shadow-emerald-600/20 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 h-9 text-xs font-bold text-white bg-[#00C471] hover:bg-[#049856] rounded-xl transition-all shadow-sm shadow-emerald-600/20 cursor-pointer whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
               <span>Add Leave Type</span>
@@ -349,32 +350,58 @@ export function LeaveTypesPage() {
       {/* 4. Filter & View Switcher Bar */}
       <section className="rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          {/* Category Filter Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+          {/* Category Filter Pills (scrollbar hidden & Elvara colors) */}
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none p-1 bg-slate-100/80 dark:bg-[#0A1610] rounded-2xl border border-slate-200/60 dark:border-emerald-950/40">
             {[
-              { id: 'all', label: 'All Policies', count: totalTypes },
-              { id: 'paid', label: 'Paid Quotas', count: paidTypes },
-              { id: 'unpaid', label: 'Unpaid', count: unpaidTypes },
-              { id: 'medical', label: 'Medical Proof Required', count: requiresProofTypes },
-              { id: 'carry', label: 'Carry-Forward', count: carryForwardTypes }
+              {
+                id: 'all',
+                label: 'All Policies',
+                count: totalTypes,
+                activeCls: 'bg-[#00C471] text-white shadow-xs shadow-emerald-500/20'
+              },
+              {
+                id: 'paid',
+                label: 'Paid Quotas',
+                count: paidTypes,
+                activeCls: 'bg-emerald-600 text-white shadow-xs shadow-emerald-600/20'
+              },
+              {
+                id: 'unpaid',
+                label: 'Unpaid',
+                count: unpaidTypes,
+                activeCls: 'bg-amber-500 text-white shadow-xs shadow-amber-500/20'
+              },
+              {
+                id: 'medical',
+                label: 'Medical Proof Required',
+                count: requiresProofTypes,
+                activeCls: 'bg-purple-600 text-white shadow-xs shadow-purple-500/20'
+              },
+              {
+                id: 'carry',
+                label: 'Carry-Forward',
+                count: carryForwardTypes,
+                activeCls: 'bg-sky-600 text-white shadow-xs shadow-sky-500/20'
+              }
             ].map((st) => (
               <button
                 key={st.id}
+                type="button"
                 onClick={() => setTypeFilter(st.id)}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border whitespace-nowrap shadow-2xs cursor-pointer',
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
                   typeFilter === st.id
-                    ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-xs'
-                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    ? st.activeCls
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800/60'
                 )}
               >
                 <span>{st.label}</span>
                 <span
                   className={cn(
-                    'px-1.5 py-0.2 rounded-full text-[10px]',
+                    'px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold leading-none',
                     typeFilter === st.id
-                      ? 'bg-white/20 dark:bg-slate-900/20 text-white dark:text-slate-900'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                      ? 'bg-white/25 text-white'
+                      : 'bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
                   )}
                 >
                   {st.count}

@@ -58,12 +58,28 @@ router.patch(
   leaveController.updateHoliday
 );
 
-// 6.11: Remove / deactivate holiday (Super Admin / HR Manager only)
+// 6.11: Remove / deactivate holiday (moves to archive)
 router.delete(
   '/:id',
   checkPermission('leave.settings', 'all'),
   validate(holidayIdParamSchema),
   leaveController.deleteHoliday
+);
+
+// 6.11: Restore archived holiday
+router.post(
+  '/:id/restore',
+  checkPermission('leave.settings', 'all'),
+  validate(holidayIdParamSchema),
+  leaveController.restoreHoliday
+);
+
+// 6.11: Permanently delete holiday from database
+router.delete(
+  '/:id/permanent',
+  checkPermission('leave.settings', 'all'),
+  validate(holidayIdParamSchema),
+  leaveController.permanentDeleteHoliday
 );
 
 export default router;

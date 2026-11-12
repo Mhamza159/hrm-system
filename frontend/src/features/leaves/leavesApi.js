@@ -115,6 +115,30 @@ export const leavesApi = baseApi.injectEndpoints({
       ]
     }),
 
+    restoreHoliday: builder.mutation({
+      query: (id) => ({
+        url: `/holidays/${id}/restore`,
+        method: 'POST'
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Holiday', id },
+        { type: 'Holiday', id: 'LIST' },
+        'Leave'
+      ]
+    }),
+
+    permanentDeleteHoliday: builder.mutation({
+      query: (id) => ({
+        url: `/holidays/${id}/permanent`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Holiday', id },
+        { type: 'Holiday', id: 'LIST' },
+        'Leave'
+      ]
+    }),
+
     seedHolidays: builder.mutation({
       query: (body = {}) => ({
         url: '/holidays/seed',
@@ -245,6 +269,8 @@ export const {
   useCreateHolidayMutation,
   useUpdateHolidayMutation,
   useDeleteHolidayMutation,
+  useRestoreHolidayMutation,
+  usePermanentDeleteHolidayMutation,
   useSeedHolidaysMutation,
   useGetLeaveBalanceQuery,
   useApplyLeaveMutation,

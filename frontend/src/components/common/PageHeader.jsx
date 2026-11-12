@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
+import { cn } from '../../lib/utils.js';
 
 export function PageHeader({
   title,
@@ -49,8 +50,8 @@ export function PageHeader({
   }, [showClock]);
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-2">
-      <div>
+    <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 pb-2">
+      <div className="min-w-0">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
           {title}
         </h1>
@@ -61,10 +62,15 @@ export function PageHeader({
         )}
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 shrink-0 self-start xl:self-center">
         {/* Right Status Card (Matching docs/ui-reference.png) */}
         {showClock && (
-          <div className="hidden sm:flex bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-xl px-3 py-1.5 items-center gap-2 shadow-2xs">
+          <div
+            className={cn(
+              'bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-xl px-3 py-1.5 items-center gap-2 shadow-2xs h-9 shrink-0',
+              displayActions ? 'hidden 2xl:flex' : 'hidden sm:flex'
+            )}
+          >
             <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span>{dateStr || 'Oct 12, 2026'}</span>
@@ -81,8 +87,14 @@ export function PageHeader({
           </div>
         )}
 
-        {displayActions && <div className="flex items-center gap-2">{displayActions}</div>}
+        {displayActions && (
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
+            {displayActions}
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
+export default PageHeader;
