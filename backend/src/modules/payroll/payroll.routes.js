@@ -92,6 +92,25 @@ router.delete(
   payrollController.deletePayrollRun
 );
 
+// Restore Archived Payroll Run
+router.post(
+  '/runs/:id/restore',
+  authenticate,
+  checkPermission('payroll.manage', 'all'),
+  validate(runIdParamSchema),
+  payrollController.restorePayrollRun
+);
+
+// Permanently Delete Archived Payroll Run (Super Admin)
+router.delete(
+  '/runs/:id/permanent',
+  authenticate,
+  checkPermission('payroll.manage', 'all'),
+  validate(runIdParamSchema),
+  payrollController.permanentDeletePayrollRun
+);
+
+
 // 9.12: Export Bank Advice Sheet (XLSX)
 router.get(
   '/runs/:id/bank-advice',

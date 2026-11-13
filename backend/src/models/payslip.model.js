@@ -165,6 +165,11 @@ const payslipSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
+    paymentMethod: {
+      type: String,
+      enum: ['cash', 'bank_transfer', 'cheque'],
+      default: 'cash'
+    },
     bankName: {
       type: String,
       trim: true,
@@ -218,6 +223,7 @@ const payslipSchema = new mongoose.Schema(
 // Compound Unique Index: One payslip per employee per payroll run
 payslipSchema.index({ payrollRunId: 1, employeeId: 1 }, { unique: true });
 payslipSchema.index({ employeeId: 1, year: 1, month: 1 });
+payslipSchema.index({ isDeleted: 1, employeeId: 1, year: 1, month: 1 });
 
 export const Payslip =
   mongoose.models.Payslip || mongoose.model('Payslip', payslipSchema);

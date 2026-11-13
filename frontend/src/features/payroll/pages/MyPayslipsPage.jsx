@@ -2,10 +2,12 @@
  * @file MyPayslipsPage.jsx
  * @description Self-Service Payslip portal for employees to view and download monthly salary advice.
  * 
- * SPECIFICATION:
+ * SPECIFICATION & CRAFT:
  * - Module: M9 Payroll (BUILD-GUIDE Section 12 · Row 9.11)
  * - Layer: Feature Page (React 18 / Tailwind)
- * - Features: Paginated list, financial earnings metrics, PDF download, itemized view modal.
+ * - Theme: ELVARA Emerald Design System (Strict adherence to DESIGN.md & docs/UI-REFERENCE.md)
+ * - Features: Header horizontal alignment, Form IT-3 Certificate PDF download, 3 KPI cards,
+ *             1px hairline precision bottom data table, and itemized preview modal.
  */
 
 import React, { useState } from 'react';
@@ -22,7 +24,9 @@ import {
   Building2,
   Clock,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Receipt,
+  FileCheck2
 } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth.js';
@@ -30,12 +34,15 @@ import { useGetMyPayslipsQuery } from '../payrollApi.js';
 import { PayslipPreviewModal } from '../components/PayslipPreviewModal.jsx';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
+import { toast } from 'sonner';
+import { cn } from '../../../lib/utils.js';
 
 export function MyPayslipsPage() {
   const { isSuperAdmin } = useAuth();
   const [page, setPage] = useState(1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [previewPayslip, setPreviewPayslip] = useState(null);
+  const [isDownloadingCertificate, setIsDownloadingCertificate] = useState(false);
   const accessToken = useSelector((state) => state.auth?.accessToken);
 
   // Super Admin / Owner does not draw salary payslips; redirect to payroll dashboard
@@ -77,13 +84,15 @@ export function MyPayslipsPage() {
       a.click();
       window.URL.revokeObjectURL(url);
       a.remove();
+      toast.success('Salary slip downloaded successfully');
     } catch (err) {
-      alert(err.message || 'Error downloading PDF');
+      toast.error(err.message || 'Error downloading PDF');
     }
   };
 
   const handleDownloadTaxCertificate = async (taxYear) => {
     try {
+      setIsDownloadingCertificate(true);
       const response = await fetch(`/api/v1/payslips/annual-tax-certificate?taxYear=${taxYear}`, {
         method: 'GET',
         headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
@@ -91,7 +100,8 @@ export function MyPayslipsPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate annual tax certificate');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to generate annual tax certificate');
       }
 
       const blob = await response.blob();
@@ -103,12 +113,14 @@ export function MyPayslipsPage() {
       a.click();
       window.URL.revokeObjectURL(url);
       a.remove();
+      toast.success(`Form IT-3 Certificate for Tax Year ${taxYear} downloaded successfully`);
     } catch (err) {
-      alert(err.message || 'Error downloading tax certificate');
+      toast.error(err.message || 'Error downloading tax certificate');
+    } finally {
+      setIsDownloadingCertificate(false);
     }
   };
 
-  // Compute aggregate stats across available payslips
   if (isLoading && !data) {
     return (
       <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -123,31 +135,30 @@ export function MyPayslipsPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
-      {/* Top Header */}
+      {/* 1. Top Header with Perfect Axis Alignment */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl">
-              <FileText className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                My Salary Slips
-              </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Access your monthly salary disbursement advices and official tax withholding statements
-              </p>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-[#00C471] rounded-2xl border border-emerald-200/60 dark:border-emerald-800/40 shadow-xs">
+            <FileText className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+              My Salary Slips
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Access your monthly salary disbursement advices and official tax withholding statements
+            </p>
           </div>
         </div>
 
-        {/* Tax Certificate Form IT-3 Download */}
-        <div className="flex items-center gap-3">
+        {/* Right Aligned Controls Bar (All h-9) */}
+        <div className="flex items-center gap-2.5">
           <RefreshButton onRefresh={refetch} isFetching={isFetching} />
+          
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
-            className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="h-9 px-3 bg-white dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 shadow-xs cursor-pointer"
           >
             <option value="2026">Tax Year 2026</option>
             <option value="2025">Tax Year 2025</option>
@@ -155,155 +166,166 @@ export function MyPayslipsPage() {
           </select>
 
           <button
+            type="button"
             onClick={() => handleDownloadTaxCertificate(selectedYear)}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
+            disabled={isDownloadingCertificate}
+            className="h-9 px-4 inline-flex items-center gap-2 bg-[#00C471] hover:bg-[#049856] text-white rounded-xl text-xs font-semibold shadow-xs shadow-emerald-600/20 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
           >
-            <Download className="w-4 h-4" />
-            <span>Form IT-3 Certificate</span>
+            <Download className="w-3.5 h-3.5" />
+            <span>{isDownloadingCertificate ? 'Generating...' : 'Form IT-3 Certificate'}</span>
           </button>
         </div>
       </div>
 
-      {/* Aggregate Metric Cards */}
+      {/* 2. Aggregate Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl">
-            <TrendingUp className="w-6 h-6" />
+        <div className="bg-white dark:bg-[#111D17] p-5 rounded-2xl border border-slate-200/80 dark:border-[#1A3125] shadow-xs flex items-center gap-4">
+          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/40 rounded-xl">
+            <TrendingUp className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Total Net Take-Home (Recorded)
             </p>
-            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+            <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 font-mono tabular-nums mt-0.5">
               PKR {(totalNetPaisa / 100).toLocaleString('en-PK', { maximumFractionDigits: 0 })}
             </p>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl">
-            <DollarSign className="w-6 h-6" />
+        <div className="bg-white dark:bg-[#111D17] p-5 rounded-2xl border border-slate-200/80 dark:border-[#1A3125] shadow-xs flex items-center gap-4">
+          <div className="p-3 bg-slate-100 dark:bg-[#15231C] text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-[#1A3125] rounded-xl">
+            <DollarSign className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Average Monthly Salary
             </p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white font-mono">
+            <p className="text-2xl font-bold text-slate-900 dark:text-white font-mono tabular-nums mt-0.5">
               PKR {(avgNetPaisa / 100).toLocaleString('en-PK', { maximumFractionDigits: 0 })}
             </p>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-          <div className="p-3 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl">
-            <ShieldCheck className="w-6 h-6" />
+        <div className="bg-white dark:bg-[#111D17] p-5 rounded-2xl border border-slate-200/80 dark:border-[#1A3125] shadow-xs flex items-center gap-4">
+          <div className="p-3 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/40 rounded-xl">
+            <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Total FBR Income Tax Contributed
+            <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Total FBR Tax Contributed
             </p>
-            <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 font-mono">
+            <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 font-mono tabular-nums mt-0.5">
               PKR {(totalTaxPaisa / 100).toLocaleString('en-PK', { maximumFractionDigits: 0 })}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Payslips List Table */}
-      <div className="bg-white dark:bg-[#111D17] rounded-2xl border border-slate-200 dark:border-[#1A3125] overflow-hidden shadow-sm">
+      {/* 3. Bottom Data Table with Hairline Craft */}
+      <div className="bg-white dark:bg-[#111D17] rounded-2xl border border-slate-200/80 dark:border-[#1A3125] overflow-hidden shadow-xs">
         {isLoading ? (
           <div className="p-4">
             <ScreenSkeleton variant="table" title="Personal Salary Advice" message="Retrieving your itemized monthly payslips & tax withholding..." rows={4} />
           </div>
         ) : payslips.length === 0 ? (
           <div className="py-20 text-center space-y-3">
-            <div className="w-12 h-12 mx-auto rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+            <div className="w-12 h-12 mx-auto rounded-full bg-slate-100 dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] flex items-center justify-center text-slate-400">
               <FileText className="w-6 h-6" />
             </div>
             <h3 className="text-base font-semibold text-slate-900 dark:text-white">
               No Salary Slips Available
             </h3>
-            <p className="text-sm text-slate-500 max-w-sm mx-auto">
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
               You do not have any released salary slips yet. Slips appear here once the monthly payroll run is marked as paid by Finance.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
-              <thead className="bg-slate-50 dark:bg-slate-800/50 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
+            <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300 border-collapse">
+              <thead className="bg-slate-50/75 dark:bg-[#0E1A14] text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-b border-slate-200/80 dark:border-[#1A3125]">
                 <tr>
-                  <th className="px-6 py-4">Payroll Month</th>
-                  <th className="px-6 py-4 text-right">Gross Pay</th>
-                  <th className="px-6 py-4 text-right">Tax Withheld (FBR)</th>
-                  <th className="px-6 py-4 text-right">Total Deductions</th>
-                  <th className="px-6 py-4 text-right">Net Take-Home</th>
-                  <th className="px-6 py-4 text-center">Status</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+                  <th className="py-3.5 px-6">Payroll Month</th>
+                  <th className="py-3.5 px-6 text-right">Gross Pay</th>
+                  <th className="py-3.5 px-6 text-right">Tax Withheld (FBR)</th>
+                  <th className="py-3.5 px-6 text-right">Total Deductions</th>
+                  <th className="py-3.5 px-6 text-right">Net Take-Home</th>
+                  <th className="py-3.5 px-6 text-center">Status</th>
+                  <th className="py-3.5 px-6 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-100 dark:divide-[#1A3125]">
                 {payslips.map((slip) => {
                   const mName = monthNames[(slip.month || 1) - 1];
+                  const isCash = !slip.paymentMethod || slip.paymentMethod === 'cash';
 
                   return (
                     <tr
                       key={slip._id}
-                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
+                      className="hover:bg-slate-50/60 dark:hover:bg-[#15231C]/50 transition-colors"
                     >
-                      <td className="px-6 py-4">
+                      <td className="py-3.5 px-6">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                          <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-center text-emerald-700 dark:text-emerald-400 font-bold text-xs font-mono">
                             {slip.month < 10 ? `0${slip.month}` : slip.month}
                           </div>
                           <div>
                             <div className="font-semibold text-slate-900 dark:text-white">
                               {mName} {slip.year}
                             </div>
-                            <div className="text-xs text-slate-400">
-                              Method: {slip.paymentMethod || 'Bank Transfer'}
+                            <div className="text-[11px] text-slate-400 dark:text-slate-500">
+                              Method: {isCash ? 'Cash in Hand' : 'Direct Bank'}
                             </div>
                           </div>
                         </div>
                       </td>
 
-                      <td className="px-6 py-4 text-right font-medium text-slate-800 dark:text-slate-200 font-mono">
+                      <td className="py-3.5 px-6 text-right font-medium text-slate-800 dark:text-slate-200 font-mono tabular-nums text-xs">
                         PKR {((slip.grossPay || 0) / 100).toLocaleString('en-PK')}
                       </td>
 
-                      <td className="px-6 py-4 text-right font-medium text-rose-600 dark:text-rose-400 font-mono">
-                        PKR {((slip.incomeTax || 0) / 100).toLocaleString('en-PK')}
+                      <td className="py-3.5 px-6 text-right font-medium text-rose-600 dark:text-rose-400 font-mono tabular-nums text-xs">
+                        PKR {(((slip.taxWithheld || slip.incomeTax || 0)) / 100).toLocaleString('en-PK')}
                       </td>
 
-                      <td className="px-6 py-4 text-right font-medium text-rose-600 dark:text-rose-400 font-mono">
+                      <td className="py-3.5 px-6 text-right font-medium text-rose-600 dark:text-rose-400 font-mono tabular-nums text-xs">
                         -PKR {((slip.totalDeductions || 0) / 100).toLocaleString('en-PK')}
                       </td>
 
-                      <td className="px-6 py-4 text-right font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                      <td className="py-3.5 px-6 text-right font-bold text-emerald-700 dark:text-emerald-400 font-mono tabular-nums text-xs">
                         PKR {((slip.netPay || 0) / 100).toLocaleString('en-PK')}
                       </td>
 
-                      <td className="px-6 py-4 text-center">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase tracking-wider">
+                      <td className="py-3.5 px-6 text-center">
+                        <span className={cn(
+                          'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider border',
+                          slip.status === 'paid'
+                            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
+                            : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+                        )}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-current" />
                           {slip.status}
                         </span>
                       </td>
 
-                      <td className="px-6 py-4 text-right">
+                      <td className="py-3.5 px-6 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
+                            type="button"
                             onClick={() => setPreviewPayslip(slip)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                            className="h-8 px-2.5 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-[#15231C] hover:bg-slate-200 dark:hover:bg-[#1A3125] border border-slate-200/60 dark:border-[#1A3125] rounded-lg transition-colors cursor-pointer"
                           >
-                            <Eye className="w-3.5 h-3.5" />
-                            View
+                            <Eye className="w-3.5 h-3.5 text-slate-500" />
+                            <span>View</span>
                           </button>
 
                           <button
+                            type="button"
                             onClick={() => handleDownloadPdf(slip._id)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-lg transition-colors"
+                            className="h-8 px-2.5 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200/60 dark:border-emerald-800/40 rounded-lg transition-colors cursor-pointer"
                           >
                             <Download className="w-3.5 h-3.5" />
-                            PDF
+                            <span>PDF</span>
                           </button>
                         </div>
                       </td>
@@ -316,7 +338,7 @@ export function MyPayslipsPage() {
         )}
       </div>
 
-      {/* Slip Preview Modal */}
+      {/* 4. Slip Preview Modal */}
       <PayslipPreviewModal
         isOpen={Boolean(previewPayslip)}
         onClose={() => setPreviewPayslip(null)}

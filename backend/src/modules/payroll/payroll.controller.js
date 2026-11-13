@@ -370,5 +370,47 @@ export const getPrePayrollAudit = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * Restore Archived Payroll Run
+ * POST /api/v1/payroll/runs/:id/restore
+ */
+export const restorePayrollRun = asyncHandler(async (req, res) => {
+  const result = await PayrollService.restorePayrollRun(req.params.id, req.user);
 
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data: result,
+    message: 'Payroll run restored to active status successfully'
+  });
+});
 
+/**
+ * Permanently Delete Payroll Run
+ * DELETE /api/v1/payroll/runs/:id/permanent
+ */
+export const permanentDeletePayrollRun = asyncHandler(async (req, res) => {
+  const result = await PayrollService.permanentDeletePayrollRun(req.params.id, req.user);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data: result,
+    message: result.message
+  });
+});
+
+/**
+ * Get Single Payslip by ID
+ * GET /api/v1/payslips/:id
+ */
+export const getPayslipById = asyncHandler(async (req, res) => {
+  const payslip = await PayrollService.getPayslipById(req.params.id, req.user);
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data: payslip,
+    message: 'Payslip details retrieved successfully'
+  });
+});

@@ -270,13 +270,14 @@ export class PayrollService {
    * 9.7: List Paginated Payroll Runs
    */
   static async getPayrollRuns(query = {}) {
-    const { page = 1, limit = 20, status, year } = query;
-    const filter = { isDeleted: { $ne: true } };
+    const { page = 1, limit = 20, status, year, archived } = query;
+    const isArchived = archived === 'true' || archived === true;
+    const filter = isArchived ? { isDeleted: true } : { isDeleted: { $ne: true } };
     if (status) filter.status = status;
     if (year) filter.year = Number(year);
 
     const { PayrollRun } = await import('../../models/payrollRun.model.js');
-    return await paginate(PayrollRun, filter, {
+    const result = await paginate(PayrollRun, filter, {
       page,
       limit,
       sort: { year: -1, month: -1 },
@@ -286,6 +287,15 @@ export class PayrollService {
         { path: 'paidBy', select: 'name email' }
       ]
     });
+
+    const [activeCount, archivedCount] = await Promise.all([
+      PayrollRun.countDocuments({ isDeleted: { $ne: true } }),
+      PayrollRun.countDocuments({ isDeleted: true })
+    ]);
+
+    result.activeCount = activeCount;
+    result.archivedCount = archivedCount;
+    return result;
   }
 
   /**
@@ -324,7 +334,7 @@ export class PayrollService {
       sort: { netPay: -1 },
       populate: {
         path: 'employeeId',
-        select: 'name employeeCode email departmentId designationId',
+        select: 'name firstName lastName employeeCode employeeId email departmentId designationId bankDetails cnic',
         populate: [
           { path: 'departmentId', select: 'name' },
           { path: 'designationId', select: 'title' }
@@ -706,12 +716,22 @@ export class PayrollService {
     const { page = 1, limit = 12 } = query;
     return await paginate(
       Payslip,
-      { employeeId: emp._id, status: { $in: ['approved', 'paid'] } },
+      { employeeId: emp._id, status: { $in: ['approved', 'paid'] }, isDeleted: { $ne: true } },
       {
         page,
         limit,
         sort: { year: -1, month: -1 },
-        populate: { path: 'payrollRunId', select: 'status payDate' }
+        populate: [
+          { path: 'payrollRunId', select: 'status payDate paymentMethod' },
+          {
+            path: 'employeeId',
+            select: 'name firstName lastName employeeCode employeeId email departmentId designationId bankDetails cnic',
+            populate: [
+              { path: 'departmentId', select: 'name' },
+              { path: 'designationId', select: 'title' }
+            ]
+          }
+        ]
       }
     );
   }
@@ -725,6 +745,7 @@ export class PayrollService {
 
     const payslip = await Payslip.findById(slipId).populate({
       path: 'employeeId',
+      select: 'name firstName lastName employeeCode employeeId email departmentId designationId bankDetails cnic',
       populate: [
         { path: 'departmentId', select: 'name' },
         { path: 'designationId', select: 'title' }
@@ -893,7 +914,8 @@ export class PayrollService {
     // Fiscal Tax Year: July 1 (year - 1) to June 30 (year)
     const paidSlips = await Payslip.find({
       employeeId: employee._id,
-      status: 'paid',
+      status: { $in: ['approved', 'paid'] },
+      isDeleted: { $ne: true },
       $or: [
         { year: year - 1, month: { $gte: 7 } },
         { year: year, month: { $lte: 6 } }
@@ -1146,93 +1168,28 @@ export class PayrollService {
       }
     }
 
-    // Revert associated leave encashments back to approved & unlinked status
-    const { LeaveEncashment } = await import('../../models/leaveEncashment.model.js');
-    await LeaveEncashment.updateMany(
-      { payrollRunId: run._id },
-      { $set: { status: 'approved', payrollRunId: null } }
-    );
+    run.isDeleted = true;
+    run.deletedAt = new Date();
+    run.deletedBy = actor?._id;
+    await run.save();
 
-    // Revert any loan installments settled by this run
-    const { Loan } = await import('../../models/loan.model.js');
     const { Payslip } = await import('../../models/payslip.model.js');
-    const payslips = await Payslip.find({ payrollRunId: run._id });
-    for (const slip of payslips) {
-      const loanDeductions = (slip.deductions || []).filter(
-        (d) => d.category === 'loan_installment' || d.category === 'advance'
-      );
-      for (const item of loanDeductions) {
-        const match = item.name?.match(/\(([^)]+)\)/);
-        if (match && match[1]) {
-          const loan = await Loan.findOne({ loanId: match[1] });
-          if (loan) {
-            const padMonth = String(run.month).padStart(2, '0');
-            const ym = `${run.year}-${padMonth}`;
-            const inst = loan.schedule.find(
-              (s) => s.payslipId?.toString() === slip._id.toString() || (s.dueMonth === ym && s.status === 'deducted')
-            );
-            if (inst) {
-              inst.status = 'pending';
-              inst.paidAt = null;
-              inst.payslipId = null;
-              inst.notes = '';
-            }
-            loan.remainingBalance += item.amount;
-            loan.totalRepaid = Math.max(0, (loan.totalRepaid || 0) - item.amount);
-            loan.repayments = (loan.repayments || []).filter((r) => !r.reference?.includes(slip._id.toString().slice(-6)));
-            if (loan.status === 'closed') {
-              loan.status = 'active';
-            }
-            await loan.save();
-          }
-        }
-      }
-
-      // Revert any expense claims settled by this run back to approved & payroll-queued status
-      const { Expense } = await import('../../models/expense.model.js');
-      const expenseEarnings = (slip.earnings || []).filter((e) =>
-        e.name?.startsWith('Expense Reimbursement')
-      );
-      for (const item of expenseEarnings) {
-        const match = item.name?.match(/\(([^)]+)\)/);
-        if (match && match[1]) {
-          const exp = await Expense.findOne({ claimNumber: match[1] });
-          if (exp && exp.status === 'reimbursed') {
-            exp.status = 'approved';
-            exp.reimbursement = {
-              method: 'payroll',
-              paymentReference: '',
-              disbursedAt: null,
-              disbursedBy: exp.reimbursement?.disbursedBy,
-              remarks: 'Reverted to payroll queue after payroll run was removed'
-            };
-            exp.approvalHistory.push({
-              stage: 'payroll_rollback',
-              actorId: actor?._id,
-              decision: 'payroll_reverted',
-              comments: `Payroll run for ${run.year}-${String(run.month).padStart(2, '0')} was removed. Claim reverted to approved status.`,
-              timestamp: new Date()
-            });
-            await exp.save();
-          }
-        }
-      }
-    }
-
-    await Payslip.deleteMany({ payrollRunId: run._id });
-    await run.deleteOne();
+    await Payslip.updateMany(
+      { payrollRunId: run._id },
+      { $set: { isDeleted: true, deletedAt: new Date() } }
+    );
 
     await recordAuditLog({
       userId: actor?._id,
       actor,
-      action: 'PAYROLL_RUN_DELETED',
+      action: 'PAYROLL_RUN_ARCHIVE',
       entity: 'PayrollRun',
       entityId: run._id,
-      before: { status: run.status, month: run.month, year: run.year },
-      after: { isDeleted: true }
+      before: { isDeleted: false, status: run.status, month: run.month, year: run.year },
+      after: { isDeleted: true, deletedAt: run.deletedAt }
     });
 
-    return { message: 'Payroll run deleted successfully' };
+    return { message: 'Payroll run moved to Archive successfully' };
   }
 
   /**
@@ -1558,6 +1515,212 @@ export class PayrollService {
       employees: employeesAudit
     };
   }
+
+  /**
+   * Revert an archived payroll run back to active status
+   */
+  static async restorePayrollRun(runId, actor) {
+    const { PayrollRun } = await import('../../models/payrollRun.model.js');
+    const { Payslip } = await import('../../models/payslip.model.js');
+
+    const run = await PayrollRun.findById(runId);
+    if (!run) {
+      throw new ApiError(404, 'Payroll run not found');
+    }
+    if (!run.isDeleted) {
+      throw new ApiError(400, 'Payroll run is already active and cannot be restored');
+    }
+
+    const activeConflict = await PayrollRun.findOne({
+      _id: { $ne: run._id },
+      month: run.month,
+      year: run.year,
+      isDeleted: { $ne: true }
+    });
+
+    if (activeConflict) {
+      throw new ApiError(409, `Cannot restore: An active payroll run for month ${run.month}/${run.year} already exists.`);
+    }
+
+    run.isDeleted = false;
+    run.deletedAt = null;
+    run.deletedBy = null;
+    await run.save();
+
+    await Payslip.updateMany(
+      { payrollRunId: run._id },
+      { $set: { isDeleted: false, deletedAt: null } }
+    );
+
+    await recordAuditLog({
+      userId: actor?._id,
+      actor,
+      action: 'PAYROLL_RUN_RESTORE',
+      entity: 'PayrollRun',
+      entityId: run._id,
+      before: { isDeleted: true },
+      after: { isDeleted: false }
+    });
+
+    return run;
+  }
+
+  /**
+   * Permanently purge an archived payroll run and child payslips
+   */
+  static async permanentDeletePayrollRun(runId, actor) {
+    const { PayrollRun } = await import('../../models/payrollRun.model.js');
+    const { Payslip } = await import('../../models/payslip.model.js');
+
+    const run = await PayrollRun.findById(runId);
+    if (!run) {
+      throw new ApiError(404, 'Payroll run not found');
+    }
+    if (!run.isDeleted) {
+      throw new ApiError(400, 'Only archived payroll runs can be permanently deleted. Move to archive first.');
+    }
+
+    let isSuperAdmin = false;
+    if (actor?.role === 'Super Admin') {
+      isSuperAdmin = true;
+    } else if (Array.isArray(actor?.roles)) {
+      isSuperAdmin = actor.roles.some((r) => (typeof r === 'object' && r?.name ? r.name : r) === 'Super Admin');
+      if (!isSuperAdmin) {
+        const { Role } = await import('../../models/role.model.js');
+        const saRole = await Role.findOne({ name: 'Super Admin' });
+        if (saRole) {
+          isSuperAdmin = actor.roles.some((r) => (r?._id || r)?.toString() === saRole._id.toString());
+        }
+      }
+    }
+
+    if (!isSuperAdmin) {
+      throw new ApiError(403, 'Permanent deletion of financial payroll records is restricted to Super Admin only.');
+    }
+
+    // Revert associated leave encashments
+    const { LeaveEncashment } = await import('../../models/leaveEncashment.model.js');
+    await LeaveEncashment.updateMany(
+      { payrollRunId: run._id },
+      { $set: { status: 'approved', payrollRunId: null } }
+    );
+
+    // Revert any loan installments
+    const { Loan } = await import('../../models/loan.model.js');
+    const payslips = await Payslip.find({ payrollRunId: run._id });
+    for (const slip of payslips) {
+      const loanDeductions = (slip.deductions || []).filter(
+        (d) => d.category === 'loan_installment' || d.category === 'advance'
+      );
+      for (const item of loanDeductions) {
+        const match = item.name?.match(/\(([^)]+)\)/);
+        if (match && match[1]) {
+          const loan = await Loan.findOne({ loanId: match[1] });
+          if (loan) {
+            const padMonth = String(run.month).padStart(2, '0');
+            const ym = `${run.year}-${padMonth}`;
+            const inst = loan.schedule.find(
+              (s) => s.payslipId?.toString() === slip._id.toString() || (s.dueMonth === ym && s.status === 'deducted')
+            );
+            if (inst) {
+              inst.status = 'pending';
+              inst.paidAt = null;
+              inst.payslipId = null;
+              inst.notes = '';
+            }
+            loan.remainingBalance += item.amount;
+            loan.totalRepaid = Math.max(0, (loan.totalRepaid || 0) - item.amount);
+            loan.repayments = (loan.repayments || []).filter((r) => !r.reference?.includes(slip._id.toString().slice(-6)));
+            if (loan.status === 'closed') {
+              loan.status = 'active';
+            }
+            await loan.save();
+          }
+        }
+      }
+
+      // Revert any expense claims
+      const { Expense } = await import('../../models/expense.model.js');
+      const expenseEarnings = (slip.earnings || []).filter((e) =>
+        e.name?.startsWith('Expense Reimbursement')
+      );
+      for (const item of expenseEarnings) {
+        const match = item.name?.match(/\(([^)]+)\)/);
+        if (match && match[1]) {
+          const exp = await Expense.findOne({ claimNumber: match[1] });
+          if (exp && exp.status === 'reimbursed') {
+            exp.status = 'approved';
+            exp.reimbursement = {
+              method: 'payroll',
+              paymentReference: '',
+              disbursedAt: null,
+              disbursedBy: exp.reimbursement?.disbursedBy,
+              remarks: 'Reverted to payroll queue after payroll run was removed'
+            };
+            exp.approvalHistory.push({
+              stage: 'payroll_rollback',
+              actorId: actor?._id,
+              decision: 'payroll_reverted',
+              comments: `Payroll run for ${run.year}-${String(run.month).padStart(2, '0')} was permanently deleted. Claim reverted to approved status.`,
+              timestamp: new Date()
+            });
+            await exp.save();
+          }
+        }
+      }
+    }
+
+    await Payslip.deleteMany({ payrollRunId: run._id });
+    await run.deleteOne();
+
+    await recordAuditLog({
+      userId: actor?._id,
+      actor,
+      action: 'PAYROLL_RUN_PERMANENT_DELETE',
+      entity: 'PayrollRun',
+      entityId: run._id,
+      before: { status: run.status, month: run.month, year: run.year, isDeleted: true },
+      after: null
+    });
+
+    return { message: 'Payroll run permanently deleted' };
+  }
+
+  /**
+   * Get single payslip by ID with deep employee population
+   */
+  static async getPayslipById(slipId, user) {
+    const { Payslip } = await import('../../models/payslip.model.js');
+    const payslip = await Payslip.findById(slipId).populate([
+      { path: 'payrollRunId', select: 'status payDate paymentMethod month year' },
+      {
+        path: 'employeeId',
+        select: 'name firstName lastName employeeCode employeeId email departmentId designationId bankDetails cnic',
+        populate: [
+          { path: 'departmentId', select: 'name' },
+          { path: 'designationId', select: 'title' }
+        ]
+      }
+    ]);
+
+    if (!payslip) {
+      throw new ApiError(404, 'Payslip not found');
+    }
+
+    const userRoleNames = (user.roles || []).map((r) => (typeof r === 'object' ? r.name : r));
+    const isHrOrAdmin = userRoleNames.some((r) => ['Super Admin', 'HR Manager'].includes(r));
+    if (!isHrOrAdmin) {
+      const isOwner =
+        payslip.employeeId?._id?.toString() === user.employeeId?.toString() ||
+        payslip.employeeId?.email === user.email;
+      if (!isOwner) {
+        throw new ApiError(403, 'You are not authorized to access this payslip');
+      }
+    }
+
+    return payslip;
+  }
+
 }
 
 

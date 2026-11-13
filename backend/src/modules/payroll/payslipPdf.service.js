@@ -130,11 +130,19 @@ export async function generatePayslipPdf(payslip) {
       doc.text(`Designation: ${desigTitle}`, 50, yPos + 46);
       doc.text(`Department: ${deptName}`, 50, yPos + 58);
 
-      // Right Column
-      doc.text(`Bank Name: ${emp.bankDetails?.bankName || 'Meezan Bank Ltd'}`, 300, yPos + 22);
-      doc.text(`Account / IBAN: ${maskedIban}`, 300, yPos + 34);
-      doc.text(`CNIC: ${maskedCnic}`, 300, yPos + 46);
-      doc.text(`Disbursement Date: ${new Date().toLocaleDateString('en-PK')}`, 300, yPos + 58);
+      // Right Column (Cash default or Bank Transfer)
+      const isCash = !payslip.paymentMethod || payslip.paymentMethod === 'cash';
+      if (isCash) {
+        doc.text('Payment Mode: Cash in Hand', 300, yPos + 22);
+        doc.text('Disbursement: Cash Disbursement', 300, yPos + 34);
+        doc.text(`CNIC: ${maskedCnic}`, 300, yPos + 46);
+        doc.text(`Disbursement Date: ${new Date().toLocaleDateString('en-PK')}`, 300, yPos + 58);
+      } else {
+        doc.text('Payment Mode: Bank Transfer', 300, yPos + 22);
+        doc.text(`Bank Name: ${emp.bankDetails?.bankName || payslip.bankName || 'Direct Account'}`, 300, yPos + 34);
+        doc.text(`Account / IBAN: ${maskedIban}`, 300, yPos + 46);
+        doc.text(`CNIC: ${maskedCnic}`, 300, yPos + 58);
+      }
 
       yPos += 80;
 
@@ -325,10 +333,10 @@ export async function generateAnnualTaxCertificate(employee, taxYear, payslips =
       doc.rect(40, yPos, 515, 20).fill('#F1F5F9').stroke('#CBD5E1');
       doc.fillColor('#334155').font('Helvetica-Bold').fontSize(8);
       doc.text('Month / Period', 50, yPos + 6);
-      doc.text('Gross Salary (PKR)', 150, yPos + 6, { width: 90, align: 'right' });
-      doc.text('Medical Exemption', 260, yPos + 6, { width: 90, align: 'right' });
-      doc.text('Taxable Salary (PKR)', 360, yPos + 6, { width: 90, align: 'right' });
-      doc.text('Tax Withheld (PKR)', 455, yPos + 6, { width: 90, align: 'right' });
+      doc.text('Gross Salary (PKR)', 150, yPos + 6, { width: 95, align: 'right' });
+      doc.text('Medical Exemption', 255, yPos + 6, { width: 95, align: 'right' });
+      doc.text('Taxable Salary (PKR)', 360, yPos + 6, { width: 95, align: 'right' });
+      doc.text('Tax Withheld (PKR)', 460, yPos + 6, { width: 90, align: 'right' });
 
       let totalGross = 0;
       let totalTaxable = 0;
@@ -339,18 +347,18 @@ export async function generateAnnualTaxCertificate(employee, taxYear, payslips =
 
       payslips.forEach((slip) => {
         const grossPkr = (slip.grossPay || 0) / 100;
-        const taxPkr = (slip.incomeTax || 0) / 100;
-        const taxablePkr = grossPkr; // or medical exempt difference
+        const taxPkr = (slip.taxWithheld || slip.incomeTax || 0) / 100;
+        const taxablePkr = grossPkr;
 
         totalGross += grossPkr;
         totalTaxable += taxablePkr;
         totalTax += taxPkr;
 
         doc.text(`${slip.month}/${slip.year}`, 50, rowY);
-        doc.text(grossPkr.toLocaleString('en-PK'), 150, rowY, { width: 90, align: 'right' });
-        doc.text('0', 260, rowY, { width: 90, align: 'right' });
-        doc.text(taxablePkr.toLocaleString('en-PK'), 360, rowY, { width: 90, align: 'right' });
-        doc.text(taxPkr.toLocaleString('en-PK'), 455, rowY, { width: 90, align: 'right' });
+        doc.text(grossPkr.toLocaleString('en-PK'), 150, rowY, { width: 95, align: 'right' });
+        doc.text('0', 255, rowY, { width: 95, align: 'right' });
+        doc.text(taxablePkr.toLocaleString('en-PK'), 360, rowY, { width: 95, align: 'right' });
+        doc.text(taxPkr.toLocaleString('en-PK'), 460, rowY, { width: 90, align: 'right' });
 
         rowY += 15;
       });
@@ -361,10 +369,10 @@ export async function generateAnnualTaxCertificate(employee, taxYear, payslips =
       doc.rect(40, tableBottomY, 515, 22).fill('#FEF3C7').stroke('#FDE68A');
       doc.font('Helvetica-Bold').fontSize(8).fillColor('#92400E');
       doc.text('ANNUAL TOTALS', 50, tableBottomY + 7);
-      doc.text(totalGross.toLocaleString('en-PK'), 150, tableBottomY + 7, { width: 90, align: 'right' });
-      doc.text('0', 260, tableBottomY + 7, { width: 90, align: 'right' });
-      doc.text(totalTaxable.toLocaleString('en-PK'), 360, tableBottomY + 7, { width: 90, align: 'right' });
-      doc.text(totalTax.toLocaleString('en-PK'), 455, tableBottomY + 7, { width: 90, align: 'right' });
+      doc.text(totalGross.toLocaleString('en-PK'), 150, tableBottomY + 7, { width: 95, align: 'right' });
+      doc.text('0', 255, tableBottomY + 7, { width: 95, align: 'right' });
+      doc.text(totalTaxable.toLocaleString('en-PK'), 360, tableBottomY + 7, { width: 95, align: 'right' });
+      doc.text(totalTax.toLocaleString('en-PK'), 460, tableBottomY + 7, { width: 90, align: 'right' });
 
       yPos = tableBottomY + 35;
 

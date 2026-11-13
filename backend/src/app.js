@@ -164,6 +164,7 @@ app.use('/api/v1/asset-requests', (req, res, next) => {
 app.get('/api/v1/payslips/my', authenticate, checkPermission('payroll.view', 'own'), payrollController.getMyPayslips);
 app.get('/api/v1/payslips/annual-tax-certificate', authenticate, checkPermission('payroll.view', 'own'), payrollController.getAnnualTaxCertificatePdf);
 app.get('/api/v1/payslips/:id/pdf', authenticate, checkPermission('payroll.view', 'own'), payrollController.getPayslipPdf);
+app.get('/api/v1/payslips/:id', authenticate, checkPermission('payroll.view', 'own'), payrollController.getPayslipById);
 app.get('/api/v1/reports/tax-compliance', authenticate, checkPermission('payroll.view', 'all'), payrollController.getTaxComplianceReport);
 app.get('/api/v1/reports/eobi-compliance', authenticate, checkPermission('payroll.view', 'all'), payrollController.getEobiComplianceReport);
 app.get('/api/v1/reports/payroll-cost', authenticate, checkPermission('payroll.view', 'all'), payrollController.getDepartmentPayrollCostAnalytics);

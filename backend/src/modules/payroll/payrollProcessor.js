@@ -338,10 +338,11 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
       overtimePay,
       lateDeductionDays,
       unpaidLeaveDays: unpaidDays,
-      bankName: emp.bankDetails?.bankName || 'Meezan Bank',
+      bankName: emp.bankDetails?.bankName || (emp.paymentMethod === 'bank_transfer' ? 'Direct Bank' : 'Cash Disbursement'),
       accountTitle: emp.bankDetails?.accountTitle || emp.name,
       accountNumber: emp.bankDetails?.accountNumber || '',
       iban: emp.bankDetails?.iban || '',
+      paymentMethod: emp.paymentMethod || 'cash',
       status: 'draft'
     });
 
