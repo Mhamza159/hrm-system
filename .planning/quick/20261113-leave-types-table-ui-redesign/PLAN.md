@@ -71,3 +71,4 @@ Following `DESIGN.md` (Forest & Emerald Craft) and `docs/UI-REFERENCE.md`:
 - Build frontend: `npm --prefix frontend run build` (must pass with 0 errors).
 - Vitest tests: `npm --prefix backend test tests/leave.archive-lifecycle.test.js` (must keep passing 6/6).
 - Visual check: verify zero double search bars, zero AI slop, hairline 1px borders, proper tabular alignment.
+

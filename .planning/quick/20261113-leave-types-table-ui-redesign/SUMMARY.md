@@ -3,7 +3,7 @@
 **Task Slug**: `20261113-leave-types-table-ui-redesign`  
 **Date**: 2026-11-13  
 **Status**: complete  
-**Commit**: Pending
+**Commit**: `1e69d25`
 
 ---
 
@@ -50,3 +50,4 @@
 - **Frontend Build**: `npm --prefix frontend run build` succeeded with **0 errors** (2016 modules transformed).
 - **Backend Tests**: `npm --prefix backend test tests/leave.archive-lifecycle.test.js` passed **6 / 6 tests** in 31.01s.
 - **Design System Alignment**: 100% compliant with `DESIGN.md` (Forest & Emerald craft) and `docs/UI-REFERENCE.md`. Zero AI-generated slop, double boxes, or loud bubble pills.
+
