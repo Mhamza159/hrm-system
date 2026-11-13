@@ -16,3 +16,4 @@ status: in-progress
 2. **Verification**:
    - Verify frontend production build (`npm --prefix frontend run build`).
    - Verify existing attendance tests to ensure zero regressions.
+

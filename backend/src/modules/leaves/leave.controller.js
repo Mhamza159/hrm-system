@@ -35,11 +35,7 @@ export const createLeaveType = asyncHandler(async (req, res) => {
  * GET /api/v1/leave-types
  */
 export const getLeaveTypes = asyncHandler(async (req, res) => {
-  const filter = {};
-  if (req.query.activeOnly === 'true') {
-    filter.isActive = true;
-  }
-  const leaveTypes = await leaveService.getLeaveTypes(filter);
+  const leaveTypes = await leaveService.getLeaveTypes(req.query, req.user);
   res.status(200).json({
     success: true,
     statusCode: 200,
@@ -77,7 +73,7 @@ export const updateLeaveType = asyncHandler(async (req, res) => {
 });
 
 /**
- * 6.1: Soft-delete / deactivate leave type
+ * 6.1: Soft-delete / archive leave type
  * DELETE /api/v1/leave-types/:id
  */
 export const deleteLeaveType = asyncHandler(async (req, res) => {
@@ -86,7 +82,35 @@ export const deleteLeaveType = asyncHandler(async (req, res) => {
     success: true,
     statusCode: 200,
     data: leaveType,
-    message: 'Leave type deactivated successfully'
+    message: 'Leave category archived successfully'
+  });
+});
+
+/**
+ * 6.1: Revert / restore an archived leave type
+ * POST /api/v1/leave-types/:id/restore
+ */
+export const restoreLeaveType = asyncHandler(async (req, res) => {
+  const leaveType = await leaveService.restoreLeaveType(req.params.id, req.user);
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data: leaveType,
+    message: 'Leave category restored to active policies successfully'
+  });
+});
+
+/**
+ * 6.1: Permanently delete leave type
+ * DELETE /api/v1/leave-types/:id/permanent
+ */
+export const permanentDeleteLeaveType = asyncHandler(async (req, res) => {
+  const result = await leaveService.permanentDeleteLeaveType(req.params.id, req.user);
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data: result,
+    message: 'Leave category permanently deleted'
   });
 });
 

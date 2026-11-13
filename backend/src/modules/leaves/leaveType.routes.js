@@ -53,12 +53,28 @@ router.patch(
   leaveController.updateLeaveType
 );
 
-// 6.1: Deactivate leave type (Super Admin / HR Manager only)
+// 6.1: Soft-archive leave type (Super Admin / HR Manager only)
 router.delete(
   '/:id',
   checkPermission('leave.settings', 'all'),
   validate(leaveTypeIdParamSchema),
   leaveController.deleteLeaveType
+);
+
+// 6.1: Revert / restore an archived leave type (Super Admin / HR Manager only)
+router.post(
+  '/:id/restore',
+  checkPermission('leave.settings', 'all'),
+  validate(leaveTypeIdParamSchema),
+  leaveController.restoreLeaveType
+);
+
+// 6.1: Permanently delete an archived leave type (Super Admin / HR Manager only)
+router.delete(
+  '/:id/permanent',
+  checkPermission('leave.settings', 'all'),
+  validate(leaveTypeIdParamSchema),
+  leaveController.permanentDeleteLeaveType
 );
 
 export default router;

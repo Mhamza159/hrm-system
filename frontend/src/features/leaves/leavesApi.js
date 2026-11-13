@@ -61,6 +61,30 @@ export const leavesApi = baseApi.injectEndpoints({
       ]
     }),
 
+    restoreLeaveType: builder.mutation({
+      query: (id) => ({
+        url: `/leave-types/${id}/restore`,
+        method: 'POST'
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'LeaveType', id },
+        { type: 'LeaveType', id: 'LIST' },
+        'Leave'
+      ]
+    }),
+
+    permanentDeleteLeaveType: builder.mutation({
+      query: (id) => ({
+        url: `/leave-types/${id}/permanent`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'LeaveType', id },
+        { type: 'LeaveType', id: 'LIST' },
+        'Leave'
+      ]
+    }),
+
     // 6.11: Holidays
     getHolidays: builder.query({
       query: (params) => ({
@@ -264,6 +288,8 @@ export const {
   useCreateLeaveTypeMutation,
   useUpdateLeaveTypeMutation,
   useDeleteLeaveTypeMutation,
+  useRestoreLeaveTypeMutation,
+  usePermanentDeleteLeaveTypeMutation,
   useGetHolidaysQuery,
   useGetHolidayByIdQuery,
   useCreateHolidayMutation,

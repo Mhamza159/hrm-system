@@ -68,6 +68,19 @@ const leaveTypeSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true
+    },
+    isArchived: {
+      type: Boolean,
+      default: false
+    },
+    archivedAt: {
+      type: Date,
+      default: null
+    },
+    archivedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
     }
   },
   {
@@ -77,5 +90,6 @@ const leaveTypeSchema = new mongoose.Schema(
 
 // Indexes for fast lookup
 leaveTypeSchema.index({ isActive: 1 });
+leaveTypeSchema.index({ isArchived: 1, isActive: 1 });
 
 export const LeaveType = mongoose.model('LeaveType', leaveTypeSchema);

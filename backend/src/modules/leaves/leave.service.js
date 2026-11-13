@@ -55,9 +55,10 @@ export const userHasPermission = (user, actionName, requiredScopes = ['own', 'te
  */
 export const isUserAdminOrHR = (user) => {
   if (!user) return false;
-  const roles = Array.isArray(user.roles) ? user.roles : user.role ? [user.role] : [];
+  if (user.role === 'Super Admin' || user.role === 'HR Manager') return true;
+  const roles = Array.isArray(user.roles) ? user.roles : [];
   const isNamed = roles.some((r) => {
-    const name = typeof r === 'string' ? r : r.name;
+    const name = typeof r === 'string' ? r : r?.name;
     return name === 'Super Admin' || name === 'HR Manager';
   });
   return isNamed || userHasPermission(user, 'leave.settings', ['all']) || userHasPermission(user, 'leave.approve', ['all']);
@@ -121,10 +122,30 @@ export const createLeaveType = async (data, actor) => {
 /**
  * 6.1: Retrieve all leave types
  * @param {Object} filter - Optional query filter (e.g. { isActive: true })
+ * @param {Object} [user] - Optional authenticated user for RBAC enforcement
  * @returns {Promise<Array>} List of leave types
  */
-export const getLeaveTypes = async (filter = {}) => {
-  return LeaveType.find(filter).sort({ createdAt: -1 });
+export const getLeaveTypes = async (filter = {}, user = null) => {
+  const query = {};
+
+  if (typeof filter.isActive === 'boolean') {
+    query.isActive = filter.isActive;
+  }
+
+  if (filter.archived === 'true' || filter.archived === true) {
+    query.isArchived = true;
+  } else if (filter.archived === 'false' || filter.archived === false || filter.activeOnly === 'true' || filter.activeOnly === true) {
+    query.isArchived = { $ne: true };
+    query.isActive = true;
+  }
+
+  // Non-admin/HR users should only ever retrieve active, non-archived leave categories
+  if (user && !isUserAdminOrHR(user)) {
+    query.isArchived = { $ne: true };
+    query.isActive = true;
+  }
+
+  return LeaveType.find(query).sort({ createdAt: -1 });
 };
 
 /**
@@ -188,10 +209,10 @@ export const updateLeaveType = async (id, updateData, actor) => {
 };
 
 /**
- * 6.1: Soft-disable / delete a leave type
+ * 6.1: Soft-archive / deactivate a leave type
  * @param {string} id - Leave type ObjectId
  * @param {Object} actor - Authenticated user
- * @returns {Promise<Object>} Deactivated leave type document
+ * @returns {Promise<Object>} Archived leave type document
  */
 export const deleteLeaveType = async (id, actor) => {
   const leaveType = await LeaveType.findById(id);
@@ -199,8 +220,11 @@ export const deleteLeaveType = async (id, actor) => {
     throw new ApiError(404, 'Leave type not found');
   }
 
-  // Soft-disable to preserve referential integrity with historical leave balances
+  // Soft-archive to preserve referential integrity with historical leave balances
+  leaveType.isArchived = true;
   leaveType.isActive = false;
+  leaveType.archivedAt = new Date();
+  leaveType.archivedBy = actor?._id || null;
   await leaveType.save();
 
   const currentYear = new Date().getUTCFullYear();
@@ -208,15 +232,119 @@ export const deleteLeaveType = async (id, actor) => {
 
   if (actor) {
     await recordAuditLog({
-      action: 'LEAVE_TYPE_DEACTIVATE',
+      action: 'LEAVE_TYPE_ARCHIVE',
       actorId: actor._id,
       entity: 'LeaveType',
       entityId: leaveType._id,
-      meta: { code: leaveType.code, name: leaveType.name }
+      meta: { code: leaveType.code, name: leaveType.name, archivedAt: leaveType.archivedAt }
     }).catch(err => console.error('[AuditLog Error]', err.message));
   }
 
   return leaveType;
+};
+
+/**
+ * 6.1: Restore an archived leave type back to active policies
+ * @param {string} id - Leave type ObjectId
+ * @param {Object} actor - Authenticated user
+ * @returns {Promise<Object>} Restored leave type document
+ */
+export const restoreLeaveType = async (id, actor) => {
+  const leaveType = await LeaveType.findById(id);
+  if (!leaveType) {
+    throw new ApiError(404, 'Leave type not found');
+  }
+
+  if (!leaveType.isArchived && leaveType.isActive) {
+    throw new ApiError(400, 'Leave category is already active and not archived');
+  }
+
+  // Check if an active unarchived leave category with the same code already exists
+  const duplicateActive = await LeaveType.findOne({
+    code: leaveType.code.toUpperCase(),
+    isArchived: { $ne: true },
+    isActive: true,
+    _id: { $ne: id }
+  });
+
+  if (duplicateActive) {
+    throw new ApiError(409, `Cannot restore: An active leave category with code '${leaveType.code}' already exists.`);
+  }
+
+  // Restore category
+  leaveType.isArchived = false;
+  leaveType.isActive = true;
+  leaveType.archivedAt = null;
+  leaveType.archivedBy = null;
+  await leaveType.save();
+
+  const currentYear = new Date().getUTCFullYear();
+  await syncAllEmployeesLeaveBalances(currentYear).catch(err => console.error('[LeaveBalance Sync Error]', err.message));
+
+  if (actor) {
+    await recordAuditLog({
+      action: 'LEAVE_TYPE_RESTORE',
+      actorId: actor._id,
+      entity: 'LeaveType',
+      entityId: leaveType._id,
+      meta: { code: leaveType.code, name: leaveType.name, restoredAt: new Date() }
+    }).catch(err => console.error('[AuditLog Error]', err.message));
+  }
+
+  return leaveType;
+};
+
+/**
+ * 6.1: Permanently delete an archived leave type from the system
+ * @param {string} id - Leave type ObjectId
+ * @param {Object} actor - Authenticated user
+ * @returns {Promise<Object>} Deletion confirmation summary
+ */
+export const permanentDeleteLeaveType = async (id, actor) => {
+  const leaveType = await LeaveType.findById(id);
+  if (!leaveType) {
+    throw new ApiError(404, 'Leave type not found');
+  }
+
+  // Safety check: Prevent permanent deletion if active or pending leave applications exist
+  const activeLeavesCount = await Leave.countDocuments({
+    leaveTypeId: id,
+    status: { $in: ['pending', 'approved'] }
+  });
+
+  if (activeLeavesCount > 0) {
+    throw new ApiError(
+      409,
+      `Cannot permanently delete '${leaveType.name}': There are ${activeLeavesCount} active or approved leave application(s) linked to this category. Cancel or delete those applications first, or keep this category archived.`
+    );
+  }
+
+  // Delete the LeaveType document
+  await LeaveType.findByIdAndDelete(id);
+
+  // Prune category from all employee LeaveBalance documents
+  await LeaveBalance.updateMany(
+    {},
+    {
+      $pull: {
+        balances: {
+          leaveTypeId: id
+        }
+      }
+    }
+  ).catch(err => console.error('[LeaveBalance Prune Error]', err.message));
+
+  if (actor) {
+    await recordAuditLog({
+      action: 'LEAVE_TYPE_PERMANENT_DELETE',
+      actorId: actor._id,
+      entity: 'LeaveType',
+      entityId: leaveType._id,
+      meta: { code: leaveType.code, name: leaveType.name, deletedAt: new Date() }
+    }).catch(err => console.error('[AuditLog Error]', err.message));
+  }
+
+  return { _id: id, name: leaveType.name, code: leaveType.code };
 };
 
 /**
