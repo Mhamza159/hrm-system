@@ -102,6 +102,9 @@ export const createLeaveType = async (data, actor) => {
     code: data.code.toUpperCase()
   });
 
+  const currentYear = new Date().getUTCFullYear();
+  await syncAllEmployeesLeaveBalances(currentYear).catch(err => console.error('[LeaveBalance Sync Error]', err.message));
+
   if (actor) {
     await recordAuditLog({
       action: 'LEAVE_TYPE_CREATE',
@@ -165,6 +168,9 @@ export const updateLeaveType = async (id, updateData, actor) => {
   Object.assign(leaveType, updateData);
   await leaveType.save();
 
+  const currentYear = new Date().getUTCFullYear();
+  await syncAllEmployeesLeaveBalances(currentYear).catch(err => console.error('[LeaveBalance Sync Error]', err.message));
+
   if (actor) {
     await recordAuditLog({
       action: 'LEAVE_TYPE_UPDATE',
@@ -196,6 +202,9 @@ export const deleteLeaveType = async (id, actor) => {
   // Soft-disable to preserve referential integrity with historical leave balances
   leaveType.isActive = false;
   await leaveType.save();
+
+  const currentYear = new Date().getUTCFullYear();
+  await syncAllEmployeesLeaveBalances(currentYear).catch(err => console.error('[LeaveBalance Sync Error]', err.message));
 
   if (actor) {
     await recordAuditLog({
@@ -395,40 +404,193 @@ export const deleteHoliday = async (id, actor) => {
 };
 
 /**
+ * 6.2: Reconcile and synchronize leave balances for an employee
+ * Ensures all eligible active categories are present, daysPerYear match policies,
+ * and ineligible categories (e.g. opposite gender) with zero usage are pruned.
+ * 
+ * @param {ObjectId|string} employeeId - Target employee ID
+ * @param {number} year - Target year (defaults to current UTC year)
+ * @returns {Promise<Object>} Reconciled LeaveBalance document
+ */
+export const reconcileEmployeeLeaveBalance = async (employeeId, year = new Date().getUTCFullYear()) => {
+  const employee = await Employee.findById(employeeId).select('gender employeeCode isDeleted').lean();
+  if (!employee) return null;
+
+  const empGender = employee.gender ? employee.gender.toLowerCase() : null;
+  const activeTypes = await LeaveType.find({ isActive: true }).lean();
+
+  let leaveBalance = await LeaveBalance.findOne({ employeeId, year });
+  if (!leaveBalance) {
+    leaveBalance = new LeaveBalance({
+      employeeId,
+      year,
+      balances: []
+    });
+  }
+
+  let isDirty = false;
+  const currentBalances = leaveBalance.balances || [];
+  const updatedBalances = [];
+
+  // Filter active types eligible for this employee's gender
+  const eligibleTypes = activeTypes.filter((type) => {
+    const constraint = type.genderConstraint ? type.genderConstraint.toLowerCase() : 'any';
+    if (constraint === 'any') return true;
+    if (!empGender) return true;
+    return constraint === empGender;
+  });
+
+  const eligibleTypeMap = new Map();
+  eligibleTypes.forEach((t) => eligibleTypeMap.set(String(t._id), t));
+
+  // 1. Process and align existing balances
+  for (const cat of currentBalances) {
+    const typeIdStr = String(cat.leaveTypeId);
+    const matchedType = eligibleTypeMap.get(typeIdStr);
+
+    if (matchedType) {
+      if (cat.allocatedDays !== matchedType.daysPerYear) {
+        cat.allocatedDays = matchedType.daysPerYear;
+        isDirty = true;
+      }
+      updatedBalances.push(cat);
+      eligibleTypeMap.delete(typeIdStr);
+    } else {
+      // Inactive, deleted, or ineligible due to gender constraint
+      if ((cat.usedDays || 0) === 0 && (cat.pendingDays || 0) === 0 && (cat.encashedDays || 0) === 0) {
+        isDirty = true; // Pruned cleanly
+      } else {
+        // Keep to protect historical audit trail if days were used
+        updatedBalances.push(cat);
+      }
+    }
+  }
+
+  // 2. Append newly configured or missing eligible categories
+  for (const [typeIdStr, missingType] of eligibleTypeMap.entries()) {
+    updatedBalances.push({
+      leaveTypeId: missingType._id,
+      allocatedDays: missingType.daysPerYear,
+      carriedForwardDays: 0,
+      usedDays: 0,
+      pendingDays: 0,
+      encashedDays: 0
+    });
+    isDirty = true;
+  }
+
+  if (isDirty || !leaveBalance._id) {
+    leaveBalance.balances = updatedBalances;
+    await leaveBalance.save();
+  }
+
+  return leaveBalance;
+};
+
+/**
+ * 6.2: Synchronize leave balances for all active company employees
+ * Fast bulk-reconciliation across all active employees in 3 queries.
+ * @param {number} year - Target year
+ */
+export const syncAllEmployeesLeaveBalances = async (year = new Date().getUTCFullYear()) => {
+  const [activeTypes, employees] = await Promise.all([
+    LeaveType.find({ isActive: true }).lean(),
+    Employee.find(
+      { isDeleted: false, status: { $in: ['Active', 'Probation', 'Notice', 'active'] } },
+      '_id gender'
+    ).lean()
+  ]);
+
+  if (employees.length === 0 || activeTypes.length === 0) return;
+
+  const empIds = employees.map((e) => e._id);
+  const existingBalances = await LeaveBalance.find({
+    year,
+    employeeId: { $in: empIds }
+  });
+
+  const balanceMap = new Map();
+  existingBalances.forEach((b) => balanceMap.set(String(b.employeeId), b));
+
+  const saveOps = [];
+
+  for (const emp of employees) {
+    const empGender = emp.gender ? emp.gender.toLowerCase() : null;
+    let leaveBalance = balanceMap.get(String(emp._id));
+
+    if (!leaveBalance) {
+      leaveBalance = new LeaveBalance({
+        employeeId: emp._id,
+        year,
+        balances: []
+      });
+    }
+
+    let isDirty = false;
+    const currentBalances = leaveBalance.balances || [];
+    const updatedBalances = [];
+
+    const eligibleTypes = activeTypes.filter((type) => {
+      const constraint = type.genderConstraint ? type.genderConstraint.toLowerCase() : 'any';
+      if (constraint === 'any') return true;
+      if (!empGender) return true;
+      return constraint === empGender;
+    });
+
+    const eligibleTypeMap = new Map();
+    eligibleTypes.forEach((t) => eligibleTypeMap.set(String(t._id), t));
+
+    for (const cat of currentBalances) {
+      const typeIdStr = String(cat.leaveTypeId);
+      const matchedType = eligibleTypeMap.get(typeIdStr);
+
+      if (matchedType) {
+        if (cat.allocatedDays !== matchedType.daysPerYear) {
+          cat.allocatedDays = matchedType.daysPerYear;
+          isDirty = true;
+        }
+        updatedBalances.push(cat);
+        eligibleTypeMap.delete(typeIdStr);
+      } else {
+        if ((cat.usedDays || 0) === 0 && (cat.pendingDays || 0) === 0 && (cat.encashedDays || 0) === 0) {
+          isDirty = true;
+        } else {
+          updatedBalances.push(cat);
+        }
+      }
+    }
+
+    for (const [typeIdStr, missingType] of eligibleTypeMap.entries()) {
+      updatedBalances.push({
+        leaveTypeId: missingType._id,
+        allocatedDays: missingType.daysPerYear,
+        carriedForwardDays: 0,
+        usedDays: 0,
+        pendingDays: 0,
+        encashedDays: 0
+      });
+      isDirty = true;
+    }
+
+    if (isDirty || !leaveBalance._id) {
+      leaveBalance.balances = updatedBalances;
+      saveOps.push(leaveBalance.save());
+    }
+  }
+
+  if (saveOps.length > 0) {
+    await Promise.all(saveOps);
+  }
+};
+
+/**
  * 6.2: Initialize leave balance for a new or existing employee for a given year
  * @param {string|ObjectId} employeeId - Employee ID
  * @param {number} year - Target year (e.g. 2026)
  * @returns {Promise<Object>} Created or existing LeaveBalance document
  */
 export const initializeEmployeeLeaveBalances = async (employeeId, year = new Date().getUTCFullYear()) => {
-  const existing = await LeaveBalance.findOne({ employeeId, year });
-  if (existing && existing.balances && existing.balances.length > 0) {
-    return existing;
-  }
-
-  const activeTypes = await LeaveType.find({ isActive: true });
-  const balances = activeTypes.map((type) => ({
-    leaveTypeId: type._id,
-    allocatedDays: type.daysPerYear,
-    carriedForwardDays: 0,
-    usedDays: 0,
-    pendingDays: 0,
-    encashedDays: 0
-  }));
-
-  if (existing) {
-    existing.balances = balances;
-    await existing.save();
-    return existing;
-  }
-
-  const leaveBalance = await LeaveBalance.create({
-    employeeId,
-    year,
-    balances
-  });
-
-  return leaveBalance;
+  return await reconcileEmployeeLeaveBalance(employeeId, year);
 };
 
 /**
@@ -508,31 +670,38 @@ export const rolloverYearlyBalances = async (currentYear, nextYear) => {
  * @returns {Promise<Object>} Live balance summary
  */
 export const getEmployeeLeaveBalance = async (employeeId, year = new Date().getUTCFullYear()) => {
-  let leaveBalance = await LeaveBalance.findOne({ employeeId, year })
-    .populate('balances.leaveTypeId', 'name code isPaid carryForwardMax requiresAttachment minDaysForAttachment');
+  await reconcileEmployeeLeaveBalance(employeeId, year);
 
-  if (!leaveBalance || !leaveBalance.balances || leaveBalance.balances.length === 0) {
-    // If not initialized yet, auto-initialize on first query
-    await initializeEmployeeLeaveBalances(employeeId, year);
-    leaveBalance = await LeaveBalance.findOne({ employeeId, year })
-      .populate('balances.leaveTypeId', 'name code isPaid carryForwardMax requiresAttachment minDaysForAttachment');
+  const leaveBalance = await LeaveBalance.findOne({ employeeId, year })
+    .populate('balances.leaveTypeId', 'name code isPaid carryForwardMax requiresAttachment minDaysForAttachment daysPerYear genderConstraint description');
+
+  if (!leaveBalance) {
+    return {
+      employeeId,
+      year,
+      lastAdjustedAt: null,
+      adjustmentReason: null,
+      balances: []
+    };
   }
 
-  // Calculate live available totals per category
-  const categories = leaveBalance.balances.map((b) => {
-    const totalEntitlement = b.allocatedDays + b.carriedForwardDays;
-    const available = Math.max(0, totalEntitlement - b.usedDays - b.pendingDays - b.encashedDays);
-    return {
-      leaveType: b.leaveTypeId,
-      allocatedDays: b.allocatedDays,
-      carriedForwardDays: b.carriedForwardDays,
-      usedDays: b.usedDays,
-      pendingDays: b.pendingDays,
-      encashedDays: b.encashedDays,
-      totalEntitlement,
-      availableDays: available
-    };
-  });
+  // Calculate live available totals per category (filtering out deleted/inactive leave types)
+  const categories = (leaveBalance.balances || [])
+    .filter((b) => b.leaveTypeId && b.leaveTypeId.isActive !== false)
+    .map((b) => {
+      const totalEntitlement = b.allocatedDays + b.carriedForwardDays;
+      const available = Math.max(0, totalEntitlement - b.usedDays - b.pendingDays - b.encashedDays);
+      return {
+        leaveType: b.leaveTypeId,
+        allocatedDays: b.allocatedDays,
+        carriedForwardDays: b.carriedForwardDays,
+        usedDays: b.usedDays,
+        pendingDays: b.pendingDays,
+        encashedDays: b.encashedDays,
+        totalEntitlement,
+        availableDays: available
+      };
+    });
 
   return {
     employeeId: leaveBalance.employeeId,
@@ -725,6 +894,7 @@ export const applyLeave = async (employeeId, data, actor) => {
 
   // 4. Quota verification and atomic reservation in LeaveBalance
   const year = start.getUTCFullYear();
+  await reconcileEmployeeLeaveBalance(employeeId, year);
   let leaveBalance = await LeaveBalance.findOne({ employeeId, year });
   if (!leaveBalance) {
     leaveBalance = await initializeEmployeeLeaveBalances(employeeId, year);

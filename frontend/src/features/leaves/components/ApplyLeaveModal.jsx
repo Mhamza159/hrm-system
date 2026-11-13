@@ -13,12 +13,16 @@ import { toast } from 'sonner';
 import { X, Calendar, Clock, AlertCircle, FileText, CheckCircle2, UploadCloud, ShieldCheck } from 'lucide-react';
 import { useApplyLeaveMutation, useGetLeaveTypesQuery, useGetLeaveBalanceQuery } from '../leavesApi.js';
 import { usePermission } from '../../../hooks/usePermission.js';
+import { useAuth } from '../../../hooks/useAuth.js';
 import { FileUpload } from '../../../components/common/FileUpload.jsx';
 import { useGetMyAttendanceQuery } from '../../attendance/attendanceApi.js';
 import { cn } from '../../../lib/utils.js';
 
 export function ApplyLeaveModal({ isOpen, onClose }) {
   const { isSuperAdmin } = usePermission();
+  const { user } = useAuth();
+  const userGender = (user?.employeeId?.gender || user?.gender || '').toLowerCase();
+
   const getTodayStr = () => new Date().toISOString().split('T')[0];
   const todayStr = getTodayStr();
 
@@ -34,6 +38,24 @@ export function ApplyLeaveModal({ isOpen, onClose }) {
 
   const { data: balanceResponse } = useGetLeaveBalanceQuery({}, { skip: isSuperAdmin });
   const balances = balanceResponse?.data?.balances || [];
+
+  // Filter leave types by employee eligibility and active balances
+  const eligibleLeaveTypes = React.useMemo(() => {
+    if (balances && balances.length > 0) {
+      const balanceTypeIds = new Set(
+        balances.map((b) => String(b.leaveType?._id || b.leaveType))
+      );
+      const matched = leaveTypes.filter((t) => balanceTypeIds.has(String(t._id)));
+      if (matched.length > 0) return matched;
+    }
+
+    return leaveTypes.filter((type) => {
+      const constraint = type.genderConstraint ? type.genderConstraint.toLowerCase() : 'any';
+      if (constraint === 'any') return true;
+      if (!userGender) return true;
+      return constraint === userGender;
+    });
+  }, [leaveTypes, balances, userGender]);
 
   const { data: attendanceData } = useGetMyAttendanceQuery({ date: todayStr });
   const todayRecord = attendanceData?.data?.records?.find(
@@ -62,12 +84,12 @@ export function ApplyLeaveModal({ isOpen, onClose }) {
     }
   }, [startDate, todayStr, hasPunchedToday]);
 
-  // Default to first active leave type if none selected
+  // Default to first eligible leave type if none selected
   useEffect(() => {
-    if (leaveTypes.length > 0 && !leaveTypeId) {
-      setLeaveTypeId(leaveTypes[0]._id);
+    if (eligibleLeaveTypes.length > 0 && (!leaveTypeId || !eligibleLeaveTypes.some((t) => t._id === leaveTypeId))) {
+      setLeaveTypeId(eligibleLeaveTypes[0]._id);
     }
-  }, [leaveTypes, leaveTypeId]);
+  }, [eligibleLeaveTypes, leaveTypeId]);
 
   // If half-day is enabled, auto-sync endDate with startDate
   const handleStartDateChange = (val) => {
@@ -86,9 +108,9 @@ export function ApplyLeaveModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  const selectedType = leaveTypes.find((t) => t._id === leaveTypeId);
+  const selectedType = eligibleLeaveTypes.find((t) => t._id === leaveTypeId) || leaveTypes.find((t) => t._id === leaveTypeId);
   const activeBalance = balances.find(
-    (b) => b.leaveType?._id === leaveTypeId || b.leaveType === leaveTypeId
+    (b) => String(b.leaveType?._id || b.leaveType) === String(leaveTypeId)
   );
 
   const availableDays = activeBalance?.availableDays ?? (selectedType?.daysPerYear || 0);
@@ -247,9 +269,9 @@ export function ApplyLeaveModal({ isOpen, onClose }) {
                 className="w-full bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-medium rounded-xl px-3.5 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
                 required
               >
-                {leaveTypes.map((type) => {
+                {eligibleLeaveTypes.map((type) => {
                   const bal = balances.find(
-                    (b) => b.leaveType?._id === type._id || b.leaveType === type._id
+                    (b) => String(b.leaveType?._id || b.leaveType) === String(type._id)
                   );
                   const rem = bal ? bal.availableDays : type.daysPerYear;
                   return (
