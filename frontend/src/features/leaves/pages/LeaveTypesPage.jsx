@@ -4,10 +4,9 @@
  * 
  * SPECIFICATION & THEME:
  * - Module: M6 Leave & Holidays (BUILD-GUIDE Section 11 · Row 6.1)
- * - Features: Dual View (Table & Card Grid), Category Filter Pills, Live Search,
- *             Add/Edit Modals, Soft-Archival, Revert to Active, and Permanent Delete.
- * - Theme: ELVARA Emerald Design System (100% Light & Dark Mode Compatible)
- * - Reference: DESIGN.md & docs/UI-REFERENCE.md
+ * - Features: High-Craft Enterprise Data Table & Card Grid Views, Category Filter Pills,
+ *             Single Live Search, Add/Edit Modals, Soft-Archival, Revert to Active, and Permanent Delete.
+ * - Theme: ELVARA Emerald Design System (Strict adherence to DESIGN.md & docs/UI-REFERENCE.md)
  */
 
 import React, { useState, useMemo } from 'react';
@@ -17,7 +16,6 @@ import {
   Edit2,
   Trash2,
   CheckCircle2,
-  AlertCircle,
   FileCheck,
   Sparkles,
   List,
@@ -25,8 +23,6 @@ import {
   Search,
   X,
   RefreshCw,
-  Coins,
-  ShieldCheck,
   ArrowRightLeft,
   Users,
   Archive,
@@ -36,7 +32,6 @@ import {
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { StatCard } from '../../../components/common/StatCard.jsx';
-import { DataTable } from '../../../components/common/DataTable.jsx';
 import { ConfirmDialog } from '../../../components/common/ConfirmDialog.jsx';
 import { Can } from '../../../components/common/Can.jsx';
 import {
@@ -159,146 +154,6 @@ export function LeaveTypesPage() {
     }
   };
 
-  // Table Columns Definition
-  const columns = [
-    {
-      header: 'Leave Category & Code',
-      accessor: (row) => (
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-900 dark:text-white text-xs">
-              {row.name}
-            </span>
-            <span className="px-2 py-0.5 text-[10px] font-mono tracking-wider font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 rounded-lg">
-              {row.code}
-            </span>
-          </div>
-          {row.description && (
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate max-w-xs">
-              {row.description}
-            </p>
-          )}
-        </div>
-      )
-    },
-    {
-      header: 'Yearly Quota',
-      accessor: (row) => (
-        <span className="font-bold text-slate-900 dark:text-white tabular-nums text-xs">
-          {row.daysPerYear} <span className="text-xs text-slate-500 dark:text-slate-400 font-normal">days / yr</span>
-        </span>
-      )
-    },
-    {
-      header: 'Remuneration',
-      accessor: (row) => (
-        <span
-          className={cn(
-            'inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold rounded-full border',
-            row.isPaid
-              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300'
-              : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60 text-amber-700 dark:text-amber-300'
-          )}
-        >
-          <span>{row.isPaid ? 'Paid' : 'Unpaid'}</span>
-        </span>
-      )
-    },
-    {
-      header: 'Carry-Forward Limit',
-      accessor: (row) => (
-        <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-          {row.carryForwardMax > 0 ? (
-            <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 bg-emerald-50/60 dark:bg-emerald-950/30 px-2 py-0.5 rounded-lg border border-emerald-200/50 dark:border-emerald-800/40">
-              <ArrowRightLeft className="w-3 h-3" />
-              <span>Max {row.carryForwardMax} days</span>
-            </span>
-          ) : (
-            <span className="text-slate-400 dark:text-slate-500">None</span>
-          )}
-        </span>
-      )
-    },
-    {
-      header: 'Medical Certificate',
-      accessor: (row) =>
-        row.requiresAttachment ? (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 text-blue-700 dark:text-blue-300">
-            <FileCheck className="w-3 h-3 text-blue-600" />
-            <span>&ge; {row.minDaysForAttachment} days</span>
-          </span>
-        ) : (
-          <span className="text-xs text-slate-400 dark:text-slate-500">Not mandatory</span>
-        )
-    },
-    {
-      header: 'Status',
-      accessor: (row) => (
-        <span
-          className={cn(
-            'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border',
-            !row.isArchived && row.isActive
-              ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300'
-              : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60 text-amber-700 dark:text-amber-400'
-          )}
-        >
-          <span className={cn('w-1.5 h-1.5 rounded-full', !row.isArchived && row.isActive ? 'bg-emerald-500' : 'bg-amber-500')} />
-          <span>{!row.isArchived && row.isActive ? 'Active' : 'Archived'}</span>
-        </span>
-      )
-    },
-    {
-      header: 'Actions',
-      accessor: (row) => (
-        <div className="flex items-center justify-end gap-1.5">
-          <Can I="leave.settings" a="Leave">
-            {activeTab === 'active' ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => handleEdit(row)}
-                  className="p-1.5 rounded-xl text-slate-600 dark:text-slate-300 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-slate-200/60 dark:border-slate-800 transition-colors cursor-pointer"
-                  title="Edit Leave Category"
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setArchiveTarget(row)}
-                  className="p-1.5 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-slate-200/60 dark:border-slate-800 transition-colors cursor-pointer"
-                  title="Move to Archive"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setRevertTarget(row)}
-                  className="p-1.5 rounded-xl text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/60 transition-colors cursor-pointer flex items-center gap-1 font-semibold text-xs"
-                  title="Revert to Active Policies"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Revert</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPermanentDeleteTarget(row)}
-                  className="p-1.5 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200/60 dark:border-rose-800/60 transition-colors cursor-pointer flex items-center gap-1 font-semibold text-xs"
-                  title="Permanently Delete Category"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Delete</span>
-                </button>
-              </>
-            )}
-          </Can>
-        </div>
-      )
-    }
-  ];
-
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* 1. Page Header */}
@@ -315,7 +170,7 @@ export function LeaveTypesPage() {
             <button
               type="button"
               onClick={handleCreate}
-              className="inline-flex items-center gap-1.5 px-4 h-9 text-xs font-bold text-white bg-[#00C471] hover:bg-[#049856] rounded-xl transition-all shadow-sm shadow-emerald-600/20 cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 px-4 h-9 text-xs font-semibold text-white bg-[#00C471] hover:bg-[#049856] rounded-xl transition-all shadow-sm shadow-emerald-600/20 cursor-pointer whitespace-nowrap active:scale-[0.98]"
             >
               <Plus className="w-4 h-4" />
               <span>Add Leave Type</span>
@@ -334,7 +189,7 @@ export function LeaveTypesPage() {
               setTypeFilter('all');
             }}
             className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border',
+              'flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border',
               activeTab === 'active'
                 ? 'bg-[#00C471] text-white border-emerald-500 shadow-xs shadow-emerald-500/25'
                 : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200/80 dark:border-slate-800 hover:text-slate-900 dark:hover:text-white'
@@ -361,7 +216,7 @@ export function LeaveTypesPage() {
               setTypeFilter('all');
             }}
             className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border',
+              'flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer border',
               activeTab === 'archived'
                 ? 'bg-amber-600 text-white border-amber-600 shadow-xs shadow-amber-600/25'
                 : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200/80 dark:border-slate-800 hover:text-slate-900 dark:hover:text-white'
@@ -387,7 +242,7 @@ export function LeaveTypesPage() {
           type="button"
           onClick={() => refetch()}
           disabled={isFetching}
-          className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition shadow-2xs active:scale-95 disabled:opacity-50 cursor-pointer text-xs font-semibold"
+          className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition shadow-2xs active:scale-95 disabled:opacity-50 cursor-pointer text-xs font-semibold bg-white dark:bg-slate-900"
           title="Reload Leave Types"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin text-emerald-500' : ''}`} />
@@ -456,11 +311,12 @@ export function LeaveTypesPage() {
             </div>
           )}
 
-          {/* 4. Filter & View Switcher Bar */}
-          <section className="rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900 p-5 shadow-xs space-y-4">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          {/* 4. Unified Card Surface: Integrated Toolbar & Table / Cards View */}
+          <section className="rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-[#111D17] shadow-xs overflow-hidden">
+            {/* Unified Control Toolbar */}
+            <div className="p-4 border-b border-slate-200/80 dark:border-slate-800/80 flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white dark:bg-[#111D17]">
               {/* Category Filter Pills */}
-              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none p-1 bg-slate-100/80 dark:bg-[#0A1610] rounded-2xl border border-slate-200/60 dark:border-emerald-950/40">
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none p-1 bg-slate-100/80 dark:bg-slate-800/60 rounded-xl border border-slate-200/60 dark:border-slate-800">
                 {[
                   {
                     id: 'all',
@@ -498,10 +354,10 @@ export function LeaveTypesPage() {
                     type="button"
                     onClick={() => setTypeFilter(st.id)}
                     className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer',
                       typeFilter === st.id
                         ? st.activeCls
-                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-800/60'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700/60'
                     )}
                   >
                     <span>{st.label}</span>
@@ -510,7 +366,7 @@ export function LeaveTypesPage() {
                         'px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold leading-none',
                         typeFilter === st.id
                           ? 'bg-white/25 text-white'
-                          : 'bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                          : 'bg-slate-200/70 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300'
                       )}
                     >
                       {st.count}
@@ -519,8 +375,8 @@ export function LeaveTypesPage() {
                 ))}
               </div>
 
-              {/* Right Controls: Search & View Mode */}
-              <div className="flex items-center gap-2.5">
+              {/* Right Controls: Exactly ONE Search & View Toggle */}
+              <div className="flex items-center gap-2.5 w-full lg:w-auto">
                 {/* Search Input */}
                 <div className="relative flex-1 sm:w-64">
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -528,13 +384,14 @@ export function LeaveTypesPage() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search category or code..."
-                    className="w-full pl-9 pr-7 py-1.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-2xs transition-all"
+                    placeholder="Search category, code, or description..."
+                    className="w-full pl-9 pr-7 py-1.5 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-2xs transition-all h-9"
                   />
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery('')}
                       className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                      title="Clear search"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -542,7 +399,7 @@ export function LeaveTypesPage() {
                 </div>
 
                 {/* View Mode Toggle */}
-                <div className="flex items-center border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-800/60 p-0.5 shadow-2xs shrink-0">
+                <div className="flex items-center border border-slate-200 dark:border-slate-700/80 rounded-xl bg-slate-50 dark:bg-slate-800/60 p-0.5 shadow-2xs shrink-0 h-9">
                   <button
                     onClick={() => setViewMode('table')}
                     className={cn(
@@ -571,9 +428,9 @@ export function LeaveTypesPage() {
               </div>
             </div>
 
-            {/* 5. Main Content: Table or Card Grid */}
+            {/* 5. Main View: Table or Card Grid */}
             {filteredTypes.length === 0 ? (
-              <div className="py-16 text-center space-y-3">
+              <div className="py-16 text-center space-y-3 px-4">
                 <div className="w-14 h-14 mx-auto rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center">
                   {activeTab === 'archived' ? (
                     <Archive className="w-7 h-7" />
@@ -605,18 +462,180 @@ export function LeaveTypesPage() {
                 )}
               </div>
             ) : viewMode === 'table' ? (
-              /* TABLE VIEW */
-              <div className="border border-slate-200/80 dark:border-slate-800 rounded-xl overflow-hidden">
-                <DataTable
-                  columns={columns}
-                  data={filteredTypes}
-                  isLoading={isLoading}
-                  emptyMessage={activeTab === 'archived' ? 'No archived leave types found.' : 'No leave types found matching filters.'}
-                />
+              /* HIGH-DENSITY ENTERPRISE TABLE VIEW */
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200/80 dark:border-[#1A3125] bg-slate-50/75 dark:bg-[#0E1A14] text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider select-none">
+                      <th className="py-3 px-4 text-left">Leave Category & Code</th>
+                      <th className="py-3 px-4 text-left">Yearly Quota</th>
+                      <th className="py-3 px-4 text-left">Remuneration</th>
+                      <th className="py-3 px-4 text-left">Carry-Forward Limit</th>
+                      <th className="py-3 px-4 text-left">Medical Certificate</th>
+                      <th className="py-3 px-4 text-left">Eligibility</th>
+                      <th className="py-3 px-4 text-center">Status</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-[#1A3125] text-slate-700 dark:text-slate-200">
+                    {filteredTypes.map((row) => (
+                      <tr
+                        key={row._id}
+                        className="hover:bg-slate-50/70 dark:hover:bg-white/[0.02] transition-colors"
+                      >
+                        {/* 1. Category & Code */}
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-slate-900 dark:text-white text-xs">
+                              {row.name}
+                            </span>
+                            <span className="font-mono text-[10px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 px-1.5 py-0.5 rounded tracking-wider uppercase">
+                              {row.code}
+                            </span>
+                          </div>
+                          {row.description && (
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-xs mt-0.5">
+                              {row.description}
+                            </p>
+                          )}
+                        </td>
+
+                        {/* 2. Yearly Quota */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span className="font-mono font-bold text-slate-900 dark:text-white text-xs tabular-nums">
+                            {row.daysPerYear}
+                          </span>
+                          <span className="text-slate-500 dark:text-slate-400 text-[11px] ml-1 font-normal">
+                            days / yr
+                          </span>
+                        </td>
+
+                        {/* 3. Remuneration */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span
+                            className={cn(
+                              'inline-flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-semibold rounded-md border',
+                              row.isPaid
+                                ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/80 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300'
+                                : 'bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                            )}
+                          >
+                            {row.isPaid ? 'Paid' : 'Unpaid'}
+                          </span>
+                        </td>
+
+                        {/* 4. Carry-Forward Limit */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          {row.carryForwardMax > 0 ? (
+                            <span className="inline-flex items-center gap-1 font-mono text-xs font-semibold text-slate-800 dark:text-slate-200 tabular-nums">
+                              <ArrowRightLeft className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                              <span>Max {row.carryForwardMax}</span>
+                              <span className="text-slate-500 text-[11px] font-normal font-sans">days</span>
+                            </span>
+                          ) : (
+                            <span className="text-slate-300 dark:text-slate-600 font-mono text-xs pl-1.5">—</span>
+                          )}
+                        </td>
+
+                        {/* 5. Medical Certificate */}
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          {row.requiresAttachment ? (
+                            <div className="inline-flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
+                              <FileCheck className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                              <span>Required for <strong className="font-mono font-semibold text-slate-900 dark:text-white">≥ {row.minDaysForAttachment}d</strong></span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 dark:text-slate-500 text-xs">Optional</span>
+                          )}
+                        </td>
+
+                        {/* 6. Eligibility / Gender Scope */}
+                        <td className="py-3.5 px-4 whitespace-nowrap text-xs text-slate-600 dark:text-slate-400">
+                          {row.genderConstraint === 'any' || !row.genderConstraint ? (
+                            <span className="text-slate-500 dark:text-slate-400">All staff</span>
+                          ) : (
+                            <span className="font-medium text-slate-700 dark:text-slate-300 capitalize">
+                              {row.genderConstraint} only
+                            </span>
+                          )}
+                        </td>
+
+                        {/* 7. Status */}
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                          <span
+                            className={cn(
+                              'inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold rounded-full border',
+                              !row.isArchived && row.isActive !== false
+                                ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/80 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300'
+                                : 'bg-slate-100 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                'w-1.5 h-1.5 rounded-full',
+                                !row.isArchived && row.isActive !== false ? 'bg-emerald-500' : 'bg-slate-400'
+                              )}
+                            />
+                            <span>{!row.isArchived && row.isActive !== false ? 'Active' : 'Archived'}</span>
+                          </span>
+                        </td>
+
+                        {/* 8. Actions */}
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Can I="leave.settings" a="Leave">
+                              {activeTab === 'active' ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleEdit(row)}
+                                    className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-slate-200/80 dark:border-slate-800 transition-all cursor-pointer shadow-2xs"
+                                    title="Edit Leave Category"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setArchiveTarget(row)}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-slate-200/80 dark:border-slate-800 transition-all cursor-pointer shadow-2xs"
+                                    title="Move to Archive"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => setRevertTarget(row)}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100/70 dark:hover:bg-emerald-900/60 transition-all cursor-pointer shadow-2xs"
+                                    title="Revert to Active Policies"
+                                  >
+                                    <RotateCcw className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                    <span>Revert</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setPermanentDeleteTarget(row)}
+                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 hover:bg-rose-100/70 dark:hover:bg-rose-900/60 transition-all cursor-pointer shadow-2xs"
+                                    title="Permanently Delete Category"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                                    <span>Delete</span>
+                                  </button>
+                                </>
+                              )}
+                            </Can>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             ) : (
               /* CARD GRID VIEW */
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4.5 pt-1">
+              <div className="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4.5">
                 {filteredTypes.map((type) => (
                   <div
                     key={type._id}
@@ -629,7 +648,7 @@ export function LeaveTypesPage() {
                           <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                             {type.name}
                           </h3>
-                          <span className="px-2 py-0.5 text-[10px] font-mono tracking-wider font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 rounded-lg">
+                          <span className="font-mono text-[10px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/60 px-1.5 py-0.5 rounded tracking-wider uppercase">
                             {type.code}
                           </span>
                         </div>
@@ -642,25 +661,25 @@ export function LeaveTypesPage() {
 
                       <span
                         className={cn(
-                          'inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-bold rounded-full border shrink-0',
-                          !type.isArchived && type.isActive
-                            ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300'
-                            : 'bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60 text-amber-700 dark:text-amber-400'
+                          'inline-flex items-center gap-1.5 px-2.5 py-0.5 text-[11px] font-semibold rounded-full border shrink-0',
+                          !type.isArchived && type.isActive !== false
+                            ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200/80 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300'
+                            : 'bg-slate-100 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
                         )}
                       >
-                        <span className={cn('w-1.5 h-1.5 rounded-full', !type.isArchived && type.isActive ? 'bg-emerald-500' : 'bg-amber-500')} />
-                        <span>{!type.isArchived && type.isActive ? 'Active' : 'Archived'}</span>
+                        <span className={cn('w-1.5 h-1.5 rounded-full', !type.isArchived && type.isActive !== false ? 'bg-emerald-500' : 'bg-slate-400')} />
+                        <span>{!type.isArchived && type.isActive !== false ? 'Active' : 'Archived'}</span>
                       </span>
                     </div>
 
                     {/* Main Quota Stat Block */}
-                    <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between">
+                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between">
                       <div>
                         <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                           Annual Allowance
                         </span>
                         <div className="flex items-baseline gap-1 mt-0.5">
-                          <span className="text-2xl font-extrabold text-slate-900 dark:text-white tabular-nums">
+                          <span className="text-2xl font-extrabold text-slate-900 dark:text-white font-mono tabular-nums">
                             {type.daysPerYear}
                           </span>
                           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
@@ -671,10 +690,10 @@ export function LeaveTypesPage() {
 
                       <span
                         className={cn(
-                          'px-2.5 py-1 text-xs font-bold rounded-xl border',
+                          'px-2.5 py-1 text-xs font-semibold rounded-lg border',
                           type.isPaid
-                            ? 'bg-emerald-100/70 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-                            : 'bg-amber-100/70 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800'
+                            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/60'
+                            : 'bg-slate-100 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                         )}
                       >
                         {type.isPaid ? 'Paid Leave' : 'Unpaid Leave'}
@@ -688,7 +707,7 @@ export function LeaveTypesPage() {
                           <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-600" />
                           <span>Carry-Forward:</span>
                         </span>
-                        <span className="font-semibold text-slate-900 dark:text-white">
+                        <span className="font-semibold text-slate-900 dark:text-white font-mono tabular-nums">
                           {type.carryForwardMax > 0 ? `Max ${type.carryForwardMax} days` : 'None'}
                         </span>
                       </div>
@@ -709,15 +728,15 @@ export function LeaveTypesPage() {
                           <span>Eligibility:</span>
                         </span>
                         <span className="font-semibold text-slate-900 dark:text-white capitalize">
-                          {type.genderConstraint === 'any' ? 'All active staff' : `${type.genderConstraint} only`}
+                          {type.genderConstraint === 'any' || !type.genderConstraint ? 'All active staff' : `${type.genderConstraint} only`}
                         </span>
                       </div>
                     </div>
 
                     {/* Card Footer: Action Buttons */}
                     <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                      <span className="text-[11px] font-medium text-slate-400">
-                        Code: {type.code}
+                      <span className="text-[11px] font-mono text-slate-400 uppercase">
+                        {type.code}
                       </span>
 
                       <Can I="leave.settings" a="Leave">
@@ -727,7 +746,7 @@ export function LeaveTypesPage() {
                               <button
                                 type="button"
                                 onClick={() => handleEdit(type)}
-                                className="p-1.5 rounded-xl text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-slate-200/60 dark:border-slate-800 transition-colors cursor-pointer"
+                                className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-slate-200/80 dark:border-slate-800 transition-all cursor-pointer shadow-2xs"
                                 title="Edit Leave Category"
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
@@ -735,7 +754,7 @@ export function LeaveTypesPage() {
                               <button
                                 type="button"
                                 onClick={() => setArchiveTarget(type)}
-                                className="p-1.5 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-slate-200/60 dark:border-slate-800 transition-colors cursor-pointer"
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-slate-200/80 dark:border-slate-800 transition-all cursor-pointer shadow-2xs"
                                 title="Move to Archive"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -746,19 +765,19 @@ export function LeaveTypesPage() {
                               <button
                                 type="button"
                                 onClick={() => setRevertTarget(type)}
-                                className="p-1.5 px-2 rounded-xl text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/60 transition-colors cursor-pointer flex items-center gap-1 text-xs font-semibold"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100/70 dark:hover:bg-emerald-900/60 transition-all cursor-pointer shadow-2xs"
                                 title="Revert to Active Policies"
                               >
-                                <RotateCcw className="w-3.5 h-3.5" />
+                                <RotateCcw className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                 <span>Revert</span>
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setPermanentDeleteTarget(type)}
-                                className="p-1.5 px-2 rounded-xl text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200/60 dark:border-rose-800/60 transition-colors cursor-pointer flex items-center gap-1 text-xs font-semibold"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 hover:bg-rose-100/70 dark:hover:bg-rose-900/60 transition-all cursor-pointer shadow-2xs"
                                 title="Permanently Delete Category"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
                                 <span>Delete</span>
                               </button>
                             </>
