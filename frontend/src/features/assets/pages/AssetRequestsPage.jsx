@@ -46,6 +46,15 @@ export const AssetRequestsPage = () => {
   const { data: requestsRes, isLoading, isFetching, refetch } = useGetAssetRequestsQuery();
   const requests = Array.isArray(requestsRes?.data) ? requestsRes.data : (Array.isArray(requestsRes) ? requestsRes : []);
 
+  // Every hook must run before the loading early-return below; calling hooks after it changes the
+  // hook count between renders and React crashes the page ("Rendered more hooks than during the previous render").
+  const { data: availableAssetsRes } = useGetAssetsQuery(
+    allocatingRequest ? { status: 'available', type: allocatingRequest.assetType, limit: 100 } : { status: 'available' },
+    { skip: !allocatingRequest }
+  );
+  const [approveRequest, { isLoading: isApproving }] = useApproveAssetRequestMutation();
+  const [rejectRequest, { isLoading: isRejecting }] = useRejectAssetRequestMutation();
+
   if (isLoading && !requestsRes) {
     return (
       <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -53,15 +62,13 @@ export const AssetRequestsPage = () => {
       </div>
     );
   }
-  const { data: availableAssetsRes } = useGetAssetsQuery(
-    allocatingRequest ? { status: 'available', type: allocatingRequest.assetType } : { status: 'available' },
-    { skip: !allocatingRequest }
-  );
 
   const availableAssets = availableAssetsRes?.data || [];
 
-  const [approveRequest, { isLoading: isApproving }] = useApproveAssetRequestMutation();
-  const [rejectRequest, { isLoading: isRejecting }] = useRejectAssetRequestMutation();
+  const closeAllocation = () => {
+    setAllocatingRequest(null);
+    setSelectedAssetId('');
+  };
 
   const filteredRequests = requests.filter((r) => {
     if (statusFilter === 'all') return true;
@@ -81,8 +88,7 @@ export const AssetRequestsPage = () => {
       }).unwrap();
 
       toast.success('Asset allocated and requisition approved.');
-      setAllocatingRequest(null);
-      setSelectedAssetId('');
+      closeAllocation();
     } catch (err) {
       toast.error(err?.data?.message || err?.message || 'Failed to approve request.');
     }
@@ -200,7 +206,7 @@ export const AssetRequestsPage = () => {
                     Target Member: {req.employeeId ? (req.employeeId.name || `${req.employeeId.firstName || ''} ${req.employeeId.lastName || ''}`.trim() || 'Employee') : 'Unassigned'} {req.employeeId?.employeeCode ? `(${req.employeeId.employeeCode})` : ''}
                   </p>
                   <p className="text-[11px] text-slate-400">
-                    Department: {req.departmentId?.name || 'Department'} · Requested by: {req.requestedBy?.name || 'Manager'}
+                    Department: {req.departmentId?.name || 'Department'} · Requested by: {req.requestedByName || req.requestedBy?.email || 'Manager'}
                   </p>
                   {req.specificationsRequired && (
                     <p className="text-[11px] text-slate-600 dark:text-slate-300 pt-1">
@@ -288,7 +294,7 @@ export const AssetRequestsPage = () => {
 
             <div className="flex items-center justify-end gap-2.5 pt-2">
               <button
-                onClick={() => setAllocatingRequest(null)}
+                onClick={closeAllocation}
                 className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
               >
                 Cancel

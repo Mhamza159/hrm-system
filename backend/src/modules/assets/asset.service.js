@@ -20,6 +20,7 @@ import { ApiError } from '../../utils/ApiError.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { notify } from '../../services/notify.service.js';
 import { assertSuperAdminIfApplicantIsHR } from '../../utils/hrApprovalGuard.js';
+import { getPeopleByUserIds } from '../dashboard/dashboard.people.js';
 
 /**
  * 23.1: Register a new physical hardware or software asset into inventory
@@ -832,14 +833,19 @@ export const getAssetRequests = async ({ user }) => {
   }
 
   const requests = await AssetRequest.find(filter)
-    .populate('requestedBy', 'name email')
+    .populate('requestedBy', 'email')
     .populate('departmentId', 'name code')
     .populate('employeeId', 'name employeeCode email')
     .populate('allocatedAssetId', 'name assetTag serialNumber type status')
     .sort({ createdAt: -1 })
     .lean();
 
-  return requests;
+  // User has no name field; resolve the requester's name through their Employee profile
+  const people = await getPeopleByUserIds(requests.map((r) => r.requestedBy?._id));
+  return requests.map((r) => ({
+    ...r,
+    requestedByName: r.requestedBy?._id ? people.get(String(r.requestedBy._id))?.employeeName || null : null
+  }));
 };
 
 /**
