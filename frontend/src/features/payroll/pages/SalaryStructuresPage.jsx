@@ -21,7 +21,9 @@ import {
   ShieldAlert,
   ArrowUpRight,
   Eye,
-  X
+  X,
+  Briefcase,
+  Shield
 } from 'lucide-react';
 import {
   useGetSalaryStructuresQuery,
@@ -31,6 +33,9 @@ import { SalaryFormModal } from '../components/SalaryFormModal.jsx';
 import { SalaryRevisionModal } from '../components/SalaryRevisionModal.jsx';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
+import { RoleBadge } from '../../../components/common/RoleBadge.jsx';
+import { DesignationBadge } from '../../../components/common/DesignationBadge.jsx';
+import { cn } from '../../../lib/utils.js';
 
 export function SalaryStructuresPage() {
   const [page, setPage] = useState(1);
@@ -68,38 +73,37 @@ export function SalaryStructuresPage() {
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl">
-              <DollarSign className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                Salary Structures
-              </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Configure employee compensation breakdowns, statutory EOBI/PESSI flags, and revisions
-              </p>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-[#00C471] rounded-2xl border border-emerald-200/60 dark:border-emerald-800/40 shadow-xs">
+            <DollarSign className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+              Salary Structures
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Configure employee compensation breakdowns, statutory EOBI/PESSI flags, and revisions
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <RefreshButton onRefresh={refetch} isFetching={isFetching} />
           <button
+            type="button"
             onClick={() => setIsAssignModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm transition-all shadow-emerald-600/20"
+            className="h-9 px-4 inline-flex items-center gap-2 bg-[#00C471] hover:bg-[#049856] text-white rounded-xl text-xs font-semibold shadow-xs shadow-emerald-600/20 active:scale-[0.98] transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            Assign Salary Structure
+            <span>Assign Salary Structure</span>
           </button>
         </div>
       </div>
 
       {/* Filters & Search */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="bg-white dark:bg-[#111D17] rounded-2xl p-4 border border-slate-200/80 dark:border-[#1A3125] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+          <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
           <input
             type="text"
             placeholder="Search by employee name or code..."
@@ -108,19 +112,21 @@ export function SalaryStructuresPage() {
               setSearch(e.target.value);
               setPage(1);
             }}
-            className="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-900 dark:text-white"
+            className="w-full h-9 pl-9 pr-4 text-xs font-medium bg-slate-50 dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] text-slate-900 dark:text-white placeholder:text-slate-400 transition-all shadow-2xs"
           />
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Filter className="w-4 h-4 text-slate-400" />
+          <div className="p-2 bg-slate-50 dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] rounded-xl text-slate-400">
+            <Filter className="w-3.5 h-3.5" />
+          </div>
           <select
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value);
               setPage(1);
             }}
-            className="px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="h-9 px-3 text-xs font-semibold bg-white dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] rounded-xl text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 shadow-xs cursor-pointer"
           >
             <option value="active">Active Structures</option>
             <option value="superseded">Superseded / Historical</option>
@@ -130,10 +136,10 @@ export function SalaryStructuresPage() {
       </div>
 
       {/* Main Structures Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-[#111D17] rounded-2xl border border-slate-200/80 dark:border-[#1A3125] shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
-            <thead className="bg-slate-50 dark:bg-slate-800/50 text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 font-semibold">
+            <thead className="bg-slate-50/75 dark:bg-[#0E1A14] text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200/80 dark:border-[#1A3125] font-semibold">
               <tr>
                 <th className="px-5 py-3.5">Employee</th>
                 <th className="px-5 py-3.5">Department & Role</th>
@@ -145,17 +151,27 @@ export function SalaryStructuresPage() {
                 <th className="px-5 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+            <tbody className="divide-y divide-slate-200/80 dark:divide-[#1A3125]">
               {isLoading ? (
                 <tr>
                   <td colSpan="8" className="px-6 py-12 text-center text-slate-400">
-                    Loading salary structures...
+                    <ScreenSkeleton variant="table" />
                   </td>
                 </tr>
               ) : structures.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="px-6 py-12 text-center text-slate-400">
-                    No salary structures found. Click "Assign Salary Structure" to create one.
+                  <td colSpan="8" className="px-6 py-16 text-center">
+                    <div className="max-w-sm mx-auto flex flex-col items-center gap-2">
+                      <div className="p-3 bg-slate-100 dark:bg-[#15231C] text-slate-400 rounded-2xl">
+                        <DollarSign className="w-6 h-6" />
+                      </div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-1">
+                        No Salary Structures Found
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        No compensation records match the current filter. Click "Assign Salary Structure" to create one.
+                      </p>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -169,27 +185,48 @@ export function SalaryStructuresPage() {
                     day: 'numeric'
                   });
 
+                  const hasStatutory = s.eobiEnabled || s.pessiEnabled || s.providentFundEnabled;
+
+                  const userRoles = emp.userId?.roles || [];
+                  const role = userRoles.length > 0 ? userRoles[0] : null;
+                  const initials = (emp.name || 'EM')
+                    .split(' ')
+                    .filter(Boolean)
+                    .map((n) => n[0])
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase();
+
                   return (
-                    <tr key={s._id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                    <tr key={s._id} className="hover:bg-slate-50/70 dark:hover:bg-[#15231C]/60 transition-colors">
                       <td className="px-5 py-4">
-                        <div className="font-semibold text-slate-900 dark:text-white">
-                          {emp.name || 'Unnamed'}
-                        </div>
-                        <div className="text-xs text-slate-400 font-mono">
-                          {emp.employeeCode || 'N/A'}
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-[#00C471] dark:text-[#05D87D] font-bold text-xs flex items-center justify-center shrink-0 border border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs">
+                            {initials}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-semibold text-slate-900 dark:text-white truncate">
+                              {emp.name || 'Unnamed'}
+                            </div>
+                            <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
+                              {emp.employeeCode || 'N/A'}
+                            </div>
+                          </div>
                         </div>
                       </td>
 
                       <td className="px-5 py-4">
-                        <div className="text-slate-800 dark:text-slate-200">
-                          {emp.departmentId?.name || '—'}
+                        <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 mb-1.5 flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
+                          <span>{emp.departmentId?.name || 'General Department'}</span>
                         </div>
-                        <div className="text-xs text-slate-400">
-                          {emp.designationId?.title || '—'}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <DesignationBadge designation={emp.designationId} />
+                          {role && <RoleBadge role={role} size="sm" />}
                         </div>
                       </td>
 
-                      <td className="px-5 py-4 whitespace-nowrap text-slate-600 dark:text-slate-300">
+                      <td className="px-5 py-4 whitespace-nowrap text-xs text-slate-600 dark:text-slate-400 font-medium">
                         {effective}
                       </td>
 
@@ -197,43 +234,44 @@ export function SalaryStructuresPage() {
                         PKR {basicPkr.toLocaleString('en-PK', { minimumFractionDigits: 2 })}
                       </td>
 
-                      <td className="px-5 py-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      <td className="px-5 py-4 text-right font-mono font-bold text-[#00C471] dark:text-[#05D87D]">
                         PKR {grossPkr.toLocaleString('en-PK', { minimumFractionDigits: 2 })}
                       </td>
 
                       <td className="px-5 py-4 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {s.eobiEnabled && (
-                            <span className="px-2 py-0.5 text-[11px] font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded border border-blue-200 dark:border-blue-800">
-                              EOBI
-                            </span>
-                          )}
-                          {s.pessiEnabled && (
-                            <span className="px-2 py-0.5 text-[11px] font-semibold bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded border border-purple-200 dark:border-purple-800">
-                              PESSI
-                            </span>
-                          )}
-                          {s.providentFundEnabled && (
-                            <span className="px-2 py-0.5 text-[11px] font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded border border-amber-200 dark:border-amber-800">
-                              PF {s.providentFundRate}%
-                            </span>
-                          )}
-                        </div>
+                        {hasStatutory ? (
+                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                            {s.eobiEnabled && (
+                              <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 rounded-md border border-emerald-200/80 dark:border-emerald-800/50 uppercase tracking-wider">
+                                EOBI
+                              </span>
+                            )}
+                            {s.pessiEnabled && (
+                              <span className="px-2 py-0.5 text-[10px] font-bold bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 rounded-md border border-teal-200/80 dark:border-teal-800/50 uppercase tracking-wider">
+                                PESSI
+                              </span>
+                            )}
+                            {s.providentFundEnabled && (
+                              <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 rounded-md border border-amber-200/80 dark:border-amber-800/50 uppercase tracking-wider">
+                                PF {s.providentFundRate}%
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400 dark:text-slate-500 font-mono">—</span>
+                        )}
                       </td>
 
                       <td className="px-5 py-4 text-center">
                         <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                          className={cn(
+                            'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border',
                             s.status === 'active'
-                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
-                          }`}
-                        >
-                          {s.status === 'active' ? (
-                            <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                          ) : (
-                            <Clock className="w-3 h-3 text-slate-400" />
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
+                              : 'bg-slate-100 dark:bg-[#15231C] text-slate-600 dark:text-slate-400 border-slate-200 dark:border-[#1A3125]'
                           )}
+                        >
+                          <span className={cn('w-1.5 h-1.5 rounded-full', s.status === 'active' ? 'bg-[#00C471]' : 'bg-slate-400')} />
                           <span className="capitalize">{s.status}</span>
                         </span>
                       </td>
@@ -241,18 +279,22 @@ export function SalaryStructuresPage() {
                       <td className="px-5 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
+                            type="button"
                             onClick={() => setSelectedForRevision(s)}
                             title="Revise / Increment Salary"
-                            className="p-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/50 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors shadow-2xs cursor-pointer active:scale-95"
                           >
-                            <TrendingUp className="w-4 h-4" />
+                            <TrendingUp className="w-3.5 h-3.5 text-[#00C471]" />
+                            <span>Revise</span>
                           </button>
                           <button
+                            type="button"
                             onClick={() => setSelectedForHistoryId(emp._id)}
-                            title="View Revision History"
-                            className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                            title="View Compensation History"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] rounded-xl hover:bg-slate-50 dark:hover:bg-[#1A3125] transition-colors shadow-2xs cursor-pointer active:scale-95"
                           >
-                            <History className="w-4 h-4" />
+                            <History className="w-3.5 h-3.5 text-slate-400" />
+                            <span>History</span>
                           </button>
                         </div>
                       </td>
@@ -266,25 +308,27 @@ export function SalaryStructuresPage() {
 
         {/* Pagination Bar */}
         {meta.totalPages > 1 && (
-          <div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
+          <div className="p-4 border-t border-slate-200/80 dark:border-[#1A3125] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-[#0E1A14]">
             <span>
               Showing {structures.length} of {meta.totalDocs} records
             </span>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               <button
+                type="button"
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
-                className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50"
+                className="h-8 px-3 bg-white dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] rounded-lg text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-50 dark:hover:bg-[#1A3125] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs"
               >
                 Previous
               </button>
-              <span className="px-3 py-1 font-medium text-slate-700 dark:text-slate-300">
+              <span className="px-2 font-mono font-semibold text-slate-800 dark:text-slate-200">
                 Page {page} of {meta.totalPages}
               </span>
               <button
+                type="button"
                 disabled={page >= meta.totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50"
+                className="h-8 px-3 bg-white dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] rounded-lg text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-50 dark:hover:bg-[#1A3125] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs"
               >
                 Next
               </button>
@@ -295,104 +339,194 @@ export function SalaryStructuresPage() {
 
       {/* Revision History Drawer / Modal */}
       {selectedForHistoryId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/50 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-xl h-full bg-white dark:bg-slate-900 shadow-2xl p-6 overflow-y-auto border-l border-slate-200 dark:border-slate-800 space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <History className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                  Compensation History
-                </h2>
-              </div>
-              <button
-                onClick={() => setSelectedForHistoryId(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {isLoadingHistory ? (
-              <p className="text-sm text-slate-400">Loading revision timeline...</p>
-            ) : (
-              <div className="space-y-6">
-                {/* Employee Header */}
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <h3 className="font-bold text-slate-900 dark:text-white">
-                    {historyData?.data?.employee?.name}
-                  </h3>
-                  <p className="text-xs text-slate-500 font-mono">
-                    {historyData?.data?.employee?.employeeCode} • {historyData?.data?.employee?.designation} • {historyData?.data?.employee?.department}
-                  </p>
-                </div>
-
-                {/* Active Structure */}
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-2 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Current Active Structure
-                  </h4>
-                  {historyData?.data?.current ? (
-                    <div className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200 dark:border-emerald-800 space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-slate-500">Gross Monthly Pay</span>
-                        <span className="font-bold font-mono text-emerald-600 dark:text-emerald-400 text-base">
-                          PKR {((historyData.data.current.grossSalary || 0) / 100).toLocaleString('en-PK')}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-500">Effective Date</span>
-                        <span className="font-medium text-slate-800 dark:text-slate-200">
-                          {new Date(historyData.data.current.effectiveFrom).toLocaleDateString('en-PK')}
-                        </span>
-                      </div>
-                      {historyData.data.current.revisionReason && (
-                        <div className="text-xs text-slate-600 dark:text-slate-400 pt-2 border-t border-emerald-200/60 dark:border-emerald-800/40">
-                          <span className="font-semibold">Reason: </span>
-                          {historyData.data.current.revisionReason}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-slate-400">No active structure found.</p>
-                  )}
-                </div>
-
-                {/* History Timeline */}
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5" /> Superseded History ({historyData?.data?.history?.length || 0})
-                  </h4>
-
-                  <div className="relative pl-6 space-y-4 border-l-2 border-slate-200 dark:border-slate-800">
-                    {historyData?.data?.history?.map((h) => (
-                      <div key={h._id} className="relative">
-                        <div className="absolute -left-[31px] top-1.5 w-3 h-3 rounded-full bg-slate-300 dark:bg-slate-700 border-2 border-white dark:border-slate-900" />
-                        <div className="p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-200 dark:border-slate-700 space-y-1.5">
-                          <div className="flex justify-between text-xs">
-                            <span className="font-semibold text-slate-800 dark:text-slate-200">
-                              Gross: PKR {((h.grossSalary || 0) / 100).toLocaleString('en-PK')}
-                            </span>
-                            <span className="text-slate-400">
-                              {new Date(h.effectiveFrom).toLocaleDateString('en-PK')}
-                            </span>
-                          </div>
-                          {h.revisionReason && (
-                            <p className="text-xs text-slate-500 italic">
-                              "{h.revisionReason}"
-                            </p>
-                          )}
-                          {h.revisedBy && (
-                            <p className="text-[11px] text-slate-400">
-                              By: {h.revisedBy.name || h.revisedBy.email}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+        <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-950/60 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-xl h-full bg-white dark:bg-[#111D17] shadow-2xl p-6 sm:p-8 overflow-y-auto border-l border-slate-200/80 dark:border-[#1A3125] flex flex-col justify-between">
+            <div className="space-y-6">
+              {/* Drawer Top Header */}
+              <div className="flex items-center justify-between pb-5 border-b border-slate-200/80 dark:border-[#1A3125]">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-[#00C471] rounded-2xl border border-emerald-200/60 dark:border-emerald-800/40 shadow-xs">
+                    <History className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
+                      Compensation History
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Audit trail of salary increments and base pay adjustments
+                    </p>
                   </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedForHistoryId(null)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
-            )}
+
+              {isLoadingHistory ? (
+                <div className="py-12">
+                  <ScreenSkeleton variant="cards" />
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Employee Hero Card */}
+                  <div className="p-4 bg-slate-50/70 dark:bg-[#0E1A14] rounded-2xl border border-slate-200/80 dark:border-[#1A3125] flex items-center gap-3.5">
+                    <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/60 font-bold text-sm flex items-center justify-center shrink-0">
+                      {(historyData?.data?.employee?.name || 'EMP')
+                        .split(' ')
+                        .filter(Boolean)
+                        .map((n) => n[0])
+                        .slice(0, 2)
+                        .join('')
+                        .toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                          {historyData?.data?.employee?.name || 'Employee'}
+                        </h3>
+                        <span className="font-mono text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-[#15231C] px-2 py-0.5 rounded border border-slate-200/80 dark:border-[#1A3125]">
+                          {historyData?.data?.employee?.employeeCode || 'N/A'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                        {historyData?.data?.employee?.designation || 'Staff'} • {historyData?.data?.employee?.department || 'General'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Active Structure */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Current Active Structure
+                      </span>
+                      <span className="text-xs text-slate-400 font-mono">
+                        Effective: {historyData?.data?.current ? new Date(historyData.data.current.effectiveFrom).toLocaleDateString('en-PK', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
+                      </span>
+                    </div>
+
+                    {historyData?.data?.current ? (
+                      <div className="p-5 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-2xl border border-emerald-200/80 dark:border-emerald-800/60 space-y-4">
+                        <div className="flex justify-between items-baseline pb-3 border-b border-emerald-200/60 dark:border-emerald-800/40">
+                          <div>
+                            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                              Gross Monthly Pay
+                            </span>
+                            <p className="text-2xl font-bold font-mono text-emerald-700 dark:text-emerald-400 tabular-nums mt-0.5">
+                              PKR {((historyData.data.current.grossSalary || 0) / 100).toLocaleString('en-PK', { minimumFractionDigits: 2 })}
+                            </p>
+                          </div>
+                          <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-white dark:bg-[#111D17] px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800 shadow-2xs">
+                            Active
+                          </span>
+                        </div>
+
+                        {/* Breakdown Grid */}
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <span className="text-slate-400 dark:text-slate-500">Basic Pay:</span>
+                            <p className="font-semibold text-slate-800 dark:text-slate-200 font-mono">
+                              PKR {((historyData.data.current.basicSalary || 0) / 100).toLocaleString('en-PK')}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 dark:text-slate-500">House Rent:</span>
+                            <p className="font-semibold text-slate-800 dark:text-slate-200 font-mono">
+                              PKR {((historyData.data.current.houseRentAllowance || 0) / 100).toLocaleString('en-PK')}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 dark:text-slate-500">Medical:</span>
+                            <p className="font-semibold text-slate-800 dark:text-slate-200 font-mono">
+                              PKR {((historyData.data.current.medicalAllowance || 0) / 100).toLocaleString('en-PK')}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 dark:text-slate-500">Conveyance:</span>
+                            <p className="font-semibold text-slate-800 dark:text-slate-200 font-mono">
+                              PKR {((historyData.data.current.conveyanceAllowance || 0) / 100).toLocaleString('en-PK')}
+                            </p>
+                          </div>
+                        </div>
+
+                        {historyData.data.current.revisionReason && (
+                          <div className="text-xs text-slate-600 dark:text-slate-300 pt-3 border-t border-emerald-200/60 dark:border-emerald-800/40">
+                            <span className="font-semibold text-slate-700 dark:text-slate-200">Justification: </span>
+                            {historyData.data.current.revisionReason}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="p-4 bg-slate-50 dark:bg-[#0E1A14] rounded-2xl border border-slate-200 dark:border-[#1A3125] text-xs text-slate-400 text-center">
+                        No active structure found.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* History Timeline */}
+                  <div className="space-y-3 pt-2">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-slate-400" /> Superseded History ({historyData?.data?.history?.length || 0})
+                    </span>
+
+                    {historyData?.data?.history && historyData.data.history.length > 0 ? (
+                      <div className="relative pl-6 space-y-4 border-l-2 border-emerald-200/60 dark:border-emerald-900/40 ml-2">
+                        {historyData.data.history.map((h) => (
+                          <div key={h._id} className="relative">
+                            <div className="absolute -left-[31px] top-2 w-3 h-3 rounded-full bg-[#00C471] border-2 border-white dark:border-[#111D17]" />
+                            <div className="p-4 bg-slate-50/70 dark:bg-[#0E1A14] rounded-2xl border border-slate-200/80 dark:border-[#1A3125] space-y-2">
+                              <div className="flex justify-between items-baseline text-xs">
+                                <span className="font-bold text-slate-900 dark:text-white font-mono">
+                                  Gross: PKR {((h.grossSalary || 0) / 100).toLocaleString('en-PK')}
+                                </span>
+                                <span className="text-slate-400 dark:text-slate-500 font-mono text-[11px]">
+                                  {new Date(h.effectiveFrom).toLocaleDateString('en-PK')}
+                                </span>
+                              </div>
+                              {h.revisionReason && (
+                                <p className="text-xs text-slate-600 dark:text-slate-300 italic">
+                                  "{h.revisionReason}"
+                                </p>
+                              )}
+                              {h.revisedBy && (
+                                <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                                  Revised by: <span className="text-slate-600 dark:text-slate-300 font-medium">{h.revisedBy.name || h.revisedBy.email}</span>
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-6 bg-slate-50/50 dark:bg-[#0E1A14] rounded-2xl border border-slate-200/60 dark:border-[#1A3125] text-center space-y-1.5">
+                        <Clock className="w-5 h-5 mx-auto text-slate-400" />
+                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          Initial Baseline Structure
+                        </p>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 max-w-xs mx-auto">
+                          This employee is on their initial compensation plan. Mid-cycle revisions and promotions will appear here in chronological order.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Drawer Bottom Close */}
+            <div className="pt-6 border-t border-slate-200/80 dark:border-[#1A3125] flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedForHistoryId(null)}
+                className="h-9 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] rounded-xl hover:bg-slate-50 dark:hover:bg-[#1A3125] shadow-xs cursor-pointer transition-colors"
+              >
+                Close Drawer
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -126,6 +126,13 @@ export const payrollApi = baseApi.injectEndpoints({
         url: `/payroll/runs/${runId}`,
         method: 'DELETE'
       }),
+      invalidatesTags: [
+        { type: 'PayrollRun', id: 'LIST' },
+        { type: 'Payslip', id: 'LIST' },
+        'PrePayrollAudit'
+      ]
+    }),
+
     restorePayrollRun: builder.mutation({
       query: (runId) => ({
         url: `/payroll/runs/${runId}/restore`,
@@ -143,13 +150,6 @@ export const payrollApi = baseApi.injectEndpoints({
         url: `/payroll/runs/${runId}/permanent`,
         method: 'DELETE'
       }),
-      invalidatesTags: [
-        { type: 'PayrollRun', id: 'LIST' },
-        { type: 'Payslip', id: 'LIST' },
-        'PrePayrollAudit'
-      ]
-    }),
-
       invalidatesTags: [
         { type: 'PayrollRun', id: 'LIST' },
         { type: 'Payslip', id: 'LIST' },

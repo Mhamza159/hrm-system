@@ -55,7 +55,16 @@ export function PayslipPreviewModal({ isOpen, onClose, payslip, onDownloadPdf })
   const empCode = emp.employeeCode || emp.employeeId || '—';
   const desigTitle = emp.designationId?.title || emp.designation?.title || 'Staff';
   const deptName = emp.departmentId?.name || emp.department?.name || 'General';
-  const cnicNumber = emp.cnic || '—';
+  const rawCnic = emp.cnic || '—';
+
+  const formatCnic = (val) => {
+    if (!val || val === '—' || val === 'N/A') return '—';
+    if (typeof val === 'string' && val.includes(':')) return '•••••-•••••••-•';
+    const clean = String(val).replace(/[^0-9]/g, '');
+    if (clean.length === 13) return `${clean.slice(0, 5)}-*******-${clean.slice(12)}`;
+    return val;
+  };
+  const cnicNumber = formatCnic(rawCnic);
 
   // Payment Method: Default to Cash
   const isCash = !payslip.paymentMethod || payslip.paymentMethod === 'cash';
@@ -179,9 +188,11 @@ export function PayslipPreviewModal({ isOpen, onClose, payslip, onDownloadPdf })
                     <span className="text-slate-400 dark:text-slate-500">Disbursement:</span>
                     <span className="font-medium text-slate-900 dark:text-white">Cash Disbursement</span>
                   </div>
-                  <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
-                    <span className="text-slate-400 dark:text-slate-500">CNIC / Identity:</span>
-                    <span className="font-mono font-medium text-slate-900 dark:text-white">{cnicNumber}</span>
+                  <div className="flex items-center justify-between text-slate-600 dark:text-slate-300 gap-2">
+                    <span className="text-slate-400 dark:text-slate-500 whitespace-nowrap">CNIC / Identity:</span>
+                    <span className="font-mono font-medium text-slate-900 dark:text-white truncate max-w-[200px] text-right" title={cnicNumber}>
+                      {cnicNumber}
+                    </span>
                   </div>
                 </>
               ) : (

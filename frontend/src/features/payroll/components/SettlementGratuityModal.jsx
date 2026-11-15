@@ -38,7 +38,8 @@ export function SettlementGratuityModal({ isOpen, onClose, employee, activeSalar
 
   if (!isOpen || !employee) return null;
 
-  const baseSalaryPaisa = activeSalary?.baseSalary || 0;
+  const salaryObj = activeSalary?.current || activeSalary || {};
+  const baseSalaryPaisa = salaryObj?.basicSalary || salaryObj?.baseSalary || 0;
   const baseSalaryPkr = baseSalaryPaisa / 100;
 
   // Calculate completed years of service

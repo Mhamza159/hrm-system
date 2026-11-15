@@ -165,6 +165,24 @@ const payslipSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
+    attendanceSummary: {
+      workingDays: {
+        type: Number,
+        default: 30
+      },
+      presentDays: {
+        type: Number,
+        default: 0
+      },
+      unpaidLeaves: {
+        type: Number,
+        default: 0
+      },
+      overtimeHours: {
+        type: Number,
+        default: 0
+      }
+    },
     paymentMethod: {
       type: String,
       enum: ['cash', 'bank_transfer', 'cheque'],

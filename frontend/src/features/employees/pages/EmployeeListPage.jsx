@@ -44,6 +44,8 @@ import { useAuth } from '../../../hooks/useAuth.js';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { DataTable } from '../../../components/common/DataTable.jsx';
 import { StatusBadge } from '../../../components/common/StatusBadge.jsx';
+import { RoleBadge } from '../../../components/common/RoleBadge.jsx';
+import { DesignationBadge } from '../../../components/common/DesignationBadge.jsx';
 import { ConfirmDialog } from '../../../components/common/ConfirmDialog.jsx';
 import { Can } from '../../../components/common/Can.jsx';
 import { cn } from '../../../lib/utils.js';
@@ -305,23 +307,30 @@ export default function EmployeeListPage() {
     },
     {
       key: 'designationId',
-      header: 'Designation & Grade',
-      render: (row) => (
-        <div className="space-y-1">
-          <span className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
-            {row.designationId?.title || '—'}
-          </span>
-          {row.designationId?.grade && (
-            <span
-              className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                gradeStyles[row.designationId.grade] || gradeStyles.Mid
-              }`}
-            >
-              {row.designationId.grade}
-            </span>
-          )}
-        </div>
-      )
+      header: 'Role & Designation',
+      render: (row) => {
+        const userRoles = row.userId?.roles || [];
+        const role = userRoles.length > 0 ? userRoles[0] : null;
+        const desig = row.designationId;
+
+        return (
+          <div className="flex flex-col gap-1.5 items-start">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <DesignationBadge designation={desig} />
+              {role && <RoleBadge role={role} size="sm" />}
+            </div>
+            {desig?.grade && (
+              <span
+                className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                  gradeStyles[desig.grade] || gradeStyles.Mid
+                }`}
+              >
+                Grade: {desig.grade}
+              </span>
+            )}
+          </div>
+        );
+      }
     },
     {
       key: 'shiftId',

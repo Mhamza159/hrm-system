@@ -248,7 +248,7 @@ export function FinalSettlementPage() {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           employee={selectedEmployee}
-          activeSalary={salaryData?.data}
+          activeSalary={salaryData?.data?.current || salaryData?.data}
           onSuccess={() => {
             refetch();
             setIsModalOpen(false);

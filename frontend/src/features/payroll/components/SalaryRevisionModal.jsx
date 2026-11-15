@@ -112,66 +112,67 @@ export function SalaryRevisionModal({ isOpen, onClose, currentStructure, onSucce
   const empCode = currentStructure.employeeId?.employeeCode || '';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in overflow-y-auto">
+      <div className="relative w-full max-w-2xl bg-white dark:bg-[#111D17] rounded-3xl shadow-2xl border border-slate-200/80 dark:border-[#1A3125] overflow-hidden flex flex-col max-h-[90vh] my-8">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 dark:border-[#1A3125] bg-slate-50/50 dark:bg-[#0E1A14] shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/40 text-[#00C471] rounded-2xl border border-emerald-200/60 dark:border-emerald-800/40 shadow-xs">
               <TrendingUp className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+              <h2 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">
                 Revise Salary: {empName} ({empCode})
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Record annual increment, promotion, or compensation adjustment
               </p>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="overflow-y-auto p-6 sm:p-7 space-y-6">
           {errorMessage && (
-            <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2.5 text-sm text-red-600 dark:text-red-400">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <div className="p-3.5 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-xl flex items-center gap-2.5 text-xs text-rose-600 dark:text-rose-400">
+              <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
 
           {/* Current vs New Comparison Banner */}
-          <div className="grid grid-cols-3 gap-3 p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700 text-center">
+          <div className="grid grid-cols-3 gap-3 p-4 bg-slate-50/70 dark:bg-[#0E1A14] rounded-2xl border border-slate-200/80 dark:border-[#1A3125] text-center">
             <div>
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Current Gross
               </span>
-              <p className="text-base font-bold text-slate-800 dark:text-slate-200">
+              <p className="text-base font-bold font-mono text-slate-800 dark:text-slate-200 tabular-nums mt-0.5">
                 PKR {previousGrossPkr.toLocaleString('en-PK')}
               </p>
             </div>
             <div>
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 New Gross
               </span>
-              <p className="text-base font-bold text-emerald-600 dark:text-emerald-400">
+              <p className="text-base font-bold font-mono text-[#00C471] dark:text-[#05D87D] tabular-nums mt-0.5">
                 PKR {newGrossTotal.toLocaleString('en-PK')}
               </p>
             </div>
             <div>
-              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Delta
               </span>
               <p
-                className={`text-base font-bold ${
+                className={`text-base font-bold font-mono tabular-nums mt-0.5 ${
                   deltaPkr >= 0
-                    ? 'text-emerald-600 dark:text-emerald-400'
+                    ? 'text-emerald-700 dark:text-emerald-400'
                     : 'text-rose-600 dark:text-rose-400'
                 }`}
               >
@@ -184,21 +185,21 @@ export function SalaryRevisionModal({ isOpen, onClose, currentStructure, onSucce
           {/* Effective Date & Revision Reason */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Effective From Date <span className="text-red-500">*</span>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                Effective From Date <span className="text-rose-500">*</span>
               </label>
               <input
                 type="date"
                 required
                 value={formData.effectiveFrom}
                 onChange={(e) => setFormData({ ...formData, effectiveFrom: e.target.value })}
-                className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white"
+                className="w-full h-10 px-3.5 text-xs bg-white dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] text-slate-900 dark:text-white shadow-2xs transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                Revision Justification <span className="text-red-500">*</span>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                Revision Justification <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -206,20 +207,20 @@ export function SalaryRevisionModal({ isOpen, onClose, currentStructure, onSucce
                 placeholder="e.g. Annual Merit Increment, Promotion"
                 value={formData.revisionReason}
                 onChange={(e) => setFormData({ ...formData, revisionReason: e.target.value })}
-                className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white"
+                className="w-full h-10 px-3.5 text-xs bg-white dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] text-slate-900 dark:text-white placeholder:text-slate-400 shadow-2xs transition-all"
               />
             </div>
           </div>
 
           {/* Salary Components Breakdown */}
-          <div className="border-t border-slate-200 dark:border-slate-800 pt-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
+          <div className="border-t border-slate-200/80 dark:border-[#1A3125] pt-5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3.5">
               Revised Monthly Components (PKR)
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Basic Salary (PKR) <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Basic Salary (PKR) <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -228,12 +229,12 @@ export function SalaryRevisionModal({ isOpen, onClose, currentStructure, onSucce
                   required
                   value={formData.basicSalary}
                   onChange={(e) => setFormData({ ...formData, basicSalary: e.target.value })}
-                  className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white"
+                  className="w-full h-10 px-3.5 text-xs font-mono font-medium bg-white dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] text-slate-900 dark:text-white shadow-2xs transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   House Rent Allowance (PKR)
                 </label>
                 <input
@@ -242,12 +243,12 @@ export function SalaryRevisionModal({ isOpen, onClose, currentStructure, onSucce
                   step="any"
                   value={formData.houseRentAllowance}
                   onChange={(e) => setFormData({ ...formData, houseRentAllowance: e.target.value })}
-                  className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white"
+                  className="w-full h-10 px-3.5 text-xs font-mono font-medium bg-white dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] text-slate-900 dark:text-white shadow-2xs transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Medical Allowance (PKR)
                 </label>
                 <input
@@ -256,12 +257,12 @@ export function SalaryRevisionModal({ isOpen, onClose, currentStructure, onSucce
                   step="any"
                   value={formData.medicalAllowance}
                   onChange={(e) => setFormData({ ...formData, medicalAllowance: e.target.value })}
-                  className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white"
+                  className="w-full h-10 px-3.5 text-xs font-mono font-medium bg-white dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] text-slate-900 dark:text-white shadow-2xs transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Conveyance Allowance (PKR)
                 </label>
                 <input
@@ -270,12 +271,12 @@ export function SalaryRevisionModal({ isOpen, onClose, currentStructure, onSucce
                   step="any"
                   value={formData.conveyanceAllowance}
                   onChange={(e) => setFormData({ ...formData, conveyanceAllowance: e.target.value })}
-                  className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white"
+                  className="w-full h-10 px-3.5 text-xs font-mono font-medium bg-white dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] text-slate-900 dark:text-white shadow-2xs transition-all"
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Other Special Allowances (PKR)
                 </label>
                 <input
@@ -284,26 +285,26 @@ export function SalaryRevisionModal({ isOpen, onClose, currentStructure, onSucce
                   step="any"
                   value={formData.otherAllowances}
                   onChange={(e) => setFormData({ ...formData, otherAllowances: e.target.value })}
-                  className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white"
+                  className="w-full h-10 px-3.5 text-xs font-mono font-medium bg-white dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] text-slate-900 dark:text-white shadow-2xs transition-all"
                 />
               </div>
             </div>
           </div>
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+          <div className="flex items-center justify-end gap-3 pt-5 border-t border-slate-200/80 dark:border-[#1A3125]">
             <button
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              className="h-9 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] rounded-xl hover:bg-slate-50 dark:hover:bg-[#1A3125] shadow-xs cursor-pointer transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
+              className="h-9 px-5 inline-flex items-center gap-2 bg-[#00C471] hover:bg-[#049856] text-white rounded-xl text-xs font-semibold shadow-xs shadow-emerald-600/20 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50"
             >
               {isLoading ? 'Saving Revision...' : 'Confirm Revision'}
             </button>

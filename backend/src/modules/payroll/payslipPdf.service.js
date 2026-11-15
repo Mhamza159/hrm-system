@@ -9,6 +9,16 @@
  */
 
 import PDFDocument from 'pdfkit';
+import { decrypt } from '../../utils/crypto.js';
+
+const safeDecrypt = (val) => {
+  if (!val || typeof val !== 'string' || !val.includes(':')) return val;
+  try {
+    return decrypt(val);
+  } catch {
+    return val;
+  }
+};
 
 /**
  * Utility: Convert numeric amount into English words (Pakistani Rupees).
@@ -76,10 +86,10 @@ export async function generatePayslipPdf(payslip) {
       const monthLabel = `${monthNames[(payslip.month || 1) - 1]} ${payslip.year || ''}`;
 
       // Masking helpers
-      const rawCnic = emp.cnic || '';
+      const rawCnic = safeDecrypt(emp.cnic || '');
       const maskedCnic = rawCnic.length > 8
         ? `${rawCnic.slice(0, 5)}-*******-${rawCnic.slice(-1)}`
-        : 'XXXXX-XXXXXXX-X';
+        : (rawCnic || 'XXXXX-XXXXXXX-X');
 
       const rawIban = emp.bankDetails?.accountNumber || '';
       const maskedIban = rawIban.length > 4
@@ -309,25 +319,30 @@ export async function generateAnnualTaxCertificate(employee, taxYear, payslips =
       let yPos = 120;
 
       // 2. Employer & Employee Metadata Box
-      doc.rect(40, yPos, 515, 65).fill('#F8FAFC').stroke('#E2E8F0');
+      doc.rect(40, yPos, 515, 75).fill('#F8FAFC').stroke('#E2E8F0');
       doc.fillColor('#475569').fontSize(8).font('Helvetica-Bold');
       doc.text('WITHHOLDING AGENT (EMPLOYER)', 50, yPos + 8);
       doc.text('TAXPAYER / EMPLOYEE DETAILS', 300, yPos + 8);
 
       doc.font('Helvetica').fontSize(8).fillColor('#1E293B');
       // Left (Company)
-      doc.text('Company: HRM Tech Enterprise Ltd', 50, yPos + 22);
-      doc.text('Employer NTN: 9876543-2', 50, yPos + 34);
-      doc.text('Address: Business Avenue, Shahrah-e-Faisal, Karachi', 50, yPos + 46);
-      doc.text('Jurisdiction: RTO-I Karachi', 50, yPos + 58);
+      doc.text('Company: HRM Tech Enterprise Ltd', 50, yPos + 22, { width: 235 });
+      doc.text('Employer NTN: 9876543-2', 50, yPos + 35, { width: 235 });
+      doc.text('Address: Business Avenue, Shahrah-e-Faisal, Karachi', 50, yPos + 48, { width: 235 });
+      doc.text('Jurisdiction: RTO-I Karachi', 50, yPos + 61, { width: 235 });
 
-      // Right (Employee)
-      doc.text(`Employee Name: ${empName}`, 300, yPos + 22);
-      doc.text(`CNIC: ${employee.cnic || 'N/A'}`, 300, yPos + 34);
-      doc.text(`Designation: ${desigTitle}`, 300, yPos + 46);
-      doc.text(`Employee ID: ${empCode}`, 300, yPos + 58);
+      // Right (Employee) - Safe masked CNIC preventing line-wrapping collision
+      const rawCnic = safeDecrypt(employee.cnic || '');
+      const cleanCnic = rawCnic.length > 8
+        ? `${rawCnic.slice(0, 5)}-*******-${rawCnic.slice(-1)}`
+        : (rawCnic || 'N/A');
 
-      yPos += 80;
+      doc.text(`Employee Name: ${empName}`, 300, yPos + 22, { width: 245, lineBreak: false, ellipsis: true });
+      doc.text(`CNIC: ${cleanCnic}`, 300, yPos + 35, { width: 245, lineBreak: false });
+      doc.text(`Designation: ${desigTitle}`, 300, yPos + 48, { width: 245, lineBreak: false, ellipsis: true });
+      doc.text(`Employee ID: ${empCode}`, 300, yPos + 61, { width: 245, lineBreak: false });
+
+      yPos += 88;
 
       // 3. Monthly Breakdown Table
       doc.rect(40, yPos, 515, 20).fill('#F1F5F9').stroke('#CBD5E1');
@@ -345,25 +360,42 @@ export async function generateAnnualTaxCertificate(employee, taxYear, payslips =
 
       doc.font('Helvetica').fontSize(8).fillColor('#1E293B');
 
-      payslips.forEach((slip) => {
-        const grossPkr = (slip.grossPay || 0) / 100;
-        const taxPkr = (slip.taxWithheld || slip.incomeTax || 0) / 100;
-        const taxablePkr = grossPkr;
+      if (payslips.length === 0) {
+        doc.font('Helvetica-Oblique').fontSize(8).fillColor('#64748B');
+        doc.text('No taxable salary disbursements recorded for this tax period.', 50, rowY + 6, { width: 495, align: 'center' });
+        rowY += 28;
+      } else {
+        const monthNames = [
+          'July', 'August', 'September', 'October', 'November', 'December',
+          'January', 'February', 'March', 'April', 'May', 'June'
+        ];
 
-        totalGross += grossPkr;
-        totalTaxable += taxablePkr;
-        totalTax += taxPkr;
+        payslips.forEach((slip) => {
+          const grossPkr = (slip.grossPay || 0) / 100;
+          const taxPkr = (slip.taxWithheld || slip.incomeTax || 0) / 100;
+          const taxablePkr = grossPkr;
 
-        doc.text(`${slip.month}/${slip.year}`, 50, rowY);
-        doc.text(grossPkr.toLocaleString('en-PK'), 150, rowY, { width: 95, align: 'right' });
-        doc.text('0', 255, rowY, { width: 95, align: 'right' });
-        doc.text(taxablePkr.toLocaleString('en-PK'), 360, rowY, { width: 95, align: 'right' });
-        doc.text(taxPkr.toLocaleString('en-PK'), 460, rowY, { width: 90, align: 'right' });
+          totalGross += grossPkr;
+          totalTaxable += taxablePkr;
+          totalTax += taxPkr;
 
-        rowY += 15;
-      });
+          const allMonthNames = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+          ];
+          const mLabel = allMonthNames[(slip.month || 1) - 1] || `M${slip.month}`;
 
-      const tableBottomY = Math.max(rowY, yPos + 200);
+          doc.text(`${mLabel} ${slip.year}`, 50, rowY);
+          doc.text(grossPkr.toLocaleString('en-PK'), 150, rowY, { width: 95, align: 'right' });
+          doc.text('0', 255, rowY, { width: 95, align: 'right' });
+          doc.text(taxablePkr.toLocaleString('en-PK'), 360, rowY, { width: 95, align: 'right' });
+          doc.text(taxPkr.toLocaleString('en-PK'), 460, rowY, { width: 90, align: 'right' });
+
+          rowY += 16;
+        });
+      }
+
+      const tableBottomY = Math.max(rowY + 6, yPos + 70);
 
       // Summary Total Row
       doc.rect(40, tableBottomY, 515, 22).fill('#FEF3C7').stroke('#FDE68A');
@@ -374,14 +406,14 @@ export async function generateAnnualTaxCertificate(employee, taxYear, payslips =
       doc.text(totalTaxable.toLocaleString('en-PK'), 360, tableBottomY + 7, { width: 95, align: 'right' });
       doc.text(totalTax.toLocaleString('en-PK'), 460, tableBottomY + 7, { width: 90, align: 'right' });
 
-      yPos = tableBottomY + 35;
+      yPos = tableBottomY + 32;
 
       // 4. Tax Withheld in Words Banner
-      doc.rect(40, yPos, 515, 36).fill('#F8FAFC').stroke('#E2E8F0');
+      doc.rect(40, yPos, 515, 34).fill('#F8FAFC').stroke('#E2E8F0');
       doc.fillColor('#1E293B').font('Helvetica-Bold').fontSize(8);
       doc.text('TOTAL TAX DEDUCTED IN WORDS:', 50, yPos + 8);
       doc.font('Helvetica-Oblique').fontSize(8).fillColor('#B45309');
-      doc.text(numberToWords(totalTax), 50, yPos + 20);
+      doc.text(totalTax > 0 ? `${numberToWords(totalTax)} Rupees Only` : 'Zero Rupees Only', 50, yPos + 20);
 
       yPos += 50;
 

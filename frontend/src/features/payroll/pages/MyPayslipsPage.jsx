@@ -40,20 +40,24 @@ import { cn } from '../../../lib/utils.js';
 export function MyPayslipsPage() {
   const { isSuperAdmin } = useAuth();
   const [page, setPage] = useState(1);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const currentNow = new Date();
+  // Pakistan Fiscal Year: Jul 1 to Jun 30. E.g. Nov 2026 falls into Tax Year 2027
+  const defaultTaxYear = currentNow.getMonth() + 1 >= 7 ? currentNow.getFullYear() + 1 : currentNow.getFullYear();
+  const [selectedYear, setSelectedYear] = useState(defaultTaxYear.toString());
   const [previewPayslip, setPreviewPayslip] = useState(null);
   const [isDownloadingCertificate, setIsDownloadingCertificate] = useState(false);
   const accessToken = useSelector((state) => state.auth?.accessToken);
+
+  // Hook runs before the redirect below (hooks may not follow an early return); skipped for Super Admin
+  const { data, isLoading, isFetching, refetch } = useGetMyPayslipsQuery(
+    { page, limit: 12 },
+    { skip: isSuperAdmin }
+  );
 
   // Super Admin / Owner does not draw salary payslips; redirect to payroll dashboard
   if (isSuperAdmin) {
     return <Navigate to="/payroll" replace />;
   }
-
-  const { data, isLoading, isFetching, refetch } = useGetMyPayslipsQuery({
-    page,
-    limit: 12
-  });
 
   const payslips = data?.data || [];
   const meta = data?.meta || { totalDocs: 0, totalPages: 1 };
@@ -160,9 +164,10 @@ export function MyPayslipsPage() {
             onChange={(e) => setSelectedYear(e.target.value)}
             className="h-9 px-3 bg-white dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 shadow-xs cursor-pointer"
           >
-            <option value="2026">Tax Year 2026</option>
-            <option value="2025">Tax Year 2025</option>
-            <option value="2024">Tax Year 2024</option>
+            <option value="2027">Tax Year 2027 (01-Jul-2026 – 30-Jun-2027)</option>
+            <option value="2026">Tax Year 2026 (01-Jul-2025 – 30-Jun-2026)</option>
+            <option value="2025">Tax Year 2025 (01-Jul-2024 – 30-Jun-2025)</option>
+            <option value="2024">Tax Year 2024 (01-Jul-2023 – 30-Jun-2024)</option>
           </select>
 
           <button

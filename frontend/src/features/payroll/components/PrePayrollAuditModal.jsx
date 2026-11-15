@@ -34,6 +34,7 @@ import {
   Receipt
 } from 'lucide-react';
 import { useGetPrePayrollAuditQuery, useGeneratePayrollRunMutation } from '../payrollApi.js';
+import { useLockMonthMutation } from '../../attendance/attendanceApi.js';
 import { toast } from 'sonner';
 
 export function PrePayrollAuditModal({ isOpen, onClose, onSuccess }) {
@@ -53,12 +54,28 @@ export function PrePayrollAuditModal({ isOpen, onClose, onSuccess }) {
     }
   }, [isOpen]);
 
-  const { data: auditData, isLoading, isFetching } = useGetPrePayrollAuditQuery(
+  const { data: auditData, isLoading, isFetching, refetch } = useGetPrePayrollAuditQuery(
     { month: selectedMonth, year: selectedYear },
     { skip: !isOpen }
   );
 
+  const [lockMonth, { isLoading: isLocking }] = useLockMonthMutation();
   const [generatePayrollRun, { isLoading: isGenerating }] = useGeneratePayrollRunMutation();
+
+  const handleLockMonth = async () => {
+    try {
+      const padMonth = String(selectedMonth).padStart(2, '0');
+      const yearMonth = `${selectedYear}-${padMonth}`;
+      await lockMonth({
+        yearMonth,
+        notes: `Month attendance locked via Pre-Payroll Audit Console`
+      }).unwrap();
+      toast.success(`Attendance for ${yearMonth} locked successfully`);
+      refetch();
+    } catch (err) {
+      toast.error(err?.data?.message || err?.message || 'Failed to lock month attendance');
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -176,18 +193,34 @@ export function PrePayrollAuditModal({ isOpen, onClose, onSuccess }) {
                 </select>
               </div>
 
-              {/* Month Lock Guard Pill */}
+              {/* Month Lock Guard Pill & Action */}
               <div className="flex items-center gap-2">
                 {isMonthLocked ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                     Month Attendance Frozen (Locked)
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-semibold">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                    Attendance Unlocked (Lock required before payout)
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-semibold">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                      Attendance Unlocked
+                    </span>
+                    <button
+                      type="button"
+                      disabled={isLocking}
+                      onClick={handleLockMonth}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                      title="Lock attendance to enable payroll generation"
+                    >
+                      {isLocking ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Lock className="w-3.5 h-3.5" />
+                      )}
+                      <span>Lock Month Attendance</span>
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -637,16 +670,30 @@ export function PrePayrollAuditModal({ isOpen, onClose, onSuccess }) {
                 Close
               </button>
 
-              <button
-                type="button"
-                disabled={!isMonthLocked || employees.length === 0 || isLoading || isFetching}
-                onClick={() => setStep(2)}
-                className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                title={!isMonthLocked ? 'Please lock attendance for this month first' : 'Proceed to confirmation'}
-              >
-                <span>Proceed to Run Confirmation</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                {!isMonthLocked && (
+                  <button
+                    type="button"
+                    disabled={isLocking}
+                    onClick={handleLockMonth}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {isLocking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />}
+                    <span>Freeze & Lock Month</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  disabled={!isMonthLocked || employees.length === 0 || isLoading || isFetching}
+                  onClick={() => setStep(2)}
+                  className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={!isMonthLocked ? 'Please lock attendance for this month first' : 'Proceed to confirmation'}
+                >
+                  <span>Proceed to Run Confirmation</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
             </>
           ) : (
             <>

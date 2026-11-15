@@ -18,6 +18,16 @@ import { Payslip } from '../../models/payslip.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { paginate } from '../../utils/paginate.js';
 import { recordAuditLog } from '../../services/audit.service.js';
+import { decrypt } from '../../utils/crypto.js';
+
+const safeDecrypt = (val) => {
+  if (!val || typeof val !== 'string' || !val.includes(':')) return val;
+  try {
+    return decrypt(val);
+  } catch {
+    return val;
+  }
+};
 
 export class PayrollService {
   /**
@@ -122,10 +132,11 @@ export class PayrollService {
       sort: { effectiveFrom: -1, createdAt: -1 },
       populate: {
         path: 'employeeId',
-        select: 'employeeCode name email departmentId designationId status',
+        select: 'employeeCode name email departmentId designationId status userId',
         populate: [
           { path: 'departmentId', select: 'name' },
-          { path: 'designationId', select: 'title' }
+          { path: 'designationId', select: 'title code grade' },
+          { path: 'userId', select: 'roles', populate: { path: 'roles', select: 'name' } }
         ]
       }
     });
@@ -342,9 +353,17 @@ export class PayrollService {
       }
     });
 
+    const decryptedSlips = paginatedSlips.docs.map((doc) => {
+      const slip = doc.toObject ? doc.toObject() : { ...doc };
+      if (slip.employeeId?.cnic) {
+        slip.employeeId.cnic = safeDecrypt(slip.employeeId.cnic);
+      }
+      return slip;
+    });
+
     return {
       run,
-      payslips: paginatedSlips.docs,
+      payslips: decryptedSlips,
       meta: paginatedSlips.meta
     };
   }
@@ -714,7 +733,7 @@ export class PayrollService {
     }
 
     const { page = 1, limit = 12 } = query;
-    return await paginate(
+    const paginated = await paginate(
       Payslip,
       { employeeId: emp._id, status: { $in: ['approved', 'paid'] }, isDeleted: { $ne: true } },
       {
@@ -734,6 +753,16 @@ export class PayrollService {
         ]
       }
     );
+
+    paginated.docs = paginated.docs.map((doc) => {
+      const slip = doc.toObject ? doc.toObject() : { ...doc };
+      if (slip.employeeId?.cnic) {
+        slip.employeeId.cnic = safeDecrypt(slip.employeeId.cnic);
+      }
+      return slip;
+    });
+
+    return paginated;
   }
 
   /**
@@ -911,16 +940,30 @@ export class PayrollService {
     const { generateAnnualTaxCertificate } = await import('./payslipPdf.service.js');
 
     const year = Number(taxYear) || new Date().getFullYear();
-    // Fiscal Tax Year: July 1 (year - 1) to June 30 (year)
-    const paidSlips = await Payslip.find({
+    // 1. Fiscal Tax Year: July 1 (year - 1) to June 30 (year)
+    let paidSlips = await Payslip.find({
       employeeId: employee._id,
-      status: { $in: ['approved', 'paid'] },
+      status: { $in: ['draft', 'review', 'approved', 'paid'] },
       isDeleted: { $ne: true },
       $or: [
         { year: year - 1, month: { $gte: 7 } },
         { year: year, month: { $lte: 6 } }
       ]
     }).sort({ year: 1, month: 1 });
+
+    // 2. If no slips found in fiscal tax year, fallback to matching calendar year
+    if (paidSlips.length === 0) {
+      paidSlips = await Payslip.find({
+        employeeId: employee._id,
+        status: { $in: ['draft', 'review', 'approved', 'paid'] },
+        isDeleted: { $ne: true },
+        year
+      }).sort({ year: 1, month: 1 });
+    }
+
+    if (employee.cnic) {
+      employee.cnic = safeDecrypt(employee.cnic);
+    }
 
     const pdfBuffer = await generateAnnualTaxCertificate(employee, year, paidSlips);
     const empCode = employee.employeeCode || employee.employeeId || 'EMP';
@@ -1718,7 +1761,20 @@ export class PayrollService {
       }
     }
 
-    return payslip;
+    const slipObj = payslip.toObject ? payslip.toObject() : { ...payslip };
+    if (slipObj.employeeId) {
+      if (slipObj.employeeId.cnic) {
+        slipObj.employeeId.cnic = safeDecrypt(slipObj.employeeId.cnic);
+      }
+      if (slipObj.employeeId.bankDetails?.iban) {
+        slipObj.employeeId.bankDetails.iban = safeDecrypt(slipObj.employeeId.bankDetails.iban);
+      }
+      if (slipObj.employeeId.bankDetails?.accountNumber) {
+        slipObj.employeeId.bankDetails.accountNumber = safeDecrypt(slipObj.employeeId.bankDetails.accountNumber);
+      }
+    }
+
+    return slipObj;
   }
 
 }

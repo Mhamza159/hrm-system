@@ -51,7 +51,7 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
   }
 
   // 2. Prevent duplicate active payroll runs
-  const existingRun = await PayrollRun.findOne({ month, year });
+  const existingRun = await PayrollRun.findOne({ month, year, isDeleted: { $ne: true } });
   if (existingRun && existingRun.status !== 'draft' && existingRun.status !== 'cancelled') {
     throw new ApiError(
       409,
@@ -134,6 +134,7 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
 
     let totalApprovedOtMinutes = 0;
     let lateCount = 0;
+    let presentDays = 0;
 
     for (const att of attendanceRecords) {
       if (att.overtimeApproved && att.overtimeMinutes > 0) {
@@ -141,6 +142,11 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
       }
       if (att.status === 'late') {
         lateCount += 1;
+        presentDays += 1;
+      } else if (att.status === 'present') {
+        presentDays += 1;
+      } else if (att.status === 'half_day') {
+        presentDays += 0.5;
       }
     }
 
@@ -180,7 +186,7 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
     // Compute Gross Pay for the month
     let grossPay = earnings.reduce((acc, curr) => acc + curr.amount, 0);
 
-    // --- D. M6 Leaves: Unpaid Leave Absences ---
+    // --- D. M6 Leaves & Absences: Unpaid Deductions ---
     const leaves = await Leave.find({
       employeeId: emp._id,
       status: 'approved',
@@ -195,8 +201,25 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
       }
     }
 
+    // Unexcused absences: attendance records with status 'absent' not covered by approved leave
+    let unexcusedAbsenceDays = 0;
+    for (const att of attendanceRecords) {
+      if (att.status === 'absent') {
+        const attTime = new Date(att.date).getTime();
+        const covered = leaves.some((lv) => {
+          const s = new Date(lv.startDate).getTime();
+          const e = new Date(lv.endDate).getTime();
+          return attTime >= s && attTime <= e;
+        });
+        if (!covered) {
+          unexcusedAbsenceDays += 1;
+        }
+      }
+    }
+
     const deductions = [];
 
+    const totalUnpaidAbsenceDays = unpaidDays + unexcusedAbsenceDays;
     let unpaidLeaveDeduction = 0;
     if (unpaidDays > 0) {
       unpaidLeaveDeduction = Math.round((structure.grossSalary / 30) * unpaidDays);
@@ -207,6 +230,19 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
         description: `Deduction for ${unpaidDays} days of approved unpaid absence`
       });
     }
+
+    let unexcusedAbsenceDeduction = 0;
+    if (unexcusedAbsenceDays > 0) {
+      unexcusedAbsenceDeduction = Math.round((structure.grossSalary / 30) * unexcusedAbsenceDays);
+      deductions.push({
+        name: `Unexcused Absence (${unexcusedAbsenceDays} days)`,
+        category: 'unpaid_leave',
+        amount: unexcusedAbsenceDeduction,
+        description: `Salary deduction for ${unexcusedAbsenceDays} days of unexcused absence`
+      });
+    }
+
+    const totalAbsenceDeductions = unpaidLeaveDeduction + unexcusedAbsenceDeduction;
 
     // Late penalty: 1 day salary deduction for every 3 late arrivals
     let lateDeductionDays = Math.floor(lateCount / 3);
@@ -222,7 +258,7 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
     }
 
     // --- E. Pakistan Statutory Withholding (FBR Tax, EOBI, PESSI, PF) ---
-    const taxableMonthlyGross = Math.max(0, grossPay - unpaidLeaveDeduction);
+    const taxableMonthlyGross = Math.max(0, grossPay - totalAbsenceDeductions);
     const taxResult = await calculateAnnualIncomeTax(taxableMonthlyGross);
     const taxWithheld = taxResult.monthlyTaxPaisa;
 
@@ -337,7 +373,13 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
       overtimeHours,
       overtimePay,
       lateDeductionDays,
-      unpaidLeaveDays: unpaidDays,
+      unpaidLeaveDays: totalUnpaidAbsenceDays,
+      attendanceSummary: {
+        workingDays: 30,
+        presentDays: attendanceRecords.length > 0 ? presentDays : Math.max(0, 30 - totalUnpaidAbsenceDays),
+        unpaidLeaves: totalUnpaidAbsenceDays,
+        overtimeHours
+      },
       bankName: emp.bankDetails?.bankName || (emp.paymentMethod === 'bank_transfer' ? 'Direct Bank' : 'Cash Disbursement'),
       accountTitle: emp.bankDetails?.accountTitle || emp.name,
       accountNumber: emp.bankDetails?.accountNumber || '',
@@ -390,6 +432,64 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
   payrollRun.bankSummary = bankSummary;
   payrollRun.status = 'review';
   await payrollRun.save();
+
+  // Notify Admins to review, approve, and disburse the initial payroll draft
+  try {
+    const { Role } = await import('../../models/role.model.js');
+    const { User } = await import('../../models/user.model.js');
+    const { notify } = await import('../../services/notify.service.js');
+
+    const adminRoles = await Role.find({
+      name: { $in: ['Super Admin', 'Admin'] }
+    }).select('_id');
+
+    const adminRoleIds = adminRoles.map((r) => r._id);
+    const adminUsers = await User.find({
+      roles: { $in: adminRoleIds },
+      isActive: { $ne: false },
+      isDeleted: { $ne: true }
+    }).select('_id');
+
+    if (adminUsers.length > 0) {
+      const monthNames = [
+        '',
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December'
+      ];
+      const mLabel = monthNames[month] || `Month ${month}`;
+      const actorName = actor?.name || 'HR Manager';
+
+      await notify(
+        adminUsers.map((u) => u._id),
+        {
+          type: 'payroll',
+          title: `Payroll Draft Ready for Review (${mLabel} ${year})`,
+          body: `${actorName} generated the initial payroll draft for ${mLabel} ${year} (${completed} employees, Net: PKR ${(totalNetPay / 100).toLocaleString('en-PK')}). Please review and approve for disbursement.`,
+          link: `/payroll/runs/${payrollRun._id}`,
+          metadata: {
+            payrollRunId: payrollRun._id,
+            month,
+            year,
+            totalEmployees: completed,
+            totalNetPay,
+            generatedBy: actor?._id
+          }
+        }
+      );
+    }
+  } catch (notifErr) {
+    console.warn(`[payrollProcessor] Non-fatal notification failure to Admins: ${notifErr.message}`);
+  }
 
   // Emit completion event
   emitToCompany('payroll:completed', {

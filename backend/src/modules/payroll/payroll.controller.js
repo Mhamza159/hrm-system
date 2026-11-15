@@ -110,6 +110,8 @@ export const getPayrollRuns = asyncHandler(async (req, res) => {
     statusCode: 200,
     data: result.docs,
     meta: result.meta,
+    activeCount: result.activeCount,
+    archivedCount: result.archivedCount,
     message: 'Payroll runs retrieved successfully'
   });
 });
