@@ -1,34 +1,38 @@
 /**
  * @file LoanApprovalsPage.jsx
  * @description Multi-Tier Borrowing Approval Queue for Department Managers, HR, and Super Admin.
- * 
+ *
  * SPECIFICATION:
  * - Module: M10 Loans & Advances (BUILD-GUIDE Section 15 · Row 10.3)
  * - Layer: Frontend Feature Page
- * - Theme: Forest & Emerald Design System
+ * - Theme: Forest & Emerald Design System (DESIGN.md / docs/UI-REFERENCE.md)
  */
 
 import React, { useState } from 'react';
-import {
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Filter,
-  User,
-  DollarSign,
-  ChevronRight,
-  ShieldCheck,
-  Send,
-  Eye
-} from 'lucide-react';
+import { CheckCircle2, XCircle, Clock, Filter, ShieldCheck, ChevronRight } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { StatusBadge } from '../../../components/common/StatusBadge.jsx';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { useGetLoansQuery } from '../loansApi.js';
 import { useAuth } from '../../../hooks/useAuth.js';
+import { formatDate } from '../../../lib/formatters.js';
 import { LoanDecisionModal } from '../components/LoanDecisionModal.jsx';
 import { LoanScheduleDrawer } from '../components/LoanScheduleDrawer.jsx';
+
+const PENDING_STATUSES = ['pending_recommendation', 'pending_hr', 'pending_admin'];
+
+const TABS = [
+  { key: 'pending_me', label: 'Pending my action', icon: Clock },
+  { key: 'all_pending', label: 'All in-flight', icon: Filter },
+  { key: 'approved', label: 'Active / Disbursed', icon: CheckCircle2 },
+  { key: 'rejected', label: 'Declined', icon: XCircle }
+];
+
+// Shared column template so the header and every row line up exactly.
+const COLS = 'lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1.25fr)_minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.1fr)_7.5rem]';
+
+const pkr = (paisa) => `PKR ${((Number(paisa) || 0) / 100).toLocaleString('en-PK')}`;
 
 // Helper to detect if loan applicant holds HR Manager role
 const isLoanFromHR = (loan) => {
@@ -36,11 +40,27 @@ const isLoanFromHR = (loan) => {
   return roles.some((r) => (r?.name || r) === 'HR Manager');
 };
 
+const borrowerName = (emp) =>
+  emp?.name || emp?.user?.name || emp?.userId?.name || `${emp?.firstName || ''} ${emp?.lastName || ''}`.trim() || 'Employee';
+
+const initials = (name = '') =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase() || '?';
+
+function CellLabel({ children }) {
+  return <span className="mb-0.5 block text-[11px] text-slate-500 lg:hidden dark:text-slate-400">{children}</span>;
+}
+
 export function LoanApprovalsPage() {
   const { isSuperAdmin, isHR } = useAuth();
   const [activeTab, setActiveTab] = useState('pending_me');
   const [selectedLoan, setSelectedLoan] = useState(null);
-  const [scheduleLoanId, setScheduleLoanId] = useState(null);
+  const [detailLoanId, setDetailLoanId] = useState(null);
 
   const { data: loansRes, isLoading, isFetching, refetch } = useGetLoansQuery({ page: 1, limit: 100 });
   const loans = loansRes?.data || [];
@@ -53,30 +73,23 @@ export function LoanApprovalsPage() {
     );
   }
 
-  // Filter queue based on active tab
-  const filteredLoans = loans.filter((loan) => {
-    if (activeTab === 'pending_me') {
+  const matchesTab = (loan, tab) => {
+    if (tab === 'pending_me') {
       const fromHR = isLoanFromHR(loan);
-      if (isSuperAdmin) {
-        return loan.status === 'pending_admin' || (fromHR && ['pending_recommendation', 'pending_hr', 'pending_admin'].includes(loan.status));
-      }
-      if (isHR) {
-        return loan.status === 'pending_hr' && !fromHR;
-      }
+      if (isSuperAdmin) return loan.status === 'pending_admin' || (fromHR && PENDING_STATUSES.includes(loan.status));
+      if (isHR) return loan.status === 'pending_hr' && !fromHR;
       // Department Manager default
       return loan.status === 'pending_recommendation' && !fromHR;
     }
-    if (activeTab === 'all_pending') {
-      return ['pending_recommendation', 'pending_hr', 'pending_admin'].includes(loan.status);
-    }
-    if (activeTab === 'approved') {
-      return ['approved', 'active'].includes(loan.status);
-    }
-    if (activeTab === 'rejected') {
-      return loan.status === 'rejected';
-    }
+    if (tab === 'all_pending') return PENDING_STATUSES.includes(loan.status);
+    if (tab === 'approved') return ['approved', 'active'].includes(loan.status);
+    if (tab === 'rejected') return loan.status === 'rejected';
     return true;
-  });
+  };
+
+  const counts = Object.fromEntries(TABS.map((t) => [t.key, loans.filter((l) => matchesTab(l, t.key)).length]));
+  const filteredLoans = loans.filter((loan) => matchesTab(loan, activeTab));
+  const isActiveTab = activeTab === 'approved';
 
   return (
     <div className="space-y-6">
@@ -87,156 +100,187 @@ export function LoanApprovalsPage() {
       />
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-200 dark:border-slate-800 space-x-6 text-xs font-semibold">
-        <button
-          onClick={() => setActiveTab('pending_me')}
-          className={`pb-3 border-b-2 transition-colors flex items-center gap-2 ${
-            activeTab === 'pending_me'
-              ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 font-bold'
-              : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
-          }`}
-        >
-          <Clock className="w-3.5 h-3.5" />
-          Pending My Action
-        </button>
-        <button
-          onClick={() => setActiveTab('all_pending')}
-          className={`pb-3 border-b-2 transition-colors flex items-center gap-2 ${
-            activeTab === 'all_pending'
-              ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 font-bold'
-              : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
-          }`}
-        >
-          <Filter className="w-3.5 h-3.5" />
-          All In-Flight Requests
-        </button>
-        <button
-          onClick={() => setActiveTab('approved')}
-          className={`pb-3 border-b-2 transition-colors flex items-center gap-2 ${
-            activeTab === 'approved'
-              ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 font-bold'
-              : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
-          }`}
-        >
-          <CheckCircle2 className="w-3.5 h-3.5" />
-          Active / Disbursed
-        </button>
-        <button
-          onClick={() => setActiveTab('rejected')}
-          className={`pb-3 border-b-2 transition-colors flex items-center gap-2 ${
-            activeTab === 'rejected'
-              ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400 font-bold'
-              : 'border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-slate-200'
-          }`}
-        >
-          <XCircle className="w-3.5 h-3.5" />
-          Declined
-        </button>
+      <div role="tablist" aria-label="Loan queue" className="flex gap-6 overflow-x-auto border-b border-[#EAECF0] dark:border-[#1A3125]">
+        {TABS.map(({ key, label, icon: Icon }) => {
+          const selected = activeTab === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              onClick={() => setActiveTab(key)}
+              className={`-mb-px flex shrink-0 items-center gap-2 border-b-2 pb-3 text-[13px] font-medium transition-colors ${
+                selected
+                  ? 'border-[#00C471] text-slate-900 dark:text-white'
+                  : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              }`}
+            >
+              <Icon className={`h-4 w-4 ${selected ? 'text-[#00C471]' : ''}`} aria-hidden="true" />
+              {label}
+              <span
+                className={`min-w-[1.25rem] rounded-full px-1.5 py-px text-center font-mono text-[11px] font-semibold tabular-nums ${
+                  selected
+                    ? 'bg-emerald-50 text-emerald-700 dark:bg-[#00C471]/15 dark:text-emerald-400'
+                    : 'bg-slate-100 text-slate-500 dark:bg-[#13221B] dark:text-slate-400'
+                }`}
+              >
+                {counts[key]}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Main Approval List */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden">
-        {isLoading ? (
-          <div className="p-12 text-center text-xs text-slate-400 animate-pulse">
-            Loading approval queue...
-          </div>
-        ) : filteredLoans.length === 0 ? (
-          <div className="p-12 text-center space-y-2">
-            <ShieldCheck className="mx-auto w-10 h-10 text-slate-300 dark:text-slate-700" />
-            <p className="text-sm font-semibold text-slate-900 dark:text-white">
-              Queue is clear
-            </p>
-            <p className="text-xs text-slate-500">
-              No borrowing applications are awaiting decision under this view.
-            </p>
+      {/* Queue */}
+      <div className="overflow-hidden rounded-2xl border border-[#EAECF0] bg-white dark:border-[#1A3125] dark:bg-[#111D17]">
+        {filteredLoans.length === 0 ? (
+          <div className="space-y-2 px-6 py-14 text-center">
+            <ShieldCheck className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-600" aria-hidden="true" />
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">Nothing here</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">No borrowing requests match this view.</p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
-            {filteredLoans.map((loan) => {
-              const amountPkr = (loan.amount || 0) / 100;
-              const installmentPkr = (loan.monthlyInstallment || 0) / 100;
-              const emp = loan.employeeId;
-              const empName = emp?.name || emp?.user?.name || emp?.userId?.name || `${emp?.firstName || ''} ${emp?.lastName || ''}`.trim() || 'Employee';
+          <>
+            {/* Column header */}
+            <div
+              className={`hidden gap-4 border-b border-[#EAECF0] bg-slate-50/70 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500 lg:grid dark:border-[#1A3125] dark:bg-[#0E1A14] dark:text-slate-400 ${COLS}`}
+            >
+              <span>Borrower</span>
+              <span>Request</span>
+              <span className="text-end">Principal</span>
+              <span className="text-end">Installment</span>
+              <span>{isActiveTab ? 'Repayment' : 'Applied'}</span>
+              <span className="sr-only">Actions</span>
+            </div>
 
-              const canTakeAction =
-                (loan.status === 'pending_recommendation' && !isSuperAdmin && !isHR) ||
-                (loan.status === 'pending_hr' && (isHR || isSuperAdmin)) ||
-                (loan.status === 'pending_admin' && isSuperAdmin);
+            <ul className="divide-y divide-[#EAECF0] dark:divide-[#1A3125]">
+              {filteredLoans.map((loan) => {
+                const emp = loan.employeeId;
+                const name = borrowerName(emp);
+                const isPending = PENDING_STATUSES.includes(loan.status);
+                const repaidPct = loan.amount > 0 ? Math.min(100, Math.round(((loan.totalRepaid || 0) / loan.amount) * 100)) : 0;
+                const openDetails = () => setDetailLoanId(loan._id);
 
-              return (
-                <div
-                  key={loan._id}
-                  className="p-5 hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
-                >
-                  <div className="space-y-1.5 min-w-[240px]">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-slate-900 dark:text-white">
-                        {loan.loanId}
-                      </span>
-                      <span className="uppercase text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                        {loan.type}
-                      </span>
-                      <StatusBadge status={loan.status} />
-                      {isLoanFromHR(loan) && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                          HR Staff Request
+                return (
+                  <li
+                    key={loan._id}
+                    tabIndex={0}
+                    onClick={openDetails}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openDetails();
+                      }
+                    }}
+                    aria-label={`View loan ${loan.loanId} for ${name}`}
+                    className={`grid cursor-pointer grid-cols-1 items-center gap-4 px-5 py-4 transition-colors hover:bg-slate-50/70 focus-visible:bg-slate-50 focus-visible:outline-none dark:hover:bg-[#13221B]/60 dark:focus-visible:bg-[#13221B] ${COLS}`}
+                  >
+                    {/* Borrower */}
+                    <div className="flex min-w-0 items-center gap-3">
+                      {emp?.avatar ? (
+                        <img src={emp.avatar} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover" />
+                      ) : (
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-semibold text-emerald-700 dark:bg-[#00C471]/15 dark:text-emerald-400">
+                          {initials(name)}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate text-[13px] font-semibold text-slate-900 dark:text-white">{name}</p>
+                        <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                          {[emp?.employeeCode, emp?.departmentId?.name].filter(Boolean).join(' · ') || '—'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Request */}
+                    <div className="min-w-0">
+                      <CellLabel>Request</CellLabel>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="font-mono text-xs font-semibold text-slate-800 dark:text-slate-200">{loan.loanId}</span>
+                        <span className="rounded-md bg-slate-100 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-slate-600 dark:bg-[#13221B] dark:text-slate-300">
+                          {loan.type}
+                        </span>
+                      </div>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        <StatusBadge status={loan.status} />
+                        {isLoanFromHR(loan) && (
+                          <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-px text-[10px] font-semibold text-amber-700 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-400">
+                            HR staff
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Principal */}
+                    <div className="lg:text-end">
+                      <CellLabel>Principal</CellLabel>
+                      <p className="font-mono text-[13px] font-semibold tabular-nums text-slate-900 dark:text-white">{pkr(loan.amount)}</p>
+                    </div>
+
+                    {/* Installment */}
+                    <div className="lg:text-end">
+                      <CellLabel>Installment</CellLabel>
+                      <p className="font-mono text-[13px] tabular-nums text-slate-800 dark:text-slate-200">{pkr(loan.monthlyInstallment)}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        × {loan.repaymentTenureMonths} month{loan.repaymentTenureMonths === 1 ? '' : 's'}
+                      </p>
+                    </div>
+
+                    {/* Repayment progress (active) or applied date */}
+                    <div className="min-w-0">
+                      <CellLabel>{isActiveTab ? 'Repayment' : 'Applied'}</CellLabel>
+                      {isActiveTab ? (
+                        <>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-500 dark:text-slate-400">{pkr(loan.remainingBalance)} left</span>
+                            <span className="font-mono font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{repaidPct}%</span>
+                          </div>
+                          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-[#1A3125]" aria-hidden="true">
+                            <div className="h-full rounded-full bg-[#00C471]" style={{ width: `${repaidPct}%` }} />
+                          </div>
+                          <p className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                            Disbursed {formatDate(loan.adminApproval?.approvedAt)}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="font-mono text-[13px] tabular-nums text-slate-800 dark:text-slate-200">{formatDate(loan.createdAt)}</p>
+                          {loan.reason && (
+                            <p className="truncate text-xs text-slate-500 dark:text-slate-400" title={loan.reason}>
+                              {loan.reason}
+                            </p>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-start gap-2 lg:justify-end">
+                      {isPending ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedLoan(loan);
+                          }}
+                          className="flex items-center gap-1 rounded-xl bg-[#00C471] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#049856]"
+                        >
+                          Review
+                          <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden="true" />
+                        </button>
+                      ) : (
+                        <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                          View details
+                          <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden="true" />
                         </span>
                       )}
                     </div>
-                    <div className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{empName}</span>
-                      {emp?.departmentId?.name && (
-                        <span className="text-[11px] text-slate-400 font-normal">
-                          ({emp.departmentId.name})
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-slate-500 italic line-clamp-1">
-                      "{loan.reason}"
-                    </div>
-                  </div>
-
-                  {/* Financial Details */}
-                  <div className="grid grid-cols-2 gap-6 text-xs">
-                    <div>
-                      <span className="block text-slate-400 text-[10px]">Requested Principal</span>
-                      <span className="font-bold text-slate-900 dark:text-slate-100">
-                        PKR {amountPkr.toLocaleString()}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="block text-slate-400 text-[10px]">Tenure & Deductions</span>
-                      <span className="font-medium text-slate-700 dark:text-slate-300">
-                        {loan.repaymentTenureMonths} mo @ PKR {installmentPkr.toLocaleString()}/mo
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-2.5 justify-end">
-                    <button
-                      onClick={() => setScheduleLoanId(loan._id)}
-                      className="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors flex items-center gap-1 font-medium"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Schedule</span>
-                    </button>
-
-                    {['pending_recommendation', 'pending_hr', 'pending_admin'].includes(loan.status) && (
-                      <button
-                        onClick={() => setSelectedLoan(loan)}
-                        className="px-3.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs shadow-emerald-500/20 transition-all flex items-center gap-1.5"
-                      >
-                        <span>Review</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
         )}
       </div>
 
@@ -250,11 +294,8 @@ export function LoanApprovalsPage() {
         }}
       />
 
-      {/* Schedule Drawer */}
-      <LoanScheduleDrawer
-        loanId={scheduleLoanId}
-        onClose={() => setScheduleLoanId(null)}
-      />
+      {/* Loan detail drawer */}
+      <LoanScheduleDrawer loanId={detailLoanId} onClose={() => setDetailLoanId(null)} />
     </div>
   );
 }

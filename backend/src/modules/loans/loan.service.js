@@ -278,12 +278,17 @@ export async function getLoanById(id, userScope = 'all', actor = null) {
   const loan = await Loan.findById(id)
     .populate({
       path: 'employeeId',
-      select: 'name employeeCode email departmentId designationId managerId userId avatar',
+      // Borrower profile for the detail drawer; CNIC, account number and IBAN are deliberately excluded.
+      select: 'name employeeCode email phone departmentId designationId managerId userId avatar employmentType status joiningDate bankDetails.bankName',
       populate: [
         {
           path: 'userId',
           select: 'name email roles',
           populate: { path: 'roles', select: 'name' }
+        },
+        {
+          path: 'managerId',
+          select: 'name employeeCode'
         },
         {
           path: 'departmentId',
@@ -316,8 +321,11 @@ export async function getLoanById(id, userScope = 'all', actor = null) {
       throw new ApiError(403, 'Your account is not linked to an employee profile');
     }
     const actorEmp = await Employee.findById(actorEmpId).select('departmentId');
-    const isDirect = loan.employeeId?.managerId?.toString() === actorEmpId.toString();
-    const isDept = loan.employeeId?.departmentId?.toString() && actorEmp?.departmentId?.toString() && loan.employeeId.departmentId.toString() === actorEmp.departmentId.toString();
+    // managerId/departmentId are populated docs here, so compare their _id, not the doc itself
+    const refId = (ref) => (ref?._id ?? ref)?.toString();
+    const isDirect = refId(loan.employeeId?.managerId) === actorEmpId.toString();
+    const loanDeptId = refId(loan.employeeId?.departmentId);
+    const isDept = Boolean(loanDeptId) && loanDeptId === refId(actorEmp?.departmentId);
     if (!isDirect && !isDept) {
       throw new ApiError(403, 'You do not have permission to view loans outside your team or department');
     }
