@@ -98,11 +98,15 @@ describe('Dashboard recent activity', () => {
     expect(items.find((i) => i.module === 'project')).toBeUndefined();
   });
 
-  it('formatActionLabel treats null as empty', () => {
-    expect(formatActionLabel(null)).toBe('');
+  it('formatActionLabel treats null as a generic change', () => {
+    expect(formatActionLabel(null)).toBe('made a change');
   });
 
-  it('formatActionLabel falls back to title case', () => {
-    expect(formatActionLabel('SOME_NEW_THING')).toBe('Some New Thing');
+  it('formatActionLabel builds readable sentences from any key shape', () => {
+    expect(formatActionLabel('LEAVE_APPROVED', 'leave')).toBe('approved a leave request');
+    expect(formatActionLabel('asset_request.approve', 'assetrequest')).toBe('approved an asset request');
+    expect(formatActionLabel('CREATE', 'project')).toBe('created a project');
+    expect(formatActionLabel('SUBMIT_TIMESHEET', 'timesheet')).toBe('submitted a timesheet');
+    expect(formatActionLabel('SOME_NEW_THING')).toBe('some new thing');
   });
 });

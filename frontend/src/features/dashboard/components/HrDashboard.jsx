@@ -17,6 +17,7 @@ import { PendingList } from './widgets/PendingList.jsx';
 import { RecentActivityCard } from './widgets/RecentActivityCard.jsx';
 import { UpcomingDeadlinesCard } from './widgets/UpcomingDeadlinesCard.jsx';
 import { BirthdaysCard } from './widgets/BirthdaysCard.jsx';
+import { PersonRow } from '../../../components/common/Person.jsx';
 import { formatDateShort } from '../../../lib/formatters.js';
 import { DashboardSkeleton } from './DashboardSkeleton.jsx';
 
@@ -110,24 +111,22 @@ export function HrDashboard() {
               </p>
             ) : (
               roster.map((r) => (
-                <div key={r._id} className="flex items-center justify-between gap-3 py-2.5">
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-xs font-semibold text-slate-600 dark:bg-[#162820] dark:text-slate-300">
-                      {r.avatar ? (
-                        <img src={r.avatar} alt={r.employeeName} className="h-full w-full object-cover" />
-                      ) : (
-                        r.employeeName?.slice(0, 2).toUpperCase()
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-xs font-semibold text-slate-900 dark:text-white">{r.employeeName}</p>
-                      <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">{r.leaveType}</p>
-                    </div>
-                  </div>
-                  <span className="shrink-0 text-[11px] text-slate-400 dark:text-slate-500">
-                    Until {formatDateShort(r.endDate)}
+                <PersonRow
+                  key={r._id}
+                  person={r}
+                  size="sm"
+                  showRole={false}
+                  className="py-3 first:pt-0 last:pb-0"
+                  trailing={
+                    <span className="font-mono text-[11px] tabular-nums text-slate-400 dark:text-slate-500">
+                      Until {formatDateShort(r.endDate)}
+                    </span>
+                  }
+                >
+                  <span className="mt-1 inline-flex rounded-full border border-blue-200 bg-blue-50 px-2 py-px text-[10px] font-semibold text-blue-700 dark:border-blue-800/60 dark:bg-blue-950/40 dark:text-blue-400">
+                    {r.leaveType}
                   </span>
-                </div>
+                </PersonRow>
               ))
             )}
           </div>

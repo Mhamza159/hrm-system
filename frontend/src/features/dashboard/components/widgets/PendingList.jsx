@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Clock, ArrowRight, CheckCircle2, User, Eye, BarChart3 } from 'lucide-react';
+import { Calendar, Clock, ArrowRight, CheckCircle2, Eye, BarChart3 } from 'lucide-react';
 import { formatDate } from '../../../../lib/formatters.js';
 import { PunchCorrectionReviewModal } from '../../../attendance/components/PunchCorrectionReviewModal.jsx';
 import { WFHReviewModal } from '../../../attendance/components/WFHReviewModal.jsx';
 import { LeaveDecideModal } from '../../../leaves/components/LeaveDecideModal.jsx';
+import { PersonRow } from '../../../../components/common/Person.jsx';
 
 export function PendingList({ leaves = [], corrections = [], wfh = [], onRefresh }) {
   const [activeTab, setActiveTab] = useState('leaves'); // 'leaves' | 'corrections' | 'wfh'
@@ -107,42 +108,27 @@ export function PendingList({ leaves = [], corrections = [], wfh = [], onRefresh
               }}
               className="py-3 px-2 flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-50/80 dark:hover:bg-[#13221B] rounded-xl transition-all group"
             >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-[#13221B] border border-slate-200 dark:border-[#1A3125] flex items-center justify-center shrink-0 text-xs font-semibold text-slate-600 dark:text-slate-300 overflow-hidden">
-                  {item.avatar ? (
-                    <img src={item.avatar} alt={item.employeeName} className="w-full h-full object-cover" />
+              <PersonRow person={item} size="sm" className="flex-1">
+                <p className="mt-1 truncate text-xs text-slate-600 dark:text-slate-300">
+                  {activeTab === 'leaves' ? (
+                    <>
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">{item.leaveType}</span>
+                      {' · '}
+                      <span className="font-mono tabular-nums">{item.totalDays}</span> {item.totalDays === 1 ? 'day' : 'days'}
+                    </>
                   ) : (
-                    item.employeeName?.slice(0, 2).toUpperCase() || <User className="w-4 h-4" />
+                    <>
+                      {activeTab === 'corrections' ? 'Missed punch on ' : 'Work from home on '}
+                      <span className="font-mono font-semibold tabular-nums text-slate-700 dark:text-slate-300">{formatDate(item.date)}</span>
+                    </>
                   )}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-slate-900 dark:text-white truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                    {item.employeeName}
+                </p>
+                {activeTab === 'leaves' && item.reason && (
+                  <p className="truncate text-[11px] text-slate-400 dark:text-slate-500" title={item.reason}>
+                    {item.reason}
                   </p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                    {activeTab === 'leaves' ? (
-                      <>
-                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">{item.leaveType}</span>
-                        {' · '}
-                        <span className="font-medium">{item.totalDays} {item.totalDays === 1 ? 'day' : 'days'}</span>
-                        {item.reason && <span className="text-slate-400 dark:text-slate-500 block truncate text-[10px] mt-0.5">{item.reason}</span>}
-                      </>
-                    ) : activeTab === 'corrections' ? (
-                      <>
-                        Missed Punch on{' '}
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">{formatDate(item.date)}</span>
-                        {item.department ? ` · ${item.department}` : ''}
-                      </>
-                    ) : (
-                      <>
-                        Work From Home on{' '}
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">{formatDate(item.date)}</span>
-                        {item.department ? ` · ${item.department}` : ''}
-                      </>
-                    )}
-                  </p>
-                </div>
-              </div>
+                )}
+              </PersonRow>
 
               {activeTab === 'corrections' ? (
                 <button

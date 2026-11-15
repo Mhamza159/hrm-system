@@ -1,11 +1,14 @@
 /**
  * @file RecentActivityCard.jsx
- * @description Recent audit-activity feed. items: [{ _id, actorName, actionLabel, createdAt }].
+ * @description Recent audit-activity feed: who (avatar, name, role, designation · department)
+ * did what, and when.
+ * items: [{ _id, actorName, actorAvatar, actorRole, actorDesignation, actorDepartment, actionLabel, createdAt }].
  */
 
 import React from 'react';
 import { Activity } from 'lucide-react';
 import { DashboardCard } from './DashboardCard.jsx';
+import { PersonRow } from '../../../../components/common/Person.jsx';
 
 const UNITS = [
   ['d', 86400],
@@ -14,14 +17,19 @@ const UNITS = [
 ];
 
 function relativeTime(iso) {
-  const secs = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
-  if (Number.isNaN(secs)) return '';
+  const ms = new Date(iso).getTime();
+  if (Number.isNaN(ms)) return '';
+  const secs = Math.max(0, Math.floor((Date.now() - ms) / 1000));
   const [suffix, size] = UNITS.find(([, s]) => secs >= s) || [];
   return size ? `${Math.floor(secs / size)}${suffix} ago` : 'just now';
 }
 
-const initials = (name) =>
-  (String(name || '').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('') || '?').toUpperCase();
+const absoluteTime = (iso) => {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime())
+    ? ''
+    : d.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
 
 export function RecentActivityCard({ items = [], showViewAll = false, title = 'Recent Activity' }) {
   return (
@@ -35,19 +43,26 @@ export function RecentActivityCard({ items = [], showViewAll = false, title = 'R
           <p className="text-xs text-slate-500 dark:text-slate-400">Actions will appear here as they happen.</p>
         </div>
       ) : (
-        <ul className="max-h-80 divide-y divide-slate-100 overflow-y-auto dark:divide-[#1A3125]">
+        <ul className="-me-1 max-h-[22rem] divide-y divide-[#EAECF0] overflow-y-auto pe-1 dark:divide-[#1A3125]">
           {items.map((it) => (
-            <li key={it._id} className="flex items-start gap-3 py-3">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400" aria-hidden="true">
-                {initials(it.actorName)}
-              </span>
-              <p className="min-w-0 flex-1 text-xs text-slate-600 dark:text-slate-300">
-                <span className="font-semibold text-slate-900 dark:text-white">{it.actorName || 'System'}</span>{' '}
-                {it.actionLabel}
-              </p>
-              <time dateTime={it.createdAt} className="shrink-0 text-[11px] text-slate-400">
-                {relativeTime(it.createdAt)}
-              </time>
+            <li key={it._id} className="py-3 first:pt-0 last:pb-0">
+              <PersonRow
+                size="sm"
+                person={{
+                  employeeName: it.actorName || 'System',
+                  avatar: it.actorAvatar,
+                  role: it.actorRole,
+                  designation: it.actorDesignation,
+                  department: it.actorDepartment,
+                }}
+                trailing={
+                  <time dateTime={it.createdAt} title={absoluteTime(it.createdAt)} className="font-mono text-[11px] tabular-nums text-slate-400">
+                    {relativeTime(it.createdAt)}
+                  </time>
+                }
+              >
+                <p className="mt-1 text-xs text-slate-700 first-letter:uppercase dark:text-slate-300">{it.actionLabel}</p>
+              </PersonRow>
             </li>
           ))}
         </ul>

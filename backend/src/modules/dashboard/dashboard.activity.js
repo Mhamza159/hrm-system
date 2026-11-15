@@ -7,7 +7,7 @@
  */
 
 import { AuditLog } from '../../models/auditLog.model.js';
-import { Employee } from '../../models/employee.model.js';
+import { getPeopleByUserIds } from './dashboard.people.js';
 import { Leave } from '../../models/leave.model.js';
 import { AttendanceCorrection } from '../../models/correction.model.js';
 import { WFHRequest } from '../../models/wfh.model.js';
@@ -61,10 +61,74 @@ const ACTION_LABELS = {
   OVERTIME_REJECTED: 'rejected overtime',
 };
 
-export const formatActionLabel = (action) =>
-  ACTION_LABELS[action] ||
-  String(action ?? '').toLowerCase().split('_').filter(Boolean)
-    .map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
+// What each module's records are called in a sentence ("created a project").
+const MODULE_NOUNS = {
+  leave: 'leave request',
+  leavetype: 'leave type',
+  attendance: 'attendance record',
+  attendancecorrection: 'attendance correction',
+  wfhrequest: 'work-from-home request',
+  expense: 'expense claim',
+  asset: 'asset',
+  assetrequest: 'asset request',
+  checklist: 'onboarding checklist',
+  checklisttemplate: 'checklist template',
+  review: 'performance review',
+  timesheet: 'timesheet',
+  project: 'project',
+  client: 'client',
+  employee: 'employee record',
+  resignation: 'resignation',
+  exitinterview: 'exit interview',
+  payrollrun: 'payroll run',
+  payslip: 'payslip',
+  salarystructure: 'salary structure',
+  loan: 'loan request',
+  job: 'job posting',
+  candidate: 'candidate',
+  requisition: 'job requisition',
+  role: 'role',
+  user: 'user account',
+  setting: 'setting',
+  department: 'department',
+  designation: 'designation',
+  announcement: 'announcement',
+};
+
+const VERBS = {
+  create: 'created', add: 'added', update: 'updated', edit: 'edited', delete: 'deleted', remove: 'removed',
+  approve: 'approved', approved: 'approved', reject: 'rejected', rejected: 'rejected', decide: 'decided on',
+  submit: 'submitted', submitted: 'submitted', apply: 'submitted', request: 'requested', requested: 'requested',
+  cancel: 'cancelled', archive: 'archived', restore: 'restored', assign: 'assigned', allocate: 'allocated',
+  finalize: 'finalized', complete: 'completed', close: 'closed', publish: 'published', view: 'viewed',
+  manage: 'updated', recommend: 'recommended', forward: 'forwarded', reimburse: 'reimbursed',
+};
+
+const withArticle = (noun) => `${/^[aeiou]/i.test(noun) ? 'an' : 'a'} ${noun}`;
+
+/**
+ * Turns an audit action key into a sentence fragment that follows the actor's name:
+ * "LEAVE_APPROVED" → "approved a leave request", "asset_request.approve" → "approved an asset request",
+ * generic "CREATE" on module project → "created a project", "SUBMIT_TIMESHEET" → "submitted a timesheet".
+ */
+export const formatActionLabel = (action, module) => {
+  if (ACTION_LABELS[action]) return ACTION_LABELS[action];
+  const words = String(action ?? '').toLowerCase().split(/[_.\s-]+/).filter(Boolean);
+  if (words.length === 0) return 'made a change';
+  const moduleNoun = MODULE_NOUNS[String(module || '').toLowerCase()];
+
+  const last = words[words.length - 1];
+  const first = words[0];
+  if (VERBS[last]) {
+    const subject = words.length > 1 ? words.slice(0, -1).join(' ') : moduleNoun;
+    return subject ? `${VERBS[last]} ${withArticle(subject)}` : VERBS[last];
+  }
+  if (VERBS[first]) {
+    const subject = words.length > 1 ? words.slice(1).join(' ') : moduleNoun;
+    return subject ? `${VERBS[first]} ${withArticle(subject)}` : VERBS[first];
+  }
+  return words.join(' ');
+};
 
 const idSet = (ids) => new Set(ids.map(String));
 
@@ -98,17 +162,25 @@ export const getRecentActivity = async ({ team = null, limit = 8 } = {}) => {
   let rows = await AuditLog.find(filter).sort({ createdAt: -1 }).limit(team ? 200 : limit).lean();
   if (team) rows = (await filterToTeam(rows, team)).slice(0, limit);
 
-  const actorIds = [...new Set(rows.filter((r) => r.actorId).map((r) => String(r.actorId)))];
-  const employees = await Employee.find({ userId: { $in: actorIds } }).select('userId name').lean();
-  const nameByUser = new Map(employees.map((e) => [String(e.userId), e.name]));
+  const people = await getPeopleByUserIds(rows.map((r) => r.actorId));
 
-  return rows.map((r) => ({
-    _id: r._id,
-    actorName: r.actorId ? nameByUser.get(String(r.actorId)) || r.actorEmail || 'System' : 'System',
-    actionLabel: formatActionLabel(r.action),
-    action: r.action,
-    module: r.module,
-    targetModel: r.targetModel,
-    createdAt: r.createdAt,
-  }));
+  return rows.map((r) => {
+    const actor = r.actorId ? people.get(String(r.actorId)) : null;
+    // recordAuditLog may store an unpopulated role ObjectId as the snapshot; only trust real names.
+    const snapshotRole = r.actorRole && r.actorRole !== 'SYSTEM' && !/^[a-f0-9]{24}$/i.test(r.actorRole) ? r.actorRole : null;
+    return {
+      _id: r._id,
+      actorName: actor?.employeeName || (r.actorEmail && r.actorEmail !== 'system' ? r.actorEmail : 'System'),
+      actorAvatar: actor?.avatar || null,
+      actorDesignation: actor?.designation || null,
+      actorDepartment: actor?.department || null,
+      // Role at the time of the action wins; fall back to the actor's current role.
+      actorRole: r.actorId ? snapshotRole || actor?.role || null : null,
+      actionLabel: formatActionLabel(r.action, r.module),
+      action: r.action,
+      module: r.module,
+      targetModel: r.targetModel,
+      createdAt: r.createdAt,
+    };
+  });
 };
