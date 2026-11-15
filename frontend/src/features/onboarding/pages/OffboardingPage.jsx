@@ -38,6 +38,9 @@ export const OffboardingPage = () => {
   const { data: offboardRes, isLoading, isFetching, refetch } = useGetOffboardingsQuery();
   const offboardings = offboardRes?.data || [];
 
+  // Must run before the loading early-return, or the hook count changes between renders and React crashes the page
+  const [signoffClearance, { isLoading: isSigning }] = useSignoffExitClearanceMutation();
+
   if (isLoading && !offboardRes) {
     return (
       <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -45,8 +48,6 @@ export const OffboardingPage = () => {
       </div>
     );
   }
-
-  const [signoffClearance, { isLoading: isSigning }] = useSignoffExitClearanceMutation();
 
   const handleSignoff = async (id, departmentCategory) => {
     try {

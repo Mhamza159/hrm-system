@@ -61,6 +61,10 @@ export function DesignationsPage() {
   });
   const designations = desigResponse?.data || [];
 
+  // Must run before the loading early-return: a hook called after it changes the hook count
+  // between renders and React crashes the page.
+  const [deleteDesignation, { isLoading: isDeleting }] = useDeleteDesignationMutation();
+
   if (isLoading && !desigResponse) {
     return (
       <div className="space-y-6">
@@ -68,8 +72,6 @@ export function DesignationsPage() {
       </div>
     );
   }
-
-  const [deleteDesignation, { isLoading: isDeleting }] = useDeleteDesignationMutation();
 
   // Stats
   const totalDesignations = designations.length;

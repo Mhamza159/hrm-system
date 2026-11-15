@@ -11,20 +11,19 @@ import { X, Edit3, History, AlertCircle, TrendingUp } from 'lucide-react';
 import { useUpdateAttendanceMutation } from '../attendanceApi.js';
 
 export const EditAttendanceModal = ({ isOpen, onClose, attendance, onSuccess }) => {
-  if (!isOpen || !attendance) return null;
-
-  const initialDateStr = attendance.date ? new Date(attendance.date).toISOString().split('T')[0] : '';
-  const initialCheckIn = attendance.checkIn
+  // Hooks first: returning before them (when closed) changes the hook count once the modal opens and crashes the page.
+  const initialDateStr = attendance?.date ? new Date(attendance.date).toISOString().split('T')[0] : '';
+  const initialCheckIn = attendance?.checkIn
     ? new Date(attendance.checkIn).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
     : '';
-  const initialCheckOut = attendance.checkOut
+  const initialCheckOut = attendance?.checkOut
     ? new Date(attendance.checkOut).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
     : '';
 
   const [checkInTime, setCheckInTime] = useState(initialCheckIn);
   const [checkOutTime, setCheckOutTime] = useState(initialCheckOut);
-  const [status, setStatus] = useState(attendance.status || 'present');
-  const [overtimeApproved, setOvertimeApproved] = useState(!!attendance.overtimeApproved);
+  const [status, setStatus] = useState(attendance?.status || 'present');
+  const [overtimeApproved, setOvertimeApproved] = useState(!!attendance?.overtimeApproved);
   const [overrideReason, setOverrideReason] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -50,6 +49,8 @@ export const EditAttendanceModal = ({ isOpen, onClose, attendance, onSuccess }) 
   }, [attendance]);
 
   const [updateAttendance, { isLoading }] = useUpdateAttendanceMutation();
+
+  if (!isOpen || !attendance) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();

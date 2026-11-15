@@ -61,6 +61,8 @@ export const ResignationPage = () => {
   const reviewQueue = allResRes?.data || [];
 
   const [submitResignation, { isLoading: isSubmitting }] = useSubmitResignationMutation();
+  // Must run before the loading early-return, or the hook count changes between renders and React crashes the page
+  const [decideResignation, { isLoading: isDeciding }] = useDecideResignationMutation();
 
   if (myLoading && !myResRes) {
     return (
@@ -69,7 +71,6 @@ export const ResignationPage = () => {
       </div>
     );
   }
-  const [decideResignation, { isLoading: isDeciding }] = useDecideResignationMutation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
