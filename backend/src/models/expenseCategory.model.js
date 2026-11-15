@@ -49,9 +49,21 @@ const expenseCategorySchema = new mongoose.Schema(
       type: Boolean,
       default: true
     },
+    // Archive flag: a "deleted" category is archived (hidden from claim forms, disabled) and can be
+    // restored or permanently deleted from the Archive tab. Kept as isDeleted so earlier deletions
+    // surface in the archive without a migration.
     isDeleted: {
       type: Boolean,
       default: false
+    },
+    archivedAt: {
+      type: Date,
+      default: null
+    },
+    archivedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
     }
   },
   {

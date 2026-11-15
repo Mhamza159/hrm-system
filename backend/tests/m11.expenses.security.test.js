@@ -157,11 +157,15 @@ describe('Module M11 — Security & Hardening Stress Test Suite', () => {
     employeeAToken = signToken(empAUser, 'Employee');
 
     // Employee B (Reports to no one / different dept)
+    let otherDept = await Department.findOne({ code: 'SEC_DEPT_B' });
+    if (!otherDept) {
+      otherDept = await Department.create({ name: 'Security Dept B', code: 'SEC_DEPT_B', isActive: true });
+    }
     empBEmployee = await Employee.create({
       employeeCode: `EMP-SB-${Date.now().toString().slice(-4)}`,
       name: 'Employee Bob',
       email: `bob_${Date.now()}@test.pk`,
-      departmentId: dept._id,
+      departmentId: otherDept._id,
       designationId: desig._id,
       dateOfJoining: new Date(),
       status: 'Active'
@@ -301,13 +305,45 @@ describe('Module M11 — Security & Hardening Stress Test Suite', () => {
       expect(res.body.success).toBe(true);
     });
 
-    it('IDOR BLOCKED: blocks Department Manager from viewing Bob claim (not their direct report) with HTTP 403', async () => {
+    it('IDOR BLOCKED: blocks Department Manager from viewing Bob claim (another department) with HTTP 403', async () => {
       const res = await request(app)
         .get(`/api/v1/expenses/${empBClaimId}`)
         .set('Authorization', `Bearer ${managerToken}`);
 
       expect(res.status).toBe(403);
       expect(res.body.success).toBe(false);
+    });
+
+    it('Department Manager queue holds only own-department claims, even when another status is requested', async () => {
+      for (const status of [undefined, 'pending_admin', 'approved', 'rejected']) {
+        const res = await request(app)
+          .get('/api/v1/expenses/pending-approvals')
+          .query(status ? { status } : {})
+          .set('Authorization', `Bearer ${managerToken}`);
+
+        expect(res.status).toBe(200);
+        const ids = res.body.data.map((c) => String(c._id));
+        expect(ids).not.toContain(String(empBClaimId));
+        expect(res.body.data.every((c) => c.status === 'pending_manager')).toBe(true);
+      }
+    });
+
+    it('Department Manager queue includes a same-department claim', async () => {
+      const res = await request(app)
+        .get('/api/v1/expenses/pending-approvals')
+        .set('Authorization', `Bearer ${managerToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.map((c) => String(c._id))).toContain(String(empAClaimId));
+    });
+
+    it('blocks Department Manager from deciding a claim from another department (HTTP 403)', async () => {
+      const res = await request(app)
+        .patch(`/api/v1/expenses/${empBClaimId}/decide`)
+        .set('Authorization', `Bearer ${managerToken}`)
+        .send({ decision: 'reject', comments: 'Out of my department, should be blocked' });
+
+      expect(res.status).toBe(403);
     });
 
     it('allows Super Admin to view any claim across the entire organization (HTTP 200)', async () => {

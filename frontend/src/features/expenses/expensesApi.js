@@ -50,12 +50,40 @@ export const expensesApi = baseApi.injectEndpoints({
       ],
     }),
 
+    // Archives the category (soft delete); it can be restored or permanently deleted later
     deleteExpenseCategory: builder.mutation({
       query: (id) => ({
         url: `/expenses/categories/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: [{ type: "ExpenseCategory", id: "LIST" }],
+      invalidatesTags: [
+        { type: "ExpenseCategory", id: "LIST" },
+        { type: "ExpenseCategory", id: "ARCHIVE" },
+      ],
+    }),
+
+    getArchivedExpenseCategories: builder.query({
+      query: () => "/expenses/categories/archived",
+      providesTags: [{ type: "ExpenseCategory", id: "ARCHIVE" }],
+    }),
+
+    restoreExpenseCategory: builder.mutation({
+      query: (id) => ({
+        url: `/expenses/categories/${id}/restore`,
+        method: "POST",
+      }),
+      invalidatesTags: [
+        { type: "ExpenseCategory", id: "LIST" },
+        { type: "ExpenseCategory", id: "ARCHIVE" },
+      ],
+    }),
+
+    permanentDeleteExpenseCategory: builder.mutation({
+      query: (id) => ({
+        url: `/expenses/categories/${id}/permanent`,
+        method: "DELETE",
+      }),
+      invalidatesTags: [{ type: "ExpenseCategory", id: "ARCHIVE" }],
     }),
 
     // 11.2: Expense Claims Submission & Queries
@@ -140,6 +168,9 @@ export const {
   useCreateExpenseCategoryMutation,
   useUpdateExpenseCategoryMutation,
   useDeleteExpenseCategoryMutation,
+  useGetArchivedExpenseCategoriesQuery,
+  useRestoreExpenseCategoryMutation,
+  usePermanentDeleteExpenseCategoryMutation,
   useGetMyExpensesQuery,
   useGetExpenseByIdQuery,
   useApplyExpenseMutation,

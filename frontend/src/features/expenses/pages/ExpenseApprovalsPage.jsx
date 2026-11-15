@@ -1,353 +1,279 @@
 /**
  * @file ExpenseApprovalsPage.jsx
- * @description Managerial review, executive escalations and reimbursement payout command center.
- * 
+ * @description Claim review and reimbursement queue.
+ *
  * SPECIFICATION:
  * - Module: M11 Expense Claims (BUILD-GUIDE Section 16 · Rows 11.3 & 11.4)
- * - Multi-tier Queues: Department Manager review, Super Admin escalations, HR Reimbursement queue.
- * - Design: Forest & Emerald Craft (DESIGN.md & docs/UI-REFERENCE.md)
+ * - Department Manager: one queue — own-department claims awaiting their decision
+ *   (the API enforces this scope; the UI only mirrors it).
+ * - Super Admin / HR: manager queue, executive escalations, approved-to-pay, reimbursed.
+ * - Design: DESIGN.md & docs/UI-REFERENCE.md
  */
 
 import React, { useState } from 'react';
-import {
-  ShieldCheck,
-  Clock,
-  CheckCircle,
-  FileText,
-  DollarSign,
-  AlertCircle,
-  Eye,
-  CreditCard,
-  User,
-  Search,
-  Filter,
-  Check,
-  Briefcase
-} from 'lucide-react';
+import { Search, ShieldCheck, ChevronRight, CreditCard, Inbox } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { Can } from '../../../components/common/Can.jsx';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
+import { PersonRow } from '../../../components/common/Person.jsx';
+import { useAuth } from '../../../hooks/useAuth.js';
 import { useGetPendingExpenseApprovalsQuery } from '../expensesApi.js';
 import ExpenseDecisionModal from '../components/ExpenseDecisionModal.jsx';
 import ExpenseReimburseModal from '../components/ExpenseReimburseModal.jsx';
+import ExpenseDetailDrawer from '../components/ExpenseDetailDrawer.jsx';
+import { ExpenseStatusBadge, pkr, formatDay, waitingFor } from '../components/expenseUi.jsx';
+
+const EXECUTIVE_TABS = [
+  { key: 'pending_manager', label: 'Awaiting manager' },
+  { key: 'pending_admin', label: 'Escalated' },
+  { key: 'approved', label: 'Approved, to pay' },
+  { key: 'reimbursed', label: 'Reimbursed' },
+];
+
+// Shared column template so the header and every row line up exactly.
+const COLS = 'lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1.2fr)_minmax(0,0.85fr)_minmax(0,0.85fr)_minmax(0,0.85fr)_minmax(0,0.9fr)_8.5rem]';
+
+const isPendingStatus = (status) => status === 'pending_manager' || status === 'pending_admin';
+
+function CellLabel({ children }) {
+  return <span className="mb-0.5 block text-[11px] text-slate-500 lg:hidden dark:text-slate-400">{children}</span>;
+}
 
 export default function ExpenseApprovalsPage() {
-  const [activeTab, setActiveTab] = useState('pending_manager'); // 'pending_manager' | 'pending_admin' | 'approved'
-  const [selectedExpense, setSelectedExpense] = useState(null);
-  const [isDecisionModalOpen, setIsDecisionModalOpen] = useState(false);
-  const [isReimburseModalOpen, setIsReimburseModalOpen] = useState(false);
+  const { isSuperAdmin, isHR } = useAuth();
+  const isExecutive = isSuperAdmin || isHR;
+
+  const [activeTab, setActiveTab] = useState('pending_manager');
   const [search, setSearch] = useState('');
+  const [openId, setOpenId] = useState(null);
+  const [decisionClaim, setDecisionClaim] = useState(null);
+  const [reimburseClaim, setReimburseClaim] = useState(null);
 
-  const { data, isLoading, isFetching, error, refetch } = useGetPendingExpenseApprovalsQuery({
-    status: activeTab
-  });
-
+  // Department Managers always get their own-department pending queue; the API ignores other statuses for them.
+  const status = isExecutive ? activeTab : 'pending_manager';
+  const { data, isLoading, isFetching, error, refetch } = useGetPendingExpenseApprovalsQuery({ status, limit: 100 });
   const claims = data?.data || [];
-
-  const filteredClaims = claims.filter((claim) => {
-    if (!search.trim()) return true;
-    const term = search.toLowerCase();
-    const claimNum = (claim.claimNumber || '').toLowerCase();
-    const applicantName = (
-      claim.employeeId?.name ||
-      `${claim.employeeId?.firstName || ''} ${claim.employeeId?.lastName || ''}`
-    ).toLowerCase();
-    const employeeCode = (claim.employeeId?.employeeCode || '').toLowerCase();
-    const category = (claim.categoryId?.name || '').toLowerCase();
-    const dept = (claim.employeeId?.departmentId?.name || '').toLowerCase();
-    const desig = (claim.employeeId?.designationId?.title || claim.employeeId?.designation || '').toLowerCase();
-
-    return (
-      claimNum.includes(term) ||
-      applicantName.includes(term) ||
-      employeeCode.includes(term) ||
-      category.includes(term) ||
-      dept.includes(term) ||
-      desig.includes(term)
-    );
-  });
 
   if (isLoading && !data) {
     return (
-      <div className="space-y-6 animate-in fade-in duration-150">
+      <div className="space-y-6">
         <ScreenSkeleton variant="table" />
       </div>
     );
   }
 
-  const handleOpenDecision = (claim) => {
-    setSelectedExpense(claim);
-    setIsDecisionModalOpen(true);
+  const term = search.trim().toLowerCase();
+  const rows = !term
+    ? claims
+    : claims.filter((c) =>
+        [c.claimNumber, c.applicant?.employeeName, c.applicant?.employeeCode, c.applicant?.designation, c.applicant?.department, c.categoryId?.name]
+          .filter(Boolean)
+          .some((v) => v.toLowerCase().includes(term))
+      );
+
+  const openReview = (claim) => {
+    setOpenId(null);
+    setDecisionClaim(claim);
+  };
+  const openReimburse = (claim) => {
+    setOpenId(null);
+    setReimburseClaim(claim);
   };
 
-  const handleOpenReimburse = (claim) => {
-    setSelectedExpense(claim);
-    setIsReimburseModalOpen(true);
+  const primaryAction = (claim, { stop = false } = {}) => {
+    const guard = (fn) => (e) => {
+      if (stop) e.stopPropagation();
+      fn(claim);
+    };
+    if (isPendingStatus(claim.status)) {
+      return (
+        <Can I="expense.approve" a="Expense">
+          <button
+            type="button"
+            onClick={guard(openReview)}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#00C471] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#049856]"
+          >
+            <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+            Review
+          </button>
+        </Can>
+      );
+    }
+    if (claim.status === 'approved') {
+      return (
+        <Can I="expense.reimburse" a="Expense">
+          <button
+            type="button"
+            onClick={guard(openReimburse)}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-[#EAECF0] bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-[#1A3125] dark:bg-transparent dark:text-slate-200 dark:hover:bg-[#13221B]"
+          >
+            <CreditCard className="h-3.5 w-3.5" aria-hidden="true" />
+            {claim.reimbursement?.method === 'payroll' ? 'Pay directly' : 'Reimburse'}
+          </button>
+        </Can>
+      );
+    }
+    return null;
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-150">
+    <div className="space-y-6">
       <PageHeader
-        title="Expense Approvals & Reimbursements"
-        description="Verify submitted receipt proofs, authorize managerial claims, and execute company reimbursements."
+        title="Expense Approvals"
+        description={
+          isExecutive
+            ? 'Review claims across the company, decide escalations and release reimbursements.'
+            : 'Claims from your department that are waiting for your decision.'
+        }
         actions={<RefreshButton onRefresh={refetch} isFetching={isFetching} />}
       />
 
-      {/* Navigation Tabs */}
-      <div className="flex border-b border-slate-200 dark:border-[#1A3125] gap-6">
-        <button
-          onClick={() => setActiveTab('pending_manager')}
-          className={`pb-3 text-xs font-semibold transition relative cursor-pointer ${
-            activeTab === 'pending_manager'
-              ? 'text-emerald-600 dark:text-emerald-400 border-b-2 border-emerald-600'
-              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-          }`}
-        >
-          Team Claims Review
-        </button>
-
-        <button
-          onClick={() => setActiveTab('pending_admin')}
-          className={`pb-3 text-xs font-semibold transition relative flex items-center gap-1.5 cursor-pointer ${
-            activeTab === 'pending_admin'
-              ? 'text-emerald-600 dark:text-emerald-400 border-b-2 border-emerald-600'
-              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-          }`}
-        >
-          Executive Escalations (&gt; PKR 15k)
-        </button>
-
-        <button
-          onClick={() => setActiveTab('approved')}
-          className={`pb-3 text-xs font-semibold transition relative flex items-center gap-1.5 cursor-pointer ${
-            activeTab === 'approved'
-              ? 'text-emerald-600 dark:text-emerald-400 border-b-2 border-emerald-600'
-              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-          }`}
-        >
-          Approved for Reimbursement
-        </button>
-      </div>
-
-      {/* Filter / Search Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search claim #, employee, ID (EMP-0012), role, category..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition"
-          />
+      {isExecutive && (
+        <div role="tablist" aria-label="Approval queues" className="flex gap-6 overflow-x-auto border-b border-[#EAECF0] dark:border-[#1A3125]">
+          {EXECUTIVE_TABS.map((t) => {
+            const selected = t.key === activeTab;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                onClick={() => setActiveTab(t.key)}
+                className={`-mb-px shrink-0 border-b-2 pb-3 text-[13px] font-medium transition-colors ${
+                  selected
+                    ? 'border-[#00C471] text-slate-900 dark:text-white'
+                    : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                {t.label}
+              </button>
+            );
+          })}
         </div>
-        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-          {filteredClaims.length} items in queue
-        </span>
-      </div>
+      )}
 
-      {/* Claims Queue Table */}
-      <div className="rounded-2xl bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] overflow-hidden shadow-2xs">
-        {isLoading ? (
-          <div className="p-12 text-center text-xs text-slate-500">Loading queue...</div>
-        ) : error ? (
-          <div className="p-12 text-center text-xs text-rose-500">Failed to load claims queue.</div>
-        ) : filteredClaims.length === 0 ? (
-          <div className="p-12 text-center">
-            <CheckCircle className="w-10 h-10 mx-auto text-emerald-400 mb-3" />
-            <h4 className="text-sm font-semibold text-slate-900 dark:text-white">All Caught Up!</h4>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              There are no pending claims in this review queue.
+      <div className="overflow-hidden rounded-2xl border border-[#EAECF0] bg-white dark:border-[#1A3125] dark:bg-[#111D17]">
+        {/* Toolbar */}
+        <div className="flex flex-col gap-3 border-b border-[#EAECF0] px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between dark:border-[#1A3125]">
+          <div className="relative w-full sm:max-w-sm">
+            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search claim, employee, ID, department, category"
+              aria-label="Search claims"
+              className="w-full rounded-xl border border-[#E2E8F0] bg-white py-2 pe-3 ps-9 text-xs text-slate-800 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-[#1A3125] dark:bg-[#0A110D] dark:text-slate-100"
+            />
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            <span className="font-mono font-semibold tabular-nums text-slate-700 dark:text-slate-200">{rows.length}</span>{' '}
+            claim{rows.length === 1 ? '' : 's'}
+            {!isExecutive && ' · your department only'}
+          </p>
+        </div>
+
+        {error ? (
+          <div className="px-6 py-12 text-center">
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">The queue could not be loaded</p>
+            <button type="button" onClick={refetch} className="mt-3 text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">
+              Try again
+            </button>
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="space-y-2 px-6 py-14 text-center">
+            <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 dark:bg-[#13221B]">
+              <Inbox className="h-5 w-5 text-slate-400" aria-hidden="true" />
+            </span>
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">{term ? 'No matching claims' : 'Nothing waiting here'}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {term ? 'Try a different search.' : 'New claims will appear in this queue as they are submitted.'}
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-slate-100 dark:border-[#1A3125] bg-slate-50/70 dark:bg-[#162720]/40 text-slate-500 dark:text-slate-400 font-medium">
-                  <th className="py-3.5 px-6">Claim #</th>
-                  <th className="py-3.5 px-6">Applicant</th>
-                  <th className="py-3.5 px-6">Category</th>
-                  <th className="py-3.5 px-6">Expense Date</th>
-                  <th className="py-3.5 px-6">Claimed</th>
-                  <th className="py-3.5 px-6">Authorized</th>
-                  <th className="py-3.5 px-6 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-[#1A3125]">
-                {filteredClaims.map((claim) => {
-                  const emp = claim.employeeId || {};
-                  const applicantName =
-                    emp.name ||
-                    `${emp.firstName || ''} ${emp.lastName || ''}`.trim() ||
-                    'Employee';
-                  const initials = (applicantName || 'E')
-                    .split(' ')
-                    .filter(Boolean)
-                    .map((n) => n[0])
-                    .slice(0, 2)
-                    .join('')
-                    .toUpperCase() || 'EM';
-                  const empCode = emp.employeeCode || null;
-                  const designationTitle = emp.designationId?.title || emp.designation || null;
-                  const departmentName = emp.departmentId?.name || null;
+          <>
+            <div
+              className={`hidden gap-4 border-b border-[#EAECF0] bg-slate-50/70 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500 lg:grid dark:border-[#1A3125] dark:bg-[#0E1A14] dark:text-slate-400 ${COLS}`}
+            >
+              <span>Applicant</span>
+              <span>Claim</span>
+              <span>Expense date</span>
+              <span className="text-end">Claimed</span>
+              <span className="text-end">Authorised</span>
+              <span>{isPendingStatus(status) ? 'Waiting' : 'Status'}</span>
+              <span className="sr-only">Actions</span>
+            </div>
+            <ul className="divide-y divide-[#EAECF0] dark:divide-[#1A3125]">
+              {rows.map((claim) => (
+                <li
+                  key={claim._id}
+                  tabIndex={0}
+                  onClick={() => setOpenId(claim._id)}
+                  onKeyDown={(e) => {
+                    if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      setOpenId(claim._id);
+                    }
+                  }}
+                  aria-label={`Open claim ${claim.claimNumber} from ${claim.applicant?.employeeName || 'employee'}`}
+                  className={`grid cursor-pointer grid-cols-2 items-center gap-x-4 gap-y-3 px-5 py-4 transition-colors hover:bg-slate-50/70 focus-visible:bg-slate-50 focus-visible:outline-none dark:hover:bg-[#13221B]/60 dark:focus-visible:bg-[#13221B] ${COLS}`}
+                >
+                  <PersonRow person={claim.applicant} className="col-span-2 lg:col-span-1" />
 
-                  return (
-                    <tr
-                      key={claim._id}
-                      className="hover:bg-slate-50/50 dark:hover:bg-[#162720]/30 transition"
-                    >
-                      {/* Claim Number */}
-                      <td className="py-3.5 px-6 font-mono font-semibold uppercase tracking-wider text-slate-900 dark:text-white">
-                        {claim.claimNumber}
-                      </td>
+                  <div className="min-w-0">
+                    <CellLabel>Claim</CellLabel>
+                    <p className="font-mono text-[13px] font-semibold text-slate-900 dark:text-white">{claim.claimNumber}</p>
+                    <p className="truncate text-xs text-slate-500 dark:text-slate-400">{claim.categoryId?.name || 'Uncategorised'}</p>
+                  </div>
 
-                      {/* Rich Applicant Identity */}
-                      <td className="py-3.5 px-6">
-                        <div className="flex items-center gap-3">
-                          {emp.avatar ? (
-                            <img
-                              src={emp.avatar}
-                              alt={applicantName}
-                              className="w-9 h-9 rounded-full object-cover border border-emerald-500/20 shrink-0"
-                            />
-                          ) : (
-                            <div className="w-9 h-9 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-xs flex items-center justify-center border border-emerald-500/20 shrink-0">
-                              {initials}
-                            </div>
-                          )}
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-semibold text-slate-900 dark:text-white truncate">
-                                {applicantName}
-                              </span>
-                              {empCode && (
-                                <span className="font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-[#162720] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#1A3125]">
-                                  {empCode}
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-[11px] text-slate-500 dark:text-[#7E9E8F] flex items-center gap-1.5 truncate mt-0.5">
-                              {designationTitle && <span>{designationTitle}</span>}
-                              {designationTitle && departmentName && (
-                                <span className="text-slate-300 dark:text-slate-600">•</span>
-                              )}
-                              {departmentName && (
-                                <span className="text-[10px] font-medium px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
-                                  {departmentName}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
+                  <div>
+                    <CellLabel>Expense date</CellLabel>
+                    <p className="font-mono text-[13px] tabular-nums text-slate-700 dark:text-slate-300">{formatDay(claim.expenseDate)}</p>
+                  </div>
 
-                      {/* Category & Receipt Rule */}
-                      <td className="py-3.5 px-6">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-slate-800 dark:text-slate-200">
-                            {claim.categoryId?.name || 'General Expense'}
-                          </span>
-                          {claim.categoryId?.requiresReceipt && (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
-                              <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                              Receipt
-                            </span>
-                          )}
-                        </div>
-                        {claim.categoryId?.code && (
-                          <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
-                            {claim.categoryId.code}
-                          </span>
-                        )}
-                      </td>
+                  <div className="lg:text-end">
+                    <CellLabel>Claimed</CellLabel>
+                    <p className="font-mono text-[13px] font-semibold tabular-nums text-slate-900 dark:text-white">{pkr(claim.amount)}</p>
+                  </div>
 
-                      {/* Expense Date */}
-                      <td className="py-3.5 px-6 font-mono tabular-nums text-slate-600 dark:text-slate-400">
-                        {new Date(claim.expenseDate).toLocaleDateString('en-PK', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </td>
+                  <div className="lg:text-end">
+                    <CellLabel>Authorised</CellLabel>
+                    <p className={`font-mono text-[13px] tabular-nums ${claim.approvedAmount ? 'text-teal-700 dark:text-teal-400' : 'text-slate-400'}`}>
+                      {claim.approvedAmount ? pkr(claim.approvedAmount) : '—'}
+                    </p>
+                  </div>
 
-                      {/* Claimed Amount */}
-                      <td className="py-3.5 px-6 font-mono tabular-nums font-bold text-slate-900 dark:text-white">
-                        PKR {(claim.amount / 100).toLocaleString('en-PK')}
-                      </td>
+                  <div>
+                    <CellLabel>{isPendingStatus(status) ? 'Waiting' : 'Status'}</CellLabel>
+                    {isPendingStatus(claim.status) ? (
+                      <p className="font-mono text-[13px] tabular-nums text-slate-700 dark:text-slate-300" title={`Submitted ${formatDay(claim.createdAt)}`}>
+                        {waitingFor(claim.createdAt)}
+                      </p>
+                    ) : (
+                      <ExpenseStatusBadge status={claim.status} reimbursement={claim.reimbursement} />
+                    )}
+                  </div>
 
-                      {/* Authorized Amount */}
-                      <td className="py-3.5 px-6 font-mono tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
-                        {claim.approvedAmount
-                          ? `PKR ${(claim.approvedAmount / 100).toLocaleString('en-PK')}`
-                          : '—'}
-                      </td>
-
-                      {/* Action */}
-                      <td className="py-3.5 px-6 text-right">
-                        {activeTab === 'approved' ? (
-                          claim.reimbursement?.method === 'payroll' ? (
-                            <div className="inline-flex items-center gap-2">
-                              <span className="px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 inline-flex items-center gap-1.5">
-                                <Clock className="w-3.5 h-3.5" />
-                                Queued for Payroll
-                              </span>
-                              <Can I="expense.reimburse" a="Expense">
-                                <button
-                                  onClick={() => handleOpenReimburse(claim)}
-                                  className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#162720] border border-slate-200 dark:border-[#1A3125] transition cursor-pointer"
-                                  title="Switch to direct bank transfer"
-                                >
-                                  Switch to Direct
-                                </button>
-                              </Can>
-                            </div>
-                          ) : (
-                            <Can I="expense.reimburse" a="Expense">
-                              <button
-                                onClick={() => handleOpenReimburse(claim)}
-                                className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition inline-flex items-center gap-1.5 cursor-pointer"
-                              >
-                                <CreditCard className="w-3.5 h-3.5" />
-                                Reimburse
-                              </button>
-                            </Can>
-                          )
-                        ) : (
-                          <Can I="expense.approve" a="Expense">
-                            <button
-                              onClick={() => handleOpenDecision(claim)}
-                              className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white shadow-sm transition inline-flex items-center gap-1.5 cursor-pointer"
-                            >
-                              <ShieldCheck className="w-3.5 h-3.5" />
-                              Review Claim
-                            </button>
-                          </Can>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                  <div className="col-span-2 flex items-center justify-end gap-2 lg:col-span-1">
+                    {primaryAction(claim, { stop: true }) || (
+                      <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                        Details
+                        <ChevronRight className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden="true" />
+                      </span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
 
-      {/* Review Modal */}
-      <ExpenseDecisionModal
-        isOpen={isDecisionModalOpen}
-        onClose={() => setIsDecisionModalOpen(false)}
-        expense={selectedExpense}
-      />
+      <ExpenseDetailDrawer expenseId={openId} onClose={() => setOpenId(null)} actions={(expense) => primaryAction(expense)} />
 
-      {/* Reimbursement Modal */}
-      <ExpenseReimburseModal
-        isOpen={isReimburseModalOpen}
-        onClose={() => setIsReimburseModalOpen(false)}
-        expense={selectedExpense}
-      />
+      <ExpenseDecisionModal isOpen={Boolean(decisionClaim)} onClose={() => setDecisionClaim(null)} expense={decisionClaim} />
+      <ExpenseReimburseModal isOpen={Boolean(reimburseClaim)} onClose={() => setReimburseClaim(null)} expense={reimburseClaim} />
     </div>
   );
 }

@@ -65,6 +65,27 @@ router
     expenseController.createCategory
   );
 
+// Archive lifecycle (settings holders only). Declared before '/categories/:id' so 'archived' is not read as an id.
+router.get(
+  '/categories/archived',
+  checkPermission('expense.settings', 'ExpenseCategory'),
+  expenseController.getArchivedCategories
+);
+
+router.post(
+  '/categories/:id/restore',
+  validate(categoryIdParamSchema),
+  checkPermission('expense.settings', 'ExpenseCategory'),
+  expenseController.restoreCategory
+);
+
+router.delete(
+  '/categories/:id/permanent',
+  validate(categoryIdParamSchema),
+  checkPermission('expense.settings', 'ExpenseCategory'),
+  expenseController.permanentDeleteCategory
+);
+
 router
   .route('/categories/:id')
   .get(

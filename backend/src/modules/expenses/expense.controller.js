@@ -38,7 +38,22 @@ export const updateCategory = asyncHandler(async (req, res) => {
 
 export const deleteCategory = asyncHandler(async (req, res) => {
   const result = await expenseService.deleteCategory(req.params.id, req.user);
-  return res.status(200).json(apiResponse(200, result, 'Expense category deleted successfully'));
+  return res.status(200).json(apiResponse(200, result, 'Expense category archived successfully'));
+});
+
+export const getArchivedCategories = asyncHandler(async (req, res) => {
+  const result = await expenseService.getArchivedCategories();
+  return res.status(200).json(apiResponse(200, result, 'Archived expense categories retrieved successfully'));
+});
+
+export const restoreCategory = asyncHandler(async (req, res) => {
+  const result = await expenseService.restoreCategory(req.params.id, req.user);
+  return res.status(200).json(apiResponse(200, result, 'Expense category restored successfully'));
+});
+
+export const permanentDeleteCategory = asyncHandler(async (req, res) => {
+  const result = await expenseService.permanentDeleteCategory(req.params.id, req.user);
+  return res.status(200).json(apiResponse(200, result, 'Expense category permanently deleted'));
 });
 
 // ============================================================================
@@ -98,7 +113,7 @@ export const reimburseExpense = asyncHandler(async (req, res) => {
 // ============================================================================
 
 export const getExpenseMonthlyReport = asyncHandler(async (req, res) => {
-  const result = await expenseService.getExpenseMonthlyReport(req.query);
+  const result = await expenseService.getExpenseMonthlyReport(req.query, req.user);
   return res.status(200).json(apiResponse(200, result, 'Expense monthly report retrieved successfully'));
 });
 

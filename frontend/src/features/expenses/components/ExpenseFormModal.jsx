@@ -187,7 +187,7 @@ export default function ExpenseFormModal({ isOpen, onClose }) {
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+              className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-[#13221B] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
             >
               <option value="">-- Select Corporate Category --</option>
               {categories.map((cat) => (
@@ -221,7 +221,7 @@ export default function ExpenseFormModal({ isOpen, onClose }) {
                   placeholder="e.g. 2500"
                   value={amountPkr}
                   onChange={(e) => setAmountPkr(e.target.value)}
-                  className="w-full pl-12 pr-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  className="w-full pl-12 pr-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-[#13221B] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                 />
               </div>
             </div>
@@ -235,7 +235,7 @@ export default function ExpenseFormModal({ isOpen, onClose }) {
                 value={expenseDate}
                 max={new Date().toISOString().split('T')[0]}
                 onChange={(e) => setExpenseDate(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-[#13221B] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
               />
             </div>
           </div>
@@ -250,7 +250,7 @@ export default function ExpenseFormModal({ isOpen, onClose }) {
               placeholder="e.g. Fuel expenses for client site meeting in Gulberg..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+              className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-[#13221B] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
             />
           </div>
 
@@ -278,7 +278,7 @@ export default function ExpenseFormModal({ isOpen, onClose }) {
             {!receiptFile ? (
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-300 dark:border-[#1A3125] hover:border-emerald-500 dark:hover:border-emerald-500 rounded-2xl p-5 text-center cursor-pointer transition bg-slate-50/50 dark:bg-slate-800/30"
+                className="border-2 border-dashed border-slate-300 dark:border-[#1A3125] hover:border-emerald-500 dark:hover:border-emerald-500 rounded-2xl p-5 text-center cursor-pointer transition bg-slate-50/50 dark:bg-[#13221B]/60"
               >
                 <UploadCloud className="w-8 h-8 mx-auto text-slate-400 group-hover:text-emerald-500 mb-2" />
                 <p className="text-xs font-medium text-slate-700 dark:text-slate-300">

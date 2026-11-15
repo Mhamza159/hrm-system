@@ -113,7 +113,7 @@ export const generateReportData = async ({
     case 'expenses': {
       const { getExpenseMonthlyReport } = await import('../expenses/expense.service.js');
       const monthStr = from ? from.slice(0, 7) : undefined;
-      const report = await getExpenseMonthlyReport({ month: monthStr });
+      const report = await getExpenseMonthlyReport({ month: monthStr }, user);
       const items = (report.breakdown || []).map((b) => ({
         category: b._id,
         categoryCode: b.categoryCode,
