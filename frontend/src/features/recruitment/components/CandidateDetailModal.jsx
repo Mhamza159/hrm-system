@@ -304,33 +304,42 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
             </div>
           </div>
 
-          {/* Parsed Profile Details */}
+          {/* Parsed Profile Details & Skills Matrix */}
           {candidate?.parsedProfile && (
-            <div className="space-y-2">
-              <h4 className="font-bold text-slate-900 dark:text-white uppercase tracking-wider text-[11px]">
-                Extracted Resume Attributes
-              </h4>
+            <div className="space-y-3.5">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-slate-900 dark:text-white uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                  <Briefcase className="w-3.5 h-3.5 text-[#00C471]" />
+                  Extracted Resume Attributes
+                </h4>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  Sourced via {candidate.referredBy ? `Referral (${candidate.referredBy.name})` : 'Public Portal'}
+                </span>
+              </div>
+
+              {/* Attributes Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17]">
                 <div>
-                  <span className="text-[10px] text-slate-400">Total Experience</span>
+                  <span className="text-[10px] text-slate-400 block">Total Experience</span>
                   <p className="font-bold text-slate-800 dark:text-slate-100 text-xs mt-0.5 font-mono">
                     {candidate.parsedProfile.totalExperienceYears || 0} Years
                   </p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400">Highest Education</span>
+                  <span className="text-[10px] text-slate-400 block">Highest Education</span>
                   <p className="font-bold text-slate-800 dark:text-slate-100 text-xs mt-0.5">
-                    {candidate.parsedProfile.highestEducation || 'Degree'}
+                    {candidate.parsedProfile.highestEducation || 'Not Specified'}
                   </p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400">Sourced Via</span>
-                  <p className="font-bold text-slate-800 dark:text-slate-100 text-xs mt-0.5">
-                    {candidate.referredBy ? `Referral (${candidate.referredBy.name})` : 'Public Portal'}
+                  <span className="text-[10px] text-slate-400 block">Degree Verification</span>
+                  <p className="font-semibold text-emerald-600 dark:text-[#00C471] text-xs mt-0.5 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Verified from CV
                   </p>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400">AI Engine</span>
+                  <span className="text-[10px] text-slate-400 block">AI Engine</span>
                   <p className="font-bold text-emerald-600 dark:text-[#00C471] text-xs mt-0.5 flex items-center gap-1 font-mono">
                     <Sparkles className="w-3 h-3 text-[#00C471]" />
                     {candidate.parsedProfile.aiProvider || 'Heuristic'}
@@ -338,9 +347,76 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
                 </div>
               </div>
 
+              {/* Skills Matrix: Matched Skills vs Missing Skills */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {/* Matched Skills */}
+                <div className="p-3.5 rounded-xl border border-emerald-200 dark:border-[#1A3125] bg-emerald-50/40 dark:bg-[#111D17] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-emerald-700 dark:text-[#00C471] flex items-center gap-1.5 uppercase tracking-wider">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Matched Skills ({candidate.parsedProfile.matchingStrengths?.length || 0})
+                    </span>
+                    <span className="text-[10px] text-emerald-600 dark:text-[#00C471] font-medium font-mono">
+                      Job Criteria Met
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 min-h-[36px]">
+                    {candidate.parsedProfile.matchingStrengths?.length > 0 ? (
+                      candidate.parsedProfile.matchingStrengths.map((str, i) => (
+                        <span
+                          key={i}
+                          className="text-[10px] font-semibold px-2.5 py-1 rounded-lg bg-emerald-100/80 dark:bg-[#162820] text-emerald-800 dark:text-[#00C471] border border-emerald-200 dark:border-emerald-900/60 flex items-center gap-1"
+                        >
+                          <CheckCircle2 className="w-2.5 h-2.5" />
+                          {str}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-[11px] text-slate-400 italic">No matching skills identified.</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Missing / Unmatched Skills */}
+                <div className="p-3.5 rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50/40 dark:bg-[#111D17] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5 uppercase tracking-wider">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      Missing / Unmatched ({candidate.parsedProfile.missingSkills?.length || 0})
+                    </span>
+                    <span className="text-[10px] text-rose-500 dark:text-rose-400 font-medium font-mono">
+                      Target Gap
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 min-h-[36px]">
+                    {candidate.parsedProfile.missingSkills?.length > 0 ? (
+                      candidate.parsedProfile.missingSkills.map((sk, i) => (
+                        <span
+                          key={i}
+                          className="text-[10px] font-semibold px-2.5 py-1 rounded-lg bg-rose-100/80 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/40 flex items-center gap-1"
+                        >
+                          <XCircle className="w-2.5 h-2.5" />
+                          {sk}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-[11px] text-emerald-600 dark:text-[#00C471] font-medium flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        All required job skills fulfilled!
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* All Extracted Candidate Skills */}
               {candidate.parsedProfile.parsedSkills?.length > 0 && (
-                <div className="pt-2">
-                  <span className="text-[10px] text-slate-400 block mb-1">Parsed Skills</span>
+                <div className="p-3 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] space-y-1.5">
+                  <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider block">
+                    All Skills Found on Resume ({candidate.parsedProfile.parsedSkills.length})
+                  </span>
                   <div className="flex flex-wrap gap-1.5">
                     {candidate.parsedProfile.parsedSkills.map((sk, i) => (
                       <span
@@ -351,6 +427,19 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
                       </span>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* AI Screening Rationale & Fit Assessment */}
+              {candidate.aiScreeningReason && (
+                <div className="p-3.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0B1511] space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
+                    <Sparkles className="w-3.5 h-3.5 text-[#00C471]" />
+                    <span>AI Screening Fit Assessment & Rationale</span>
+                  </div>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                    {candidate.aiScreeningReason}
+                  </p>
                 </div>
               )}
             </div>
