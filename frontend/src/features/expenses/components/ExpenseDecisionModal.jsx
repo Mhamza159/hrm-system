@@ -308,7 +308,7 @@ export default function ExpenseDecisionModal({ isOpen, onClose, expense = null }
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="px-4 py-2 text-xs font-medium rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162720] transition cursor-pointer"
+            className="h-9 px-4 text-xs font-semibold rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162720] border border-slate-200/80 dark:border-[#1A3125] transition cursor-pointer"
           >
             Cancel
           </button>
@@ -318,20 +318,20 @@ export default function ExpenseDecisionModal({ isOpen, onClose, expense = null }
               type="button"
               onClick={() => handleDecision('reject')}
               disabled={isLoading}
-              className="px-4 py-2 text-xs font-semibold rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/40 hover:bg-rose-100 transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+              className="h-9 px-4 text-xs font-semibold rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/40 hover:bg-rose-100 transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer shadow-2xs"
             >
               <XCircle className="w-4 h-4" />
-              Reject Claim
+              <span>Reject Claim</span>
             </button>
 
             <button
               type="button"
               onClick={() => handleDecision('approve')}
               disabled={isLoading}
-              className="px-5 py-2 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/20 transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+              className="h-9 px-5 text-xs font-semibold rounded-xl bg-[#00C471] hover:bg-[#049856] text-white shadow-xs shadow-emerald-600/20 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
             >
               <CheckCircle className="w-4 h-4" />
-              {expense.amount > 1500000 ? 'Approve & Forward' : 'Approve Claim'}
+              <span>{expense.amount > 1500000 ? 'Approve & Forward' : 'Approve Claim'}</span>
             </button>
           </div>
         </div>

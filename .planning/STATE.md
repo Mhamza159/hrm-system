@@ -118,7 +118,11 @@
 
 ---
 
-## Quick Tasks Log
+## Accumulated Context
+
+### Roadmap Evolution
+- Phase 6 added: Expense Module – UI Design Improvements (Buttons & Pills, Categorize & Limit Tab, Archive Tab, Active Tab, Data Table row modals and alignments per DESIGN.md and docs/UI-REFERENCE.md)
+
 - [x] **quick/20261019-notification-settings-tab:** Admin Notification & Announcement Delivery Method Selection (In-App Only, Email Only, WhatsApp Only, Mixed Omnichannel). Mounted tab in `SettingsPage.jsx`, wired `NotificationSettingsForm.jsx`, validated in `setting.validation.js`, enforced in `notify.service.js`. Verified via 16/16 tests (`admin-notification-settings.test.js`, `whatsapp-notifications.test.js`) and Vite build.
 - [x] **quick/20261025-sidebar-scrollbar-ui-fix:** Fix UI scrollbar in the left navigation sidebar. Replaced default 17px native Windows light-gray scrollbar with sleek, minimalist dark scrollbar (`.sidebar-scrollbar` with thin width, transparent track, subtle translucent thumb on dark `#061A14`, hover emerald `#00C471`). Added `.custom-scrollbar` and `.scrollbar-none` utilities. Verified via Vite build (1819 modules transformed, 0 errors).
 - [x] **quick/20261025-org-chart-refresh-button:** Added in-app data reload action to Org Chart (`/org-chart`). Wired RTK Query `refetch()` with `isFetching` loading state, `RefreshCw` spinner, and `sonner` toast alerts in `OrgChartPage.jsx` (PageHeader action, Department filter pill, and canvas control bar). Enhanced `PageHeader.jsx` to support `children` actions. Verified via Vite build.
@@ -126,4 +130,6 @@
 - [x] **quick/20261111-employee-archive-bucket-and-modal-fix:** Fix employee delete modal close button (`ConfirmDialog.jsx`), create Archive Bucket in Employee Directory (`EmployeeListPage.jsx`) with live tab switcher, implement Revert (`POST /api/v1/employees/:id/restore`) and Permanent Delete (`DELETE /api/v1/employees/:id/permanent`) with dedicated danger confirmation modal. Verified via 19/19 Vitest tests (`employees.api.test.js`) and Vite production build.
 - [x] **quick/20261113-on-leave-modal-ui-redesign:** Redesigned on-leave attendance blocking modal (`OnLeaveModal.jsx`) to adhere strictly to Forest & Emerald design system (`DESIGN.md` & `docs/UI-REFERENCE.md`). Eliminated AI-gradient button and harsh callout, added hairline borders, authoritative CalendarClock badge, semantic category pills, and balanced self-service cancellation controls. Verified via Vite production build and Vitest test suite.
 - [x] **quick/20261113-leave-types-table-ui-redesign:** Redesigned Leave Types (`LeaveTypesPage.jsx`) table to remove AI slop, duplicate search bars, and nested card borders. Replaced nested DataTable with native high-density enterprise table featuring unified toolbar with single search, monospace code tags, tabular yearly quotas, restrained remuneration pills, em-dash carry-forward values, eligibility column, and styled action buttons adhering to `DESIGN.md` and `docs/UI-REFERENCE.md`. Verified via Vite build and Vitest tests.
+- [x] **phase/06-expense-module-ui-design-improvements:** Comprehensive overhaul of Expense Module UI craft across Buttons & Pills, Categorize & Limit Tab, Archive Tab, and Active Views. Implemented semantic CategoryPills, built `ExpenseCategoryDetailModal` with full audit metadata and action triggers on row click, redesigned high-density semantic tables with tabular numbers, receipt indicators, and hairline borders in `ExpenseCategoriesPage.jsx`, `ExpenseApprovalsPage.jsx`, and `MyExpensesPage.jsx`. Verified via 6/6 Vitest tests (`expense.category-archive.test.js`), Vite production build (2020 modules, 0 errors), and live Playwright browser verification across all active/archive tables and modals.
+
 

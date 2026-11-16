@@ -1,18 +1,33 @@
 /**
  * @file ExpenseCategoriesPage.jsx
- * @description Expense categories & policy limits, with an Archive for deleted categories.
+ * @description Expense categories & policy limits, with an Archive bucket for deleted categories.
  *
  * SPECIFICATION:
  * - Module: M11 Expense Claims (BUILD-GUIDE Section 16 · Row 11.1)
  * - Permission: Can I="expense.settings" a="ExpenseCategory" for every change and the Archive tab
  * - Lifecycle: Delete → Archive (disabled, hidden from claim forms) → Revert or Permanent delete
  *   (permanent delete is refused while claims reference the category)
- * - Design: DESIGN.md & docs/UI-REFERENCE.md
+ * - Design: DESIGN.md & docs/UI-REFERENCE.md (Forest & Emerald Craft)
  */
 
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { Tag, Plus, Pencil, Archive, RotateCcw, Trash2, Search } from 'lucide-react';
+import {
+  Tag,
+  Plus,
+  Pencil,
+  Archive,
+  RotateCcw,
+  Trash2,
+  Search,
+  Receipt,
+  FileText,
+  AlertCircle,
+  Eye,
+  CheckCircle2,
+  Layers,
+  ChevronRight
+} from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { Can } from '../../../components/common/Can.jsx';
 import { ConfirmDialog } from '../../../components/common/ConfirmDialog.jsx';
@@ -27,24 +42,10 @@ import {
   usePermanentDeleteExpenseCategoryMutation
 } from '../expensesApi.js';
 import ExpenseCategoryModal from '../components/ExpenseCategoryModal.jsx';
-import { pkr, formatDay } from '../components/expenseUi.jsx';
-
-const ACTIVE_COLS = 'md:grid-cols-[minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,0.8fr)_6rem]';
-const ARCHIVE_COLS = 'md:grid-cols-[minmax(0,2fr)_minmax(0,0.8fr)_minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,0.7fr)_13rem]';
+import ExpenseCategoryDetailModal from '../components/ExpenseCategoryDetailModal.jsx';
+import { pkr, formatDay, CategoryPill } from '../components/expenseUi.jsx';
 
 const limitLabel = (paisa) => (paisa > 0 ? pkr(paisa) : 'No limit');
-
-function Pill({ tone = 'slate', children }) {
-  const tones = {
-    emerald: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60',
-    slate: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-[#13221B] dark:text-slate-400 dark:border-[#1A3125]',
-  };
-  return <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tones[tone]}`}>{children}</span>;
-}
-
-function CellLabel({ children }) {
-  return <span className="mb-0.5 block text-[11px] text-slate-500 md:hidden dark:text-slate-400">{children}</span>;
-}
 
 /** Record summary shown inside the confirmation dialogs. */
 function CategorySummary({ category }) {
@@ -73,17 +74,20 @@ function CategorySummary({ category }) {
   );
 }
 
-const iconButton =
-  'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40';
-
 export default function ExpenseCategoriesPage() {
   const { can } = usePermission();
   const canManage = can('expense.settings', 'ExpenseCategory');
 
-  const [tab, setTab] = useState('active');
+  const [tab, setTab] = useState('active'); // 'active' | 'archive'
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
+
+  // Row-click detail modal state
+  const [detailCategory, setDetailCategory] = useState(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  // Confirmation dialog targets
   const [archiveTarget, setArchiveTarget] = useState(null);
   const [restoreTarget, setRestoreTarget] = useState(null);
   const [purgeTarget, setPurgeTarget] = useState(null);
@@ -121,13 +125,18 @@ export default function ExpenseCategoriesPage() {
   const archiveRows = archived.filter(matches);
   const onArchiveTab = tab === 'archive' && canManage;
 
+  const handleRowClick = (cat) => {
+    setDetailCategory(cat);
+    setIsDetailOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Expense Categories & Limits"
-        description="Set per-claim spending limits and receipt rules for each expense category."
+        description="Set per-claim spending limits, receipt verification mandates, and policy governance."
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <RefreshButton
               onRefresh={() => {
                 refetch();
@@ -142,34 +151,36 @@ export default function ExpenseCategoriesPage() {
                   setSelectedCategory(null);
                   setIsModalOpen(true);
                 }}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#00C471] px-4 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#049856]"
+                className="h-9 px-4 inline-flex items-center gap-2 rounded-xl bg-[#00C471] hover:bg-[#049856] text-white text-xs font-semibold shadow-xs shadow-emerald-600/20 active:scale-[0.98] transition-all cursor-pointer"
               >
                 <Plus className="h-4 w-4" aria-hidden="true" />
-                Add category
+                <span>Add Category</span>
               </button>
             </Can>
           </div>
         }
       />
 
-      {/* Totals */}
-      <div className="grid grid-cols-3 divide-x divide-[#EAECF0] overflow-hidden rounded-2xl border border-[#EAECF0] bg-white rtl:divide-x-reverse dark:divide-[#1A3125] dark:border-[#1A3125] dark:bg-[#111D17]">
+      {/* Totals Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/80 dark:divide-[#1A3125] overflow-hidden rounded-2xl border border-slate-200/80 dark:border-[#1A3125] bg-white dark:bg-[#111D17] shadow-xs">
         {[
-          { label: 'Active categories', value: categories.filter((c) => c.isActive).length },
-          { label: 'Receipt required', value: categories.filter((c) => c.requiresReceipt).length },
-          { label: 'Archived', value: canManage ? archived.length : '—' },
+          { label: 'Active Categories', value: categories.filter((c) => c.isActive).length, note: 'Available in claim forms' },
+          { label: 'Receipt Required', value: categories.filter((c) => c.requiresReceipt).length, note: 'Mandatory proof attachment' },
+          { label: 'Archived Policies', value: canManage ? archived.length : '—', note: 'Disabled & safe in audit bucket' },
         ].map((s) => (
           <div key={s.label} className="px-5 py-4">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{s.label}</p>
-            <p className="mt-1.5 font-mono text-[22px] font-semibold tabular-nums text-slate-900 dark:text-white">{s.value}</p>
+            <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-slate-900 dark:text-white">{s.value}</p>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">{s.note}</p>
           </div>
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-[#EAECF0] bg-white dark:border-[#1A3125] dark:bg-[#111D17]">
-        {/* Tabs + search */}
-        <div className="flex flex-col gap-3 border-b border-[#EAECF0] px-5 pt-3 sm:flex-row sm:items-end sm:justify-between dark:border-[#1A3125]">
-          <div role="tablist" aria-label="Category lists" className="flex gap-6">
+      {/* Main Container */}
+      <div className="overflow-hidden rounded-2xl border border-slate-200/80 dark:border-[#1A3125] bg-white dark:bg-[#111D17] shadow-xs">
+        {/* Navigation Tabs + Search Toolbar */}
+        <div className="flex flex-col gap-3 border-b border-slate-200/80 dark:border-[#1A3125] px-5 pt-3.5 pb-3 sm:flex-row sm:items-center sm:justify-between bg-slate-50/50 dark:bg-[#0E1A14]/50">
+          <div role="tablist" aria-label="Category lists" className="flex items-center gap-2">
             {[
               { key: 'active', label: 'Categories', count: categories.length, show: true },
               { key: 'archive', label: 'Archive', count: archived.length, show: canManage },
@@ -184,17 +195,19 @@ export default function ExpenseCategoriesPage() {
                     role="tab"
                     aria-selected={selected}
                     onClick={() => setTab(t.key)}
-                    className={`-mb-px flex items-center gap-2 border-b-2 pb-3 text-[13px] font-medium transition-colors ${
+                    className={`h-9 px-3.5 rounded-xl inline-flex items-center gap-2 text-xs font-semibold transition-all cursor-pointer ${
                       selected
-                        ? 'border-[#00C471] text-slate-900 dark:text-white'
-                        : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                        ? 'bg-[#00C471] text-white shadow-xs shadow-emerald-600/20'
+                        : 'bg-white dark:bg-[#15231C] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 dark:border-[#1A3125]'
                     }`}
                   >
                     {t.key === 'archive' && <Archive className="h-3.5 w-3.5" aria-hidden="true" />}
-                    {t.label}
+                    <span>{t.label}</span>
                     <span
-                      className={`rounded-full px-1.5 py-px font-mono text-[11px] font-semibold tabular-nums ${
-                        selected ? 'bg-emerald-50 text-emerald-700 dark:bg-[#00C471]/15 dark:text-emerald-400' : 'bg-slate-100 text-slate-500 dark:bg-[#13221B] dark:text-slate-400'
+                      className={`px-1.5 py-0.5 rounded-full font-mono text-[10px] font-bold tabular-nums ${
+                        selected
+                          ? 'bg-white/20 text-white'
+                          : 'bg-slate-100 dark:bg-[#1E3328] text-slate-500 dark:text-slate-400'
                       }`}
                     >
                       {t.count}
@@ -203,219 +216,323 @@ export default function ExpenseCategoriesPage() {
                 );
               })}
           </div>
-          <div className="relative mb-3 w-full sm:w-64">
-            <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+
+          <div className="relative w-full sm:w-72">
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" aria-hidden="true" />
             <input
-              type="search"
+              type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name or code"
+              placeholder="Search category name or code..."
               aria-label="Search categories"
-              className="w-full rounded-xl border border-[#E2E8F0] bg-white py-2 pe-3 ps-9 text-xs text-slate-800 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-[#1A3125] dark:bg-[#0A110D] dark:text-slate-100"
+              className="w-full h-9 pl-9 pr-4 text-xs font-medium rounded-xl border border-slate-200/80 dark:border-[#1A3125] bg-white dark:bg-[#15231C] text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] transition-all shadow-2xs"
             />
           </div>
         </div>
 
+        {/* Content Views */}
         {onArchiveTab ? (
           archivedQuery.isLoading ? (
-            <div className="space-y-2 p-5" aria-hidden="true">
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="h-12 animate-pulse rounded-xl bg-slate-100 dark:bg-[#13221B]" />
-              ))}
+            <div className="p-8 text-center text-slate-400">
+              <ScreenSkeleton variant="table" />
             </div>
           ) : archiveRows.length === 0 ? (
-            <div className="space-y-2 px-6 py-14 text-center">
-              <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 dark:bg-[#13221B]">
-                <Archive className="h-5 w-5 text-slate-400" aria-hidden="true" />
+            <div className="space-y-2 px-6 py-16 text-center">
+              <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 dark:bg-[#15231C] text-slate-400">
+                <Archive className="h-6 w-6" aria-hidden="true" />
               </span>
-              <p className="text-sm font-semibold text-slate-900 dark:text-white">{term ? 'No matching archived categories' : 'The archive is empty'}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Deleted categories land here, disabled, until you revert or permanently delete them.</p>
+              <p className="text-sm font-bold text-slate-900 dark:text-white mt-2">
+                {term ? 'No matching archived categories' : 'The archive is empty'}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                Deleted categories land here, disabled and safe from new claims, until you revert or permanently delete them.
+              </p>
             </div>
           ) : (
-            <>
-              <div className={`hidden gap-4 border-b border-[#EAECF0] bg-slate-50/70 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500 md:grid dark:border-[#1A3125] dark:bg-[#0E1A14] dark:text-slate-400 ${ARCHIVE_COLS}`}>
-                <span>Category</span>
-                <span>Code</span>
-                <span className="text-end">Limit per claim</span>
-                <span>Archived</span>
-                <span className="text-end">Claims</span>
-                <span className="sr-only">Actions</span>
-              </div>
-              <ul className="divide-y divide-[#EAECF0] dark:divide-[#1A3125]">
-                {archiveRows.map((cat) => (
-                  <li key={cat._id} className={`grid grid-cols-2 items-center gap-x-4 gap-y-3 px-5 py-3.5 ${ARCHIVE_COLS}`}>
-                    <div className="col-span-2 min-w-0 md:col-span-1">
-                      <p className="truncate text-[13px] font-semibold text-slate-500 line-through decoration-slate-300 dark:text-slate-400 dark:decoration-slate-600">{cat.name}</p>
-                      <p className="mt-0.5">
-                        <Pill>Disabled</Pill>
-                      </p>
-                    </div>
-                    <div>
-                      <CellLabel>Code</CellLabel>
-                      <span className="font-mono text-xs font-semibold text-slate-600 dark:text-slate-300">{cat.code}</span>
-                    </div>
-                    <div className="md:text-end">
-                      <CellLabel>Limit per claim</CellLabel>
-                      <span className="font-mono text-[13px] tabular-nums text-slate-600 dark:text-slate-300">{limitLabel(cat.maxLimitPaisa)}</span>
-                    </div>
-                    <div className="min-w-0">
-                      <CellLabel>Archived</CellLabel>
-                      <p className="font-mono text-[13px] tabular-nums text-slate-700 dark:text-slate-300">{formatDay(cat.archivedAt || cat.updatedAt)}</p>
-                      {cat.archivedByName && <p className="truncate text-xs text-slate-500 dark:text-slate-400">by {cat.archivedByName}</p>}
-                    </div>
-                    <div className="md:text-end">
-                      <CellLabel>Claims</CellLabel>
-                      <span className="font-mono text-[13px] tabular-nums text-slate-700 dark:text-slate-300">{cat.claimCount}</span>
-                    </div>
-                    <div className="col-span-2 flex items-center justify-end gap-1.5 md:col-span-1">
-                      <button
-                        type="button"
-                        onClick={() => setRestoreTarget(cat)}
-                        className={`${iconButton} text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40`}
-                      >
-                        <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-                        Revert
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPurgeTarget(cat)}
-                        disabled={cat.claimCount > 0}
-                        title={cat.claimCount > 0 ? `${cat.claimCount} claim${cat.claimCount === 1 ? '' : 's'} use this category, so it stays archived` : undefined}
-                        className={`${iconButton} text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40`}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                        Delete forever
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                <thead className="bg-slate-50/75 dark:bg-[#0E1A14] text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200/80 dark:border-[#1A3125] font-semibold">
+                  <tr>
+                    <th className="px-5 py-3.5">Archived Category</th>
+                    <th className="px-5 py-3.5">Code</th>
+                    <th className="px-5 py-3.5 text-right">Limit Per Claim</th>
+                    <th className="px-5 py-3.5">Archived Date & Actor</th>
+                    <th className="px-5 py-3.5 text-center">Linked Claims</th>
+                    <th className="px-5 py-3.5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200/80 dark:divide-[#1A3125]">
+                  {archiveRows.map((cat) => (
+                    <tr
+                      key={cat._id}
+                      onClick={() => handleRowClick(cat)}
+                      className="hover:bg-slate-50/70 dark:hover:bg-[#15231C]/60 transition-colors cursor-pointer group"
+                    >
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-slate-500 dark:text-slate-400 line-through decoration-slate-300 dark:decoration-slate-600">
+                            {cat.name}
+                          </span>
+                          <CategoryPill tone="rose">Disabled</CategoryPill>
+                        </div>
+                        {cat.description && (
+                          <p className="text-xs text-slate-400 dark:text-slate-500 truncate max-w-xs mt-0.5">
+                            {cat.description}
+                          </p>
+                        )}
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#15231C] text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-[#1A3125]">
+                          {cat.code}
+                        </span>
+                      </td>
+
+                      <td className="px-5 py-4 text-right font-mono text-xs font-medium tabular-nums text-slate-600 dark:text-slate-300">
+                        {limitLabel(cat.maxLimitPaisa)}
+                      </td>
+
+                      <td className="px-5 py-4">
+                        <div className="font-mono text-xs text-slate-700 dark:text-slate-300 font-medium">
+                          {formatDay(cat.archivedAt || cat.updatedAt)}
+                        </div>
+                        {cat.archivedByName && (
+                          <div className="text-[11px] text-slate-400 dark:text-slate-500">
+                            by {cat.archivedByName}
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="px-5 py-4 text-center">
+                        <span className="font-mono text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#15231C] text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-[#1A3125]">
+                          {cat.claimCount || 0}
+                        </span>
+                      </td>
+
+                      <td className="px-5 py-4 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => setRestoreTarget(cat)}
+                            className="h-8 px-2.5 inline-flex items-center gap-1 rounded-lg text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 border border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs transition-colors cursor-pointer"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+                            <span>Revert</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPurgeTarget(cat)}
+                            disabled={cat.claimCount > 0}
+                            title={cat.claimCount > 0 ? `${cat.claimCount} claim(s) use this category, so it stays safely archived` : undefined}
+                            className="h-8 px-2.5 inline-flex items-center gap-1 rounded-lg text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/40 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )
         ) : error ? (
-          <div className="px-6 py-12 text-center">
+          <div className="px-6 py-14 text-center">
             <p className="text-sm font-semibold text-slate-900 dark:text-white">Categories could not be loaded</p>
-            <button type="button" onClick={refetch} className="mt-3 text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400">
+            <button
+              type="button"
+              onClick={refetch}
+              className="mt-3 text-xs font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 cursor-pointer"
+            >
               Try again
             </button>
           </div>
         ) : activeRows.length === 0 ? (
-          <div className="space-y-2 px-6 py-14 text-center">
-            <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 dark:bg-[#13221B]">
-              <Tag className="h-5 w-5 text-slate-400" aria-hidden="true" />
+          <div className="space-y-2 px-6 py-16 text-center">
+            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 dark:bg-[#15231C] text-slate-400">
+              <Tag className="h-6 w-6" aria-hidden="true" />
             </span>
-            <p className="text-sm font-semibold text-slate-900 dark:text-white">{term ? 'No matching categories' : 'No categories yet'}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Add a category to set spending limits and receipt rules.</p>
+            <p className="text-sm font-bold text-slate-900 dark:text-white mt-2">
+              {term ? 'No matching categories' : 'No categories configured yet'}
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+              Add an expense policy category to set per-claim spending limits and receipt proof rules.
+            </p>
           </div>
         ) : (
-          <>
-            <div className={`hidden gap-4 border-b border-[#EAECF0] bg-slate-50/70 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500 md:grid dark:border-[#1A3125] dark:bg-[#0E1A14] dark:text-slate-400 ${ACTIVE_COLS}`}>
-              <span>Category</span>
-              <span>Code</span>
-              <span className="text-end">Limit per claim</span>
-              <span>Receipt</span>
-              <span>Status</span>
-              <span className="sr-only">Actions</span>
-            </div>
-            <ul className="divide-y divide-[#EAECF0] dark:divide-[#1A3125]">
-              {activeRows.map((cat) => (
-                <li key={cat._id} className={`grid grid-cols-2 items-center gap-x-4 gap-y-3 px-5 py-3.5 ${ACTIVE_COLS}`}>
-                  <div className="col-span-2 min-w-0 md:col-span-1">
-                    <p className="truncate text-[13px] font-semibold text-slate-900 dark:text-white">{cat.name}</p>
-                    {cat.description && (
-                      <p className="truncate text-xs text-slate-500 dark:text-slate-400" title={cat.description}>
-                        {cat.description}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <CellLabel>Code</CellLabel>
-                    <span className="font-mono text-xs font-semibold text-slate-700 dark:text-slate-300">{cat.code}</span>
-                  </div>
-                  <div className="md:text-end">
-                    <CellLabel>Limit per claim</CellLabel>
-                    <span className={`font-mono text-[13px] tabular-nums ${cat.maxLimitPaisa > 0 ? 'font-semibold text-slate-900 dark:text-white' : 'text-slate-400'}`}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+              <thead className="bg-slate-50/75 dark:bg-[#0E1A14] text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200/80 dark:border-[#1A3125] font-semibold">
+                <tr>
+                  <th className="px-5 py-3.5">Category Name</th>
+                  <th className="px-5 py-3.5">Code</th>
+                  <th className="px-5 py-3.5 text-right">Limit Per Claim</th>
+                  <th className="px-5 py-3.5 text-center">Receipt Mandate</th>
+                  <th className="px-5 py-3.5 text-center">Status</th>
+                  <th className="px-5 py-3.5 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200/80 dark:divide-[#1A3125]">
+                {activeRows.map((cat) => (
+                  <tr
+                    key={cat._id}
+                    onClick={() => handleRowClick(cat)}
+                    className="hover:bg-slate-50/70 dark:hover:bg-[#15231C]/60 transition-colors cursor-pointer group"
+                  >
+                    <td className="px-5 py-4">
+                      <div className="font-semibold text-slate-900 dark:text-white group-hover:text-[#00C471] transition-colors">
+                        {cat.name}
+                      </div>
+                      {cat.description && (
+                        <p className="text-xs text-slate-400 dark:text-slate-500 truncate max-w-xs mt-0.5" title={cat.description}>
+                          {cat.description}
+                        </p>
+                      )}
+                    </td>
+
+                    <td className="px-5 py-4">
+                      <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#15231C] text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-[#1A3125]">
+                        {cat.code}
+                      </span>
+                    </td>
+
+                    <td className="px-5 py-4 text-right font-mono text-xs font-semibold tabular-nums text-slate-900 dark:text-white">
                       {limitLabel(cat.maxLimitPaisa)}
-                    </span>
-                  </div>
-                  <div>
-                    <CellLabel>Receipt</CellLabel>
-                    {cat.requiresReceipt ? <Pill tone="emerald">Required</Pill> : <Pill>Optional</Pill>}
-                  </div>
-                  <div>
-                    <CellLabel>Status</CellLabel>
-                    {cat.isActive ? <Pill tone="emerald">Active</Pill> : <Pill>Inactive</Pill>}
-                  </div>
-                  <div className="col-span-2 flex items-center justify-end gap-1 md:col-span-1">
-                    <Can I="expense.settings" a="ExpenseCategory">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedCategory(cat);
-                          setIsModalOpen(true);
-                        }}
-                        aria-label={`Edit ${cat.name}`}
-                        className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-[#13221B] dark:hover:text-slate-200"
-                      >
-                        <Pencil className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setArchiveTarget(cat)}
-                        aria-label={`Delete ${cat.name}`}
-                        className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40 dark:hover:text-red-400"
-                      >
-                        <Trash2 className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                    </Can>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </>
+                    </td>
+
+                    <td className="px-5 py-4 text-center">
+                      {cat.requiresReceipt ? (
+                        <CategoryPill tone="emerald">Required</CategoryPill>
+                      ) : (
+                        <CategoryPill tone="slate">Optional</CategoryPill>
+                      )}
+                    </td>
+
+                    <td className="px-5 py-4 text-center">
+                      {cat.isActive ? (
+                        <CategoryPill tone="emerald">Active</CategoryPill>
+                      ) : (
+                        <CategoryPill tone="slate">Inactive</CategoryPill>
+                      )}
+                    </td>
+
+                    <td className="px-5 py-4 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                        <Can I="expense.settings" a="ExpenseCategory">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedCategory(cat);
+                              setIsModalOpen(true);
+                            }}
+                            title={`Edit ${cat.name}`}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#15231C] transition-colors cursor-pointer"
+                          >
+                            <Pencil className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setArchiveTarget(cat)}
+                            title={`Archive ${cat.name}`}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="h-4 w-4" aria-hidden="true" />
+                          </button>
+                        </Can>
+                        <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600 group-hover:text-slate-500 transition-colors" />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
-      <ExpenseCategoryModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} category={selectedCategory} />
+      {/* Row-Click Inspection Modal */}
+      <ExpenseCategoryDetailModal
+        isOpen={isDetailOpen}
+        onClose={() => {
+          setIsDetailOpen(false);
+          setDetailCategory(null);
+        }}
+        category={detailCategory}
+        isArchived={onArchiveTab}
+        onEdit={(cat) => {
+          setSelectedCategory(cat);
+          setIsModalOpen(true);
+        }}
+        onArchive={(cat) => setArchiveTarget(cat)}
+        onRestore={(cat) => setRestoreTarget(cat)}
+        onPurge={(cat) => setPurgeTarget(cat)}
+      />
 
+      {/* Create / Edit Form Modal */}
+      <ExpenseCategoryModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        category={selectedCategory}
+      />
+
+      {/* Archive confirmation */}
       <ConfirmDialog
         isOpen={Boolean(archiveTarget)}
-        icon={Archive}
-        isDestructive
-        title="Move this category to the archive?"
-        message="It will be disabled and removed from the claim form straight away. Existing claims keep it, and you can revert it from the Archive tab at any time."
-        details={<CategorySummary category={archiveTarget} />}
-        confirmText="Move to archive"
+        onClose={() => setArchiveTarget(null)}
+        onConfirm={() =>
+          run(archiveCategory, archiveTarget, `Category '${archiveTarget?.name}' moved to archive.`, setArchiveTarget)
+        }
+        title="Archive Expense Category?"
+        description="This category will be disabled and hidden from employee claim forms. Existing claims are preserved."
+        confirmText="Archive category"
         isLoading={isArchiving}
-        onCancel={() => setArchiveTarget(null)}
-        onConfirm={() => run(archiveCategory, archiveTarget, `'${archiveTarget.name}' moved to the archive`, setArchiveTarget)}
-      />
+      >
+        <div className="mt-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 dark:border-[#1A3125] dark:bg-[#0E1A14]">
+          <CategorySummary category={archiveTarget} />
+        </div>
+      </ConfirmDialog>
 
+      {/* Revert confirmation */}
       <ConfirmDialog
         isOpen={Boolean(restoreTarget)}
-        icon={RotateCcw}
-        title="Revert this category?"
-        message="It becomes active again and employees can choose it on new claims."
-        details={<CategorySummary category={restoreTarget} />}
-        confirmText="Revert category"
+        onClose={() => setRestoreTarget(null)}
+        onConfirm={() =>
+          run(restoreCategory, restoreTarget, `Category '${restoreTarget?.name}' restored to active.`, setRestoreTarget)
+        }
+        title="Restore Expense Category?"
+        description="This category will be re-enabled and made available on claim submission forms."
+        confirmText="Restore category"
+        variant="emerald"
         isLoading={isRestoring}
-        onCancel={() => setRestoreTarget(null)}
-        onConfirm={() => run(restoreCategory, restoreTarget, `'${restoreTarget.name}' is active again`, setRestoreTarget)}
-      />
+      >
+        <div className="mt-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 dark:border-[#1A3125] dark:bg-[#0E1A14]">
+          <CategorySummary category={restoreTarget} />
+        </div>
+      </ConfirmDialog>
 
+      {/* Permanent delete confirmation */}
       <ConfirmDialog
         isOpen={Boolean(purgeTarget)}
-        icon={Trash2}
-        isDestructive
-        title="Delete this category forever?"
-        message="This permanently removes the category and frees its code. It cannot be undone."
-        details={<CategorySummary category={purgeTarget} />}
-        requireText={purgeTarget?.code || ''}
+        onClose={() => setPurgeTarget(null)}
+        onConfirm={() =>
+          run(
+            purgeCategory,
+            purgeTarget,
+            `Category '${purgeTarget?.name}' permanently deleted.`,
+            setPurgeTarget
+          )
+        }
+        title="Delete Expense Category Forever?"
+        description="This cannot be undone. Only categories with 0 linked claims can be deleted permanently."
         confirmText="Delete forever"
+        variant="danger"
         isLoading={isPurging}
-        onCancel={() => setPurgeTarget(null)}
-        onConfirm={() => run(purgeCategory, purgeTarget, `'${purgeTarget.name}' permanently deleted`, setPurgeTarget)}
-      />
+      >
+        <div className="mt-3 rounded-xl border border-slate-200/80 bg-slate-50/70 p-3.5 dark:border-[#1A3125] dark:bg-[#0E1A14]">
+          <CategorySummary category={purgeTarget} />
+        </div>
+      </ConfirmDialog>
     </div>
   );
 }

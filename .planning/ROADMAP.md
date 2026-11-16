@@ -5,6 +5,7 @@ Governed strictly by [`docs/BUILD-GUIDE.md`](file:///c:/Users/hamih/OneDrive/Des
 ---
 
 ## Phase 1: Core HR & Payroll (Launch Scope P1)
+
 **Goal:** Establish baseline infrastructure, authentication, granular RBAC, company settings, workforce management, attendance, leave, automated payroll engine with Pakistan FBR/EOBI compliance, and executive dashboards.
 **Scope:** 12 Modules / Steps · 148 Vertical Slice Features
 
@@ -36,6 +37,7 @@ Governed strictly by [`docs/BUILD-GUIDE.md`](file:///c:/Users/hamih/OneDrive/Des
 ---
 
 ## Phase 2: Smart Operations (P2 Scope)
+
 **Goal:** Expand financial self-service, deploy multi-modal smart attendance (GPS, QR, Face), and introduce asset custody, employee lifecycle onboarding/offboarding, and project time tracking.
 **Scope:** 9 Modules · 67 Vertical Slice Features
 
@@ -61,6 +63,7 @@ Governed strictly by [`docs/BUILD-GUIDE.md`](file:///c:/Users/hamih/OneDrive/Des
 ---
 
 ## Phase 3: AI Features (Intelligence Scope)
+
 **Goal:** Integrate AI-powered workflows using OpenAI API (`gpt-4o-mini` / `gpt-4o`) via backend service adapter.
 **Scope:** 3 Modules · 27 Vertical Slice Features
 
@@ -74,6 +77,7 @@ Governed strictly by [`docs/BUILD-GUIDE.md`](file:///c:/Users/hamih/OneDrive/Des
 ---
 
 ## Phase 4: Engagement & Polish (P3 Scope)
+
 **Goal:** Enhance workplace engagement, introduce internal real-time communication, provide full Urdu localization, and optimize PWA performance.
 **Scope:** 5 Modules · 31 Vertical Slice Features
 
@@ -91,6 +95,7 @@ Governed strictly by [`docs/BUILD-GUIDE.md`](file:///c:/Users/hamih/OneDrive/Des
 ---
 
 ## Phase 5: Release, Deployment & Handover
+
 **Goal:** Staging validation, production deployment on VPS, and complete client handover per `docs/TECH-SPEC.md` Section 12.
 **Scope:** 3 Major Deployment Milestones
 
@@ -112,9 +117,27 @@ Governed strictly by [`docs/BUILD-GUIDE.md`](file:///c:/Users/hamih/OneDrive/Des
   - Automated database backup and disaster recovery restore runbook.
   - Sentry error monitoring & UptimeRobot health check alerts configuration.
 
+### Phase 6: Expense Module – UI Design Improvements
+
+**Goal:** Modernize and elevate the Expense Module UI across Buttons & Pills, Categories & Limits, Archive Tab, and Active Tab with consistent Forest & Emerald design tokens, semantic tables, and row-click modals.
+**Requirements**:
+- Improve buttons and status pills with strict semantic colors, consistent spacing, and hairline alignment.
+- Overhaul "Categorize & Limit" tab with high-density data tables and row-click category detail modals.
+- Overhaul "Archive Tab" with structured archived records, revert/permanent-delete actions, and dedicated audit modals.
+- Overhaul "Active Tab" across claims & categories with cohesive typography, tabular numeric formatting, and production-quality layouts per `DESIGN.md` and `docs/UI-REFERENCE.md`.
+**Depends on:** Phase 5
+**Plans:** 3 plans
+
+Plans:
+
+- [x] **Plan 06-01: Buttons, Pills, Semantic Badges & Category Detail Modal** (`.planning/phases/06-expense-module-ui-design-improvements/06-01-PLAN.md`)
+- [x] **Plan 06-02: Categorize & Limit Tab and Archive Tab Overhaul** (`.planning/phases/06-expense-module-ui-design-improvements/06-02-PLAN.md`)
+- [x] **Plan 06-03: Active Claims & Approvals Views Polish & Verification** (`.planning/phases/06-expense-module-ui-design-improvements/06-03-PLAN.md`)
+
 ---
 
 ## Summary of Master Roadmap Metrics
+
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features
 - **Phase 2 (Smart Operations):** 9 modules · 67 features
 - **Phase 3 (AI Features):** 3 modules · 27 features
