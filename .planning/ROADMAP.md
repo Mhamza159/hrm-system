@@ -250,9 +250,9 @@ Plans:
 
 Plans:
 
-- [ ] **Plan 10-01: High-Precision Degree & Experience Extraction Engine** (`.planning/phases/10-ai-resume-screening-accuracy-candidate-data-parsing-ui-improvements/10-01-PLAN.md`)
-- [ ] **Plan 10-02: Granular Skills Tokenizer & Matched vs Unmatched Evaluation** (`.planning/phases/10-ai-resume-screening-accuracy-candidate-data-parsing-ui-improvements/10-02-PLAN.md`)
-- [ ] **Plan 10-03: CandidateDetailModal UI Overhaul & Real Candidate Re-Screening Verification** (`.planning/phases/10-ai-resume-screening-accuracy-candidate-data-parsing-ui-improvements/10-03-PLAN.md`)
+- [x] **Plan 10-01: High-Precision Degree & Experience Extraction Engine** (`.planning/phases/10-ai-resume-screening-accuracy-candidate-data-parsing-ui-improvements/10-01-PLAN.md`)
+- [x] **Plan 10-02: Granular Skills Tokenizer & Matched vs Unmatched Evaluation** (`.planning/phases/10-ai-resume-screening-accuracy-candidate-data-parsing-ui-improvements/10-02-PLAN.md`)
+- [x] **Plan 10-03: CandidateDetailModal UI Overhaul & Real Candidate Re-Screening Verification** (`.planning/phases/10-ai-resume-screening-accuracy-candidate-data-parsing-ui-improvements/10-03-PLAN.md`)
 
 ---
 
