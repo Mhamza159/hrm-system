@@ -150,7 +150,7 @@ export const repairAssetSchema = z.object({
 export const updateRepairSchema = z.object({
   params: z.object({
     id: objectIdSchema,
-    repairId: objectIdSchema
+    repairId: objectIdSchema.or(z.literal('latest'))
   }),
   body: z.object({
     status: z.enum(['in_progress', 'completed', 'unrepairable']),

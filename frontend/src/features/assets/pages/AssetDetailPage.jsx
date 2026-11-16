@@ -408,6 +408,35 @@ export const AssetDetailPage = () => {
             </button>
           </Can>
         </div>
+      ) : asset.status === 'under_repair' ? (
+        <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-[#1A3125] rounded-2xl p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 flex items-center justify-center border border-amber-200 dark:border-amber-900/60 shrink-0">
+              <Wrench className="w-6 h-6 text-amber-500" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                Under Service & Maintenance Repair
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                This asset is currently with an external service vendor. Once returned, mark repair complete to restore it to inventory.
+              </p>
+            </div>
+          </div>
+
+          <Can I="asset.manage" a="Asset">
+            <button
+              onClick={() => {
+                const activeRep = asset.repairs?.slice()?.reverse()?.find((r) => r.status === 'in_progress');
+                handleCompleteRepair(activeRep?._id || 'latest');
+              }}
+              className="px-4 py-2 bg-[#00C471] hover:bg-[#049856] text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition-all active:scale-95 shrink-0 cursor-pointer"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Complete Repair & Return to Inventory</span>
+            </button>
+          </Can>
+        </div>
       ) : null}
 
       {/* Tabs Section */}

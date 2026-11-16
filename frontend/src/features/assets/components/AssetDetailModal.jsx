@@ -37,6 +37,7 @@ export const AssetDetailModal = ({
   onAssign,
   onReturn,
   onRepair,
+  onCompleteRepair,
   onReportIssue,
   isOwnAsset = false,
   canManage = false
@@ -207,6 +208,23 @@ export const AssetDetailModal = ({
                   </button>
                 )}
               </div>
+            ) : asset.status === 'under_repair' ? (
+              <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/50 dark:bg-amber-950/20 text-center">
+                <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                  Equipment is currently out for service repair at an external maintenance vendor.
+                </p>
+                {canManage && onCompleteRepair && (
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onCompleteRepair(asset);
+                    }}
+                    className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#00C471] text-white hover:bg-[#049856] transition-colors cursor-pointer shadow-xs"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Mark Repair Complete & Return to Inventory
+                  </button>
+                )}
+              </div>
             ) : (
               <div className="p-4 rounded-xl border border-dashed border-slate-200 dark:border-[#1A3125] text-center text-slate-400">
                 <p>Not assigned to any custodian. Equipment is currently available in corporate storage.</p>
@@ -327,6 +345,17 @@ export const AssetDetailModal = ({
                 className="px-4 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-[#1E362B] transition-colors cursor-pointer"
               >
                 Return Asset
+              </button>
+            )}
+            {canManage && asset.status === 'under_repair' && onCompleteRepair && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onCompleteRepair(asset);
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-[#00C471] text-white hover:bg-[#049856] transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" /> Complete Repair & Return to Inventory
               </button>
             )}
             {canManage && asset.status !== 'under_repair' && onRepair && (

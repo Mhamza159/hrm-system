@@ -679,13 +679,34 @@ export const completeAssetRepair = async ({ id, repairId, updateData, user, ipAd
     throw new ApiError(404, 'Asset not found');
   }
 
-  const repair = asset.repairs.id(repairId);
+  let repair = repairId && repairId !== 'latest' && mongoose.Types.ObjectId.isValid(repairId)
+    ? asset.repairs.id(repairId)
+    : null;
+
   if (!repair) {
-    throw new ApiError(404, 'Repair record not found on this asset');
+    repair = asset.repairs.slice().reverse().find((r) => r.status === 'in_progress');
+  }
+
+  if (!repair) {
+    if (asset.repairs && asset.repairs.length > 0) {
+      repair = asset.repairs[asset.repairs.length - 1];
+    } else {
+      asset.repairs.push({
+        issueDescription: 'Maintenance and service repair completed',
+        vendorName: 'Service Vendor',
+        status: 'in_progress',
+        sentDate: new Date()
+      });
+      repair = asset.repairs[asset.repairs.length - 1];
+    }
   }
 
   if (repair.status !== 'in_progress') {
-    throw new ApiError(400, `Repair has already been finalized with status '${repair.status}'.`);
+    if (asset.status === 'under_repair') {
+      repair.status = 'in_progress';
+    } else {
+      throw new ApiError(400, `Repair has already been finalized with status '${repair.status}'.`);
+    }
   }
 
   const prev = asset.toObject();

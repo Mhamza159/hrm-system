@@ -43,7 +43,8 @@ import {
   useGetAssetsQuery,
   useDeleteAssetMutation,
   useRestoreAssetMutation,
-  usePermanentDeleteAssetMutation
+  usePermanentDeleteAssetMutation,
+  useUpdateAssetRepairMutation
 } from '../assetApi.js';
 import { AssetFormModal } from '../components/AssetFormModal.jsx';
 import { AssetAssignModal } from '../components/AssetAssignModal.jsx';
@@ -80,6 +81,7 @@ export const AssetsPage = () => {
   const [inspectingAsset, setInspectingAsset] = useState(null);
   const [inspectingArchiveAsset, setInspectingArchiveAsset] = useState(null);
   const [assetToDelete, setAssetToDelete] = useState(null);
+  const [repairToCompleteAsset, setRepairToCompleteAsset] = useState(null);
 
   // Queries & Mutations
   const { data: assetsRes, isLoading, isFetching, refetch } = useGetAssetsQuery({
@@ -95,6 +97,7 @@ export const AssetsPage = () => {
   const [deleteAsset, { isLoading: isDeleting }] = useDeleteAssetMutation();
   const [restoreAsset, { isLoading: isRestoring }] = useRestoreAssetMutation();
   const [permanentDeleteAsset, { isLoading: isPermanentDeleting }] = usePermanentDeleteAssetMutation();
+  const [updateAssetRepair, { isLoading: isCompletingRepair }] = useUpdateAssetRepairMutation();
 
   const assets = assetsRes?.data || [];
   const meta = assetsRes?.meta || { page: 1, limit: 15, total: 0, pages: 1 };
@@ -157,6 +160,30 @@ export const AssetsPage = () => {
       setInspectingArchiveAsset(null);
     } catch (err) {
       toast.error(err?.data?.message || err?.message || 'Failed to delete asset permanently.');
+    }
+  };
+
+  // Complete repair and restore to inventory
+  const handleConfirmCompleteRepair = async () => {
+    if (!repairToCompleteAsset) return;
+    try {
+      const activeRepair = repairToCompleteAsset.repairs?.slice()?.reverse()?.find((r) => r.status === 'in_progress');
+      const repairId = activeRepair?._id || 'latest';
+
+      await updateAssetRepair({
+        id: repairToCompleteAsset._id,
+        repairId,
+        status: 'completed',
+        resolutionNotes: 'Repairs completed and equipment verified operational.'
+      }).unwrap();
+
+      toast.success(`Asset '${repairToCompleteAsset.assetTag}' repair completed. Returned to inventory.`);
+      setRepairToCompleteAsset(null);
+      if (inspectingAsset?._id === repairToCompleteAsset._id) {
+        setInspectingAsset(null);
+      }
+    } catch (err) {
+      toast.error(err?.data?.message || err?.message || 'Failed to complete repair.');
     }
   };
 
@@ -544,6 +571,18 @@ export const AssetsPage = () => {
                                 </button>
                               )}
 
+                              {/* Complete Repair action */}
+                              {can('asset.manage') && asset.status === 'under_repair' && (
+                                <button
+                                  onClick={() => setRepairToCompleteAsset(asset)}
+                                  title="Mark repair completed and return to inventory"
+                                  className="px-2 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-[#00C471] hover:bg-emerald-100 dark:hover:bg-[#162820] border border-emerald-200 dark:border-[#1A3125] transition-colors cursor-pointer flex items-center gap-1 shrink-0 shadow-xs"
+                                >
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-[#00C471]" />
+                                  <span>Complete Repair</span>
+                                </button>
+                              )}
+
                               {/* Edit action */}
                               {can('asset.manage') && (
                                 <button
@@ -623,6 +662,7 @@ export const AssetsPage = () => {
         onAssign={(asset) => setAssigningAsset(asset)}
         onReturn={(asset) => setReturningAsset(asset)}
         onRepair={(asset) => setRepairingAsset(asset)}
+        onCompleteRepair={(asset) => setRepairToCompleteAsset(asset)}
       />
 
       {/* Archive Asset Detail Modal */}
@@ -634,6 +674,18 @@ export const AssetsPage = () => {
         onPermanentDelete={handlePermanentDelete}
         isReverting={isRestoring}
         isDeleting={isPermanentDeleting}
+      />
+
+      {/* Complete Repair Confirmation Modal */}
+      <ConfirmDialog
+        isOpen={Boolean(repairToCompleteAsset)}
+        onClose={() => setRepairToCompleteAsset(null)}
+        onConfirm={handleConfirmCompleteRepair}
+        title="Complete Repair & Return to Inventory"
+        message={`Confirm that service repair for ${repairToCompleteAsset?.assetTag} (${repairToCompleteAsset?.name}) is complete? The asset will be marked operational and returned to Central Inventory.`}
+        confirmText="Complete & Return to Inventory"
+        variant="primary"
+        isLoading={isCompletingRepair}
       />
 
       {/* Soft Delete Confirmation Modal */}
