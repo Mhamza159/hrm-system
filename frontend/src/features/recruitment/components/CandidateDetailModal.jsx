@@ -310,10 +310,10 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
               <h4 className="font-bold text-slate-900 dark:text-white uppercase tracking-wider text-[11px]">
                 Extracted Resume Attributes
               </h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-3.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17]">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17]">
                 <div>
                   <span className="text-[10px] text-slate-400">Total Experience</span>
-                  <p className="font-bold text-slate-800 dark:text-slate-100 text-xs mt-0.5">
+                  <p className="font-bold text-slate-800 dark:text-slate-100 text-xs mt-0.5 font-mono">
                     {candidate.parsedProfile.totalExperienceYears || 0} Years
                   </p>
                 </div>
@@ -327,6 +327,13 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
                   <span className="text-[10px] text-slate-400">Sourced Via</span>
                   <p className="font-bold text-slate-800 dark:text-slate-100 text-xs mt-0.5">
                     {candidate.referredBy ? `Referral (${candidate.referredBy.name})` : 'Public Portal'}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400">AI Engine</span>
+                  <p className="font-bold text-emerald-600 dark:text-[#00C471] text-xs mt-0.5 flex items-center gap-1 font-mono">
+                    <Sparkles className="w-3 h-3 text-[#00C471]" />
+                    {candidate.parsedProfile.aiProvider || 'Heuristic'}
                   </p>
                 </div>
               </div>

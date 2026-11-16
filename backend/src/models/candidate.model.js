@@ -107,7 +107,8 @@ const candidateSchema = new mongoose.Schema(
       highestEducation: { type: String, default: '' },
       executiveSummary: { type: String, default: '' },
       matchingStrengths: { type: [String], default: [] },
-      missingSkills: { type: [String], default: [] }
+      missingSkills: { type: [String], default: [] },
+      aiProvider: { type: String, default: 'Heuristic' }
     },
     parsingStatus: {
       type: String,

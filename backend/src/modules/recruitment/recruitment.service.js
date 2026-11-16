@@ -631,6 +631,7 @@ export const applyForJob = async (jobId, candidateData, file) => {
     aiScreeningReason = screening.screeningSummary;
     parsedProfile.matchingStrengths = screening.matchingStrengths;
     parsedProfile.missingSkills = screening.missingSkills;
+    parsedProfile.aiProvider = screening.aiProvider || parsedProfile.aiProvider || 'Heuristic';
   } catch (err) {
     console.error('AI CV parsing/screening error:', err.message);
   }
@@ -855,7 +856,8 @@ export const screenCandidate = async (candidateId, actor) => {
   candidate.parsedProfile = {
     ...parsed,
     matchingStrengths: screening.matchingStrengths,
-    missingSkills: screening.missingSkills
+    missingSkills: screening.missingSkills,
+    aiProvider: screening.aiProvider || parsed.aiProvider || 'Heuristic'
   };
   candidate.parsingStatus = 'completed';
 
