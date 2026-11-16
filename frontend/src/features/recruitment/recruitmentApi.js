@@ -100,6 +100,28 @@ export const recruitmentApi = baseApi.injectEndpoints({
       ]
     }),
 
+    restoreJob: builder.mutation({
+      query: (id) => ({
+        url: `/recruitment/jobs/${id}/restore`,
+        method: 'POST'
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Job', id },
+        { type: 'Jobs', id: 'LIST' }
+      ]
+    }),
+
+    permanentDeleteJob: builder.mutation({
+      query: (id) => ({
+        url: `/recruitment/jobs/${id}/permanent`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Job', id },
+        { type: 'Jobs', id: 'LIST' }
+      ]
+    }),
+
     // 15.3: Public Jobs (No auth required)
     getPublicJobs: builder.query({
       query: (params = {}) => ({
@@ -294,6 +316,8 @@ export const {
   useCreateJobMutation,
   useUpdateJobMutation,
   useDeleteJobMutation,
+  useRestoreJobMutation,
+  usePermanentDeleteJobMutation,
   useGetPublicJobsQuery,
   useGetPublicJobBySlugQuery,
   useApplyForJobMutation,

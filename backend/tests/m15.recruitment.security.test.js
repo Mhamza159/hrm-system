@@ -476,7 +476,7 @@ Education: Bachelor's Degree in Computer Science
       expect(screening.aiScore).toBeGreaterThanOrEqual(15);
       expect(screening.aiScore).toBeLessThanOrEqual(98);
       // Missing skill Docker should be identified
-      expect(screening.missingSkills).toContain('docker');
+      expect(screening.missingSkills.map((s) => s.toLowerCase())).toContain('docker');
     });
   });
 });

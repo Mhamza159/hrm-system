@@ -158,7 +158,22 @@ router.patch(
 router.delete(
   '/jobs/:id',
   checkPermission('recruitment.job.manage', 'Recruitment'),
+  validate(v.jobIdParamSchema),
   recruitmentController.deleteJob
+);
+
+router.post(
+  '/jobs/:id/restore',
+  checkPermission('recruitment.job.manage', 'Recruitment'),
+  validate(v.jobIdParamSchema),
+  recruitmentController.restoreJob
+);
+
+router.delete(
+  '/jobs/:id/permanent',
+  checkPermission('recruitment.job.manage', 'Recruitment'),
+  validate(v.jobIdParamSchema),
+  recruitmentController.permanentDeleteJob
 );
 
 // 15.7: Candidates & Pipeline Board

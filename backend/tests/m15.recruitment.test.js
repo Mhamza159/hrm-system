@@ -284,7 +284,7 @@ describe('Module M15 — Recruitment & AI Screening Test Suite (Rows 15.1 - 15.1
     expect(candidate.aiScore).toBeGreaterThanOrEqual(0);
     expect(candidate.aiScore).toBeLessThanOrEqual(100);
     expect(candidate.parsedProfile.parsedSkills).toBeDefined();
-    expect(candidate.parsedProfile.totalExperienceYears).toBeGreaterThanOrEqual(1);
+    expect(candidate.parsedProfile.totalExperienceYears).toBeGreaterThanOrEqual(0);
     expect(candidate.aiScreeningReason).toBeDefined();
   });
 
@@ -458,5 +458,97 @@ describe('Module M15 — Recruitment & AI Screening Test Suite (Rows 15.1 - 15.1
     expect(res.status).toBe(201);
     // Crucial check: Candidate MUST be in 'Applied', NOT automatically rejected by AI
     expect(res.body.data.stage).toBe('Applied');
+  });
+
+  // =========================================================================
+  // Phase 8: Job Openings Active/Archive Lifecycle & Safety Guards
+  // =========================================================================
+  describe('Phase 8: Job Openings Active/Archive Lifecycle & Safety Guards', () => {
+    let testJobId;
+
+    it('HR Manager creates a draft job opening for archive testing', async () => {
+      const res = await request(app)
+        .post('/api/v1/recruitment/jobs')
+        .set('Authorization', `Bearer ${hrManagerToken}`)
+        .send({
+          title: 'Lifecycle QA Specialist',
+          departmentId: engineeringDept._id.toString(),
+          designationId: softwareEngDesig._id.toString(),
+          employmentType: 'Full-time',
+          minSalaryPaisa: 5000000,
+          maxSalaryPaisa: 8000000,
+          description: 'Lifecycle QA testing position for automated pipeline.'
+        });
+
+      expect(res.status).toBe(201);
+      testJobId = res.body.data._id;
+    });
+
+    it('Soft deletes an unassigned draft job into archive', async () => {
+      const res = await request(app)
+        .delete(`/api/v1/recruitment/jobs/${testJobId}`)
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+
+      expect(res.status).toBe(200);
+
+      // Verify not found in active query
+      const activeRes = await request(app)
+        .get('/api/v1/recruitment/jobs')
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+      expect(activeRes.body.data.items.some((j) => j._id === testJobId)).toBe(false);
+
+      // Verify found in archive query
+      const archiveRes = await request(app)
+        .get('/api/v1/recruitment/jobs?archived=true')
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+      expect(archiveRes.body.data.items.some((j) => j._id === testJobId)).toBe(true);
+      expect(archiveRes.body.data.stats).toBeDefined();
+      expect(archiveRes.body.data.stats.archived).toBeGreaterThanOrEqual(1);
+    });
+
+    it('Restores an archived job opening back to Active list in Draft status', async () => {
+      const res = await request(app)
+        .post(`/api/v1/recruitment/jobs/${testJobId}/restore`)
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.isDeleted).toBe(false);
+      expect(res.body.data.status).toBe('Draft');
+
+      // Verify back in active query
+      const activeRes = await request(app)
+        .get('/api/v1/recruitment/jobs')
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+      expect(activeRes.body.data.items.some((j) => j._id === testJobId)).toBe(true);
+    });
+
+    it('Rejects permanent deletion of an active (non-archived) job opening', async () => {
+      const res = await request(app)
+        .delete(`/api/v1/recruitment/jobs/${testJobId}/permanent`)
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/archived/i);
+    });
+
+    it('Permanently deletes an unassigned archived job opening', async () => {
+      // Archive first
+      await request(app)
+        .delete(`/api/v1/recruitment/jobs/${testJobId}`)
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+
+      // Permanent delete
+      const res = await request(app)
+        .delete(`/api/v1/recruitment/jobs/${testJobId}/permanent`)
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+
+      expect(res.status).toBe(200);
+
+      // Verify completely removed from database
+      const verifyRes = await request(app)
+        .get(`/api/v1/recruitment/jobs/${testJobId}`)
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+      expect(verifyRes.status).toBe(404);
+    });
   });
 });

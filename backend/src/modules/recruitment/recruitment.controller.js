@@ -57,7 +57,7 @@ export const getJobs = asyncHandler(async (req, res) => {
   const result = await recruitmentService.getJobs(req.query, req.user, req.permissionScope);
   res.status(200).json({
     success: true,
-    data: { items: result.docs },
+    data: { items: result.docs, stats: result.stats },
     meta: result.meta
   });
 });
@@ -84,7 +84,33 @@ export const deleteJob = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     data: result,
-    message: 'Job opening deleted successfully.'
+    message: result.message || 'Job opening deleted successfully.'
+  });
+});
+
+/**
+ * Restore an archived job opening back to the Active list
+ */
+export const restoreJob = asyncHandler(async (req, res) => {
+  const job = await recruitmentService.restoreJob(req.params.id, req.user);
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data: job,
+    message: 'Job opening restored to Active list successfully.'
+  });
+});
+
+/**
+ * Permanently delete an archived job opening from database
+ */
+export const permanentDeleteJob = asyncHandler(async (req, res) => {
+  const result = await recruitmentService.permanentDeleteJob(req.params.id, req.user);
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data: null,
+    message: result.message
   });
 });
 

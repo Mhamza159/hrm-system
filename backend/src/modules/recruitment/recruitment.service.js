@@ -279,9 +279,10 @@ export const createJob = async (payload, actor) => {
 };
 
 export const getJobs = async (query = {}, actor, permissionScope = 'all') => {
-  const filter = { isDeleted: false };
+  const isArchivedQuery = query.archived === 'true' || query.archived === true || query.isDeleted === 'true' || query.isDeleted === true;
+  const filter = { isDeleted: isArchivedQuery };
 
-  if (typeof query.status === 'string' && query.status) {
+  if (typeof query.status === 'string' && query.status && query.status !== 'all') {
     filter.status = query.status;
   }
 
@@ -298,22 +299,57 @@ export const getJobs = async (query = {}, actor, permissionScope = 'all') => {
     filter.departmentId = query.departmentId;
   }
 
-  return await paginate(Job, filter, {
-    page: Math.max(1, parseInt(query.page, 10) || 1),
-    limit: Math.min(100, Math.max(1, parseInt(query.limit, 10) || 20)),
-    sort: { createdAt: -1 },
-    search: typeof query.search === 'string' ? query.search : '',
-    searchFields: ['title', 'description', 'location'],
-    populate: [
-      { path: 'departmentId', select: 'name code' },
-      { path: 'designationId', select: 'title code grade' },
-      { path: 'requisitionId', select: 'openingsCount status' }
-    ]
-  });
+  if (typeof query.employmentType === 'string' && query.employmentType) {
+    filter.employmentType = query.employmentType;
+  }
+
+  // Base scope filter for counts respecting department scope
+  const baseScopeFilter = {};
+  if (permissionScope === 'department') {
+    const actorDept = await resolveActorDepartmentId(actor);
+    if (actorDept) {
+      baseScopeFilter.departmentId = actorDept;
+    } else {
+      baseScopeFilter.departmentId = new mongoose.Types.ObjectId();
+    }
+  }
+
+  const [paginated, totalAll, activeCount, archivedCount, publishedCount, draftCount, closedCount] = await Promise.all([
+    paginate(Job, filter, {
+      page: Math.max(1, parseInt(query.page, 10) || 1),
+      limit: Math.min(100, Math.max(1, parseInt(query.limit, 10) || 20)),
+      sort: { createdAt: -1 },
+      search: typeof query.search === 'string' ? query.search : '',
+      searchFields: ['title', 'description', 'location'],
+      populate: [
+        { path: 'departmentId', select: 'name code' },
+        { path: 'designationId', select: 'title code grade' },
+        { path: 'requisitionId', select: 'openingsCount status' }
+      ]
+    }),
+    Job.countDocuments(baseScopeFilter),
+    Job.countDocuments({ ...baseScopeFilter, isDeleted: false }),
+    Job.countDocuments({ ...baseScopeFilter, isDeleted: true }),
+    Job.countDocuments({ ...baseScopeFilter, isDeleted: false, status: 'Published' }),
+    Job.countDocuments({ ...baseScopeFilter, isDeleted: false, status: 'Draft' }),
+    Job.countDocuments({ ...baseScopeFilter, isDeleted: false, status: 'Closed' })
+  ]);
+
+  return {
+    ...paginated,
+    stats: {
+      total: totalAll,
+      active: activeCount,
+      archived: archivedCount,
+      published: publishedCount,
+      draft: draftCount,
+      closed: closedCount
+    }
+  };
 };
 
 export const getJobById = async (id) => {
-  const job = await Job.findOne({ _id: id, isDeleted: false })
+  const job = await Job.findOne({ _id: id })
     .populate('departmentId', 'name code')
     .populate('designationId', 'title code grade')
     .populate('requisitionId');
@@ -371,7 +407,72 @@ export const deleteJob = async (id, actor) => {
     after: { isDeleted: true }
   });
 
-  return { message: 'Job opening deleted successfully.' };
+  return { message: 'Job opening moved to archive successfully.' };
+};
+
+/**
+ * Restore an archived job opening back to the Active list
+ */
+export const restoreJob = async (id, actor) => {
+  const job = await Job.findOne({ _id: id, isDeleted: true });
+  if (!job) {
+    throw new ApiError(404, 'Archived job opening not found.');
+  }
+
+  job.isDeleted = false;
+  job.status = 'Draft';
+  await job.save();
+
+  await recordAuditLog({
+    actor,
+    action: 'recruitment.job.restore',
+    entity: 'Job',
+    entityId: job._id,
+    after: job.toObject()
+  });
+
+  const populated = await Job.findById(job._id)
+    .populate('departmentId', 'name code')
+    .populate('designationId', 'title code grade')
+    .populate('requisitionId');
+
+  return populated;
+};
+
+/**
+ * Permanently delete a job opening from the database
+ */
+export const permanentDeleteJob = async (id, actor) => {
+  const job = await Job.findOne({ _id: id });
+  if (!job) {
+    throw new ApiError(404, 'Job opening not found.');
+  }
+
+  if (!job.isDeleted) {
+    throw new ApiError(400, 'Only archived jobs can be permanently deleted. Please archive the job first.');
+  }
+
+  // Critical Safety Rule: Prevent deletion if active candidates exist in pipeline
+  const activeCandidatesCount = await Candidate.countDocuments({
+    jobId: id,
+    stage: { $nin: ['Hired', 'Rejected'] }
+  });
+
+  if (activeCandidatesCount > 0) {
+    throw new ApiError(400, `Cannot permanently delete job opening with ${activeCandidatesCount} active candidate(s) in pipeline. Please reject or advance them first.`);
+  }
+
+  await Job.findByIdAndDelete(id);
+
+  await recordAuditLog({
+    actor,
+    action: 'recruitment.job.permanent_delete',
+    entity: 'Job',
+    entityId: id,
+    before: job.toObject()
+  });
+
+  return { message: 'Job opening permanently deleted.' };
 };
 
 export const getPublicJobs = async (query = {}) => {

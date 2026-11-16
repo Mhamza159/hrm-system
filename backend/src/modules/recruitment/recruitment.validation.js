@@ -85,6 +85,12 @@ export const updateJobSchema = z.object({
   })
 });
 
+export const jobIdParamSchema = z.object({
+  params: z.object({
+    id: objectIdSchema
+  })
+});
+
 // 15.4: Apply for Job (Public)
 export const applyJobSchema = z.object({
   params: z.object({
