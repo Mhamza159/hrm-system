@@ -64,6 +64,24 @@ export const assetApi = baseApi.injectEndpoints({
       invalidatesTags: [{ type: 'Assets', id: 'LIST' }]
     }),
 
+    // Restore archived asset back to active inventory
+    restoreAsset: builder.mutation({
+      query: (id) => ({
+        url: `/assets/${id}/restore`,
+        method: 'POST'
+      }),
+      invalidatesTags: [{ type: 'Assets', id: 'LIST' }]
+    }),
+
+    // Permanently delete asset from database
+    permanentDeleteAsset: builder.mutation({
+      query: (id) => ({
+        url: `/assets/${id}/permanent`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: [{ type: 'Assets', id: 'LIST' }]
+    }),
+
     // 23.2: Assign asset to custodian
     assignAsset: builder.mutation({
       query: ({ id, ...body }) => ({
@@ -189,6 +207,8 @@ export const {
   useCreateAssetMutation,
   useUpdateAssetMutation,
   useDeleteAssetMutation,
+  useRestoreAssetMutation,
+  usePermanentDeleteAssetMutation,
   useAssignAssetMutation,
   useReturnAssetMutation,
   useSendAssetForRepairMutation,

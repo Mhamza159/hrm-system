@@ -11,6 +11,7 @@ import React, { useState } from 'react';
 import { X, UserCheck, Calendar, AlertCircle, Mail, Phone, Building2, Briefcase, Shield, CheckCircle2 } from 'lucide-react';
 import { useAssignAssetMutation } from '../assetApi.js';
 import { useGetEmployeesQuery } from '../../employees/employeesApi.js';
+import { CustodianSelect } from './CustodianSelect.jsx';
 import { toast } from 'sonner';
 
 export const AssetAssignModal = ({ isOpen, onClose, asset }) => {
@@ -97,26 +98,12 @@ export const AssetAssignModal = ({ isOpen, onClose, asset }) => {
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
               Select Employee Custodian <span className="text-rose-500">*</span>
             </label>
-            <select
+            <CustodianSelect
               value={employeeId}
-              onChange={(e) => setEmployeeId(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl text-xs bg-slate-50 dark:bg-[#162820] border border-slate-200 dark:border-[#1A3125] text-slate-900 dark:text-white focus:outline-hidden focus:border-[#00C471]"
-            >
-              <option value="">-- Choose employee custodian --</option>
-              {employees.map((emp) => {
-                const name = emp.name || `${emp.firstName || ''} ${emp.lastName || ''}`.trim() || emp.employeeCode;
-                const desig = emp.designationId?.title || emp.designation || '';
-                const dept = emp.departmentId?.name || emp.department || '';
-                const role = emp.userId?.roles?.[0]?.name || '';
-                const details = [desig, dept, role && role !== desig ? `Role: ${role}` : null].filter(Boolean).join(' · ');
-
-                return (
-                  <option key={emp._id || emp.id} value={emp._id || emp.id}>
-                    {name} ({emp.employeeCode}){details ? ` · ${details}` : ''}
-                  </option>
-                );
-              })}
-            </select>
+              onChange={(id) => setEmployeeId(id)}
+              employees={employees}
+              placeholder="Search & choose employee custodian..."
+            />
           </div>
 
           {/* Real-time Employee Preview Card with Complete Details (Designation, Role, Department) */}

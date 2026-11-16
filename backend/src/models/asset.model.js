@@ -15,7 +15,7 @@ const HistorySubSchema = new mongoose.Schema(
   {
     action: {
       type: String,
-      enum: ['created', 'assigned', 'returned', 'repair_sent', 'repair_completed', 'retired'],
+      enum: ['created', 'assigned', 'returned', 'repair_sent', 'repair_completed', 'retired', 'restored'],
       required: true
     },
     employeeId: {

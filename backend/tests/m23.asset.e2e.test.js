@@ -317,7 +317,7 @@ describe('Module M23 — Asset Management E2E Test Suite (All 4 Roles)', () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.status).toBe('assigned');
-      expect(res.body.data.assignedTo.toString()).toBe(employeeEmp._id.toString());
+      expect((res.body.data.assignedTo?._id || res.body.data.assignedTo).toString()).toBe(employeeEmp._id.toString());
 
       // History must now have 2 records (created, assigned)
       expect(res.body.data.history).toHaveLength(2);
@@ -607,6 +607,116 @@ describe('Module M23 — Asset Management E2E Test Suite (All 4 Roles)', () => {
       expect(triggerRes.status).toBe(200);
       expect(triggerRes.body.success).toBe(true);
       expect(triggerRes.body.data.count).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  // =========================================================================
+  // Slice 6: Phase 7 Active/Archive Lifecycle & Assigned Asset Deletion Guards
+  // =========================================================================
+  describe('Phase 7: Active/Archive Lifecycle & Assigned Asset Deletion Guards', () => {
+    let testAssetId;
+
+    beforeAll(async () => {
+      // Create a test asset for archive/delete lifecycle testing
+      const res = await request(app)
+        .post('/api/v1/assets')
+        .set('Authorization', `Bearer ${hrManagerToken}`)
+        .send({
+          assetTag: 'AST-LIFECYCLE-001',
+          name: 'Lifecycle Test Laptop',
+          type: 'laptop',
+          serialNumber: 'SN-LIFE-001'
+        });
+      testAssetId = res.body.data._id;
+    });
+
+    it('Rejects soft deletion if the asset is currently assigned to an employee', async () => {
+      // Assign the asset to an employee
+      await request(app)
+        .post(`/api/v1/assets/${testAssetId}/assign`)
+        .set('Authorization', `Bearer ${hrManagerToken}`)
+        .send({
+          employeeId: employeeEmp._id.toString(),
+          assignedDate: '2024-03-01'
+        });
+
+      // Attempt soft deletion
+      const res = await request(app)
+        .delete(`/api/v1/assets/${testAssetId}`)
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/assigned to a custodian/i);
+
+      // Return asset so it can be archived
+      await request(app)
+        .post(`/api/v1/assets/${testAssetId}/return`)
+        .set('Authorization', `Bearer ${hrManagerToken}`)
+        .send({
+          returnDate: '2024-03-10',
+          condition: 'good'
+        });
+    });
+
+    it('Soft deletes an unassigned asset and moves it to archive', async () => {
+      const res = await request(app)
+        .delete(`/api/v1/assets/${testAssetId}`)
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+
+      expect(res.status).toBe(200);
+
+      // Verify it no longer shows in active query
+      const activeRes = await request(app)
+        .get('/api/v1/assets')
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+      const foundInActive = activeRes.body.data.some((a) => a._id === testAssetId);
+      expect(foundInActive).toBe(false);
+
+      // Verify it shows in archived query
+      const archiveRes = await request(app)
+        .get('/api/v1/assets?archived=true')
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+      const foundInArchive = archiveRes.body.data.some((a) => a._id === testAssetId);
+      expect(foundInArchive).toBe(true);
+    });
+
+    it('Restores an archived asset back to active inventory with available status', async () => {
+      const res = await request(app)
+        .post(`/api/v1/assets/${testAssetId}/restore`)
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.isDeleted).toBe(false);
+      expect(res.body.data.status).toBe('available');
+    });
+
+    it('Rejects permanent delete of an active (non-archived) asset', async () => {
+      const res = await request(app)
+        .delete(`/api/v1/assets/${testAssetId}/permanent`)
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/archived/i);
+    });
+
+    it('Permanently deletes an unassigned archived asset', async () => {
+      // Archive first
+      await request(app)
+        .delete(`/api/v1/assets/${testAssetId}`)
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+
+      // Permanent delete
+      const res = await request(app)
+        .delete(`/api/v1/assets/${testAssetId}/permanent`)
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+
+      expect(res.status).toBe(200);
+
+      // Verify gone from database
+      const verifyRes = await request(app)
+        .get(`/api/v1/assets/${testAssetId}`)
+        .set('Authorization', `Bearer ${hrManagerToken}`);
+      expect(verifyRes.status).toBe(404);
     });
   });
 });

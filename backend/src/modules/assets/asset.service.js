@@ -84,6 +84,21 @@ export const createAsset = async ({ assetData, user, ipAddress, userAgent }) => 
   return populatedAsset || asset;
 };
 
+export const populateAsset = async (id) => {
+  return Asset.findById(id)
+    .populate({
+      path: 'assignedTo',
+      select: 'name firstName lastName employeeCode departmentId designationId email phone avatar status userId',
+      populate: [
+        { path: 'departmentId', select: 'name code' },
+        { path: 'designationId', select: 'title code grade' },
+        { path: 'userId', select: 'roles email', populate: { path: 'roles', select: 'name' } }
+      ]
+    })
+    .populate('history.performedBy', 'name email avatar')
+    .lean();
+};
+
 export const escapeRegex = (str) => {
   if (typeof str !== 'string') return '';
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -97,7 +112,8 @@ export const getAssets = async ({ query = {}, user }) => {
   const limit = parseInt(query.limit, 10) || 10;
   const skip = (page - 1) * limit;
 
-  const filter = { isDeleted: false };
+  const isArchivedQuery = query.archived === 'true' || query.archived === true || query.isDeleted === 'true' || query.isDeleted === true;
+  const filter = { isDeleted: isArchivedQuery };
 
   if (query.status && query.status !== 'all') {
     filter.status = query.status;
@@ -158,7 +174,7 @@ export const getAssets = async ({ query = {}, user }) => {
     }
   }
 
-  const [assets, total, totalAll, availableCount, assignedCount, repairCount] = await Promise.all([
+  const [assets, total, totalAll, availableCount, assignedCount, repairCount, archivedCount] = await Promise.all([
     Asset.find(filter)
       .populate({
         path: 'assignedTo',
@@ -181,7 +197,8 @@ export const getAssets = async ({ query = {}, user }) => {
     Asset.countDocuments({
       isDeleted: false,
       $or: [{ status: 'under_repair' }, { hasOpenIssue: true }]
-    })
+    }),
+    Asset.countDocuments({ isDeleted: true })
   ]);
 
   return {
@@ -196,7 +213,8 @@ export const getAssets = async ({ query = {}, user }) => {
       total: totalAll,
       available: availableCount,
       assigned: assignedCount,
-      inRepair: repairCount
+      inRepair: repairCount,
+      archived: archivedCount
     }
   };
 };
@@ -312,8 +330,8 @@ export const deleteAsset = async ({ id, user, ipAddress, userAgent }) => {
     throw new ApiError(404, 'Asset not found');
   }
 
-  if (asset.status === 'assigned') {
-    throw new ApiError(400, 'Cannot delete an asset that is currently assigned to a custodian. Please return it first.');
+  if (asset.status === 'assigned' || asset.assignedTo) {
+    throw new ApiError(400, 'Cannot delete an asset that is currently assigned to a custodian. Please return it to inventory first.');
   }
 
   if (asset.status === 'under_repair') {
@@ -335,6 +353,77 @@ export const deleteAsset = async ({ id, user, ipAddress, userAgent }) => {
   }).catch((err) => console.error('[Audit Error]', err.message));
 
   return { message: 'Asset deleted successfully' };
+};
+
+/**
+ * Restore an archived asset back to active inventory
+ */
+export const restoreAsset = async ({ id, user, ipAddress, userAgent }) => {
+  const asset = await Asset.findOne({ _id: id, isDeleted: true });
+  if (!asset) {
+    throw new ApiError(404, 'Archived asset not found');
+  }
+
+  asset.isDeleted = false;
+  asset.status = 'available';
+  asset.assignedTo = null;
+  asset.history.push({
+    action: 'restored',
+    performedBy: user._id,
+    date: new Date(),
+    notes: 'Restored from archive back to available inventory',
+    condition: 'good'
+  });
+  await asset.save();
+
+  await recordAuditLog({
+    actorId: user._id,
+    action: 'asset.restore',
+    module: 'assets',
+    resource: 'Asset',
+    resourceId: asset._id,
+    after: asset.toObject(),
+    ipAddress,
+    userAgent
+  }).catch((err) => console.error('[Audit Error]', err.message));
+
+  const populated = await populateAsset(asset._id);
+  return { message: 'Asset restored to active inventory successfully', asset: populated };
+};
+
+/**
+ * Permanently delete an asset from the database
+ */
+export const permanentDeleteAsset = async ({ id, user, ipAddress, userAgent }) => {
+  const asset = await Asset.findOne({ _id: id });
+  if (!asset) {
+    throw new ApiError(404, 'Asset not found');
+  }
+
+  // Critical Invariant: If assigned to any user, cannot delete!
+  if (asset.status === 'assigned' || asset.assignedTo) {
+    throw new ApiError(400, 'Cannot permanently delete an asset that is currently assigned to a custodian. Please return it to inventory first.');
+  }
+
+  if (!asset.isDeleted) {
+    throw new ApiError(400, 'Only archived assets can be permanently deleted. Please archive it first.');
+  }
+
+  await Asset.findByIdAndDelete(id);
+
+  await recordAuditLog({
+    actorId: user._id,
+    action: 'asset.permanent_delete',
+    module: 'assets',
+    resource: 'Asset',
+    resourceId: id,
+    before: asset.toObject(),
+    after: null,
+    ipAddress,
+    userAgent
+  }).catch((err) => console.error('[Audit Error]', err.message));
+
+  return { message: 'Asset permanently deleted' };
 };
 
 /**

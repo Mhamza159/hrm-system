@@ -101,6 +101,44 @@ export const deleteAsset = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Restore archived asset back to active inventory
+ */
+export const restoreAsset = asyncHandler(async (req, res) => {
+  const result = await assetService.restoreAsset({
+    id: req.params.id,
+    user: req.user,
+    ipAddress: req.ip,
+    userAgent: req.get('user-agent')
+  });
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data: result.asset,
+    message: result.message
+  });
+});
+
+/**
+ * Permanently delete asset from database
+ */
+export const permanentDeleteAsset = asyncHandler(async (req, res) => {
+  const result = await assetService.permanentDeleteAsset({
+    id: req.params.id,
+    user: req.user,
+    ipAddress: req.ip,
+    userAgent: req.get('user-agent')
+  });
+
+  res.status(200).json({
+    success: true,
+    statusCode: 200,
+    data: null,
+    message: result.message
+  });
+});
+
+/**
  * 23.2: Assign asset to employee custodian
  */
 export const assignAsset = asyncHandler(async (req, res) => {

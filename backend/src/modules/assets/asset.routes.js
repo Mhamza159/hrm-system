@@ -120,6 +120,20 @@ router.delete(
   assetController.deleteAsset
 );
 
+router.post(
+  '/:id/restore',
+  checkPermission('asset.manage'),
+  validate(getAssetByIdSchema),
+  assetController.restoreAsset
+);
+
+router.delete(
+  '/:id/permanent',
+  checkPermission('asset.manage'),
+  validate(deleteAssetSchema),
+  assetController.permanentDeleteAsset
+);
+
 // ----------------------------------------------------
 // Custodian Assign & Return (23.2)
 // ----------------------------------------------------

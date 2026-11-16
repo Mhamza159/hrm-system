@@ -160,9 +160,9 @@ Plans:
 
 Plans:
 
-- [ ] **Plan 07-01: Backend Lifecycle & Deletion Guard Hardening** (`.planning/phases/07-assets-module-complete-ui-redesign-improvements/07-01-PLAN.md`)
-- [ ] **Plan 07-02: Modern Custodian Dropdown & My Assets Page Overhaul** (`.planning/phases/07-assets-module-complete-ui-redesign-improvements/07-02-PLAN.md`)
-- [ ] **Plan 07-03: Assets Register (Active & Archive Tabs) & Requisitions Workflow** (`.planning/phases/07-assets-module-complete-ui-redesign-improvements/07-03-PLAN.md`)
+- [x] **Plan 07-01: Backend Lifecycle & Deletion Guard Hardening** (`.planning/phases/07-assets-module-complete-ui-redesign-improvements/07-01-PLAN.md`)
+- [x] **Plan 07-02: Modern Custodian Dropdown & My Assets Page Overhaul** (`.planning/phases/07-assets-module-complete-ui-redesign-improvements/07-02-PLAN.md`)
+- [x] **Plan 07-03: Assets Register (Active & Archive Tabs) & Requisitions Workflow** (`.planning/phases/07-assets-module-complete-ui-redesign-improvements/07-03-PLAN.md`)
 
 ---
 
