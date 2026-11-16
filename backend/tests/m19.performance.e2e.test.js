@@ -346,10 +346,10 @@ describe('Module M19 — Performance & Appraisal E2E Test Suite', () => {
           periodType: 'quarterly',
           periodQuarter: 'Q3',
           periodYear: 2026,
-          startDate: '2026-10-01',
-          endDate: '2026-12-31',
-          selfReviewDeadline: '2026-11-15',
-          managerReviewDeadline: '2026-11-30'
+          startDate: new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0],
+          endDate: new Date(Date.now() + 60 * 86400000).toISOString().split('T')[0],
+          selfReviewDeadline: new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0],
+          managerReviewDeadline: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]
         });
 
       expect(res.status).toBe(201);
