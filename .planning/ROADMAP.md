@@ -190,11 +190,14 @@ Plans:
   - Preserve all existing business logic, validation rules, and API contracts.
 
 **Depends on:** Phase 7
-**Plans:** 0 plans
+**Plans:** 4 plans
 
 Plans:
 
-- [ ] TBD (run /gsd-plan-phase 8 to break down)
+- [ ] **Plan 08-01: Backend Active/Archive Lifecycle Endpoints & Test Suite Hardening** (`.planning/phases/08-recruitment-ats-module-complete-ui-redesign-improvements/08-01-PLAN.md`)
+- [ ] **Plan 08-02: Job Openings Page Overhaul & Archive Lifecycle Modal** (`.planning/phases/08-recruitment-ats-module-complete-ui-redesign-improvements/08-02-PLAN.md`)
+- [ ] **Plan 08-03: Public Career Portal & Candidate Application Experience Overhaul** (`.planning/phases/08-recruitment-ats-module-complete-ui-redesign-improvements/08-03-PLAN.md`)
+- [ ] **Plan 08-04: Candidate Pipeline Board & Internal Mobility/Referral Pages Overhaul** (`.planning/phases/08-recruitment-ats-module-complete-ui-redesign-improvements/08-04-PLAN.md`)
 
 ---
 
