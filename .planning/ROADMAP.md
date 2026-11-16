@@ -256,6 +256,177 @@ Plans:
 
 ---
 
+### Phase 11: Performance Management Module – Complete UI Redesign & Improvements
+
+**Goal:** Deliver a modern, pixel-perfect, enterprise-grade redesign across the entire Performance Management Module (M19) adhering strictly to the Forest & Emerald design system (`DESIGN.md` & `docs/UI-REFERENCE.md`), including Team Reviews, Appraisal Cycles, and KPI Templates, while strictly preserving PBAC/RBAC authorization rules, business invariants, and payroll linkages.
+
+**Requirements**:
+- **1. Team Reviews – Complete UI Redesign**:
+  - Executive review metrics header (Total in Queue, Pending Self, Awaiting Manager, Ready for Finalization, Finalized).
+  - Search, cycle, and status filter bar with tabular numerics.
+  - New comprehensive read-only `ReviewDetailModal.jsx` for multi-tab inspection of employee scorecards, OKRs, and feedback.
+  - Redesigned `ManagerReviewModal.jsx` with ergonomic 1–5 scoring controls, qualitative textareas, and increment recommendation sliders.
+  - Redesigned `FinalizeReviewModal.jsx` with self vs manager score comparisons and M9 Payroll salary sync preview.
+  - Redesigned `PeerFeedbackModal.jsx`.
+- **2. Appraisal Cycles – Complete UI Redesign**:
+  - Executive overview stat cards and progress indicators.
+  - Card grid & tabular cycle listings with dual deadline badges (`selfReviewDeadline`, `managerReviewDeadline`) and live progress meters.
+  - New `ReviewCycleDetailModal.jsx` for viewing cycle parameters and audit information.
+  - Redesigned `ReviewCycleModal.jsx` with date-range validation and review auto-instantiation callout.
+  - Redesigned `CycleProgressPage.jsx` with department completion meters and overdue reviewer tracking.
+  - Accessible `ConfirmModal.jsx` replacing crude browser confirms.
+- **3. KPI Templates – Complete UI Redesign**:
+  - Overview stat cards, designation filters, and active/inactive toggle filters.
+  - Redesigned `KpiTemplateModal.jsx` with a real-time 100% weightage visual gauge and instant sum validation.
+  - New read-only `KpiTemplateDetailModal.jsx` for inspecting template rubrics and criteria.
+- **4. Employee Self-Review Portal & Goals Editor**:
+  - Redesigned `MyReviewPage.jsx` with deadline countdown, goal management via `GoalsEditor.jsx`, self-score calculators, and finalized summary views.
+  - Redesigned `EmployeePerformanceTab.jsx` for employee profile timelines.
+- **5. Design Consistency & Verification**:
+  - Forest & Emerald brand archetype (`#047857` / `#10B981`, `#0F172A`, `#F8FAFC`), 1px hairline borders, eliminating legacy `indigo-*` classes.
+  - 100% test pass rate on `tests/m19.performance.e2e.test.js` and clean production build.
+
+**Depends on:** Phase 10
+**Plans:** 4 plans
+
+Plans:
+
+- [x] **Plan 11-01: KPI Templates Redesign, Dynamic 100% Weightage Modal, Detail View & Test Hardening** (`.planning/phases/11-performance-management-module-complete-ui-redesign-improvements/11-01-PLAN.md`)
+- [x] **Plan 11-02: Appraisal Cycles Redesign, Cycle Detail View & Telemetry Progress Overhaul** (`.planning/phases/11-performance-management-module-complete-ui-redesign-improvements/11-02-PLAN.md`)
+- [x] **Plan 11-03: Team Reviews Queue, Review Detail Modal, Manager Evaluation & Finalize Redesign** (`.planning/phases/11-performance-management-module-complete-ui-redesign-improvements/11-03-PLAN.md`)
+- [x] **Plan 11-04: Employee Self-Review, Goals Editor, Historical Timeline & Responsive Polish** (`.planning/phases/11-performance-management-module-complete-ui-redesign-improvements/11-04-PLAN.md`)
+
+---
+
+### Phase 12: Employee Lifecycle Module – Complete UI Redesign, Integration Audit & Improvements
+
+**Goal:** Deliver a modern, pixel-perfect, enterprise-grade redesign across the entire Employee Lifecycle Module (M18) adhering strictly to the Forest & Emerald design system (`DESIGN.md` & `docs/UI-REFERENCE.md`), including Onboarding, Resignation, Exit Clearance, and Checklist Templates. Conduct a comprehensive cross-module integration audit ensuring seamless data flow across Recruitment (M15), Employee Management (M3), Asset Custody (M23), Final Settlement (M9), and Account Deactivation (M1).
+
+**Requirements**:
+- **1. Onboarding – Complete UI Redesign**:
+  - Executive onboarding telemetry metrics (Active, In Progress, Provisioning Pending, Completed).
+  - Search, department filters, and tabular progress meters.
+  - New `OnboardingDetailModal.jsx` for full employee profile sheet, task list by category, task completion toggles, and welcome email re-dispatch.
+  - Redesigned `MyTasksPage.jsx` for employee self-service lifecycle tasks.
+- **2. Resignation – Complete UI Redesign**:
+  - Dual-tabbed view separating employee self-service resignation submission/status tracking from the management review queue.
+  - New `ResignationDetailModal.jsx` displaying employee tenure, reason, official LWD picker with notice period calculation, rejection reason, and confidential exit interview inspection.
+- **3. Exit Clearance – Complete UI Redesign**:
+  - Clearance telemetry overview and 4-department status indicators (`IT`, `Finance`, `Admin`, `HR`).
+  - New `ExitClearanceDetailModal.jsx` with departmental sign-offs, live M23 Asset Custody checker (with hardware return blocker), and M9 Final Settlement preview.
+  - Service letters action bar (Experience Letter and Relieving Letter PDF streaming).
+- **4. Checklist Templates – Complete UI Redesign**:
+  - Category tabs (`Onboarding Templates` vs `Offboarding Templates`), department filtering, search, and active/inactive status pills.
+  - New read-only `ChecklistTemplateDetailModal.jsx` for inspecting rubrics and criteria.
+  - Redesigned `ChecklistTemplateModal.jsx` with category tags, role assignees, due offsets, and safe modification warnings.
+- **5. Cross-Module Integration Audit & Polish**:
+  - Complete verification of M15 Recruitment $\rightarrow$ M3 Employee $\rightarrow$ M18 Onboarding, M18 Resignation $\rightarrow$ M3 Notice $\rightarrow$ M18 Offboarding, M18 Exit Clearance $\rightarrow$ M23 Asset lock, and M18 LWD $\rightarrow$ M1 Deactivation.
+  - Zero legacy `indigo-*` classes across `frontend/src/features/onboarding/`.
+  - 100% test pass on `tests/m18.onboarding.e2e.test.js` and clean production build.
+
+**Depends on:** Phase 11
+**Plans:** 4 plans
+
+Plans:
+
+- [x] **Plan 12-01: Checklist Templates Master Authoring Redesign, Detail Modal & Task Rubric Hardening** (`.planning/phases/12-employee-lifecycle-module-complete-ui-redesign-integration-audit-improvements/12-01-PLAN.md`)
+- [x] **Plan 12-02: Employee Onboarding Progress Tracker, Detail Modal & Lifecycle Tasks Redesign** (`.planning/phases/12-employee-lifecycle-module-complete-ui-redesign-integration-audit-improvements/12-02-PLAN.md`)
+- [x] **Plan 12-03: Resignation Self-Service, Notice Period Tracker & Management Review Modal Overhaul** (`.planning/phases/12-employee-lifecycle-module-complete-ui-redesign-integration-audit-improvements/12-03-PLAN.md`)
+- [x] **Plan 12-04: Exit Clearance, M23 Asset Custody Lock, Final Settlement & Comprehensive Integration Verification** (`.planning/phases/12-employee-lifecycle-module-complete-ui-redesign-integration-audit-improvements/12-04-PLAN.md`)
+
+---
+
+### Phase 13: My Profile Module – Complete Audit, UI Redesign & Role-Based Improvements
+
+**Goal:** Deliver a modern, pixel-perfect, role-aware overhaul across the My Profile Module across all 4 system personas (Super Admin, HR Manager, Department Manager, Regular Employee). Decompose the legacy 1,782-line duplicate monolith into clean, single-responsibility sub-components adhering to the Forest & Emerald Enterprise design system (`DESIGN.md` & `docs/UI-REFERENCE.md`), enforce strict PBAC authorization boundaries and change request workflows, eliminate internal technical database leaks, and ensure 100% test pass rate with clean production builds.
+
+**Requirements**:
+- **1. Complete My Profile Audit – All Roles**:
+  - Comprehensive inspection of field visibility and action requirements across Super Admin, HR Manager, Department Manager, and Regular Employee.
+  - Eliminate sensitive technical database leaks (e.g. "CASL Policy Boundary", "Encrypted JWT + Salted Bcrypt", "Apex Level 0") and replace with professional enterprise copy.
+  - Tailor information density: eliminate irrelevant operational fields (e.g. probation end dates, shift rosters, line managers) for Super Admin.
+- **2. Sub-Component Modularization & De-duplication**:
+  - Decompose monolithic `MyProfilePage.jsx` into modular components under `frontend/src/features/employees/components/profile/`:
+    - `ProfileHeader.jsx` (Hero banner, avatar upload, role pills, masked CNIC, contact credentials).
+    - `PersonalInfoCard.jsx` (Personal information, DOB, gender, residential address).
+    - `EmploymentDetailsCard.jsx` (Role-tailored designation, department, reporting manager, shift timings).
+    - `AccountSecurityCard.jsx` (2FA status and toggle modal, password change modal, login history link).
+    - `SkillsQualificationsCard.jsx` (Self-service competency tags with add/remove actions).
+    - `PayrollBankCard.jsx` (Payroll bank coordinates and emergency contacts with change request notice).
+    - `RoleGovernanceCard.jsx` (Contextual quick action hub tailored per persona).
+  - Reduce `MyProfilePage.jsx` from 1,782 lines down to under 300 lines using Ponytail principles.
+- **3. Role-Based Design & Experience**:
+  - **Super Admin**: System governance, account defense, root metrics, administrative master hub shortcuts (`/users`, `/roles`, `/departments`, `/designations`, `/settings`).
+  - **HR Manager**: Workforce governance context, people operations quick links (`/employees`, `/change-requests`, `/onboarding`, `/offboarding`, `/attendance/shifts`).
+  - **Department Manager**: Department leadership context, team supervisory scope, peer approval delegation quick access (`/delegations`).
+  - **Regular Employee**: Comprehensive self-service profile, shift timings, residential address, emergency contacts, skills editor, and self-service quick links (`/org-chart`, `/policies`).
+- **4. Security, PBAC & Editability Rules**:
+  - Enforce PBAC field protection: regular employees cannot directly modify protected fields (salary, CNIC, bank details, designation, department).
+  - Seamless change request workflow via `ChangeRequestModal.jsx` (`POST /api/v1/employees/me/change-request`).
+  - Secure password management and 2FA state synchronization between Redux and DB.
+- **5. Design Consistency & Verification**:
+  - Forest & Emerald brand palette (`#111D17` dark surface, `#1A3125` border, `#00C471` emerald accent). Zero legacy `indigo-*` classes.
+  - 100% test pass on `tests/m3.employees.e2e.test.js` (16/16 tests).
+  - Oxlint clean (0 errors, 0 warnings) and clean `vite build`.
+
+**Depends on:** Phase 12
+**Plans:** 4 plans
+
+Plans:
+
+- [x] **Plan 13-01: Profile Header, Personal Info, Employment Details & Account Security Cards** (`.planning/phases/13-my-profile-module-complete-audit-ui-redesign-role-based-improvements/13-01-PLAN.md`)
+- [x] **Plan 13-02: Skills Taxonomy, Bank Coordinates, Emergency Details & Change Request Flow** (`.planning/phases/13-my-profile-module-complete-audit-ui-redesign-role-based-improvements/13-02-PLAN.md`)
+- [x] **Plan 13-03: Role Governance Hub & Master Orchestrator Consolidation** (`.planning/phases/13-my-profile-module-complete-audit-ui-redesign-role-based-improvements/13-03-PLAN.md`)
+- [x] **Plan 13-04: Multi-Role Visual Audit, End-to-End Verification, Oxlint Audit & Production Build** (`.planning/phases/13-my-profile-module-complete-audit-ui-redesign-role-based-improvements/13-04-PLAN.md`)
+
+---
+
+### Phase 14: Employees Module – Complete Audit, UI Redesign & Improvements
+
+**Goal:** Deliver a comprehensive audit and pixel-perfect UI redesign across the entire Employees Module (Module M3). Modernize the Employee Directory with dual view modes (Table View and Card Grid View), advanced faceted filters, and triple status buckets (`Active Workforce`, `Inactive / Suspended`, `Archive Bucket`). Introduce a new 10-section `EmployeeDetailModal.jsx` for seamless in-place employee inspection, overhaul the 5-step onboarding wizard (`EmployeeFormPage.jsx`), modernize `StatusChangeModal.jsx`, `DocumentUploadModal.jsx`, `EmployeeImportPage.jsx`, and `ChangeRequestsPage.jsx` adhering strictly to the Forest & Emerald Enterprise theme, with complete PBAC authorization and 100% backend E2E test verification.
+
+**Requirements**:
+- **1. Complete Employees Module Audit**:
+  - Review all existing pages, forms, tables, modals, buttons, filters, and actions.
+  - Verify PBAC and RBAC permission boundaries across all 4 roles (Super Admin, HR Manager, Department Manager, Employee).
+  - Hide all unauthorized action buttons (Onboard, Ingest, Export, Edit, Archive, Status Change).
+- **2. Data Table & Dual View Switching (Table & Card Grid)**:
+  - Add dual view mode toggle (`Table View` vs `Card Grid View`).
+  - Modern Card Grid view displaying avatars, initials, names, codes, designations, departments, status pills, and action menus.
+  - Semantic high-density data table with monospaced employee codes, stacked name/email cells, and aligned columns.
+  - Triple status buckets: `Active Workforce`, `Inactive / Suspended`, and `Archive Bucket` with live counts.
+  - Advanced filters (search, department, designation, status) with one-click reset.
+- **3. Employee Comprehensive Detail Modal (`EmployeeDetailModal.jsx`)**:
+  - Implement a new 10-section detail modal triggered on row or card click: Overview, Personal Information, Employment Details, Department & Designation, Reporting Hierarchy, Contact Coordinates, Document Vault, Career History, Account Information, and Financial Overview (masked where appropriate).
+  - Role-aware action bar with Edit, Change Status, Reset Password, and Archive buttons.
+  - Polish full `EmployeeProfilePage.jsx` and its sub-tabs (`ProfileOverviewTab.jsx`, `ProfileDocumentsTab.jsx`, `ProfileHistoryTab.jsx`, `ProfileSalaryTab.jsx`).
+- **4. Employee Create & Edit Wizard Redesign (`EmployeeFormPage.jsx`)**:
+  - Completely redesign the 5-step wizard (Personal Details, Contact & Emergency, Job Assignment, Bank Coordinates, Account Provisioning).
+  - Pakistani CNIC mask (`XXXXX-XXXXXXX-X`) with 13-digit validation.
+  - Reactive dependent dropdowns (designation dynamically filtered by department).
+  - Account provisioning modal with temporary login credentials and copy button.
+- **5. Supporting Modals, Ingestion & Change Requests**:
+  - Redesign `StatusChangeModal.jsx` with critical status warnings and mandatory reason.
+  - Redesign `DocumentUploadModal.jsx` with drag/drop, category tags, and 5MB validation.
+  - Polish `EmployeeImportPage.jsx` with template download and row error reporter.
+  - Polish `ChangeRequestsPage.jsx` with card diff view and quick approval actions.
+- **6. Design Consistency & Verification**:
+  - 100% Forest & Emerald brand archetype (`#111D17` dark surface, `#1A3125` border, `#00C471` emerald accent).
+  - 100% test pass on `tests/m3.employees.e2e.test.js` (16/16 tests).
+  - Oxlint clean (0 errors, 0 warnings) and clean `vite build`.
+
+**Depends on:** Phase 13
+**Plans:** 4 plans
+
+Plans:
+
+- [x] **Plan 14-01: Directory Overhaul, Dual View (Data Table & Card Grid) & Advanced Filters** (`.planning/phases/14-employees-module-complete-audit-ui-redesign-improvements/14-01-PLAN.md`)
+- [x] **Plan 14-02: Employee Comprehensive Detail Modal & Profile View Modernization** (`.planning/phases/14-employees-module-complete-audit-ui-redesign-improvements/14-02-PLAN.md`)
+- [x] **Plan 14-03: Employee Create & Edit Wizard Redesign (`EmployeeFormPage.jsx`) & Supporting Modals** (`.planning/phases/14-employees-module-complete-audit-ui-redesign-improvements/14-03-PLAN.md`)
+- [x] **Plan 14-04: Excel Bulk Ingestion, Change Requests Review Queue, Integration & Verification** (`.planning/phases/14-employees-module-complete-audit-ui-redesign-improvements/14-04-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features
