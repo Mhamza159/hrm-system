@@ -199,6 +199,26 @@ Plans:
 - [x] **Plan 08-03: Public Career Portal & Candidate Application Experience Overhaul** (`.planning/phases/08-recruitment-ats-module-complete-ui-redesign-improvements/08-03-PLAN.md`)
 - [x] **Plan 08-04: Candidate Pipeline Board & Internal Mobility/Referral Pages Overhaul** (`.planning/phases/08-recruitment-ats-module-complete-ui-redesign-improvements/08-04-PLAN.md`)
 
+### Phase 9: AI Resume Parsing Enhancements & Multi-Provider OpenAI/Gemini Setup
+
+**Goal:** Upgrade the Recruitment & ATS AI engine with real document text extraction (digital PDF & Word DOCX), multi-provider orchestration (configurable Google Gemini & OpenAI with automatic failover), Redis resume caching, and enhanced candidate fit evaluation.
+
+**Requirements**:
+- **1. Real Document Text Extraction**:
+  - Integrate robust PDF text extraction (`pdf-parse`) and Word DOCX text extraction (`mammoth`) to extract real body text from uploaded resumes instead of synthetic metadata.
+  - Retain safety guards against binary corruption, infinite loops, and prompt bloat (clean text normalization and length capping).
+- **2. Multi-Provider AI Architecture & OpenAI Setup**:
+  - Configure `OPENAI_API_KEY` and explicit provider routing (`AI_PROVIDER=auto|gemini|openai`).
+  - Seamless dual-engine failover: if primary provider encounters rate limits (HTTP 429) or quota errors, automatically retry with secondary provider before falling back to heuristic parsing.
+  - Standardize JSON Schema structured output across both Gemini (`gemini-2.5-flash`) and OpenAI (`gpt-4o-mini`).
+- **3. Performance & Cost Optimization**:
+  - Implement SHA-256 buffer hash caching via Redis to prevent redundant API invocations on repeated screenings of the same document.
+- **4. Testing & Verification**:
+  - Add end-to-end and security tests verifying real PDF/DOCX text extraction, prompt injection neutralization with actual document text, and multi-provider failover.
+
+**Depends on:** Phase 8
+**Plans:** 3 plans (to be planned via `/gsd-plan-phase 9`)
+
 ---
 
 ## Summary of Master Roadmap Metrics
