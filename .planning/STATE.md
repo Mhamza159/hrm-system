@@ -123,6 +123,7 @@
 ### Roadmap Evolution
 - Phase 6 added: Expense Module – UI Design Improvements (Buttons & Pills, Categorize & Limit Tab, Archive Tab, Active Tab, Data Table row modals and alignments per DESIGN.md and docs/UI-REFERENCE.md)
 - Phase 7 added: Assets Module – Complete UI Redesign & Improvements (My Assets, Assets Register Active/Archive tabs, Custodian Dropdown, Requisition workflow, PBAC/RBAC, and assigned asset deletion prevention)
+- Phase 8 added: Recruitment & ATS Module – Complete UI Redesign & Improvements (Job Openings Active/Archive tabs, Public Career Portal, Candidate Pipeline, Internal Jobs & Employee Referrals, PBAC/RBAC alignment)
 
 - [x] **quick/20261019-notification-settings-tab:** Admin Notification & Announcement Delivery Method Selection (In-App Only, Email Only, WhatsApp Only, Mixed Omnichannel). Mounted tab in `SettingsPage.jsx`, wired `NotificationSettingsForm.jsx`, validated in `setting.validation.js`, enforced in `notify.service.js`. Verified via 16/16 tests (`admin-notification-settings.test.js`, `whatsapp-notifications.test.js`) and Vite build.
 - [x] **quick/20261025-sidebar-scrollbar-ui-fix:** Fix UI scrollbar in the left navigation sidebar. Replaced default 17px native Windows light-gray scrollbar with sleek, minimalist dark scrollbar (`.sidebar-scrollbar` with thin width, transparent track, subtle translucent thumb on dark `#061A14`, hover emerald `#00C471`). Added `.custom-scrollbar` and `.scrollbar-none` utilities. Verified via Vite build (1819 modules transformed, 0 errors).

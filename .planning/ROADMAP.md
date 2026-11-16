@@ -141,6 +141,7 @@ Plans:
 **Goal:** Complete UI redesign and craft modernization across the entire Assets Module (My Assets, Assets Register, Custodian Assignment, and Asset Requisitions) adhering strictly to Forest & Emerald design system (`DESIGN.md`, `docs/UI-REFERENCE.md`), granular PBAC/RBAC permission gating, active/archive lifecycle management, and assignment-based deletion prevention.
 
 **Requirements**:
+
 - **1. My Assets Page Redesign**:
   - Full UI overhaul with dedicated Buttons / Pills tabs, cohesive status badges (`assigned`, `in-repair`, `pending`, `retired`), and spacing.
   - Interactive row-click modal on data table displaying asset metadata, specs, serial number, assignment history, custodian details, and return actions.
@@ -163,6 +164,37 @@ Plans:
 - [x] **Plan 07-01: Backend Lifecycle & Deletion Guard Hardening** (`.planning/phases/07-assets-module-complete-ui-redesign-improvements/07-01-PLAN.md`)
 - [x] **Plan 07-02: Modern Custodian Dropdown & My Assets Page Overhaul** (`.planning/phases/07-assets-module-complete-ui-redesign-improvements/07-02-PLAN.md`)
 - [x] **Plan 07-03: Assets Register (Active & Archive Tabs) & Requisitions Workflow** (`.planning/phases/07-assets-module-complete-ui-redesign-improvements/07-03-PLAN.md`)
+
+### Phase 8: Recruitment & ATS Module – Complete UI Redesign & Improvements
+
+**Goal:** Deliver a completely redesigned, modern, professional, pixel-perfect Recruitment & ATS Module adhering strictly to Forest & Emerald design tokens (`DESIGN.md`, `docs/UI-REFERENCE.md`), granular PBAC/RBAC permission gating (`docs/PBAC.md`, `docs/RBAC.md`), active/archive lifecycle workflows, and cohesive candidate pipeline and referral tracking.
+
+**Requirements**:
+- **1. Job Opening Page & Archive Lifecycle**:
+  - Complete UI redesign with modern layout, structure, typography, spacing, and emerald color scheme.
+  - Buttons, status pills, tabs, filters, dropdowns, and action menus styled to high-craft standard with pixel-perfect alignment.
+  - Separate **Active** and **Archive** tabs for job openings.
+  - Professional Archive tab modal with **Revert** (restore archived job opening to Active) and **Permanent Delete** (permanently delete job opening, subject to authorization and business safety rules).
+- **2. Public Career Portal**:
+  - Complete UI redesign of the public-facing careers portal with modern visual hierarchy, typography, dark/light harmonious surfaces, and responsive layout.
+  - Refined job listings, detail view, application modal/forms, upload buttons, and confirmation states.
+- **3. Candidate Pipeline (ATS)**:
+  - Complete UI redesign of the candidate pipeline and Kanban/stage views.
+  - Clear candidate status pills with semantic color mapping (applied, screening, interview, offer, hired, rejected).
+  - Modern filters, search, candidate preview drawers, stage progression controls, and evaluation forms.
+- **4. Internal Jobs & Employee Referral Page**:
+  - Complete UI redesign of both Internal Jobs portal and Employee Referral submission & tracking pages.
+  - Polished tables, referral forms, reward indicators, status badges, and details modals.
+- **5. PBAC & RBAC Enforcement**:
+  - Full adherence to PBAC and RBAC rules; actions hidden if user lacks corresponding permission (`recruitment.manage`, `recruitment.view`, etc.).
+  - Preserve all existing business logic, validation rules, and API contracts.
+
+**Depends on:** Phase 7
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 8 to break down)
 
 ---
 
