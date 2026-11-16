@@ -46,6 +46,7 @@ import {
 import { useAuth } from '../../../hooks/useAuth.js';
 import { usePermission } from '../../../hooks/usePermission.js';
 import { RequisitionModal } from '../components/RequisitionModal.jsx';
+import { RequisitionDetailModal } from '../components/RequisitionDetailModal.jsx';
 import { JobArchiveDetailModal } from '../components/JobArchiveDetailModal.jsx';
 import { ConfirmDialog } from '../../../components/common/ConfirmDialog.jsx';
 import { RefreshButton } from '../components/RefreshButton.jsx';
@@ -68,10 +69,8 @@ export const JobsPage = () => {
   const [selectedArchiveJob, setSelectedArchiveJob] = useState(null);
   const [jobToArchive, setJobToArchive] = useState(null);
 
-  // Requisition decision state
+  // Requisition inspection state
   const [selectedReq, setSelectedReq] = useState(null);
-  const [decisionAction, setDecisionAction] = useState(null); // 'approved' | 'rejected'
-  const [decisionRemarks, setDecisionRemarks] = useState('');
 
   // Fetch Jobs based on active tab
   const isArchiveTab = activeTab === 'archive';
@@ -110,24 +109,21 @@ export const JobsPage = () => {
   const publishedCount = stats.published ?? jobs.filter((j) => j.status === 'Published').length;
   const draftCount = stats.draft ?? jobs.filter((j) => j.status === 'Draft').length;
 
-  // Handle Requisition approval/rejection
-  const handleDecisionSubmit = async () => {
-    if (!selectedReq || !decisionAction) return;
+  // Handle Requisition approval/rejection decision (from inspection modal or row action)
+  const handleDecisionDecision = async ({ id, decision, remarks }) => {
     try {
       await decideRequisition({
-        id: selectedReq._id,
-        decision: decisionAction,
-        remarks: decisionRemarks.trim()
+        id,
+        decision,
+        remarks: remarks?.trim() || ''
       }).unwrap();
 
       toast.success(
-        decisionAction === 'approved'
+        decision === 'approved'
           ? 'Requisition approved! A new draft job opening has been automatically created.'
           : 'Requisition rejected with recorded remarks.'
       );
       setSelectedReq(null);
-      setDecisionAction(null);
-      setDecisionRemarks('');
     } catch (err) {
       toast.error(err?.data?.message || err?.message || 'Failed to submit decision.');
     }
@@ -638,9 +634,18 @@ export const JobsPage = () => {
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-[#1A3125]">
                   {requisitions.map((req) => (
-                    <tr key={req._id} className="hover:bg-slate-50/50 dark:hover:bg-[#162820]/40">
+                    <tr
+                      key={req._id}
+                      onClick={() => setSelectedReq(req)}
+                      className="hover:bg-slate-50/60 dark:hover:bg-[#162820]/40 cursor-pointer transition-colors"
+                    >
                       <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">
-                        {req.designationId?.title || 'Open Position'}
+                        <div className="flex items-center gap-1.5">
+                          <span>{req.designationId?.title || 'Open Position'}</span>
+                          <span className="text-[10px] font-mono text-slate-400 font-normal">
+                            #{req._id.slice(-5).toUpperCase()}
+                          </span>
+                        </div>
                         <p className="text-[10px] text-slate-400 font-normal mt-0.5 line-clamp-1">
                           {req.justification}
                         </p>
@@ -678,39 +683,25 @@ export const JobsPage = () => {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        {req.status === 'Pending_Approval' && isSuperAdmin && (
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => {
-                                setSelectedReq(req);
-                                setDecisionAction('approved');
-                              }}
-                              className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-[#00C471] text-white hover:bg-[#049856] transition cursor-pointer"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedReq(req);
-                                setDecisionAction('rejected');
-                              }}
-                              className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 border border-rose-200 dark:border-rose-900/40 hover:bg-rose-100 cursor-pointer"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        )}
-                        {req.status === 'Approved' && req.jobId && (
+                        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
                           <button
-                            onClick={() => {
-                              setActiveTab('active');
-                              setSearch(req.designationId?.title || '');
-                            }}
-                            className="text-xs text-[#00C471] hover:underline font-semibold cursor-pointer"
+                            onClick={() => setSelectedReq(req)}
+                            className="px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-emerald-50 dark:bg-[#162820] text-[#00C471] hover:bg-emerald-100 dark:hover:bg-[#1E362B] transition-colors cursor-pointer"
                           >
-                            View Job
+                            Review
                           </button>
-                        )}
+                          {req.status === 'Approved' && req.jobId && (
+                            <button
+                              onClick={() => {
+                                setActiveTab('active');
+                                setSearch(req.designationId?.title || '');
+                              }}
+                              className="text-xs text-slate-400 hover:text-white hover:underline font-semibold cursor-pointer ml-1"
+                            >
+                              Job &rarr;
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -760,57 +751,15 @@ export const JobsPage = () => {
         onCancel={() => setJobToArchive(null)}
       />
 
-      {/* Requisition Approval/Rejection Decision Dialog */}
-      {selectedReq && decisionAction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] w-full max-w-md rounded-2xl p-5 space-y-4 shadow-xl">
-            <h3 className="font-bold text-slate-900 dark:text-white text-sm">
-              Confirm Requisition {decisionAction === 'approved' ? 'Approval' : 'Rejection'}
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {decisionAction === 'approved'
-                ? `Approving this requisition will automatically create an internal Draft Job opening for '${selectedReq.designationId?.title}'.`
-                : `Rejecting this requisition will notify the requesting manager.`}
-            </p>
-
-            <div>
-              <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                Decision Remarks (Optional)
-              </label>
-              <textarea
-                value={decisionRemarks}
-                onChange={(e) => setDecisionRemarks(e.target.value)}
-                placeholder="Add context or notes for the department manager..."
-                rows={3}
-                className="w-full p-2.5 rounded-xl text-xs bg-slate-50 dark:bg-[#0B1511] border border-slate-200 dark:border-[#1A3125] text-slate-900 dark:text-white focus:outline-hidden focus:border-[#00C471]"
-              />
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                onClick={() => {
-                  setSelectedReq(null);
-                  setDecisionAction(null);
-                }}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162820] cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDecisionSubmit}
-                disabled={isDeciding}
-                className={`px-4 py-1.5 rounded-xl text-xs font-semibold text-white cursor-pointer ${
-                  decisionAction === 'approved'
-                    ? 'bg-[#00C471] hover:bg-[#049856]'
-                    : 'bg-rose-600 hover:bg-rose-700'
-                }`}
-              >
-                {isDeciding ? 'Saving...' : decisionAction === 'approved' ? 'Confirm Approval' : 'Confirm Rejection'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Headcount Requisition Detail & Decision Modal (Super Admin & Department Audit) */}
+      <RequisitionDetailModal
+        isOpen={Boolean(selectedReq)}
+        onClose={() => setSelectedReq(null)}
+        requisition={selectedReq}
+        isSuperAdmin={isSuperAdmin}
+        onDecision={handleDecisionDecision}
+        isDeciding={isDeciding}
+      />
     </div>
   );
 };
