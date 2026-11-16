@@ -225,6 +225,35 @@ Plans:
 - [x] **Plan 09-02: Multi-Provider AI Architecture & OpenAI / Gemini Failover** (`.planning/phases/09-ai-resume-parsing-enhancements-openai-gemini-setup/09-02-PLAN.md`)
 - [x] **Plan 09-03: Resume Buffer Hash Caching & Verification Hardening** (`.planning/phases/09-ai-resume-parsing-enhancements-openai-gemini-setup/09-03-PLAN.md`)
 
+### Phase 10: AI Resume Screening Accuracy, Candidate Data Parsing & UI Improvements
+
+**Goal:** Fix AI resume screening accuracy issues, eliminate false-positive degree and experience hallucinations, accurately tokenize job requirements to cleanly differentiate matched vs. unmatched skills, preserve authentic CV data, and elevate CandidateDetailModal with segmented tabs, source evidence, and PBAC/RBAC controls per `DESIGN.md` and `docs/UI-REFERENCE.md`.
+
+**Requirements**:
+- **1. AI Resume Parsing Accuracy & Evidence Extraction**:
+  - Root out regex substring false-positives in `heuristicResumeParser` (where word substrings like "Mastering", "Systems", "Forms" falsely triggered Master's Degree).
+  - High-precision degree detection matching exact boundaries (`BSCS`, `BS Computer Science`, `Bachelor of Science`) and explicit degree contexts.
+  - Accurate experience years extraction from job history timelines while ignoring degree graduation dates.
+  - Zero-hallucination mandate: if an attribute is missing or ambiguous, return "Not Found / Verification Required" instead of assuming.
+- **2. Smart Skills Matching (Matched vs. Missing Skills)**:
+  - Tokenize multi-skill requirement strings (e.g. "React Js", "Node Js Html Css Javascript Mongo DB MYSQL Tailwind Css Bootstrap") into distinct individual skills.
+  - Differentiate matched skills (emerald pills) from missing/unmatched job requirements (rose pills) with strict bidirectional boundary checking.
+- **3. Screening Modal Overhaul (CandidateDetailModal)**:
+  - Improve existing `CandidateDetailModal.jsx` without duplicate components.
+  - Tabbed or clean structured sections: Overview, Extracted Attributes (with CV Source References), Skills Matrix (Matched vs. Unmatched), AI Assessment & Rationale, Recruitment Actions.
+  - Visual clarity distinguishing raw extracted facts from AI advisory match scoring.
+- **4. Verification & Re-Screening**:
+  - Re-screen the 3 real candidate CVs (Noraiz Ali, Muhammad Naik, Muhammad Adnan) and verify 100% accurate extraction against their original documents.
+
+**Depends on:** Phase 9
+**Plans:** 3 plans
+
+Plans:
+
+- [ ] **Plan 10-01: High-Precision Degree & Experience Extraction Engine** (`.planning/phases/10-ai-resume-screening-accuracy-candidate-data-parsing-ui-improvements/10-01-PLAN.md`)
+- [ ] **Plan 10-02: Granular Skills Tokenizer & Matched vs Unmatched Evaluation** (`.planning/phases/10-ai-resume-screening-accuracy-candidate-data-parsing-ui-improvements/10-02-PLAN.md`)
+- [ ] **Plan 10-03: CandidateDetailModal UI Overhaul & Real Candidate Re-Screening Verification** (`.planning/phases/10-ai-resume-screening-accuracy-candidate-data-parsing-ui-improvements/10-03-PLAN.md`)
+
 ---
 
 ## Summary of Master Roadmap Metrics
