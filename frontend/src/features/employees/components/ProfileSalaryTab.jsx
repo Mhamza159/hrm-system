@@ -11,6 +11,7 @@
  */
 
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import {
   BadgeDollarSign,
   TrendingUp,
@@ -21,10 +22,8 @@ import {
   CheckCircle2,
   Shield,
   Coins,
-  DollarSign,
   Percent,
-  Clock,
-  ArrowUpRight
+  Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card } from '../../../components/common/Card.jsx';
@@ -386,3 +385,9 @@ export function ProfileSalaryTab({ employee, canView = false }) {
     </div>
   );
 }
+
+ProfileSalaryTab.propTypes = {
+  employee: PropTypes.object,
+  canView: PropTypes.bool
+};
+

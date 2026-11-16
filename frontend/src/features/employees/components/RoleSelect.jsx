@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Check, ShieldCheck } from 'lucide-react';
+import { ChevronDown, Check } from 'lucide-react';
 import { RoleBadge } from '../../../components/common/RoleBadge.jsx';
 
 export function RoleSelect({

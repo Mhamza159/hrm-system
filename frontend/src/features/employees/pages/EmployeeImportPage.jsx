@@ -5,7 +5,7 @@
  * SPECIFICATION & DATAFLOW:
  * - Module: M3 Employee Management (BUILD-GUIDE Section 8 · Row 3.13)
  * - Layer: Frontend Page (Multi-step upload and row error inspection)
- * - Dataflow: File Drop $\rightarrow$ FormData $\rightarrow$ RTK Mutation $\rightarrow$ Error Report Table
+ * - Theme: Forest & Emerald Enterprise Craft.
  */
 
 import React, { useState } from 'react';
@@ -44,6 +44,15 @@ export default function EmployeeImportPage() {
     setIsDragging(false);
   };
 
+  const validateAndSetFile = (selectedFile) => {
+    if (!selectedFile.name.match(/\.(xlsx|xls|csv)$/i)) {
+      toast.error('Invalid file format. Please upload an Excel spreadsheet (.xlsx)');
+      return;
+    }
+    setFile(selectedFile);
+    setImportResult(null);
+  };
+
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
@@ -57,15 +66,6 @@ export default function EmployeeImportPage() {
     if (e.target.files && e.target.files[0]) {
       validateAndSetFile(e.target.files[0]);
     }
-  };
-
-  const validateAndSetFile = (selectedFile) => {
-    if (!selectedFile.name.match(/\.(xlsx|xls|csv)$/i)) {
-      toast.error('Invalid file format. Please upload an Excel spreadsheet (.xlsx)');
-      return;
-    }
-    setFile(selectedFile);
-    setImportResult(null);
   };
 
   const downloadSampleTemplate = () => {
@@ -113,49 +113,49 @@ export default function EmployeeImportPage() {
       <button
         type="button"
         onClick={() => navigate('/employees')}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors cursor-pointer"
       >
         <ArrowLeft className="w-4 h-4" /> Back to Employee Directory
       </button>
 
       <PageHeader
         title="Bulk Employee Ingestion"
-        subtitle="Batch onboard staff from structured Excel spreadsheets with automated Pakistani CNIC validation and row-level error reporting."
-        action={
+        description="Batch onboard staff from structured Excel spreadsheets with automated Pakistani CNIC validation and row-level error reporting."
+        actions={
           <button
             type="button"
             onClick={downloadSampleTemplate}
-            className="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer"
+            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] hover:bg-slate-50 dark:hover:bg-[#15241C] text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
           >
-            <Download className="w-4 h-4 text-emerald-600" /> Download Template
+            <Download className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Download Template
           </button>
         }
       />
 
       {/* Upload Zone Card */}
-      <Card className="p-8 border-slate-200">
+      <Card className="p-8 border-slate-200 dark:border-[#1A3125]">
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all ${
             isDragging
-              ? 'border-[#00C471] bg-emerald-50/50'
-              : 'border-slate-300 hover:border-slate-400 bg-slate-50/50'
+              ? 'border-[#00C471] bg-emerald-50/50 dark:bg-emerald-950/20'
+              : 'border-slate-300 dark:border-[#1A3125] hover:border-slate-400 dark:hover:border-slate-600 bg-slate-50/50 dark:bg-[#0A110D]/50'
           }`}
         >
-          <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-[#00C471] flex items-center justify-center mx-auto mb-4 border border-emerald-100 shadow-xs">
+          <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-[#00C471] flex items-center justify-center mx-auto mb-4 border border-emerald-100 dark:border-emerald-800/60 shadow-xs">
             <UploadCloud className="w-8 h-8" />
           </div>
 
-          <h3 className="text-sm font-bold text-slate-800 mb-1">
+          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-1">
             {file ? file.name : 'Drag and drop your spreadsheet here'}
           </h3>
-          <p className="text-xs text-slate-500 mb-4">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
             Supports Microsoft Excel (.xlsx, .xls) and standard CSV files up to 10MB.
           </p>
 
-          <label className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold cursor-pointer shadow-sm transition-colors">
+          <label className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 dark:bg-emerald-600 hover:bg-slate-800 dark:hover:bg-emerald-500 text-white text-xs font-semibold cursor-pointer shadow-xs transition-colors">
             <FileSpreadsheet className="w-4 h-4" /> Browse Files
             <input
               type="file"
@@ -167,27 +167,27 @@ export default function EmployeeImportPage() {
         </div>
 
         {file && (
-          <div className="mt-6 flex items-center justify-between p-4 bg-emerald-50/60 rounded-xl border border-emerald-200">
+          <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-emerald-50/60 dark:bg-emerald-950/20 rounded-2xl border border-emerald-200 dark:border-emerald-800/40">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+              <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-bold">
                 <FileText className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-xs font-bold text-slate-900">{file.name}</p>
-                <p className="text-[11px] text-slate-500 font-mono">
+                <p className="text-xs font-bold text-slate-900 dark:text-white">{file.name}</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
                   {(file.size / 1024).toFixed(1)} KB • Ready for processing
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 self-end sm:self-auto">
               <button
                 type="button"
                 onClick={() => {
                   setFile(null);
                   setImportResult(null);
                 }}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer"
+                className="px-3 py-1.5 rounded-xl text-xs font-medium text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 Clear
               </button>
@@ -195,7 +195,7 @@ export default function EmployeeImportPage() {
                 type="button"
                 onClick={handleUpload}
                 disabled={isLoading}
-                className="px-5 py-2 rounded-xl bg-[#00C471] hover:bg-[#049856] text-white text-xs font-semibold flex items-center gap-2 shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                className="px-5 py-2 rounded-xl bg-[#00C471] hover:bg-[#00ad64] text-white text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
               >
                 {isLoading ? (
                   <>
@@ -216,35 +216,35 @@ export default function EmployeeImportPage() {
       {importResult && (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="p-5 border-slate-200">
-              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+            <Card className="p-5 border-slate-200 dark:border-[#1A3125]">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                 Total Rows Processed
               </span>
-              <span className="text-2xl font-bold text-slate-900 font-mono mt-1 block">
+              <span className="text-2xl font-bold text-slate-900 dark:text-white font-mono mt-1 block">
                 {importResult.total}
               </span>
             </Card>
 
-            <Card className="p-5 border-emerald-200 bg-emerald-50/30">
+            <Card className="p-5 border-emerald-200 dark:border-emerald-800/40 bg-emerald-50/30 dark:bg-emerald-950/20">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-emerald-800 uppercase tracking-wider block">
+                <span className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider block">
                   Successfully Ingested
                 </span>
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </div>
-              <span className="text-2xl font-bold text-emerald-700 font-mono mt-1 block">
+              <span className="text-2xl font-bold text-emerald-700 dark:text-emerald-300 font-mono mt-1 block">
                 {importResult.succeeded}
               </span>
             </Card>
 
-            <Card className="p-5 border-rose-200 bg-rose-50/30">
+            <Card className="p-5 border-rose-200 dark:border-rose-800/40 bg-rose-50/30 dark:bg-rose-950/20">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-rose-800 uppercase tracking-wider block">
+                <span className="text-[11px] font-semibold text-rose-800 dark:text-rose-300 uppercase tracking-wider block">
                   Rejected / Failed
                 </span>
-                <XCircle className="w-5 h-5 text-rose-600" />
+                <XCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
               </div>
-              <span className="text-2xl font-bold text-rose-700 font-mono mt-1 block">
+              <span className="text-2xl font-bold text-rose-700 dark:text-rose-300 font-mono mt-1 block">
                 {importResult.failed}
               </span>
             </Card>
@@ -252,18 +252,18 @@ export default function EmployeeImportPage() {
 
           {/* Row-by-Row Error Report */}
           {importResult.errors && importResult.errors.length > 0 && (
-            <Card className="p-6 border-slate-200 space-y-4">
-              <div className="flex items-center gap-2 text-rose-600">
+            <Card className="p-6 border-slate-200 dark:border-[#1A3125] space-y-4">
+              <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
                 <AlertTriangle className="w-5 h-5" />
-                <h3 className="text-sm font-bold">Row-Level Ingestion Rejections</h3>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Row-Level Ingestion Rejections</h3>
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 The following rows contained validation errors and were rejected to safeguard data integrity. Valid rows from the same sheet were ingested.
               </p>
 
-              <div className="overflow-x-auto rounded-xl border border-slate-200">
+              <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-[#1A3125]">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50 text-slate-600 border-b border-slate-200">
+                  <thead className="bg-slate-50 dark:bg-[#0A110D] text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-[#1A3125]">
                     <tr>
                       <th className="py-2.5 px-4 font-semibold w-16">Row #</th>
                       <th className="py-2.5 px-4 font-semibold w-28">Employee Code</th>
@@ -271,19 +271,19 @@ export default function EmployeeImportPage() {
                       <th className="py-2.5 px-4 font-semibold">Validation Error Details</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-100 dark:divide-[#1A3125]">
                     {importResult.errors.map((err, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/60">
-                        <td className="py-2.5 px-4 font-mono font-bold text-slate-700">
+                      <tr key={idx} className="hover:bg-slate-50/60 dark:hover:bg-[#15241C]">
+                        <td className="py-2.5 px-4 font-mono font-bold text-slate-700 dark:text-slate-300">
                           {err.row}
                         </td>
-                        <td className="py-2.5 px-4 font-mono text-slate-800 font-medium">
+                        <td className="py-2.5 px-4 font-mono text-slate-800 dark:text-slate-200 font-medium">
                           {err.employeeCode}
                         </td>
-                        <td className="py-2.5 px-4 text-slate-700">
+                        <td className="py-2.5 px-4 text-slate-700 dark:text-slate-300">
                           {err.name}
                         </td>
-                        <td className="py-2.5 px-4 text-rose-600 font-medium">
+                        <td className="py-2.5 px-4 text-rose-600 dark:text-rose-400 font-medium">
                           {err.reason}
                         </td>
                       </tr>

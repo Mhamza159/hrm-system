@@ -170,12 +170,12 @@ export const employeesApi = baseApi.injectEndpoints({
 
     getJobHistory: builder.query({
       query: (id) => `/employees/${id}/history`,
-      providesTags: (result, error, id) => [{ type: 'Employee', id: 'HISTORY' }]
+      providesTags: () => [{ type: 'Employee', id: 'HISTORY' }]
     }),
 
     getSalaryHistory: builder.query({
       query: (id) => `/employees/${id}/salary-history`,
-      providesTags: (result, error, id) => [{ type: 'Employee', id: 'SALARY' }]
+      providesTags: () => [{ type: 'Employee', id: 'SALARY' }]
     }),
 
     submitChangeRequest: builder.mutation({

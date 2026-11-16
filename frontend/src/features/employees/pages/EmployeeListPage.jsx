@@ -4,8 +4,10 @@
  * 
  * SPECIFICATION & INTEGRITY:
  * - Module: M3 Employee Management (BUILD-GUIDE Section 8 · Rows 3.4, 3.8, 3.14)
- * - Layer: Frontend Page Component (DataTable, Faceted filters, StatusBadges)
- * - Permissions: Guarded by CASL <Can> for Add, Edit, Delete, and Export.
+ * - Layer: Frontend Page Component (DataTable, Card Grid, Faceted Filters, Status Badges)
+ * - Dual View: Table View & Card Grid View with localStorage persistence
+ * - Triple Status Buckets: Active Workforce, Inactive / Suspended, Archive Bucket
+ * - Permissions: Guarded by CASL <Can> for Add, Edit, Delete, Export, and Status Change.
  */
 
 import React, { useState, useMemo } from 'react';
@@ -15,21 +17,22 @@ import {
   UserPlus,
   Users,
   Search,
-  Filter,
   Eye,
   Edit,
   Trash2,
   FileSpreadsheet,
   Building2,
-  Shield,
-  Briefcase,
   UploadCloud,
   KeyRound,
   RefreshCw,
   X,
   RotateCcw,
   Archive,
-  AlertTriangle
+  AlertTriangle,
+  LayoutList,
+  LayoutGrid,
+  UserX,
+  ShieldAlert
 } from 'lucide-react';
 
 import {
@@ -39,7 +42,7 @@ import {
   usePermanentDeleteEmployeeMutation
 } from '../employeesApi.js';
 import { useAdminResetPasswordMutation } from '../../auth/authApi.js';
-import { useGetDepartmentsQuery } from '../../departments/departmentsApi.js';
+import { useGetDepartmentsQuery, useGetDesignationsQuery } from '../../departments/departmentsApi.js';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { DataTable } from '../../../components/common/DataTable.jsx';
@@ -48,20 +51,46 @@ import { RoleBadge } from '../../../components/common/RoleBadge.jsx';
 import { DesignationBadge } from '../../../components/common/DesignationBadge.jsx';
 import { ConfirmDialog } from '../../../components/common/ConfirmDialog.jsx';
 import { Can } from '../../../components/common/Can.jsx';
+import { EmployeeCard } from '../components/EmployeeCard.jsx';
+import { EmployeeDetailModal } from '../components/EmployeeDetailModal.jsx';
+import { StatusChangeModal } from '../components/StatusChangeModal.jsx';
 import { cn } from '../../../lib/utils.js';
 
 export default function EmployeeListPage() {
   const navigate = useNavigate();
 
+  // Dual View Mode ('table' | 'grid') with persistent storage
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      return localStorage.getItem('hrm_employee_view_mode') || 'table';
+    } catch {
+      return 'table';
+    }
+  });
+
+  const handleViewModeToggle = (mode) => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem('hrm_employee_view_mode', mode);
+    } catch {
+      // Storage unavailable fallback
+    }
+  };
+
+  // Bucket View: 'active' | 'inactive' | 'archived'
+  const [activeTab, setActiveTab] = useState('active');
+
   // Filters & Search state
-  const [activeTab, setActiveTab] = useState('active'); // 'active' | 'archived'
   const [search, setSearchTerm] = useState('');
   const [selectedDept, setSelectedDept] = useState('');
+  const [selectedDesig, setSelectedDesig] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const limit = 12;
 
-  // Archive & Permanent Delete modal states
+  // Detail Modal & Action States
+  const [selectedDetailEmployee, setSelectedDetailEmployee] = useState(null);
+  const [statusChangeTarget, setStatusChangeTarget] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
   const [permanentDeleteTarget, setPermanentDeleteTarget] = useState(null);
   const [resetTargetEmployee, setResetTargetEmployee] = useState(null);
@@ -71,18 +100,44 @@ export default function EmployeeListPage() {
 
   // Queries
   const { data: deptData } = useGetDepartmentsQuery({ limit: 100 });
+  const { data: desigData } = useGetDesignationsQuery({ limit: 100 });
+
+  // Compute query status filter based on active bucket
+  const queryStatus = useMemo(() => {
+    if (selectedStatus) return selectedStatus;
+    if (activeTab === 'active') return '(Active|Probation|Notice)';
+    if (activeTab === 'inactive') return '(Suspended|Terminated|Resigned)';
+    return undefined;
+  }, [activeTab, selectedStatus]);
+
   const { data: empData, isLoading, isFetching, refetch } = useGetEmployeesQuery({
     page,
     limit,
     search: search.trim() || undefined,
     departmentId: selectedDept || undefined,
-    status: selectedStatus || undefined,
+    designationId: selectedDesig || undefined,
+    status: queryStatus,
     archived: activeTab === 'archived' ? 'true' : undefined
   });
-  const { data: activeCountData } = useGetEmployeesQuery({ limit: 1, archived: 'false' });
-  const { data: archivedCountData } = useGetEmployeesQuery({ limit: 1, archived: 'true' });
+
+  // Live Counter Queries for Triple Buckets
+  const { data: activeCountData } = useGetEmployeesQuery({
+    limit: 1,
+    archived: 'false',
+    status: '(Active|Probation|Notice)'
+  });
+  const { data: inactiveCountData } = useGetEmployeesQuery({
+    limit: 1,
+    archived: 'false',
+    status: '(Suspended|Terminated|Resigned)'
+  });
+  const { data: archivedCountData } = useGetEmployeesQuery({
+    limit: 1,
+    archived: 'true'
+  });
 
   const activeCount = activeCountData?.data?.total ?? (activeTab === 'active' ? empData?.data?.total || 0 : 0);
+  const inactiveCount = inactiveCountData?.data?.total ?? (activeTab === 'inactive' ? empData?.data?.total || 0 : 0);
   const archivedCount = archivedCountData?.data?.total ?? (activeTab === 'archived' ? empData?.data?.total || 0 : 0);
 
   const handleTabChange = (newTab) => {
@@ -106,6 +161,11 @@ export default function EmployeeListPage() {
     setPage(1);
   };
 
+  const handleDesigChange = (val) => {
+    setSelectedDesig(val);
+    setPage(1);
+  };
+
   // Manual data reload handler
   const handleRefresh = async () => {
     try {
@@ -116,6 +176,8 @@ export default function EmployeeListPage() {
         toast.success(
           activeTab === 'archived'
             ? 'Archive bucket reloaded successfully'
+            : activeTab === 'inactive'
+            ? 'Inactive records reloaded successfully'
             : 'Employee directory reloaded successfully'
         );
       }
@@ -138,15 +200,17 @@ export default function EmployeeListPage() {
   const [adminResetPassword, { isLoading: isResettingPassword }] = useAdminResetPasswordMutation();
 
   const departments = deptData?.data || [];
-  const rawEmployees = empData?.data?.items || [];
+  const designations = desigData?.data || [];
+
   const employees = useMemo(() => {
-    return rawEmployees.filter(
+    const raw = empData?.data?.items || [];
+    return raw.filter(
       (emp) =>
         emp.employeeCode !== 'EMP-000' &&
         emp.email !== 'admin@hrm.company.pk' &&
         emp.email !== 'mhamzaofficial159@gmail.com'
     );
-  }, [rawEmployees]);
+  }, [empData?.data?.items]);
   const total = empData?.data?.total || 0;
   const totalPages = empData?.data?.totalPages || 1;
 
@@ -155,6 +219,7 @@ export default function EmployeeListPage() {
       setIsExporting(true);
       const queryParams = new URLSearchParams();
       if (selectedDept) queryParams.append('departmentId', selectedDept);
+      if (selectedDesig) queryParams.append('designationId', selectedDesig);
       if (selectedStatus) queryParams.append('status', selectedStatus);
 
       const response = await fetch(`/api/v1/employees/export?${queryParams.toString()}`, {
@@ -247,6 +312,7 @@ export default function EmployeeListPage() {
     }
   };
 
+  // DataTable Column Definitions
   const columns = [
     {
       key: 'employeeCode',
@@ -276,7 +342,7 @@ export default function EmployeeListPage() {
               <img
                 src={row.avatar}
                 alt={row.name}
-                className="w-9 h-9 rounded-full object-cover shrink-0 border border-slate-200 dark:border-slate-700 shadow-2xs"
+                className="w-9 h-9 rounded-full object-cover shrink-0 border border-slate-200 dark:border-[#1A3125] shadow-2xs"
               />
             ) : (
               <div className="w-9 h-9 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 font-bold text-xs flex items-center justify-center shrink-0 border border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs">
@@ -360,12 +426,12 @@ export default function EmployeeListPage() {
 
         if (activeTab === 'archived') {
           return (
-            <div className="flex items-center gap-1.5 justify-end">
+            <div className="flex items-center gap-1.5 justify-end" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
-                onClick={() => navigate(`/employees/${row._id}`)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                title="View Archived Profile"
+                onClick={() => setSelectedDetailEmployee(row)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#15241C] transition-colors cursor-pointer"
+                title="View Archived Inspection Sheet"
               >
                 <Eye className="w-4 h-4" />
               </button>
@@ -398,17 +464,26 @@ export default function EmployeeListPage() {
         }
 
         return (
-          <div className="flex items-center gap-1 justify-end">
+          <div className="flex items-center gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
-              onClick={() => navigate(`/employees/${row._id}`)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              title="View Full Profile"
+              onClick={() => setSelectedDetailEmployee(row)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#15241C] transition-colors cursor-pointer"
+              title="View Quick Inspection Sheet"
             >
               <Eye className="w-4 h-4" />
             </button>
 
             <Can I="employee.edit" a="Employee">
+              <button
+                type="button"
+                onClick={() => setStatusChangeTarget(row)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors cursor-pointer"
+                title="Change Lifecycle Status"
+              >
+                <ShieldAlert className="w-4 h-4" />
+              </button>
+
               <button
                 type="button"
                 onClick={() => navigate(`/employees/${row._id}/edit`)}
@@ -424,7 +499,7 @@ export default function EmployeeListPage() {
                 <button
                   type="button"
                   onClick={() => setResetTargetEmployee(row)}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors cursor-pointer"
                   title="Reset Employee Password"
                 >
                   <KeyRound className="w-4 h-4" />
@@ -456,7 +531,39 @@ export default function EmployeeListPage() {
         title="Employee Directory"
         description="Manage personnel profiles, organizational assignments, and workforce records."
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* View Switcher Controls */}
+            <div className="inline-flex p-1 bg-slate-100 dark:bg-[#0A110D] rounded-xl border border-slate-200 dark:border-[#1A3125]">
+              <button
+                type="button"
+                onClick={() => handleViewModeToggle('table')}
+                className={cn(
+                  'p-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold',
+                  viewMode === 'table'
+                    ? 'bg-white dark:bg-[#111D17] text-emerald-600 dark:text-emerald-400 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                )}
+                title="Table View"
+              >
+                <LayoutList className="w-4 h-4" />
+                <span className="hidden sm:inline">Table</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleViewModeToggle('grid')}
+                className={cn(
+                  'p-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold',
+                  viewMode === 'grid'
+                    ? 'bg-white dark:bg-[#111D17] text-emerald-600 dark:text-emerald-400 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+                )}
+                title="Card Grid View"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                <span className="hidden sm:inline">Cards</span>
+              </button>
+            </div>
+
             <button
               type="button"
               onClick={handleRefresh}
@@ -465,7 +572,7 @@ export default function EmployeeListPage() {
               className="inline-flex items-center gap-2 px-3.5 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#15241C] shadow-xs transition-all cursor-pointer disabled:opacity-60"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin text-[#00C471]' : 'text-slate-400'}`} />
-              <span>{isFetching ? 'Refreshing...' : 'Refresh'}</span>
+              <span className="hidden md:inline">{isFetching ? 'Refreshing...' : 'Refresh'}</span>
             </button>
 
             <Can I="report.export" a="Report">
@@ -476,7 +583,7 @@ export default function EmployeeListPage() {
                 className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] hover:bg-slate-50 dark:hover:bg-[#15241C] text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors cursor-pointer disabled:opacity-50"
               >
                 <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                {isExporting ? 'Exporting...' : 'Export to Excel'}
+                <span className="hidden sm:inline">{isExporting ? 'Exporting...' : 'Export'}</span>
               </button>
             </Can>
 
@@ -486,27 +593,29 @@ export default function EmployeeListPage() {
                 onClick={() => navigate('/employees/import')}
                 className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] hover:bg-slate-50 dark:hover:bg-[#15241C] text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
               >
-                <UploadCloud className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Bulk Ingest
+                <UploadCloud className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span className="hidden sm:inline">Bulk Ingest</span>
               </button>
               <button
                 type="button"
                 onClick={() => navigate('/employees/new')}
                 className="px-4 py-2.5 rounded-xl bg-[#00C471] hover:bg-[#00ad64] text-white text-xs font-semibold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
               >
-                <UserPlus className="w-4 h-4" /> Onboard Employee
+                <UserPlus className="w-4 h-4" />
+                <span>Onboard Employee</span>
               </button>
             </Can>
           </div>
         }
       />
 
-      {/* Bucket View Switcher */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-[#1A3125] pb-3">
+      {/* Triple Bucket View Switcher */}
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-[#1A3125] pb-3 overflow-x-auto">
         <button
           type="button"
           onClick={() => handleTabChange('active')}
           className={cn(
-            'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer',
+            'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap',
             activeTab === 'active'
               ? 'bg-[#00C471] text-white shadow-[0_2px_10px_rgba(0,196,113,0.25)]'
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
@@ -526,9 +635,31 @@ export default function EmployeeListPage() {
 
         <button
           type="button"
+          onClick={() => handleTabChange('inactive')}
+          className={cn(
+            'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap',
+            activeTab === 'inactive'
+              ? 'bg-rose-600 text-white shadow-[0_2px_10px_rgba(225,29,72,0.3)]'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
+          )}
+        >
+          <UserX className="w-4 h-4" />
+          <span>Inactive / Suspended</span>
+          <span
+            className={cn(
+              'ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-mono',
+              activeTab === 'inactive' ? 'bg-white/20 text-white' : 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+            )}
+          >
+            {inactiveCount}
+          </span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => handleTabChange('archived')}
           className={cn(
-            'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer',
+            'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap',
             activeTab === 'archived'
               ? 'bg-amber-600 text-white shadow-[0_2px_10px_rgba(217,119,6,0.3)]'
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5'
@@ -560,6 +691,19 @@ export default function EmployeeListPage() {
         </div>
       )}
 
+      {/* Inactive Bucket Notice */}
+      {activeTab === 'inactive' && (
+        <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/25 flex items-start gap-3 text-xs text-rose-800 dark:text-rose-200">
+          <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <p className="font-semibold text-slate-900 dark:text-white">Inactive, Terminated & Suspended Workforce</p>
+            <p className="text-[11px] text-slate-600 dark:text-slate-300">
+              Personnel in this bucket are in non-operational states (Suspended, Terminated, or Resigned). To transition them back to active service, use the lifecycle status updater.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Filter Toolbar */}
       <div className="flex flex-col lg:flex-row items-center justify-between gap-3 bg-white dark:bg-[#111D17] p-3.5 rounded-2xl border border-slate-200 dark:border-[#1A3125] shadow-xs">
         <div className="relative w-full lg:w-72">
@@ -583,29 +727,58 @@ export default function EmployeeListPage() {
         </div>
 
         <div className="flex items-center gap-2.5 w-full lg:w-auto overflow-x-auto flex-wrap justify-start lg:justify-end">
-          {/* Quick Status Filter Pills */}
+          {/* Quick Status Filter Pills (Context Aware) */}
           <div className="inline-flex p-1 bg-slate-100 dark:bg-[#0A110D] rounded-xl border border-slate-200 dark:border-[#1A3125]">
-            {[
-              { id: '', label: 'All' },
-              { id: 'Active', label: 'Active' },
-              { id: 'Probation', label: 'Probation' },
-              { id: 'Notice', label: 'Notice' },
-              { id: 'Suspended', label: 'Suspended' }
-            ].map((st) => (
-              <button
-                key={st.id}
-                type="button"
-                onClick={() => handleStatusChange(st.id)}
-                className={cn(
-                  'px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer',
-                  selectedStatus === st.id
-                    ? 'bg-white dark:bg-[#111D17] text-slate-900 dark:text-white shadow-xs font-semibold'
-                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                )}
-              >
-                {st.label}
-              </button>
-            ))}
+            <button
+              type="button"
+              onClick={() => handleStatusChange('')}
+              className={cn(
+                'px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer',
+                selectedStatus === ''
+                  ? 'bg-white dark:bg-[#111D17] text-slate-900 dark:text-white shadow-xs font-semibold'
+                  : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+              )}
+            >
+              All in Bucket
+            </button>
+            {activeTab === 'active' && (
+              <>
+                {['Active', 'Probation', 'Notice'].map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    onClick={() => handleStatusChange(st)}
+                    className={cn(
+                      'px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer',
+                      selectedStatus === st
+                        ? 'bg-white dark:bg-[#111D17] text-slate-900 dark:text-white shadow-xs font-semibold'
+                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                    )}
+                  >
+                    {st}
+                  </button>
+                ))}
+              </>
+            )}
+            {activeTab === 'inactive' && (
+              <>
+                {['Suspended', 'Terminated', 'Resigned'].map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    onClick={() => handleStatusChange(st)}
+                    className={cn(
+                      'px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer',
+                      selectedStatus === st
+                        ? 'bg-white dark:bg-[#111D17] text-slate-900 dark:text-white shadow-xs font-semibold'
+                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                    )}
+                  >
+                    {st}
+                  </button>
+                ))}
+              </>
+            )}
           </div>
 
           {/* Department Filter Dropdown */}
@@ -624,29 +797,29 @@ export default function EmployeeListPage() {
             </select>
           </div>
 
-          {/* Extended Status Filter Dropdown */}
+          {/* Designation Filter Dropdown */}
           <div className="relative">
             <select
-              value={selectedStatus}
-              onChange={(e) => handleStatusChange(e.target.value)}
+              value={selectedDesig}
+              onChange={(e) => handleDesigChange(e.target.value)}
               className="text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471] cursor-pointer transition-all"
             >
-              <option value="">All Statuses</option>
-              <option value="Active">Active</option>
-              <option value="Probation">Probation</option>
-              <option value="Notice">Notice</option>
-              <option value="Resigned">Resigned</option>
-              <option value="Terminated">Terminated</option>
-              <option value="Suspended">Suspended</option>
+              <option value="">All Designations</option>
+              {designations.map((desig) => (
+                <option key={desig._id} value={desig._id}>
+                  {desig.title} {desig.grade ? `(${desig.grade})` : ''}
+                </option>
+              ))}
             </select>
           </div>
 
-          {(search || selectedDept || selectedStatus) && (
+          {(search || selectedDept || selectedDesig || selectedStatus) && (
             <button
               type="button"
               onClick={() => {
                 handleSearchChange('');
                 handleDeptChange('');
+                handleDesigChange('');
                 handleStatusChange('');
               }}
               className="flex items-center gap-1 text-xs px-2.5 py-2 rounded-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
@@ -659,49 +832,188 @@ export default function EmployeeListPage() {
         </div>
       </div>
 
-      {/* Main DataTable */}
-      <DataTable
-        columns={columns}
-        data={employees}
-        isLoading={isLoading}
-        showSearch={false}
-        emptyIcon={Users}
-        emptyTitle={
-          activeTab === 'archived'
-            ? 'Archive Bucket Is Empty'
-            : selectedStatus
-            ? `No ${selectedStatus} Employees Found`
-            : selectedDept
-            ? 'No Employees in Selected Department'
-            : search
-            ? `No Employees Matching "${search}"`
-            : 'No Employees Found'
-        }
-        emptyDescription={
-          activeTab === 'archived'
-            ? 'There are currently no soft-deleted or archived employees in the system.'
-            : (selectedStatus || selectedDept || search)
-            ? 'Try selecting a different status filter, changing the department, or clearing your active filters.'
-            : 'Get started by onboarding your first team member to the organization.'
-        }
-        emptyAction={
-          (selectedStatus || selectedDept || search) ? {
-            label: 'Clear All Filters',
-            icon: RotateCcw,
-            onClick: () => {
-              handleSearchChange('');
-              handleDeptChange('');
-              handleStatusChange('');
-            }
-          } : undefined
-        }
-        pagination={{
-          page,
-          limit,
-          totalPages,
-          totalDocs: total,
-          onPageChange: (newPage) => setPage(newPage),
-          searchControlled: true
+      {/* Dual View Rendering: Data Table or Card Grid */}
+      {viewMode === 'table' ? (
+        <DataTable
+          columns={columns}
+          data={employees}
+          isLoading={isLoading}
+          showSearch={false}
+          onRowClick={(row) => setSelectedDetailEmployee(row)}
+          emptyIcon={Users}
+          emptyTitle={
+            activeTab === 'archived'
+              ? 'Archive Bucket Is Empty'
+              : activeTab === 'inactive'
+              ? 'No Inactive or Suspended Personnel Found'
+              : selectedStatus
+              ? `No ${selectedStatus} Employees Found`
+              : selectedDept
+              ? 'No Employees in Selected Department'
+              : selectedDesig
+              ? 'No Employees with Selected Designation'
+              : search
+              ? `No Employees Matching "${search}"`
+              : 'No Employees Found'
+          }
+          emptyDescription={
+            activeTab === 'archived'
+              ? 'There are currently no soft-deleted or archived employees in the system.'
+              : activeTab === 'inactive'
+              ? 'All workforce members are currently in good operational standing.'
+              : (selectedStatus || selectedDept || selectedDesig || search)
+              ? 'Try adjusting your filters or search terms.'
+              : 'Get started by onboarding your first team member to the organization.'
+          }
+          emptyAction={
+            (selectedStatus || selectedDept || selectedDesig || search) ? {
+              label: 'Clear All Filters',
+              icon: RotateCcw,
+              onClick: () => {
+                handleSearchChange('');
+                handleDeptChange('');
+                handleDesigChange('');
+                handleStatusChange('');
+              }
+            } : undefined
+          }
+          pagination={{
+            page,
+            limit,
+            totalPages,
+            totalDocs: total,
+            onPageChange: (newPage) => setPage(newPage),
+            searchControlled: true
+          }}
+        />
+      ) : (
+        <div className="space-y-6">
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {[...Array(8)].map((_, idx) => (
+                <div
+                  key={idx}
+                  className="h-64 rounded-2xl bg-slate-100 dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] animate-pulse"
+                />
+              ))}
+            </div>
+          ) : employees.length === 0 ? (
+            <div className="p-12 text-center rounded-2xl bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125]">
+              <Users className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                {activeTab === 'archived'
+                  ? 'Archive Bucket Is Empty'
+                  : activeTab === 'inactive'
+                  ? 'No Inactive Records Found'
+                  : 'No Employees Match the Selected Criteria'}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                Try clearing or relaxing your active search and filter parameters.
+              </p>
+              {(search || selectedDept || selectedDesig || selectedStatus) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleSearchChange('');
+                    handleDeptChange('');
+                    handleDesigChange('');
+                    handleStatusChange('');
+                  }}
+                  className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> Clear Filters
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {employees.map((emp) => (
+                <EmployeeCard
+                  key={emp._id}
+                  employee={emp}
+                  isArchived={activeTab === 'archived'}
+                  isSuperAdmin={isSuperAdmin}
+                  onViewDetails={() => setSelectedDetailEmployee(emp)}
+                  onEdit={() => navigate(`/employees/${emp._id}/edit`)}
+                  onArchive={() => setDeleteId(emp._id)}
+                  onRestore={() => handleRestore(emp)}
+                  onPermanentDelete={() => setPermanentDeleteTarget(emp)}
+                  onResetPassword={() => setResetTargetEmployee(emp)}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Grid View Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-[#1A3125]">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Showing <span className="font-semibold text-slate-700 dark:text-slate-200">{employees.length}</span> of{' '}
+                <span className="font-semibold text-slate-700 dark:text-slate-200">{total}</span> employees
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-xs font-semibold text-slate-700 dark:text-slate-300 disabled:opacity-40 cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-[#15241C]"
+                >
+                  Previous
+                </button>
+                <span className="text-xs font-mono font-medium text-slate-600 dark:text-slate-400 px-2">
+                  {page} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-xs font-semibold text-slate-700 dark:text-slate-300 disabled:opacity-40 cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-[#15241C]"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 10-Section Employee Quick Inspection Modal */}
+      <EmployeeDetailModal
+        key={selectedDetailEmployee?._id || 'none'}
+        isOpen={Boolean(selectedDetailEmployee)}
+        employee={selectedDetailEmployee}
+        onClose={() => setSelectedDetailEmployee(null)}
+        isArchived={activeTab === 'archived'}
+        onEdit={(emp) => {
+          setSelectedDetailEmployee(null);
+          navigate(`/employees/${emp._id}/edit`);
+        }}
+        onChangeStatus={(emp) => {
+          setSelectedDetailEmployee(null);
+          setStatusChangeTarget(emp);
+        }}
+        onResetPassword={(emp) => {
+          setSelectedDetailEmployee(null);
+          setResetTargetEmployee(emp);
+        }}
+        onArchive={(id) => {
+          setSelectedDetailEmployee(null);
+          setDeleteId(id);
+        }}
+        onRestore={(emp) => {
+          setSelectedDetailEmployee(null);
+          handleRestore(emp);
+        }}
+      />
+
+      {/* Employee Lifecycle Status Transition Modal */}
+      <StatusChangeModal
+        isOpen={Boolean(statusChangeTarget)}
+        employeeId={statusChangeTarget?._id}
+        currentStatus={statusChangeTarget?.status}
+        onClose={() => {
+          setStatusChangeTarget(null);
+          refetch();
         }}
       />
 

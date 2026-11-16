@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { ChevronDown, Check, UserCheck, Search, X } from 'lucide-react';
+import { ChevronDown, Check, UserCheck, Search } from 'lucide-react';
 import { RoleBadge } from '../../../components/common/RoleBadge.jsx';
 
 /**

@@ -6,11 +6,13 @@
  * - Module: M3 Employee Management (BUILD-GUIDE Section 8 · Row 3.9)
  * - Supported types: CNIC Copy, Degree Certificate, Employment Contract, NDA, Experience Letter, Other.
  * - Formats: PDF, PNG, JPG, WEBP (Max 5MB).
+ * - Theme: Forest & Emerald Enterprise styling.
  */
 
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { toast } from 'sonner';
-import { Upload, X, Loader2, FileText } from 'lucide-react';
+import { Upload, X, Loader2 } from 'lucide-react';
 import { useUploadDocumentMutation } from '../employeesApi.js';
 
 export function DocumentUploadModal({ isOpen, onClose, employeeId }) {
@@ -41,6 +43,8 @@ export function DocumentUploadModal({ isOpen, onClose, employeeId }) {
 
       await uploadDocument({ id: employeeId, formData }).unwrap();
       toast.success('Document uploaded successfully');
+      setTitle('');
+      setFile(null);
       onClose();
     } catch (err) {
       toast.error(err?.data?.message || 'Failed to upload document');
@@ -140,3 +144,9 @@ export function DocumentUploadModal({ isOpen, onClose, employeeId }) {
     </div>
   );
 }
+
+DocumentUploadModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  employeeId: PropTypes.string.isRequired
+};

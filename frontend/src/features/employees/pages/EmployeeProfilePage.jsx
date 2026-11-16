@@ -15,7 +15,6 @@ import {
   User,
   Briefcase,
   FileText,
-  Clock,
   Calendar,
   CreditCard,
   Edit,
@@ -27,8 +26,7 @@ import {
   ArrowLeft,
   Camera,
   KeyRound,
-  RotateCcw,
-  Archive
+  RotateCcw
 } from 'lucide-react';
 
 import {
@@ -40,7 +38,6 @@ import {
 } from '../employeesApi.js';
 import { useAdminResetPasswordMutation } from '../../auth/authApi.js';
 import { useAuth } from '../../../hooks/useAuth.js';
-import { usePermission } from '../../../hooks/usePermission.js';
 import { Card } from '../../../components/common/Card.jsx';
 import { StatusBadge } from '../../../components/common/StatusBadge.jsx';
 import { ConfirmDialog } from '../../../components/common/ConfirmDialog.jsx';
@@ -60,7 +57,6 @@ export default function EmployeeProfilePage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, isHR, isSuperAdmin } = useAuth();
-  const { can } = usePermission();
 
   const [activeTab, setActiveTab] = useState('overview');
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);

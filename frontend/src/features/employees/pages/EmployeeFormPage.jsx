@@ -11,6 +11,7 @@
  *   4. Bank & Financials (Bank Name, Account Title, Account Number, IBAN)
  *   5. Account Provisioning & Confirmation (Create user login account option)
  * - Masking: Automatic Pakistani CNIC formatting (XXXXX-XXXXXXX-X) with NADRA format validation.
+ * - Theme: Forest & Emerald Enterprise Craft.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -66,6 +67,7 @@ export default function EmployeeFormPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [createdAccountModal, setCreatedAccountModal] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [currentTimestamp] = useState(() => Date.now());
 
   // API hooks
   const {
@@ -98,6 +100,7 @@ export default function EmployeeFormPage() {
       navigate('/employees');
     }
   }, [employeeError, navigate]);
+
   const { data: deptData } = useGetDepartmentsQuery({ limit: 100 });
   const { data: desigData } = useGetDesignationsQuery({ limit: 100 });
   const { data: shiftData } = useGetShiftsQuery({ limit: 100 });
@@ -111,9 +114,8 @@ export default function EmployeeFormPage() {
   const [updateEmployee, { isLoading: isUpdating }] = useUpdateEmployeeMutation();
 
   const departments = deptData?.data || [];
-  const designations = desigData?.data || [];
+  const rawDesignations = desigData?.data || [];
   const shifts = shiftData?.data || [];
-  const managers = staffData?.data?.items || [];
   const roles = useMemo(() => {
     const list = Array.isArray(rolesData?.data?.roles)
       ? rolesData.data.roles
@@ -121,7 +123,7 @@ export default function EmployeeFormPage() {
       ? rolesData.data
       : [];
     return list.filter((r) => r?.name && r.name !== 'Super Admin');
-  }, [rolesData]);
+  }, [rolesData?.data]);
 
   const {
     register,
@@ -171,49 +173,58 @@ export default function EmployeeFormPage() {
     }
   });
 
+  // Watch fields for reactive dependent filtering
+  const watchedRoleId = watch('roleId');
+  const selectedDepartmentId = watch('departmentId');
+  const selectedDesignationId = watch('designationId');
+  const watchedCnic = watch('cnic');
+  const watchedCnicExpiry = watch('cnicExpiry');
+  const watchedCreateAccount = watch('createAccount');
+  const watchedName = watch('name');
+  const watchedEmail = watch('email');
+  const watchedEmployeeCode = watch('employeeCode');
+  const watchedManagerId = watch('managerId');
+
   // Default roleId to 'Employee' role if not set
   useEffect(() => {
-    if (!watch('roleId') && roles.length > 0) {
+    if (!watchedRoleId && roles.length > 0) {
       const defaultRole = roles.find((r) => r.name === 'Employee') || roles[0];
       if (defaultRole) {
         setValue('roleId', defaultRole._id);
       }
     }
-  }, [roles, watch, setValue]);
-
-  // Watch Department & Designation for reactive dependent filtering
-  const selectedDepartmentId = watch('departmentId');
-  const selectedDesignationId = watch('designationId');
+  }, [roles, watchedRoleId, setValue]);
 
   // Filter designations strictly matching the selected department
   const filteredDesignations = useMemo(() => {
+    const list = desigData?.data || [];
     if (!selectedDepartmentId) return [];
-    return designations.filter((desig) => {
+    return list.filter((desig) => {
       const deptId = desig.departmentId?._id || desig.departmentId;
       return deptId === selectedDepartmentId;
     });
-  }, [designations, selectedDepartmentId]);
+  }, [desigData?.data, selectedDepartmentId]);
 
   // Reset designation if selected department changes and current designation does not belong to it
   useEffect(() => {
     if (!selectedDepartmentId) {
       if (selectedDesignationId) setValue('designationId', '');
-    } else if (selectedDesignationId && designations.length > 0) {
+    } else if (selectedDesignationId && rawDesignations.length > 0) {
       const exists = filteredDesignations.some((d) => d._id === selectedDesignationId);
       if (!exists) {
         setValue('designationId', '');
       }
     }
-  }, [selectedDepartmentId, filteredDesignations, selectedDesignationId, designations.length, setValue]);
+  }, [selectedDepartmentId, filteredDesignations, selectedDesignationId, rawDesignations.length, setValue]);
 
   // Filter Direct Reporting Managers:
   // 1. Exclude the employee currently being edited (prevents self-reporting circular loop)
   // 2. Restrict strictly to Higher Authority personnel: Super Admin, HR Manager, Department Manager, or Executive Directors
-  // Standard non-authority staff (such as Senior Software Engineers like Sajwar Babar or Junior staff) are excluded.
   const currentEditingId = isEditMode ? (employeeData?.data?._id || id) : null;
 
   const eligibleManagers = useMemo(() => {
-    return managers.filter((mgr) => {
+    const rawStaff = staffData?.data?.items || [];
+    return rawStaff.filter((mgr) => {
       // Rule 1: Exclude currently edited employee
       if (currentEditingId && String(mgr._id) === String(currentEditingId)) {
         return false;
@@ -250,7 +261,7 @@ export default function EmployeeFormPage() {
 
       return false;
     });
-  }, [managers, currentEditingId, isEditMode, employeeData]);
+  }, [staffData?.data?.items, currentEditingId, isEditMode, employeeData]);
 
   // Auto-populate system-generated employee code in create mode
   useEffect(() => {
@@ -258,16 +269,6 @@ export default function EmployeeFormPage() {
       setValue('employeeCode', nextCodeData.data.nextCode);
     }
   }, [isEditMode, nextCodeData, setValue]);
-
-  // Set default roleId in create mode
-  useEffect(() => {
-    if (!isEditMode && roles.length > 0 && !watch('roleId')) {
-      const defaultRole = roles.find((r) => r.name === 'Employee') || roles[0];
-      if (defaultRole) {
-        setValue('roleId', defaultRole._id);
-      }
-    }
-  }, [isEditMode, roles, setValue, watch]);
 
   // Populate data in edit mode
   useEffect(() => {
@@ -311,9 +312,6 @@ export default function EmployeeFormPage() {
     }
   }, [isEditMode, employeeData, setValue]);
 
-  const watchedCnic = watch('cnic');
-  const watchedCnicExpiry = watch('cnicExpiry');
-
   // Automatic Pakistani CNIC formatting mask: XXXXX-XXXXXXX-X
   const handleCnicChange = (e) => {
     let raw = e.target.value.replace(/\D/g, '').slice(0, 13);
@@ -327,17 +325,15 @@ export default function EmployeeFormPage() {
   };
 
   // Check if CNIC expiry date is near (within 30 days)
-  const isCnicExpiringSoon = () => {
+  const isCnicExpiringSoon = useMemo(() => {
     if (!watchedCnicExpiry) return false;
-    const expiry = new Date(watchedCnicExpiry);
-    const today = new Date();
-    const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+    const expiry = new Date(watchedCnicExpiry).getTime();
+    const diffDays = Math.ceil((expiry - currentTimestamp) / (1000 * 60 * 60 * 24));
     return diffDays >= 0 && diffDays <= 30;
-  };
+  }, [watchedCnicExpiry, currentTimestamp]);
 
   const onSubmit = async (formData) => {
     try {
-      // Process skills comma-separated string to array
       const skillsArray = typeof formData.skills === 'string'
         ? formData.skills.split(',').map((s) => s.trim()).filter(Boolean)
         : [];
@@ -399,44 +395,28 @@ export default function EmployeeFormPage() {
 
   if (isEditMode && isLoadingEmployee) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#00C471]" />
+      <div className="flex flex-col items-center justify-center p-12 space-y-4">
+        <Loader2 className="w-8 h-8 animate-spin text-[#00C471]" />
+        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+          Loading employee profile records...
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12">
-      <button
-        type="button"
-        onClick={() => {
-          if (isSuperAdminProfile) {
-            navigate('/me');
-          } else {
-            navigate(isEditMode ? `/employees/${id}` : '/employees');
-          }
-        }}
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-      >
-        <ArrowLeft className="w-4 h-4" />{' '}
-        {isSuperAdminProfile
-          ? 'Back to My Profile'
-          : isEditMode
-          ? 'Back to Profile'
-          : 'Back to Employee Directory'}
-      </button>
-
+    <div className="space-y-6 max-w-4xl mx-auto pb-12">
       <PageHeader
         title={
           isSuperAdminProfile
-            ? 'Edit Executive Profile — Platform Owner'
+            ? 'Edit Executive Profile'
             : isEditMode
-            ? 'Edit Employee Profile'
+            ? `Edit Profile: ${employeeData?.data?.name || 'Employee'}`
             : 'Onboard New Employee'
         }
-        subtitle={
+        description={
           isSuperAdminProfile
-            ? 'Update your primary personal credentials, residential coordinates, and corporate banking details.'
+            ? 'Update root executive personal credentials and official contact points.'
             : isEditMode
             ? 'Update personal, organizational and financial details.'
             : 'Register complete personnel credentials and provision self-service portal account.'
@@ -446,12 +426,12 @@ export default function EmployeeFormPage() {
       {/* Step Indicator Navigation */}
       <div
         className={cn(
-          'grid gap-2 bg-white p-3 rounded-xl border border-slate-200',
-          isSuperAdminProfile ? 'grid-cols-3' : 'grid-cols-5'
+          'grid gap-2 bg-white dark:bg-[#111D17] p-3 rounded-2xl border border-slate-200 dark:border-[#1A3125] shadow-xs',
+          isSuperAdminProfile ? 'grid-cols-3' : 'grid-cols-2 md:grid-cols-5'
         )}
       >
         {steps.map((step) => {
-          const Icon = step.icon;
+          const StepIcon = step.icon;
           const isActive = currentStep === step.id;
           const isDone = currentStep > step.id;
 
@@ -465,21 +445,21 @@ export default function EmployeeFormPage() {
                 setCurrentStep(step.id);
               }}
               className={cn(
-                'flex flex-col md:flex-row items-center gap-2 p-2.5 rounded-lg text-left transition-all cursor-pointer',
-                isActive && 'bg-[#00C471]/10 text-[#00C471] font-semibold border border-[#00C471]/30',
-                isDone && 'text-slate-700 hover:bg-slate-50',
-                !isActive && !isDone && 'text-slate-400 hover:text-slate-600'
+                'flex flex-col md:flex-row items-center gap-2 p-2.5 rounded-xl text-left transition-all cursor-pointer',
+                isActive && 'bg-[#00C471]/10 text-[#00C471] dark:bg-[#00C471]/15 font-semibold border border-[#00C471]/30 shadow-2xs',
+                isDone && 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#15241C]',
+                !isActive && !isDone && 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'
               )}
             >
               <div
                 className={cn(
                   'w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold transition-colors',
                   isActive && 'bg-[#00C471] text-white',
-                  isDone && 'bg-slate-200 text-slate-700',
-                  !isActive && !isDone && 'bg-slate-100 text-slate-400'
+                  isDone && 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400',
+                  !isActive && !isDone && 'bg-slate-100 dark:bg-[#0A110D] text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-[#1A3125]'
                 )}
               >
-                {isDone ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : step.id}
+                {isDone ? <CheckCircle2 className="w-4 h-4 text-[#00C471]" /> : <StepIcon className="w-4 h-4" />}
               </div>
               <div className="hidden md:block">
                 <span className="text-xs block leading-tight font-medium">{step.title}</span>
@@ -492,7 +472,6 @@ export default function EmployeeFormPage() {
       <form
         onSubmit={handleSubmit(onSubmit)}
         onKeyDown={(e) => {
-          // Strictly prevent accidental submit when pressing Enter in text inputs
           if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
             e.preventDefault();
           }
@@ -500,8 +479,8 @@ export default function EmployeeFormPage() {
       >
         {/* STEP 1: Personal Details */}
         {currentStep === 1 && (
-          <Card className="p-6 space-y-5">
-            <h3 className="text-base font-semibold text-slate-900 border-b pb-3">
+          <Card className="p-6 space-y-5 border-slate-200 dark:border-[#1A3125]">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-[#1A3125] pb-3">
               {isSuperAdminProfile
                 ? 'Step 1: Executive Personal Credentials'
                 : 'Step 1: Personal Information & NADRA Verification'}
@@ -509,11 +488,11 @@ export default function EmployeeFormPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-semibold text-slate-700">
-                    Employee Code <span className="text-red-500">*</span>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Employee Code <span className="text-rose-500">*</span>
                   </label>
-                  <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                  <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/60 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-[#00C471]" />
                     Auto-Generated System ID
                   </span>
                 </div>
@@ -523,57 +502,57 @@ export default function EmployeeFormPage() {
                   readOnly
                   disabled
                   {...register('employeeCode')}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-200 bg-slate-100 cursor-not-allowed font-mono font-semibold text-slate-700 uppercase select-none"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-100 dark:bg-[#0A110D] cursor-not-allowed font-mono font-semibold text-slate-700 dark:text-slate-300 uppercase select-none"
                 />
-                <p className="text-[11px] text-slate-400 mt-1">
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
                   Unique sequential identifier generated automatically by HRM system.
                 </p>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Full Name <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Full Name <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   placeholder="Muhammad Ali"
                   {...register('name', { required: 'Full name is required' })}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                 />
                 {errors.name && (
-                  <p className="text-xs text-red-500 mt-1">{errors.name.message}</p>
+                  <p className="text-xs text-rose-500 mt-1">{errors.name.message}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Official Email <span className="text-red-500">*</span>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Official Email <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="email"
                   placeholder="ali@company.pk"
                   {...register('email', { required: 'Email is required' })}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                 />
                 {errors.email && (
-                  <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>
+                  <p className="text-xs text-rose-500 mt-1">{errors.email.message}</p>
                 )}
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Phone Number
                 </label>
                 <input
                   type="text"
                   placeholder="+92 300 1234567"
                   {...register('phone')}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Pakistani CNIC (13 digits)
                 </label>
                 <input
@@ -581,19 +560,19 @@ export default function EmployeeFormPage() {
                   placeholder="35202-1234567-1"
                   value={watchedCnic || ''}
                   onChange={handleCnicChange}
-                  className="w-full text-sm font-mono px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                  className="w-full text-xs font-mono px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                 />
-                <span className="text-[11px] text-slate-500">Auto-formatted with NADRA hyphens. Encrypted at rest.</span>
+                <span className="text-[11px] text-slate-400 dark:text-slate-500 block mt-1">Auto-formatted with NADRA hyphens. Encrypted at rest.</span>
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-semibold text-slate-700">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
                     CNIC Expiry Date
                   </label>
-                  {isCnicExpiringSoon() && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                      <AlertTriangle className="w-3 h-3 text-amber-600" />
+                  {isCnicExpiringSoon && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full border border-amber-200/60 dark:border-amber-900/40">
+                      <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                       Expires Soon (&lt; 30 Days)
                     </span>
                   )}
@@ -601,28 +580,28 @@ export default function EmployeeFormPage() {
                 <input
                   type="date"
                   {...register('cnicExpiry')}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Date of Birth
                 </label>
                 <input
                   type="date"
                   {...register('dob')}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Gender
                 </label>
                 <select
                   {...register('gender')}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                 >
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
@@ -635,90 +614,90 @@ export default function EmployeeFormPage() {
 
         {/* STEP 2: Contact & Emergency */}
         {currentStep === 2 && (
-          <Card className="p-6 space-y-6">
-            <h3 className="text-base font-semibold text-slate-900 border-b pb-3">
+          <Card className="p-6 space-y-6 border-slate-200 dark:border-[#1A3125]">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-[#1A3125] pb-3">
               Step 2: Address & Emergency Contacts
             </h3>
 
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Residential Address</h4>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">Residential Address</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Street Address</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Street Address</label>
                   <input
                     type="text"
                     placeholder="House #12, Street 4, Sector F-8/1"
                     {...register('address.street')}
-                    className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">City</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">City</label>
                   <input
                     type="text"
                     placeholder="Islamabad"
                     {...register('address.city')}
-                    className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">State / Province</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">State / Province</label>
                   <input
                     type="text"
                     placeholder="Federal / Punjab"
                     {...register('address.state')}
-                    className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Postal Code</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Postal Code</label>
                   <input
                     type="text"
                     placeholder="44000"
                     {...register('address.postalCode')}
-                    className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Country</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Country</label>
                   <input
                     type="text"
                     defaultValue="Pakistan"
                     {...register('address.country')}
-                    className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="pt-4 border-t">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Emergency Contact Details</h4>
+            <div className="pt-4 border-t border-slate-100 dark:border-[#1A3125]">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">Emergency Contact Details</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Contact Person Name</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Contact Person Name</label>
                   <input
                     type="text"
                     placeholder="Tariq Hashmi"
                     {...register('emergencyContact.name')}
-                    className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Relationship</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Relationship</label>
                   <input
                     type="text"
                     placeholder="Father / Spouse / Sibling"
                     {...register('emergencyContact.relationship')}
-                    className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Emergency Phone</label>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Emergency Phone</label>
                   <input
                     type="text"
                     placeholder="+92 321 9876543"
                     {...register('emergencyContact.phone')}
-                    className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                   />
                 </div>
               </div>
@@ -728,18 +707,18 @@ export default function EmployeeFormPage() {
 
         {/* STEP 3: Job Assignment (Standard Employees Only) */}
         {!isSuperAdminProfile && currentStep === 3 && (
-          <Card className="p-6 space-y-5">
-            <h3 className="text-base font-semibold text-slate-900 border-b pb-3">
+          <Card className="p-6 space-y-5 border-slate-200 dark:border-[#1A3125]">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-[#1A3125] pb-3">
               Step 3: Organization & Job Structure
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Department
                 </label>
                 <select
                   {...register('departmentId')}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                 >
                   <option value="">-- Select Department --</option>
                   {departments.map((dept) => (
@@ -751,13 +730,13 @@ export default function EmployeeFormPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Designation
                 </label>
                 <select
                   {...register('designationId')}
                   disabled={!selectedDepartmentId}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="">
                     {!selectedDepartmentId
@@ -773,19 +752,19 @@ export default function EmployeeFormPage() {
                   ))}
                 </select>
                 {!selectedDepartmentId && (
-                  <p className="text-[11px] text-amber-600 font-medium mt-1">
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium mt-1">
                     ⚠️ Select a Department first to load matching designations.
                   </p>
                 )}
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Work Shift Roster
                 </label>
                 <select
                   {...register('shiftId')}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                 >
                   <option value="">-- Select Shift Schedule --</option>
                   {shifts.map((shift) => (
@@ -802,22 +781,22 @@ export default function EmployeeFormPage() {
                 </label>
                 <ManagerSelect
                   managers={eligibleManagers}
-                  value={watch('managerId')}
+                  value={watchedManagerId}
                   onChange={(mgrId) => setValue('managerId', mgrId, { shouldValidate: true })}
                 />
                 <input type="hidden" {...register('managerId')} />
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
                   Designated leadership authority (Super Admin, HR Manager, or Department Manager).
                 </p>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Employment Contract Type
                 </label>
                 <select
                   {...register('employmentType')}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                 >
                   <option value="Permanent">Permanent</option>
                   <option value="Contract">Contract</option>
@@ -827,12 +806,12 @@ export default function EmployeeFormPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Lifecycle Status
                 </label>
                 <select
                   {...register('status')}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                 >
                   <option value="Active">Active</option>
                   <option value="Probation">Probation</option>
@@ -844,36 +823,36 @@ export default function EmployeeFormPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Joining Date
                 </label>
                 <input
                   type="date"
                   {...register('joiningDate')}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Probation End Date
                 </label>
                 <input
                   type="date"
                   {...register('probationEndDate')}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Skills & Technical Competencies (Comma-separated)
                 </label>
                 <input
                   type="text"
                   placeholder="React, Node.js, MongoDB, TypeScript, Docker"
                   {...register('skills')}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                 />
               </div>
             </div>
@@ -882,61 +861,61 @@ export default function EmployeeFormPage() {
 
         {/* Bank & Financials (Step 3 for Super Admin, Step 4 for Standard Employee) */}
         {((isSuperAdminProfile && currentStep === 3) || (!isSuperAdminProfile && currentStep === 4)) && (
-          <Card className="p-6 space-y-5">
-            <h3 className="text-base font-semibold text-slate-900 border-b pb-3">
+          <Card className="p-6 space-y-5 border-slate-200 dark:border-[#1A3125]">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-[#1A3125] pb-3">
               {isSuperAdminProfile
                 ? 'Step 3: Corporate Banking & Disbursement Details'
                 : 'Step 4: Bank Account & Payroll Disbursement Details'}
             </h3>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Banking IBAN is encrypted at rest using AES-256-GCM. Unmasked access is restricted strictly to HR and Payroll administrators.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Bank Name
                 </label>
                 <input
                   type="text"
                   placeholder="Meezan Bank / HBL / Standard Chartered"
                   {...register('bankDetails.bankName')}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Account Title
                 </label>
                 <input
                   type="text"
                   placeholder="Muhammad Ali"
                   {...register('bankDetails.accountTitle')}
-                  className="w-full text-sm px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   Account Number
                 </label>
                 <input
                   type="text"
                   placeholder="01010102030405"
                   {...register('bankDetails.accountNumber')}
-                  className="w-full text-sm font-mono px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                  className="w-full text-xs font-mono px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                   International Bank Account Number (IBAN)
                 </label>
                 <input
                   type="text"
                   placeholder="PK36MEZN0000000101010203"
                   {...register('bankDetails.iban')}
-                  className="w-full text-sm font-mono uppercase px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
+                  className="w-full text-xs font-mono uppercase px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#00C471]/25 focus:border-[#00C471]"
                 />
               </div>
             </div>
@@ -945,19 +924,19 @@ export default function EmployeeFormPage() {
 
         {/* STEP 5: Account Provisioning & Review (Standard Employees Only) */}
         {!isSuperAdminProfile && currentStep === 5 && (
-          <Card className="p-6 space-y-6">
-            <h3 className="text-base font-semibold text-slate-900 border-b pb-3">
+          <Card className="p-6 space-y-6 border-slate-200 dark:border-[#1A3125]">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-[#1A3125] pb-3">
               Step 5: Account Provisioning & Review
             </h3>
 
             {!isEditMode && (
-              <div className="bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/50 rounded-xl p-4 space-y-4">
+              <div className="bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/50 rounded-2xl p-4 space-y-4">
                 <div className="flex items-start gap-3">
                   <input
                     type="checkbox"
                     id="createAccountCheckbox"
                     {...register('createAccount')}
-                    className="mt-1 w-4 h-4 text-[#00C471] rounded border-slate-300 focus:ring-[#00C471]"
+                    className="mt-1 w-4 h-4 text-[#00C471] rounded-lg border-slate-300 dark:border-[#1A3125] focus:ring-[#00C471]"
                   />
                   <label htmlFor="createAccountCheckbox" className="text-xs text-slate-700 dark:text-slate-300 cursor-pointer">
                     <span className="font-semibold block text-slate-900 dark:text-white mb-0.5">
@@ -967,7 +946,7 @@ export default function EmployeeFormPage() {
                   </label>
                 </div>
 
-                {watch('createAccount') && (
+                {watchedCreateAccount && (
                   <div className="pt-3 border-t border-emerald-200/80 dark:border-emerald-800/40 space-y-2">
                     <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                       <ShieldCheck className="w-4 h-4 text-[#00C471]" />
@@ -976,7 +955,7 @@ export default function EmployeeFormPage() {
                     </label>
                     <RoleSelect
                       roles={roles}
-                      value={watch('roleId')}
+                      value={watchedRoleId}
                       onChange={(roleId) => setValue('roleId', roleId, { shouldValidate: true })}
                     />
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -988,14 +967,14 @@ export default function EmployeeFormPage() {
             )}
 
             {isEditMode && employeeData?.data?.userId && (
-              <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2">
+              <div className="bg-slate-50 dark:bg-[#0A110D] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-4 space-y-2">
                 <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-[#00C471]" />
                   <span>Assigned System Access Role</span>
                 </label>
                 <RoleSelect
                   roles={roles}
-                  value={watch('roleId')}
+                  value={watchedRoleId}
                   onChange={(roleId) => setValue('roleId', roleId, { shouldValidate: true })}
                 />
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -1006,27 +985,27 @@ export default function EmployeeFormPage() {
 
             <div className="space-y-3">
               <h4 className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">Summary Review</h4>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 bg-slate-50 dark:bg-slate-900/40 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 bg-slate-50 dark:bg-[#0A110D] p-4 rounded-2xl border border-slate-200 dark:border-[#1A3125] text-xs">
                 <div>
-                  <span className="text-slate-400 block">Name:</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-100">{watch('name') || '—'}</span>
+                  <span className="text-slate-400 dark:text-slate-500 block">Name:</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">{watchedName || '—'}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block">Employee Code:</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-100 font-mono">{watch('employeeCode') || '—'}</span>
+                  <span className="text-slate-400 dark:text-slate-500 block">Employee Code:</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100 font-mono">{watchedEmployeeCode || '—'}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block">Email:</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-100">{watch('email') || '—'}</span>
+                  <span className="text-slate-400 dark:text-slate-500 block">Email:</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100 truncate block">{watchedEmail || '—'}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block">CNIC:</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-100 font-mono">{watch('cnic') || '—'}</span>
+                  <span className="text-slate-400 dark:text-slate-500 block">CNIC:</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100 font-mono">{watchedCnic || '—'}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400 block">System Role:</span>
-                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                    {roles.find((r) => r._id === watch('roleId'))?.name || 'Employee'}
+                  <span className="text-slate-400 dark:text-slate-500 block">System Role:</span>
+                  <span className="font-semibold text-[#00C471]">
+                    {roles.find((r) => r._id === watchedRoleId)?.name || 'Employee'}
                   </span>
                 </div>
               </div>
@@ -1041,7 +1020,7 @@ export default function EmployeeFormPage() {
             onClick={prevStep}
             disabled={currentStep === 1}
             className={cn(
-              'px-4 py-2.5 rounded-lg text-xs font-semibold border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 flex items-center gap-2 cursor-pointer',
+              'px-4 py-2.5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-[#1A3125] text-slate-700 dark:text-slate-300 bg-white dark:bg-[#111D17] hover:bg-slate-50 dark:hover:bg-[#15241C] flex items-center gap-2 cursor-pointer shadow-xs transition-colors',
               currentStep === 1 && 'invisible'
             )}
           >
@@ -1057,7 +1036,7 @@ export default function EmployeeFormPage() {
                 e.stopPropagation();
                 nextStep();
               }}
-              className="px-5 py-2.5 rounded-lg text-xs font-semibold bg-[#00C471] text-white hover:bg-[#049856] flex items-center gap-2 shadow-sm cursor-pointer transition-colors"
+              className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-[#00C471] text-white hover:bg-[#00ad64] flex items-center gap-2 shadow-xs cursor-pointer transition-colors"
             >
               Next Step <ArrowRight className="w-4 h-4" />
             </button>
@@ -1066,7 +1045,7 @@ export default function EmployeeFormPage() {
               key="btn-submit-employee"
               type="submit"
               disabled={isCreating || isUpdating}
-              className="px-6 py-2.5 rounded-lg text-xs font-semibold bg-[#00C471] text-white hover:bg-[#049856] flex items-center gap-2 shadow-sm cursor-pointer transition-colors disabled:opacity-50"
+              className="px-6 py-2.5 rounded-xl text-xs font-semibold bg-[#00C471] text-white hover:bg-[#00ad64] flex items-center gap-2 shadow-xs cursor-pointer transition-colors disabled:opacity-50"
             >
               {(isCreating || isUpdating) ? (
                 <>

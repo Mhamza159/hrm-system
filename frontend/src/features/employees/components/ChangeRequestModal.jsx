@@ -96,22 +96,22 @@ export function ChangeRequestModal({ isOpen, onClose, currentEmployee }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-      <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+      <div className="bg-white dark:bg-[#111D17] rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 dark:border-[#1A3125] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-[#1A3125]">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-[#162820] text-emerald-600 dark:text-[#00C471] flex items-center justify-center">
               <ShieldAlert className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Request Profile Info Update</h3>
-              <p className="text-[11px] text-slate-500">Subject to Human Resources verification</p>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Request Profile Info Update</h3>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">Subject to Human Resources verification</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -119,13 +119,13 @@ export function ChangeRequestModal({ isOpen, onClose, currentEmployee }) {
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Data Category to Modify <span className="text-red-500">*</span>
             </label>
             <select
               value={targetField}
               onChange={(e) => setTargetField(e.target.value)}
-              className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30"
+              className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-[#1A3125] dark:bg-[#0B1A13] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00C471]/30"
             >
               <option value="bankDetails">Bank Account & IBAN</option>
               <option value="address">Residential Address</option>
@@ -135,49 +135,49 @@ export function ChangeRequestModal({ isOpen, onClose, currentEmployee }) {
 
           {/* Conditional Input Fields */}
           {targetField === 'bankDetails' && (
-            <div className="space-y-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
-              <h4 className="text-[11px] font-bold text-slate-700 uppercase">Updated Banking Coordinates</h4>
+            <div className="space-y-3 p-4 bg-slate-50 dark:bg-[#162820]/50 rounded-xl border border-slate-200 dark:border-[#1A3125]">
+              <h4 className="text-[11px] font-bold text-slate-700 dark:text-slate-200 uppercase">Updated Banking Coordinates</h4>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Bank Name</label>
+                  <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-0.5">Bank Name</label>
                   <input
                     type="text"
                     value={bankName}
                     onChange={(e) => setBankName(e.target.value)}
                     placeholder="e.g. Meezan Bank"
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-[#0B1A13] dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Account Title</label>
+                  <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-0.5">Account Title</label>
                   <input
                     type="text"
                     value={accountTitle}
                     onChange={(e) => setAccountTitle(e.target.value)}
                     placeholder="Account Title"
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-[#0B1A13] dark:text-white"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Account Number</label>
+                  <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-0.5">Account Number</label>
                   <input
                     type="text"
                     value={accountNumber}
                     onChange={(e) => setAccountNumber(e.target.value)}
                     placeholder="Account Number"
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-mono"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-[#0B1A13] dark:text-white font-mono"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-0.5">IBAN (24 chars)</label>
+                  <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-0.5">IBAN (24 chars)</label>
                   <input
                     type="text"
                     value={iban}
                     onChange={(e) => setIban(e.target.value)}
                     placeholder="PK36MEZN00010101..."
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white font-mono uppercase"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-[#0B1A13] dark:text-white font-mono uppercase"
                   />
                 </div>
               </div>
@@ -185,47 +185,47 @@ export function ChangeRequestModal({ isOpen, onClose, currentEmployee }) {
           )}
 
           {targetField === 'address' && (
-            <div className="space-y-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
-              <h4 className="text-[11px] font-bold text-slate-700 uppercase">Updated Residential Address</h4>
+            <div className="space-y-3 p-4 bg-slate-50 dark:bg-[#162820]/50 rounded-xl border border-slate-200 dark:border-[#1A3125]">
+              <h4 className="text-[11px] font-bold text-slate-700 dark:text-slate-200 uppercase">Updated Residential Address</h4>
               <div>
-                <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Street Address</label>
+                <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-0.5">Street Address</label>
                 <input
                   type="text"
                   value={street}
                   onChange={(e) => setStreet(e.target.value)}
                   placeholder="Street / House #"
-                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white"
+                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-[#0B1A13] dark:text-white"
                 />
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-0.5">City</label>
+                  <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-0.5">City</label>
                   <input
                     type="text"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     placeholder="City"
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-[#0B1A13] dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-0.5">State</label>
+                  <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-0.5">State</label>
                   <input
                     type="text"
                     value={state}
                     onChange={(e) => setState(e.target.value)}
                     placeholder="Province"
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-[#0B1A13] dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Postal Code</label>
+                  <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-0.5">Postal Code</label>
                   <input
                     type="text"
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
                     placeholder="Postal Code"
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-[#0B1A13] dark:text-white"
                   />
                 </div>
               </div>
@@ -233,45 +233,45 @@ export function ChangeRequestModal({ isOpen, onClose, currentEmployee }) {
           )}
 
           {targetField === 'emergencyContact' && (
-            <div className="space-y-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
-              <h4 className="text-[11px] font-bold text-slate-700 uppercase">Updated Emergency Contact</h4>
+            <div className="space-y-3 p-4 bg-slate-50 dark:bg-[#162820]/50 rounded-xl border border-slate-200 dark:border-[#1A3125]">
+              <h4 className="text-[11px] font-bold text-slate-700 dark:text-slate-200 uppercase">Updated Emergency Contact</h4>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Contact Person Name</label>
+                  <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-0.5">Contact Person Name</label>
                   <input
                     type="text"
                     value={emergencyName}
                     onChange={(e) => setEmergencyName(e.target.value)}
                     placeholder="Full Name"
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-[#0B1A13] dark:text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Relationship</label>
+                  <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-0.5">Relationship</label>
                   <input
                     type="text"
                     value={emergencyRel}
                     onChange={(e) => setEmergencyRel(e.target.value)}
                     placeholder="e.g. Spouse / Brother"
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-[#0B1A13] dark:text-white"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Phone Number</label>
+                <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-0.5">Phone Number</label>
                 <input
                   type="text"
                   value={emergencyPhone}
                   onChange={(e) => setEmergencyPhone(e.target.value)}
                   placeholder="+92 300 0000000"
-                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white"
+                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 dark:border-[#1A3125] bg-white dark:bg-[#0B1A13] dark:text-white"
                 />
               </div>
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
               Justification / Reason for Update <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -279,22 +279,22 @@ export function ChangeRequestModal({ isOpen, onClose, currentEmployee }) {
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Explain why this profile change is required for HR verification..."
-              className="w-full text-xs p-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 resize-none"
+              className="w-full text-xs p-3 rounded-lg border border-slate-300 dark:border-[#1A3125] dark:bg-[#0B1A13] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 resize-none"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-[#1A3125]">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162820] transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-5 py-2 rounded-lg text-xs font-semibold bg-[#00C471] hover:bg-[#049856] text-white flex items-center gap-2 shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+              className="px-5 py-2 rounded-lg text-xs font-semibold bg-[#00C471] hover:bg-[#049856] text-slate-950 font-bold flex items-center gap-2 shadow-sm transition-colors cursor-pointer disabled:opacity-50"
             >
               {isLoading ? (
                 <>

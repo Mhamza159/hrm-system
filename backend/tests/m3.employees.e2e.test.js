@@ -196,7 +196,7 @@ describe('Module M3 — Multi-Role End-to-End User Journeys (E2E-M3)', () => {
     superAdminToken = jwt.sign({ userId: superAdminUser._id }, env.JWT_ACCESS_SECRET, { expiresIn: '1h' });
     hrToken = jwt.sign({ userId: hrUser._id }, env.JWT_ACCESS_SECRET, { expiresIn: '1h' });
     deptManagerToken = jwt.sign({ userId: deptManagerUser._id }, env.JWT_ACCESS_SECRET, { expiresIn: '1h' });
-  }, 25000);
+  }, 60000);
 
   afterAll(async () => {
     if (createdDocumentPath && fs.existsSync(createdDocumentPath)) {

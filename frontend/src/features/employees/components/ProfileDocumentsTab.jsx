@@ -5,23 +5,20 @@
  * SPECIFICATION:
  * - Module: M3 Employee Management (BUILD-GUIDE Section 8 · Rows 3.5, 3.9)
  * - Vault cards with preview link, upload modal trigger, and delete confirmation.
+ * - Adheres to Forest & Emerald Enterprise craft.
  */
 
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { toast } from 'sonner';
 import {
   FileText,
   Upload,
-  Download,
   Trash2,
-  ExternalLink,
-  ShieldAlert,
-  Calendar,
-  HardDrive
+  ExternalLink
 } from 'lucide-react';
 import { Card } from '../../../components/common/Card.jsx';
 import { ConfirmDialog } from '../../../components/common/ConfirmDialog.jsx';
-import { Can } from '../../../components/common/Can.jsx';
 import { DocumentUploadModal } from './DocumentUploadModal.jsx';
 import { openSecureFile } from '../../../utils/fileHelper.js';
 import { useDeleteDocumentMutation } from '../employeesApi.js';
@@ -172,3 +169,9 @@ export function ProfileDocumentsTab({ employeeId, documents = [], canManage = fa
     </div>
   );
 }
+
+ProfileDocumentsTab.propTypes = {
+  employeeId: PropTypes.string.isRequired,
+  documents: PropTypes.array,
+  canManage: PropTypes.bool
+};
