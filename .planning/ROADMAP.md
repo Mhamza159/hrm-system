@@ -221,9 +221,9 @@ Plans:
 
 Plans:
 
-- [ ] **Plan 09-01: Document Text Extraction Engine (PDF & Word DOCX)** (`.planning/phases/09-ai-resume-parsing-enhancements-openai-gemini-setup/09-01-PLAN.md`)
-- [ ] **Plan 09-02: Multi-Provider AI Architecture & OpenAI / Gemini Failover** (`.planning/phases/09-ai-resume-parsing-enhancements-openai-gemini-setup/09-02-PLAN.md`)
-- [ ] **Plan 09-03: Resume Buffer Hash Caching & Verification Hardening** (`.planning/phases/09-ai-resume-parsing-enhancements-openai-gemini-setup/09-03-PLAN.md`)
+- [x] **Plan 09-01: Document Text Extraction Engine (PDF & Word DOCX)** (`.planning/phases/09-ai-resume-parsing-enhancements-openai-gemini-setup/09-01-PLAN.md`)
+- [x] **Plan 09-02: Multi-Provider AI Architecture & OpenAI / Gemini Failover** (`.planning/phases/09-ai-resume-parsing-enhancements-openai-gemini-setup/09-02-PLAN.md`)
+- [x] **Plan 09-03: Resume Buffer Hash Caching & Verification Hardening** (`.planning/phases/09-ai-resume-parsing-enhancements-openai-gemini-setup/09-03-PLAN.md`)
 
 ---
 
