@@ -333,6 +333,60 @@ export const parseResumeText = async (resumeText = '') => {
 };
 
 /**
+ * Tokenize and normalize job requirements.
+ * Handles both cleanly delimited lists and single long compound strings (e.g. "Node Js Html Css Javascript Mongo DB MYSQL Tailwind Css Bootstrap").
+ * @param {string[]} rawRequirements
+ * @returns {string[]} An array of distinct, normalized skill tokens.
+ */
+export const tokenizeJobRequirements = (rawRequirements = []) => {
+  if (!Array.isArray(rawRequirements) || rawRequirements.length === 0) {
+    return [];
+  }
+
+  // Canonical dictionary of tech and industry skills for sub-phrase extraction
+  const canonicalSkills = [
+    'JavaScript', 'TypeScript', 'React.js', 'React Js', 'React', 'Node.js', 'Node Js', 'Node',
+    'Express.js', 'Express', 'MongoDB', 'Mongo DB', 'MySQL', 'PostgreSQL', 'SQL',
+    'Python', 'Django', 'Flask', 'Java', 'Spring Boot', 'Spring', 'Docker', 'Kubernetes', 'AWS',
+    'Git', 'GitHub', 'CI/CD', 'REST API', 'GraphQL', 'Tailwind CSS', 'Tailwind', 'Bootstrap',
+    'CSS', 'HTML', 'Redux Toolkit', 'Redux', 'Linux', 'Next.js', 'Vue.js', 'Angular', 'Golang',
+    'Redis', 'Microservices', 'Jest', 'Playwright', 'Figma', 'PHP', 'Laravel', 'Agile', 'Scrum'
+  ];
+
+  const tokens = new Set();
+
+  rawRequirements.forEach((reqStr) => {
+    if (!reqStr || typeof reqStr !== 'string') return;
+    const trimmed = reqStr.trim();
+    if (!trimmed) return;
+
+    // First, split by obvious delimiters: comma, semicolon, pipe, slash, newline
+    const subParts = trimmed.split(/[,;\n|/]+/).map((s) => s.trim()).filter(Boolean);
+
+    subParts.forEach((part) => {
+      // Check if part contains multiple canonical skill tokens
+      const matchedSkills = [];
+      canonicalSkills.forEach((skill) => {
+        const regex = new RegExp(`\\b${skill.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i');
+        if (regex.test(part)) {
+          matchedSkills.push(skill);
+        }
+      });
+
+      if (matchedSkills.length > 1) {
+        // Compound string detected! Add all individual skills found within it
+        matchedSkills.forEach((s) => tokens.add(s));
+      } else {
+        // Single requirement item or domain requirement (e.g. "3+ years in fintech")
+        tokens.add(part);
+      }
+    });
+  });
+
+  return Array.from(tokens);
+};
+
+/**
  * Screen candidate fit against job description & requirements
  */
 export const screenCandidateFit = async ({
@@ -343,15 +397,32 @@ export const screenCandidateFit = async ({
   jobRequirements = [],
   minExperienceYears = 0
 }) => {
-  // Deterministic baseline calculation
-  const reqLower = (jobRequirements || []).map((r) => r.toLowerCase().trim());
+  // Tokenize compound requirements into clean, discrete requirements
+  const tokenizedReqs = tokenizeJobRequirements(jobRequirements);
   const candSkills = (parsedProfile?.parsedSkills || []).map((s) => s.toLowerCase().trim());
 
   const matchingStrengths = [];
   const missingSkills = [];
 
-  reqLower.forEach((req) => {
-    const isMatched = candSkills.some((s) => s.includes(req) || req.includes(s));
+  tokenizedReqs.forEach((req) => {
+    const reqClean = req.toLowerCase().trim();
+    // Normalize punctuation differences (e.g. "react.js" vs "react js" vs "react")
+    const reqNorm = reqClean.replace(/[\.\-]/g, ' ');
+
+    const isMatched = candSkills.some((s) => {
+      const sClean = s.toLowerCase().trim();
+      const sNorm = sClean.replace(/[\.\-]/g, ' ');
+
+      if (sNorm === reqNorm) return true;
+      // Exact word boundary containment (e.g., candidate skill "react" matches requirement "react.js" or "react")
+      const sWords = sNorm.split(/\s+/);
+      const reqWords = reqNorm.split(/\s+/);
+      return (
+        sWords.every((w) => reqNorm.includes(w)) ||
+        reqWords.every((w) => sNorm.includes(w))
+      );
+    });
+
     if (isMatched) {
       matchingStrengths.push(req);
     } else {
@@ -361,13 +432,13 @@ export const screenCandidateFit = async ({
 
   const candExp = parsedProfile?.totalExperienceYears || 0;
   const expMatchRatio = minExperienceYears > 0 ? Math.min(candExp / minExperienceYears, 1.2) : 1;
-  const skillMatchRatio = reqLower.length > 0 ? matchingStrengths.length / reqLower.length : 0.8;
+  const skillMatchRatio = tokenizedReqs.length > 0 ? matchingStrengths.length / tokenizedReqs.length : 0.8;
 
   // Weight: 65% skills, 35% experience
   const rawScore = Math.round((skillMatchRatio * 65) + (Math.min(expMatchRatio, 1) * 35));
   const deterministicScore = Math.min(Math.max(rawScore, 15), 98);
 
-  const deterministicSummary = `Candidate possesses ${candExp} year(s) of relevant experience with proficiency in ${matchingStrengths.slice(0, 4).join(', ') || 'core domains'}.${missingSkills.length > 0 ? ` Missing explicitly listed requirements: ${missingSkills.slice(0, 3).join(', ')}.` : ' Strong overall alignment with posted opening.'}`;
+  const deterministicSummary = `Candidate possesses ${candExp} year(s) of relevant experience with verified proficiency in ${matchingStrengths.slice(0, 5).join(', ') || 'core domains'}.${missingSkills.length > 0 ? ` Missing required qualifications: ${missingSkills.slice(0, 4).join(', ')}.` : ' Strong overall alignment with posted opening.'}`;
 
   const fallback = {
     aiScore: deterministicScore,
