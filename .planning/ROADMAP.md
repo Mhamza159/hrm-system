@@ -217,7 +217,13 @@ Plans:
   - Add end-to-end and security tests verifying real PDF/DOCX text extraction, prompt injection neutralization with actual document text, and multi-provider failover.
 
 **Depends on:** Phase 8
-**Plans:** 3 plans (to be planned via `/gsd-plan-phase 9`)
+**Plans:** 3 plans
+
+Plans:
+
+- [ ] **Plan 09-01: Document Text Extraction Engine (PDF & Word DOCX)** (`.planning/phases/09-ai-resume-parsing-enhancements-openai-gemini-setup/09-01-PLAN.md`)
+- [ ] **Plan 09-02: Multi-Provider AI Architecture & OpenAI / Gemini Failover** (`.planning/phases/09-ai-resume-parsing-enhancements-openai-gemini-setup/09-02-PLAN.md`)
+- [ ] **Plan 09-03: Resume Buffer Hash Caching & Verification Hardening** (`.planning/phases/09-ai-resume-parsing-enhancements-openai-gemini-setup/09-03-PLAN.md`)
 
 ---
 
