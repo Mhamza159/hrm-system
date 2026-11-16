@@ -27,6 +27,7 @@ import { recordAuditLog } from '../../services/audit.service.js';
 import { notify } from '../../services/notify.service.js';
 import { emailService } from '../../services/email.service.js';
 import { parseResumeText, screenCandidateFit } from '../../services/ai.service.js';
+import { extractTextFromBuffer } from '../../services/documentParser.service.js';
 import { isCloudinaryConfigured, uploadBufferToCloudinary } from '../../config/cloudinary.js';
 import * as employeeService from '../employees/employee.service.js';
 
@@ -580,14 +581,22 @@ export const applyForJob = async (jobId, candidateData, file) => {
       cvUrl = `/uploads/resumes/${filename}`;
     }
 
-    // Extract raw text heuristic from buffer if plain/utf8 (guard binary PDF bytecode)
+    // Extract real document text from buffer using native pdf-parse & mammoth
     try {
-      const header = file.buffer.toString('utf8', 0, 5);
-      if (header.startsWith('%PDF')) {
-        rawCvText = `Applicant: ${candidateData.name}\nEmail: ${candidateData.email}\nPhone: ${candidateData.phone || ''}\n${candidateData.linkedinUrl ? `LinkedIn: ${candidateData.linkedinUrl}\n` : ''}${candidateData.portfolioUrl ? `Portfolio: ${candidateData.portfolioUrl}\n` : ''}Target Job: ${job.title}\nCandidate submitted document: ${file.originalname || 'Resume.pdf'}`;
-      } else {
-        rawCvText = file.buffer.toString('utf8', 0, Math.min(file.buffer.length, 12000));
-      }
+      const parsedDoc = await extractTextFromBuffer(
+        file.buffer,
+        file.mimetype,
+        file.originalname,
+        {
+          name: candidateData.name,
+          email: candidateData.email,
+          phone: candidateData.phone,
+          linkedinUrl: candidateData.linkedinUrl,
+          portfolioUrl: candidateData.portfolioUrl,
+          jobTitle: job.title
+        }
+      );
+      rawCvText = parsedDoc.text;
     } catch {
       rawCvText = `${candidateData.name} CV Document`;
     }
