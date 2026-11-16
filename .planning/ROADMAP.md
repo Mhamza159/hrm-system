@@ -121,10 +121,12 @@ Governed strictly by [`docs/BUILD-GUIDE.md`](file:///c:/Users/hamih/OneDrive/Des
 
 **Goal:** Modernize and elevate the Expense Module UI across Buttons & Pills, Categories & Limits, Archive Tab, and Active Tab with consistent Forest & Emerald design tokens, semantic tables, and row-click modals.
 **Requirements**:
+
 - Improve buttons and status pills with strict semantic colors, consistent spacing, and hairline alignment.
 - Overhaul "Categorize & Limit" tab with high-density data tables and row-click category detail modals.
 - Overhaul "Archive Tab" with structured archived records, revert/permanent-delete actions, and dedicated audit modals.
 - Overhaul "Active Tab" across claims & categories with cohesive typography, tabular numeric formatting, and production-quality layouts per `DESIGN.md` and `docs/UI-REFERENCE.md`.
+
 **Depends on:** Phase 5
 **Plans:** 3 plans
 
@@ -133,6 +135,34 @@ Plans:
 - [x] **Plan 06-01: Buttons, Pills, Semantic Badges & Category Detail Modal** (`.planning/phases/06-expense-module-ui-design-improvements/06-01-PLAN.md`)
 - [x] **Plan 06-02: Categorize & Limit Tab and Archive Tab Overhaul** (`.planning/phases/06-expense-module-ui-design-improvements/06-02-PLAN.md`)
 - [x] **Plan 06-03: Active Claims & Approvals Views Polish & Verification** (`.planning/phases/06-expense-module-ui-design-improvements/06-03-PLAN.md`)
+
+### Phase 7: Assets Module – Complete UI Redesign & Improvements
+
+**Goal:** Complete UI redesign and craft modernization across the entire Assets Module (My Assets, Assets Register, Custodian Assignment, and Asset Requisitions) adhering strictly to Forest & Emerald design system (`DESIGN.md`, `docs/UI-REFERENCE.md`), granular PBAC/RBAC permission gating, active/archive lifecycle management, and assignment-based deletion prevention.
+
+**Requirements**:
+- **1. My Assets Page Redesign**:
+  - Full UI overhaul with dedicated Buttons / Pills tabs, cohesive status badges (`assigned`, `in-repair`, `pending`, `retired`), and spacing.
+  - Interactive row-click modal on data table displaying asset metadata, specs, serial number, assignment history, custodian details, and return actions.
+- **2. Assets Register Page & Archive Lifecycle**:
+  - Full UI redesign with separate **Active** and **Archive** tabs, unified search, category/status filters, and high-density semantic tables.
+  - Archive tab modal with **Revert** (restore to active) and **Permanent Delete** (guarded with safety checks).
+  - **Critical Business Rule**: If an asset is assigned to any user (`assignedTo` is present / status `assigned`), it must NOT be deleted (neither normal soft-delete nor permanent delete). Strictly enforced in both backend API and frontend UI with clear explanatory banners.
+- **3. Custodian Assignment Dropdown**:
+  - Redesign custodian selection dropdown into a modern, searchable select component showing employee avatar/initials, name, employee ID, department, and designation.
+- **4. Requisition Page Modernization**:
+  - Complete redesign of the Asset Requisition workflow with status indicators (`pending`, `approved`, `rejected`, `allocated`), semantic tables, action modals (Approve/Reject/Allocate), and creation form.
+- **5. PBAC & RBAC Enforcement**:
+  - Condition all action buttons and controls via `Can` component and permission checks (`assets.manage`, `assets.create`, `assets.delete`, `assets.assign`, `assets.approve`). If a permission is missing, hide the action entirely.
+
+**Depends on:** Phase 6
+**Plans:** 3 plans
+
+Plans:
+
+- [ ] **Plan 07-01: Backend Lifecycle & Deletion Guard Hardening** (`.planning/phases/07-assets-module-complete-ui-redesign-improvements/07-01-PLAN.md`)
+- [ ] **Plan 07-02: Modern Custodian Dropdown & My Assets Page Overhaul** (`.planning/phases/07-assets-module-complete-ui-redesign-improvements/07-02-PLAN.md`)
+- [ ] **Plan 07-03: Assets Register (Active & Archive Tabs) & Requisitions Workflow** (`.planning/phases/07-assets-module-complete-ui-redesign-improvements/07-03-PLAN.md`)
 
 ---
 
