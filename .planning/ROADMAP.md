@@ -194,10 +194,10 @@ Plans:
 
 Plans:
 
-- [ ] **Plan 08-01: Backend Active/Archive Lifecycle Endpoints & Test Suite Hardening** (`.planning/phases/08-recruitment-ats-module-complete-ui-redesign-improvements/08-01-PLAN.md`)
-- [ ] **Plan 08-02: Job Openings Page Overhaul & Archive Lifecycle Modal** (`.planning/phases/08-recruitment-ats-module-complete-ui-redesign-improvements/08-02-PLAN.md`)
-- [ ] **Plan 08-03: Public Career Portal & Candidate Application Experience Overhaul** (`.planning/phases/08-recruitment-ats-module-complete-ui-redesign-improvements/08-03-PLAN.md`)
-- [ ] **Plan 08-04: Candidate Pipeline Board & Internal Mobility/Referral Pages Overhaul** (`.planning/phases/08-recruitment-ats-module-complete-ui-redesign-improvements/08-04-PLAN.md`)
+- [x] **Plan 08-01: Backend Active/Archive Lifecycle Endpoints & Test Suite Hardening** (`.planning/phases/08-recruitment-ats-module-complete-ui-redesign-improvements/08-01-PLAN.md`)
+- [x] **Plan 08-02: Job Openings Page Overhaul & Archive Lifecycle Modal** (`.planning/phases/08-recruitment-ats-module-complete-ui-redesign-improvements/08-02-PLAN.md`)
+- [x] **Plan 08-03: Public Career Portal & Candidate Application Experience Overhaul** (`.planning/phases/08-recruitment-ats-module-complete-ui-redesign-improvements/08-03-PLAN.md`)
+- [x] **Plan 08-04: Candidate Pipeline Board & Internal Mobility/Referral Pages Overhaul** (`.planning/phases/08-recruitment-ats-module-complete-ui-redesign-improvements/08-04-PLAN.md`)
 
 ---
 
