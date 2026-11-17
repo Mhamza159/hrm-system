@@ -735,6 +735,41 @@ Plans:
 
 ---
 
+## Phase 22: Announcement Module — Complete Audit, Refinement & Feature Implementation
+
+**Goal:** Deliver a complete end-to-end audit, architectural refinement, and feature implementation for the **Announcement Module** across both administrative and employee dimensions. Support dynamic multi-department targeting, persistent pin/unpin notice boards, dedicated Archive & Restore lifecycle tabs, seen/unseen read-tracking per employee with manager analytics (seen count, unseen count, read percentage, department breakdown), rich attachments, complete modal suite redesign, and strict PBAC/RBAC enforcement.
+
+**Requirements**:
+- **1. Backend Architecture, Schemas, Validation & Archival APIs (`announcement.model.js`, `announcement.service.js`, `announcement.controller.js`, `announcement.validation.js`, `announcement.routes.js`)**:
+  - Support multi-department targeting (`departmentIds`), expiry dates, attachments, and soft archival (`isArchived`, `archivedAt`, `archivedBy`).
+  - Implement archival lifecycle endpoints (`PATCH /announcements/:id/archive`, `PATCH /announcements/:id/restore`) and single detail endpoint (`GET /announcements/:id`).
+  - Comprehensive reader engagement analytics (`totalTargeted`, `seenCount`, `unseenCount`, `compliancePercentage`, `departmentBreakdown`, reader roster).
+- **2. Announcements Feed, Dedicated Archive Tab & Multi-Filters (`AnnouncementsPage.jsx`, `AnnouncementCard.jsx`, `announcementsApi.js`)**:
+  - Dedicated **Active Notices** vs **Archived Notices** view tabs.
+  - Dynamic department dropdown loading from database, multi-priority filter pills, read status toggle, and sort controls.
+  - Prominent Pinned Notice Board banner anchoring pinned announcements at top of feed.
+  - Visual badge distinction, unread pulsing indicator, and seamless one-click actions.
+- **3. Complete Modals Suite Redesign & Engagement Analytics (`AnnouncementFormModal.jsx`, `AnnouncementDetailModal.jsx`, `ReadReceiptsModal.jsx`, `DeleteConfirmationModal.jsx`, `ArchiveConfirmationModal.jsx`)**:
+  - Multi-department selector, expiry picker, attachments, and validation in authoring form.
+  - Dedicated reading modal with automatic read receipt marking upon view.
+  - Administrative engagement docket with metrics, department progress breakdown, and reader roster.
+  - Custom enterprise confirmation dialogs for deletion and archival.
+- **4. End-to-End Testing, Vitest Integration Suite & Verification Gate (`tests/announcements.e2e.test.js`)**:
+  - 10 comprehensive integration tests covering creation, multi-department scoping, read marking, pinning, editing, archiving, restoring, and analytics across all 4 roles.
+  - 0 Oxlint warnings, 100% backend test pass rate, clean Vite production build.
+
+**Depends on:** Phase 21
+**Plans:** 4 plans
+
+Plans:
+
+- [ ] **Plan 22-01: Backend Architecture, Schemas, Validation & Archival APIs** (`.planning/phases/22-announcement-module-complete-audit-refinement-feature-implementation/22-01-PLAN.md`)
+- [ ] **Plan 22-02: Announcements Feed, Dedicated Archive Tab & Multi-Filters** (`.planning/phases/22-announcement-module-complete-audit-refinement-feature-implementation/22-02-PLAN.md`)
+- [ ] **Plan 22-03: Complete Modals Suite Redesign & Engagement Analytics** (`.planning/phases/22-announcement-module-complete-audit-refinement-feature-implementation/22-03-PLAN.md`)
+- [ ] **Plan 22-04: End-to-End Testing, Vitest Integration Suite & Verification Gate** (`.planning/phases/22-announcement-module-complete-audit-refinement-feature-implementation/22-04-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features
