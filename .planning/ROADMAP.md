@@ -606,10 +606,10 @@ Plans:
 
 Plans:
 
-- [ ] **Plan 18-01: Analytics Dashboard Layout, KPI Metric Cards & Global Controls** (`.planning/phases/18-attrition-prediction-module-complete-audit-analytics-dashboard-ui-redesign-improvements/18-01-PLAN.md`)
-- [ ] **Plan 18-02: Interactive Analytics Charts Suite (Risk Donut, Department Stacked Bars & Risk Factors Breakdown)** (`.planning/phases/18-attrition-prediction-module-complete-audit-analytics-dashboard-ui-redesign-improvements/18-02-PLAN.md`)
-- [ ] **Plan 18-03: Employee Risk Analysis Table, Pagination & Export Engine** (`.planning/phases/18-attrition-prediction-module-complete-audit-analytics-dashboard-ui-redesign-improvements/18-03-PLAN.md`)
-- [ ] **Plan 18-04: Employee Risk Details Modal, Retention Intervention Notes & Module Verification Gate** (`.planning/phases/18-attrition-prediction-module-complete-audit-analytics-dashboard-ui-redesign-improvements/18-04-PLAN.md`)
+- [x] **Plan 18-01: Analytics Dashboard Layout, KPI Metric Cards & Global Controls** (`.planning/phases/18-attrition-prediction-module-complete-audit-analytics-dashboard-ui-redesign-improvements/18-01-PLAN.md`)
+- [x] **Plan 18-02: Interactive Analytics Charts Suite (Risk Donut, Department Stacked Bars & Risk Factors Breakdown)** (`.planning/phases/18-attrition-prediction-module-complete-audit-analytics-dashboard-ui-redesign-improvements/18-02-PLAN.md`)
+- [x] **Plan 18-03: Employee Risk Analysis Table, Pagination & Export Engine** (`.planning/phases/18-attrition-prediction-module-complete-audit-analytics-dashboard-ui-redesign-improvements/18-03-PLAN.md`)
+- [x] **Plan 18-04: Employee Risk Details Modal, Retention Intervention Notes & Module Verification Gate** (`.planning/phases/18-attrition-prediction-module-complete-audit-analytics-dashboard-ui-redesign-improvements/18-04-PLAN.md`)
 
 ---
 

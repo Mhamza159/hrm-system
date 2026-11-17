@@ -1,44 +1,54 @@
 /**
  * @file AttritionDashboardPage.jsx
- * @description Executive Flight Risk Intelligence & Retention Management Dashboard.
- * 
- * SPECIFICATION:
- * - Module: M17 Attrition Prediction (BUILD-GUIDE Section 26 · Rows 17.1 to 17.5)
- * - Design: Anti-generic, executive SaaS aesthetics with KPI cards, department charts, and factor pills.
+ * @description Executive Workforce Attrition Risk Intelligence & Retention Management Console.
+ * Styled in Forest & Emerald Enterprise theme with native SVG charts, risk gauges, and CSV export.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   TrendingDown,
-  AlertTriangle,
   Users,
-  Building2,
   RefreshCw,
   Search,
-  Filter,
-  ArrowUpDown,
-  MessageSquare,
+  Download,
+  AlertTriangle,
   ShieldAlert,
   ChevronLeft,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  ArrowUpDown,
+  RotateCcw
 } from 'lucide-react';
 import {
   useGetAttritionScoresQuery,
   useGetDepartmentRiskAnalyticsQuery,
   useRecalculateAttritionScoresMutation
 } from '../attritionApi.js';
+import { useGetDepartmentsQuery } from '../../departments/departmentsApi.js';
+import { useAuth } from '../../../hooks/useAuth.js';
 import { RiskTierBadge } from '../components/RiskTierBadge.jsx';
+import { RiskScoreGauge } from '../components/RiskScoreGauge.jsx';
 import { DepartmentRiskChart } from '../components/DepartmentRiskChart.jsx';
-import { RetentionNotesModal } from '../components/RetentionNotesModal.jsx';
+import { AttritionRiskDonutChart } from '../components/AttritionRiskDonutChart.jsx';
+import { AttritionFactorsChart } from '../components/AttritionFactorsChart.jsx';
+import { EmployeeRiskDetailModal } from '../components/EmployeeRiskDetailModal.jsx';
+import { toast } from 'sonner';
 
 export const AttritionDashboardPage = () => {
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const [riskLevel, setRiskLevel] = useState('');
-  const [selectedScore, setSelectedScore] = useState(null);
-  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const { user, isHR, isSuperAdmin } = useAuth();
 
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [search, setSearch] = useState('');
+  const [departmentId, setDepartmentId] = useState('');
+  const [riskLevel, setRiskLevel] = useState('');
+  const [sortBy, setSortBy] = useState('riskScore');
+  const [sortOrder, setSortOrder] = useState('desc');
+
+  const [selectedScore, setSelectedScore] = useState(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  // Queries
   const {
     data: scoresResponse,
     isLoading: isScoresLoading,
@@ -46,143 +56,301 @@ export const AttritionDashboardPage = () => {
     refetch: refetchScores
   } = useGetAttritionScoresQuery({
     page,
-    limit: 10,
-    search: search || undefined,
-    riskLevel: riskLevel || undefined
+    limit,
+    search: search.trim() || undefined,
+    departmentId: departmentId || undefined,
+    riskLevel: riskLevel || undefined,
+    sortBy,
+    sortOrder
   });
 
   const {
     data: deptAnalyticsResponse,
-    isLoading: isDeptLoading
+    isLoading: isDeptLoading,
+    refetch: refetchDeptAnalytics
   } = useGetDepartmentRiskAnalyticsQuery();
+
+  const { data: deptData } = useGetDepartmentsQuery({ limit: 100 });
+  const departmentsList = useMemo(() => deptData?.data || [], [deptData?.data]);
 
   const [recalculateMutation, { isLoading: isRecalculating }] = useRecalculateAttritionScoresMutation();
 
-  const scores = scoresResponse?.data || [];
+  const scores = useMemo(() => scoresResponse?.data || [], [scoresResponse?.data]);
   const pagination = scoresResponse?.meta || { page: 1, limit: 10, total: 0, pages: 1 };
-  const departmentStats = deptAnalyticsResponse?.data || [];
+  const departmentStats = useMemo(() => deptAnalyticsResponse?.data || [], [deptAnalyticsResponse?.data]);
 
-  // Summary Metrics
-  const totalAssessed = pagination.total || 0;
-  const highRiskTotal = departmentStats.reduce((sum, d) => sum + (d.highRisk || 0), 0);
-  const mediumRiskTotal = departmentStats.reduce((sum, d) => sum + (d.mediumRisk || 0), 0);
-  const lowRiskTotal = departmentStats.reduce((sum, d) => sum + (d.lowRisk || 0), 0);
+  // Aggregate Metrics
+  const highRiskTotal = useMemo(() => departmentStats.reduce((sum, d) => sum + (d.highRisk || 0), 0), [departmentStats]);
+  const mediumRiskTotal = useMemo(() => departmentStats.reduce((sum, d) => sum + (d.mediumRisk || 0), 0), [departmentStats]);
+  const lowRiskTotal = useMemo(() => departmentStats.reduce((sum, d) => sum + (d.lowRisk || 0), 0), [departmentStats]);
+  const totalWorkforce = highRiskTotal + mediumRiskTotal + lowRiskTotal;
 
+  const averageScore = useMemo(() => {
+    if (departmentStats.length === 0) return 0;
+    const totalScore = departmentStats.reduce((sum, d) => sum + (d.totalScoreSum || 0), 0);
+    return totalWorkforce > 0 ? Math.round(totalScore / totalWorkforce) : 0;
+  }, [departmentStats, totalWorkforce]);
+
+  // Handle Recalculation
   const handleRecalculate = async () => {
     try {
-      await recalculateMutation().unwrap();
+      const res = await recalculateMutation().unwrap();
+      toast.success(res?.message || 'Company-wide attrition evaluation completed');
       refetchScores();
+      refetchDeptAnalytics();
     } catch (err) {
-      console.error('Failed to trigger recalculation:', err);
+      if (err?.status === 409) {
+        toast.warning(err?.data?.message || 'Calculation already in progress');
+      } else {
+        toast.error(err?.data?.message || 'Failed to recalculate flight-risk scores');
+      }
     }
   };
 
-  const handleOpenNotes = (score) => {
-    setSelectedScore(score);
-    setIsNotesModalOpen(true);
+  // Open Details Modal
+  const handleOpenDetailModal = (scoreDoc) => {
+    setSelectedScore(scoreDoc);
+    setIsDetailModalOpen(true);
+  };
+
+  // Handle Column Sort Toggle
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(field);
+      setSortOrder('desc');
+    }
+    setPage(1);
+  };
+
+  // Reset Filters
+  const handleResetFilters = () => {
+    setSearch('');
+    setDepartmentId('');
+    setRiskLevel('');
+    setPage(1);
+  };
+
+  // Export CSV
+  const handleExportCSV = () => {
+    if (!scores.length) {
+      toast.error('No employee risk data available to export');
+      return;
+    }
+
+    const headers = [
+      'Employee Code',
+      'Name',
+      'Email',
+      'Department',
+      'Designation',
+      'Joining Date',
+      'Risk Score',
+      'Risk Level',
+      'Attendance Pts',
+      'Salary Pts',
+      'Appraisal Pts',
+      'Tenure Pts',
+      'Top Factors',
+      'Notes Count'
+    ];
+
+    const rows = scores.map((s) => [
+      `"${s.employeeId?.employeeCode || 'N/A'}"`,
+      `"${s.employeeId?.name || 'N/A'}"`,
+      `"${s.employeeId?.email || 'N/A'}"`,
+      `"${s.departmentId?.name || 'N/A'}"`,
+      `"${s.employeeId?.designationId?.title || 'N/A'}"`,
+      `"${s.employeeId?.joiningDate ? new Date(s.employeeId.joiningDate).toLocaleDateString() : 'N/A'}"`,
+      s.riskScore,
+      `"${s.riskLevel}"`,
+      s.breakdown?.attendance || 0,
+      s.breakdown?.salaryStagnation || 0,
+      s.breakdown?.appraisal || 0,
+      s.breakdown?.tenure || 0,
+      `"${(s.topFactors || []).join('; ').replace(/"/g, '""')}"`,
+      s.notes?.length || 0
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `attrition-risk-report-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Attrition risk report exported successfully');
+  };
+
+  // Calculate Tenure Helper
+  const formatTenure = (joiningDate) => {
+    if (!joiningDate) return '—';
+    const months = Math.max(0, Math.floor((Date.now() - new Date(joiningDate).getTime()) / (1000 * 60 * 60 * 24 * 30.44)));
+    const years = Math.floor(months / 12);
+    const remMonths = months % 12;
+    if (years === 0) return `${remMonths}m`;
+    return `${years}y ${remMonths > 0 ? `${remMonths}m` : ''}`;
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#061A14] p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 rounded-xl">
-              <TrendingDown className="h-6 w-6" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] p-5 rounded-2xl shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500 shrink-0">
+            <TrendingDown className="h-6 w-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
                 Attrition Risk Intelligence
-                <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold">
-                  AI & Predictive Signal
-                </span>
               </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Early flight-risk detection synthesizing attendance, compensation, and performance trajectories
-              </p>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-[#00C471] border border-emerald-500/20">
+                Predictive Analytics
+              </span>
             </div>
+            <p className="text-xs text-slate-500 dark:text-[#7E9E8F] mt-0.5">
+              Workforce retention intelligence synthesizing attendance, compensation, and performance trajectories
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={handleRecalculate}
-            disabled={isRecalculating}
-            className="px-3.5 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 rounded-xl transition-all shadow-sm flex items-center gap-2 disabled:opacity-50"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${isRecalculating ? 'animate-spin' : ''}`} />
-            <span>{isRecalculating ? 'Evaluating Signals...' : 'Recalculate Scores'}</span>
-          </button>
+        {/* Header Actions */}
+        <div className="flex items-center gap-2.5 self-end md:self-center">
+          {(isHR || isSuperAdmin) && (
+            <button
+              type="button"
+              onClick={handleRecalculate}
+              disabled={isRecalculating}
+              className="px-4 py-2 text-xs font-bold text-white bg-[#00C471] hover:bg-[#00B064] rounded-xl transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isRecalculating ? 'animate-spin' : ''}`} />
+              <span>{isRecalculating ? 'Evaluating Signals...' : 'Recalculate Risk'}</span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* KPI Metric Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Evaluated */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+        {/* Total Workforce Evaluated */}
+        <div className="bg-white dark:bg-[#111D17] p-5 rounded-2xl border border-slate-200 dark:border-[#1A3125] shadow-sm flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-xs font-medium text-slate-500">Evaluated Staff</span>
-            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{totalAssessed}</p>
-            <span className="text-[11px] text-slate-400">Active workforce</span>
+            <span className="text-xs font-semibold text-slate-500 dark:text-[#7E9E8F] block">
+              Evaluated Workforce
+            </span>
+            <p className="text-2xl font-bold font-mono text-slate-900 dark:text-white">{totalWorkforce}</p>
+            <span className="text-[11px] text-slate-400">
+              Active staff analyzed
+            </span>
           </div>
-          <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400">
+          <div className="h-11 w-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[#00C471]">
             <Users className="h-5 w-5" />
           </div>
         </div>
 
         {/* High Flight Risk */}
-        <div className="bg-red-50/50 dark:bg-red-950/20 p-4 rounded-xl border border-red-200/60 dark:border-red-900/40 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-[#111D17] p-5 rounded-2xl border border-red-500/30 dark:border-red-900/40 shadow-sm flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-xs font-semibold text-red-600 dark:text-red-400">High Flight Risk</span>
-            <p className="text-2xl font-bold text-red-700 dark:text-red-300">{highRiskTotal}</p>
-            <span className="text-[11px] text-red-500">Score &ge; 70 / 100</span>
+            <span className="text-xs font-semibold text-red-600 dark:text-red-400 block">
+              High Flight Risk
+            </span>
+            <p className="text-2xl font-bold font-mono text-red-600 dark:text-red-400">{highRiskTotal}</p>
+            <span className="text-[11px] text-slate-400">
+              Score &ge; 70 ({totalWorkforce > 0 ? ((highRiskTotal / totalWorkforce) * 100).toFixed(0) : 0}%)
+            </span>
           </div>
-          <div className="h-10 w-10 rounded-xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center text-red-600 dark:text-red-400">
+          <div className="h-11 w-11 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
             <ShieldAlert className="h-5 w-5" />
           </div>
         </div>
 
-        {/* Medium Risk */}
-        <div className="bg-amber-50/50 dark:bg-amber-950/20 p-4 rounded-xl border border-amber-200/60 dark:border-amber-900/40 shadow-sm flex items-center justify-between">
+        {/* Moderate Risk */}
+        <div className="bg-white dark:bg-[#111D17] p-5 rounded-2xl border border-amber-500/30 dark:border-amber-900/40 shadow-sm flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">Moderate Risk</span>
-            <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">{mediumRiskTotal}</p>
-            <span className="text-[11px] text-amber-500">Score 40 – 69</span>
+            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 block">
+              Moderate Risk
+            </span>
+            <p className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">{mediumRiskTotal}</p>
+            <span className="text-[11px] text-slate-400">
+              Score 40–69 ({totalWorkforce > 0 ? ((mediumRiskTotal / totalWorkforce) * 100).toFixed(0) : 0}%)
+            </span>
           </div>
-          <div className="h-10 w-10 rounded-xl bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-amber-600 dark:text-amber-400">
+          <div className="h-11 w-11 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
             <AlertTriangle className="h-5 w-5" />
           </div>
         </div>
 
-        {/* Low Risk */}
-        <div className="bg-emerald-50/50 dark:bg-emerald-950/20 p-4 rounded-xl border border-emerald-200/60 dark:border-emerald-900/40 shadow-sm flex items-center justify-between">
+        {/* Stable Retention */}
+        <div className="bg-white dark:bg-[#111D17] p-5 rounded-2xl border border-emerald-500/30 dark:border-emerald-900/40 shadow-sm flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Stable Retention</span>
-            <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{lowRiskTotal}</p>
-            <span className="text-[11px] text-emerald-500">Score &lt; 40 / 100</span>
+            <span className="text-xs font-semibold text-emerald-600 dark:text-[#00C471] block">
+              Stable Retention
+            </span>
+            <p className="text-2xl font-bold font-mono text-emerald-600 dark:text-[#00C471]">{lowRiskTotal}</p>
+            <span className="text-[11px] text-slate-400">
+              Score &lt; 40 ({totalWorkforce > 0 ? ((lowRiskTotal / totalWorkforce) * 100).toFixed(0) : 0}%)
+            </span>
           </div>
-          <div className="h-10 w-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+          <div className="h-11 w-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[#00C471]">
             <Sparkles className="h-5 w-5" />
           </div>
         </div>
       </div>
 
-      {/* Department Trends Chart */}
-      <DepartmentRiskChart data={departmentStats} isLoading={isDeptLoading} />
+      {/* Analytics Charts Suite Row 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <AttritionRiskDonutChart
+          highRisk={highRiskTotal}
+          mediumRisk={mediumRiskTotal}
+          lowRisk={lowRiskTotal}
+          averageScore={averageScore}
+          selectedRiskLevel={riskLevel}
+          onSelectRiskLevel={(tier) => {
+            setRiskLevel(tier);
+            setPage(1);
+          }}
+          isLoading={isDeptLoading}
+        />
+        <div className="lg:col-span-2">
+          <AttritionFactorsChart />
+        </div>
+      </div>
+
+      {/* Analytics Charts Suite Row 2: Department Risk Distribution */}
+      <DepartmentRiskChart
+        data={departmentStats}
+        isLoading={isDeptLoading}
+        selectedDepartmentId={departmentId}
+        onSelectDepartment={(id) => {
+          setDepartmentId(id);
+          setPage(1);
+        }}
+      />
 
       {/* Main Scored Employee Table Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden space-y-4 p-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="bg-white dark:bg-[#111D17] rounded-2xl border border-slate-200 dark:border-[#1A3125] shadow-sm overflow-hidden p-5 space-y-4">
+        {/* Table Header and Toolbar */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b border-slate-100 dark:border-[#1A3125]">
           <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Evaluated Employees & Contributing Factors</h3>
-            <p className="text-xs text-slate-500">Inspect individual signal contributions and log confidential action notes</p>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span>Evaluated Workforce Risk Docket</span>
+              <span className="text-xs font-mono font-normal text-slate-400">
+                ({pagination.total} records)
+              </span>
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-[#7E9E8F]">
+              Inspect individual signal contributions, drill down into drivers, and record confidential retention interventions
+            </p>
           </div>
 
-          {/* Filter Bar */}
+          {/* Action & Filter Controls */}
           <div className="flex flex-wrap items-center gap-2.5">
+            {/* Search Input */}
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
               <input
                 type="text"
                 value={search}
@@ -190,125 +358,207 @@ export const AttritionDashboardPage = () => {
                   setSearch(e.target.value);
                   setPage(1);
                 }}
-                placeholder="Search employee..."
-                className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary w-44"
+                placeholder="Search by name or code..."
+                className="pl-8.5 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#061A14] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#00C471] w-48 transition"
               />
             </div>
 
-            <div className="flex items-center gap-1.5 text-xs">
-              <Filter className="h-3.5 w-3.5 text-slate-400" />
-              <select
-                value={riskLevel}
-                onChange={(e) => {
-                  setRiskLevel(e.target.value);
-                  setPage(1);
-                }}
-                className="py-1.5 px-2.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                <option value="">All Risk Tiers</option>
-                <option value="High">High Risk (70+)</option>
-                <option value="Medium">Medium Risk (40-69)</option>
-                <option value="Low">Low Risk (&lt;40)</option>
-              </select>
+            {/* Department Dropdown (HR Manager & Super Admin) */}
+            {(isHR || isSuperAdmin) && (
+              <div className="flex items-center gap-1.5">
+                <select
+                  value={departmentId}
+                  onChange={(e) => {
+                    setDepartmentId(e.target.value);
+                    setPage(1);
+                  }}
+                  className="px-2.5 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#061A14] text-slate-900 dark:text-white focus:outline-none focus:border-[#00C471]"
+                >
+                  <option value="">All Departments</option>
+                  {departmentsList.map((d) => (
+                    <option key={d._id} value={d._id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Risk Tier Segmented Buttons */}
+            <div className="flex items-center p-0.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#061A14] text-xs">
+              {[
+                { id: '', label: 'All' },
+                { id: 'High', label: 'High' },
+                { id: 'Medium', label: 'Moderate' },
+                { id: 'Low', label: 'Stable' }
+              ].map((btn) => (
+                <button
+                  key={btn.id}
+                  type="button"
+                  onClick={() => {
+                    setRiskLevel(btn.id);
+                    setPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    riskLevel === btn.id
+                      ? 'bg-[#00C471] text-white shadow-xs'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {btn.label}
+                </button>
+              ))}
             </div>
+
+            {/* Reset Filters Button */}
+            {(search || departmentId || riskLevel) && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="p-1.5 rounded-xl border border-slate-200 dark:border-[#1A3125] text-slate-400 hover:text-slate-700 dark:hover:text-white transition"
+                title="Reset filters"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </button>
+            )}
+
+            {/* Export CSV Button */}
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-[#1A3125] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162820] transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Export CSV</span>
+            </button>
           </div>
         </div>
 
         {/* Data Table */}
-        <div className="overflow-x-auto border rounded-xl border-slate-100 dark:border-slate-800">
+        <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-slate-800">
-              <tr>
-                <th className="py-3 px-4">Employee</th>
-                <th className="py-3 px-4">Department</th>
-                <th className="py-3 px-4">Risk Status</th>
-                <th className="py-3 px-4">Score Breakdown & Top Factors</th>
-                <th className="py-3 px-4">Last Evaluated</th>
-                <th className="py-3 px-4 text-right">Actions</th>
+            <thead>
+              <tr className="border-b border-slate-200 dark:border-[#1A3125] text-[11px] font-bold text-slate-500 dark:text-[#7E9E8F] uppercase tracking-wider">
+                <th className="py-3 px-3">Employee</th>
+                <th className="py-3 px-3">Department & Role</th>
+                <th className="py-3 px-3">Tenure</th>
+                <th
+                  className="py-3 px-3 cursor-pointer hover:text-slate-900 dark:hover:text-white transition"
+                  onClick={() => handleSort('riskScore')}
+                >
+                  <div className="flex items-center gap-1">
+                    <span>Flight Risk Gauge</span>
+                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                  </div>
+                </th>
+                <th className="py-3 px-3">Risk Tier</th>
+                <th className="py-3 px-3">Primary Signal Triggers</th>
+                <th className="py-3 px-3 text-right">Interventions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+            <tbody className="divide-y divide-slate-100 dark:divide-[#1A3125]/40">
               {isScoresLoading ? (
                 <tr>
-                  <td colSpan="6" className="py-12 text-center text-slate-400">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-                      <span>Loading attrition risk scores...</span>
-                    </div>
+                  <td colSpan={7} className="py-12 text-center text-xs text-slate-400 dark:text-[#7E9E8F]">
+                    Loading flight risk records...
                   </td>
                 </tr>
               ) : scores.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="py-10 text-center text-slate-400">
-                    <p className="font-medium">No employee attrition records match criteria.</p>
+                  <td colSpan={7} className="py-12 text-center text-xs text-slate-400 dark:text-[#7E9E8F]">
+                    No evaluated employees found matching the active criteria.
                   </td>
                 </tr>
               ) : (
-                scores.map((item) => {
-                  const emp = item.employeeId || {};
-                  const factors = item.topFactors || [];
-                  const notesCount = item.notes?.length || 0;
+                scores.map((scoreDoc) => {
+                  const emp = scoreDoc.employeeId || {};
+                  const dept = scoreDoc.departmentId || {};
+                  const factors = scoreDoc.topFactors || [];
 
                   return (
-                    <tr key={item._id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2.5">
-                          <div className="h-8 w-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-xs text-slate-700 dark:text-slate-300">
-                            {emp.name ? emp.name.charAt(0).toUpperCase() : 'E'}
+                    <tr
+                      key={scoreDoc._id}
+                      className="hover:bg-slate-50/70 dark:hover:bg-[#162820]/50 transition group"
+                    >
+                      {/* Employee Identity */}
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[#00C471] flex items-center justify-center font-bold text-[11px] shrink-0">
+                            {emp.avatar ? (
+                              <img src={emp.avatar} alt={emp.name} className="w-8 h-8 rounded-full object-cover" />
+                            ) : (
+                              (emp.name || 'EM').slice(0, 2).toUpperCase()
+                            )}
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-900 dark:text-slate-100">{emp.name || 'Unknown'}</p>
-                            <p className="text-[11px] text-slate-400">{emp.employeeCode || 'N/A'}</p>
+                            <span className="font-bold text-slate-900 dark:text-white block group-hover:text-[#00C471] transition">
+                              {emp.name || 'Unnamed Employee'}
+                            </span>
+                            <span className="font-mono text-[10px] text-[#7E9E8F] block">
+                              {emp.employeeCode || 'EMP-N/A'} • {emp.email || ''}
+                            </span>
                           </div>
                         </div>
                       </td>
 
-                      <td className="py-3 px-4 font-medium text-slate-600 dark:text-slate-400">
-                        {item.departmentId?.name || 'Unassigned'}
+                      {/* Department & Role */}
+                      <td className="py-3 px-3">
+                        <span className="font-medium text-slate-800 dark:text-slate-200 block">
+                          {dept.name || 'Department N/A'}
+                        </span>
+                        <span className="text-[10px] text-slate-400 dark:text-[#7E9E8F] block">
+                          {emp.designationId?.title || 'Designation N/A'}
+                        </span>
                       </td>
 
-                      <td className="py-3 px-4">
-                        <RiskTierBadge level={item.riskLevel} score={item.riskScore} />
+                      {/* Tenure */}
+                      <td className="py-3 px-3">
+                        <span className="font-mono text-slate-700 dark:text-slate-300">
+                          {formatTenure(emp.joiningDate)}
+                        </span>
                       </td>
 
-                      <td className="py-3 px-4 max-w-md">
-                        {factors.length === 0 ? (
-                          <span className="text-[11px] text-slate-400 italic">No significant flight drivers identified</span>
-                        ) : (
-                          <div className="flex flex-wrap gap-1">
-                            {factors.slice(0, 3).map((factor, fIdx) => (
-                              <span
-                                key={fIdx}
-                                className="px-2 py-0.5 text-[10px] rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
-                              >
-                                {factor}
-                              </span>
-                            ))}
-                            {factors.length > 3 && (
-                              <span className="px-1.5 py-0.5 text-[10px] rounded text-slate-400">
-                                +{factors.length - 3} more
-                              </span>
-                            )}
-                          </div>
-                        )}
+                      {/* Risk Gauge */}
+                      <td className="py-3 px-3">
+                        <RiskScoreGauge score={scoreDoc.riskScore} size="sm" />
                       </td>
 
-                      <td className="py-3 px-4 text-[11px] text-slate-400">
-                        {new Date(item.calculatedAt).toLocaleDateString()}
+                      {/* Risk Tier Badge */}
+                      <td className="py-3 px-3">
+                        <RiskTierBadge score={scoreDoc.riskScore} level={scoreDoc.riskLevel} size="sm" showScore={false} />
                       </td>
 
-                      <td className="py-3 px-4 text-right">
-                        <button
-                          onClick={() => handleOpenNotes(item)}
-                          className="px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors border border-slate-200 dark:border-slate-700 inline-flex items-center gap-1.5"
-                        >
-                          <MessageSquare className="h-3 w-3" />
-                          <span>Action Notes</span>
-                          {notesCount > 0 && (
-                            <span className="h-4 w-4 rounded-full bg-primary/20 text-primary text-[10px] font-bold flex items-center justify-center">
-                              {notesCount}
+                      {/* Top Factor Chips */}
+                      <td className="py-3 px-3 max-w-xs">
+                        <div className="flex flex-wrap gap-1">
+                          {factors.slice(0, 2).map((factor, fIdx) => (
+                            <span
+                              key={fIdx}
+                              className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#061A14] border border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-[#7E9E8F] truncate max-w-[200px]"
+                              title={factor}
+                            >
+                              {factor.split(':')[0]}
+                            </span>
+                          ))}
+                          {factors.length > 2 && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-[#061A14] text-slate-400">
+                              +{factors.length - 2}
                             </span>
                           )}
+                          {factors.length === 0 && (
+                            <span className="text-[10px] text-slate-400">Nominal signals</span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-3 px-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenDetailModal(scoreDoc)}
+                          className="px-3 py-1.5 text-xs font-bold rounded-lg border border-emerald-500/30 text-[#00C471] hover:bg-emerald-500/10 transition cursor-pointer"
+                        >
+                          View Dossier
                         </button>
                       </td>
                     </tr>
@@ -319,44 +569,70 @@ export const AttritionDashboardPage = () => {
           </table>
         </div>
 
-        {/* Pagination Footer */}
-        {pagination.pages > 1 && (
-          <div className="flex items-center justify-between text-xs pt-2">
-            <span className="text-slate-500">
-              Showing page {pagination.page} of {pagination.pages} ({pagination.total} total)
-            </span>
+        {/* Pagination Toolbar */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-[#1A3125] text-xs">
+          <div className="text-slate-500 dark:text-[#7E9E8F]">
+            Showing <span className="font-bold text-slate-900 dark:text-white">{(pagination.page - 1) * limit + (scores.length > 0 ? 1 : 0)}</span> to{' '}
+            <span className="font-bold text-slate-900 dark:text-white">{(pagination.page - 1) * limit + scores.length}</span> of{' '}
+            <span className="font-bold text-slate-900 dark:text-white">{pagination.total}</span> records
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <span className="text-slate-400 text-[11px]">Rows:</span>
+              <select
+                value={limit}
+                onChange={(e) => {
+                  setLimit(Number(e.target.value));
+                  setPage(1);
+                }}
+                className="px-2 py-1 text-xs rounded-lg border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#061A14] text-slate-900 dark:text-white"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+              </select>
+            </div>
+
             <div className="flex items-center gap-1">
               <button
+                type="button"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={pagination.page <= 1 || isScoresFetching}
-                className="p-1.5 border rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40"
+                className="p-1.5 rounded-lg border border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162820] disabled:opacity-40 transition"
               >
-                <ChevronLeft className="h-3.5 w-3.5" />
+                <ChevronLeft className="w-4 h-4" />
               </button>
+              <span className="px-2 font-mono text-xs text-slate-700 dark:text-slate-300">
+                {pagination.page} / {pagination.pages}
+              </span>
               <button
+                type="button"
                 onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))}
                 disabled={pagination.page >= pagination.pages || isScoresFetching}
-                className="p-1.5 border rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40"
+                className="p-1.5 rounded-lg border border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162820] disabled:opacity-40 transition"
               >
-                <ChevronRight className="h-3.5 w-3.5" />
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Retention Intervention Notes Modal */}
-      <RetentionNotesModal
-        isOpen={isNotesModalOpen}
-        onClose={() => {
-          setIsNotesModalOpen(false);
-          setSelectedScore(null);
-        }}
-        scoreData={selectedScore}
-      />
+      {/* Employee Risk Detail Modal */}
+      {selectedScore && (
+        <EmployeeRiskDetailModal
+          isOpen={isDetailModalOpen}
+          onClose={() => {
+            setIsDetailModalOpen(false);
+            setSelectedScore(null);
+          }}
+          score={selectedScore}
+          userRoles={user?.roles || []}
+        />
+      )}
     </div>
   );
 };
 
 export default AttritionDashboardPage;
-
