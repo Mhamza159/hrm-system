@@ -566,6 +566,53 @@ Plans:
 
 ---
 
+### Phase 18: Attrition Prediction Module – Complete Audit, Analytics Dashboard, UI Redesign & Improvements
+
+**Goal:** Deliver a comprehensive audit, full visual modernization, and functional enhancement of the entire Attrition Prediction Module (Module M17). Elevate the flight-risk predictive analytics intelligence to the Forest & Emerald Enterprise design standard (`#061A14` canvas, `#111D17` panels, `#1A3125` borders, `#00C471` emerald accents, with `#EF4444` crimson for high risk and `#F59E0B` amber for moderate risk), build interactive native SVG analytics charts (risk distribution donut, department stacked bars, contributing factor weights), provide deep employee risk tables with gauges and CSV export, and deliver an executive employee risk dossier modal with contextual retention recommendations and audit-trailed intervention notes.
+
+**Requirements**:
+- **1. Dashboard Workspace Layout & Summary Cards (`AttritionDashboardPage.jsx`)**:
+  - Full responsive dashboard layout with `#061A14` background and `#111D17` surfaces.
+  - 4 executive KPI summary cards: Total Workforce Evaluated, High Flight Risk (`#EF4444`), Moderate Risk (`#F59E0B`), and Stable Retention (`#00C471`) with workforce percentages and threshold indicators.
+  - On-demand recalculation trigger with rate-limit status, mutex protection, and last evaluated timestamp.
+  - Global filters: full-text search, department dropdown (HR Manager & Super Admin only; locked to managed department for Department Managers), and risk tier segmented pills.
+- **2. Interactive Analytics Charts Suite (`DepartmentRiskChart.jsx`, `AttritionRiskDonutChart.jsx`, `AttritionFactorsChart.jsx`)**:
+  - Native SVG Department Stacked Bar Chart with hover tooltips (counts, percentages, average scores) and click-to-filter drill-down.
+  - Native SVG Risk Distribution Donut Chart with central average risk gauge and interactive legend filters.
+  - Contributing Factor Breakdown Chart displaying the 5 core behavioral drivers (Attendance 30%, Salary Stagnation 25%, Appraisal 20%, Tenure 15%, Engagement 10%) with explanatory threshold tooltips.
+- **3. Employee Risk Analysis Table & Export (`AttritionDashboardPage.jsx`, `RiskScoreGauge.jsx`)**:
+  - High-density enterprise table featuring employee avatars, codes, department/designation badges, tenure metrics, visual risk score gauges (0-100), pulsing risk tier badges, and top factor chips.
+  - Interactive column sorting and responsive pagination.
+  - CSV export utility generating formatted risk reports matching active filters and PBAC scope.
+- **4. Employee Risk Details Modal & Retention Notes (`EmployeeRiskDetailModal.jsx`)**:
+  - Comprehensive flight-risk dossier modal with employee profile credentials and tenure.
+  - 5-factor breakdown horizontal progress bars with points received vs maximum weight.
+  - Detected signal cards explaining point attributions.
+  - Dynamic, rule-based retention recommendations tailored to specific driver signals.
+  - Retention Intervention Notes logger with action category dropdown, follow-up date picker, and historical audit trail timeline.
+- **5. Strict PBAC / RBAC Permission Compliance**:
+  - Regular Employees: Zero access (navigation hidden, API blocked with 403 Forbidden).
+  - Department Managers: Strict horizontal scoping (`scope: 'team'`); restricted to their managed department only.
+  - HR Managers & Super Admins: Company-wide visibility (`scope: 'all'`) and recalculation permissions (`attrition.manage`).
+- **6. Design Consistency & Verification**:
+  - 100% Forest & Emerald brand archetype (`#111D17` dark surface, `#1A3125` border, `#00C471` emerald accent).
+  - Zero `prop-types` imports across all attrition files.
+  - Zero Oxlint errors, zero warnings.
+  - 100% pass on backend automated tests (`m17.attrition.test.js` & `m17.attrition.security.test.js`).
+  - Clean Vite production build (`npm run build`).
+
+**Depends on:** Phase 17
+**Plans:** 4 plans
+
+Plans:
+
+- [ ] **Plan 18-01: Analytics Dashboard Layout, KPI Metric Cards & Global Controls** (`.planning/phases/18-attrition-prediction-module-complete-audit-analytics-dashboard-ui-redesign-improvements/18-01-PLAN.md`)
+- [ ] **Plan 18-02: Interactive Analytics Charts Suite (Risk Donut, Department Stacked Bars & Risk Factors Breakdown)** (`.planning/phases/18-attrition-prediction-module-complete-audit-analytics-dashboard-ui-redesign-improvements/18-02-PLAN.md`)
+- [ ] **Plan 18-03: Employee Risk Analysis Table, Pagination & Export Engine** (`.planning/phases/18-attrition-prediction-module-complete-audit-analytics-dashboard-ui-redesign-improvements/18-03-PLAN.md`)
+- [ ] **Plan 18-04: Employee Risk Details Modal, Retention Intervention Notes & Module Verification Gate** (`.planning/phases/18-attrition-prediction-module-complete-audit-analytics-dashboard-ui-redesign-improvements/18-04-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features
