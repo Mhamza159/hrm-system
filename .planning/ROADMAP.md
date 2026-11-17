@@ -519,6 +519,53 @@ Plans:
 
 ---
 
+### Phase 17: Internal Chat Module – Complete Audit, UI Redesign & Improvements
+
+**Goal:** Deliver a comprehensive audit, full visual modernization, and real-time communication refinement across the entire Internal Chat Module (Module M24). Elevate the messaging interface to the Forest & Emerald Enterprise design standard (`#061A14` canvas, `#111D17` panels, `#1A3125` borders, `#00C471` emerald accents), ensure seamless 1-to-1 direct messaging, custom group channels, and automated department rooms, implement live online presence dots, typing indicators, read receipts, 10MB vaulted file/image attachments, and verify with Oxlint and production builds.
+
+**Requirements**:
+- **1. Chat Workspace Layout & Split View (`ChatPage.jsx`)**:
+  - Full-height responsive split-view workspace with persistent conversation list on desktop and seamless full-screen toggle on mobile.
+  - High-craft default empty state hero with quick direct/group actions.
+  - Dynamic department channel auto-sync (`/conversations/sync-department`).
+- **2. Conversation List Sidebar (`ConversationList.jsx`)**:
+  - Top header with Message title, department sync trigger, group creation trigger, and new chat action.
+  - Real-time search filtering conversations by coworker name and message preview.
+  - Segmented filter tabs (`All`, `Direct`, `Groups`, `Department`) with active emerald pills.
+  - Live online presence indicator dot (`#00C471`) and unread count badges.
+- **3. Active Chat Feed & Message Bubbles (`ChatArea.jsx`, `MessageBubble.jsx`)**:
+  - Active channel header showing coworker/group avatar, presence status, and info drawer toggle.
+  - In-conversation message search with query highlight.
+  - Distinct sender (emerald `#00C471` bubble) vs recipient (`#111D17` card with `#1A3125` border) bubble geometries.
+  - Double checkmark read receipts (`CheckCheck`) and inline image/document attachment cards.
+  - Real-time typing telemetry banner ("X is typing...").
+- **4. Message Composer & Attachment Vaulting (`MessageInput.jsx`, `useChatSocket.js`)**:
+  - Multiline auto-expanding message composer with Enter/Shift+Enter shortcuts.
+  - Memory-safe 10MB file and image uploader via `/chat/upload` with pending file preview pills.
+  - Typing debouncer socket emitter with 2-second timeout.
+  - Archival read-only freeze banner for archived conversations.
+- **5. Direct/Group Modals & Participant Drawer (`NewChatModal.jsx`, `NewGroupModal.jsx`, `GroupInfoDrawer.jsx`)**:
+  - Searchable coworker directory for instant 1-to-1 conversation initiation (preventing duplicate rooms).
+  - Custom group channel creator with colleague multi-select checkmark pills.
+  - Channel info slide-over drawer with participant roster, online dots, admin badge, add/remove member controls, and Super Admin archival toggle.
+- **6. Design Consistency & Verification**:
+  - 100% Forest & Emerald brand archetype (`#111D17` dark surface, `#1A3125` border, `#00C471` emerald accent).
+  - Zero `prop-types` imports across all 9 chat files.
+  - Zero Oxlint errors, zero warnings.
+  - Clean Vite production build (`npm run build`).
+
+**Depends on:** Phase 16
+**Plans:** 4 plans
+
+Plans:
+
+- [ ] **Plan 17-01: Chat Workspace Layout, Split View & Conversation List Sidebar** (`.planning/phases/17-internal-chat-module-complete-audit-ui-redesign-improvements/17-01-PLAN.md`)
+- [ ] **Plan 17-02: Active Chat Feed, Header & Message Bubbles Stream** (`.planning/phases/17-internal-chat-module-complete-audit-ui-redesign-improvements/17-02-PLAN.md`)
+- [ ] **Plan 17-03: Message Composer, Attachment Vaulting & Real-Time Socket Telemetry** (`.planning/phases/17-internal-chat-module-complete-audit-ui-redesign-improvements/17-03-PLAN.md`)
+- [ ] **Plan 17-04: Channel Modals, Group Management Drawer & Module Verification Gate** (`.planning/phases/17-internal-chat-module-complete-audit-ui-redesign-improvements/17-04-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features
