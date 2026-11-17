@@ -88,7 +88,7 @@ export const chatApi = baseApi.injectEndpoints({
         url: `/conversations/${id}/read`,
         method: 'PATCH'
       }),
-      invalidatesTags: (result, error, id) => [{ type: 'Conversation', id: 'LIST' }]
+      invalidatesTags: () => [{ type: 'Conversation', id: 'LIST' }]
     }),
 
     searchMessages: builder.query({

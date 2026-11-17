@@ -559,10 +559,10 @@ Plans:
 
 Plans:
 
-- [ ] **Plan 17-01: Chat Workspace Layout, Split View & Conversation List Sidebar** (`.planning/phases/17-internal-chat-module-complete-audit-ui-redesign-improvements/17-01-PLAN.md`)
-- [ ] **Plan 17-02: Active Chat Feed, Header & Message Bubbles Stream** (`.planning/phases/17-internal-chat-module-complete-audit-ui-redesign-improvements/17-02-PLAN.md`)
-- [ ] **Plan 17-03: Message Composer, Attachment Vaulting & Real-Time Socket Telemetry** (`.planning/phases/17-internal-chat-module-complete-audit-ui-redesign-improvements/17-03-PLAN.md`)
-- [ ] **Plan 17-04: Channel Modals, Group Management Drawer & Module Verification Gate** (`.planning/phases/17-internal-chat-module-complete-audit-ui-redesign-improvements/17-04-PLAN.md`)
+- [x] **Plan 17-01: Chat Workspace Layout, Split View & Conversation List Sidebar** (`.planning/phases/17-internal-chat-module-complete-audit-ui-redesign-improvements/17-01-PLAN.md`)
+- [x] **Plan 17-02: Active Chat Feed, Header & Message Bubbles Stream** (`.planning/phases/17-internal-chat-module-complete-audit-ui-redesign-improvements/17-02-PLAN.md`)
+- [x] **Plan 17-03: Message Composer, Attachment Vaulting & Real-Time Socket Telemetry** (`.planning/phases/17-internal-chat-module-complete-audit-ui-redesign-improvements/17-03-PLAN.md`)
+- [x] **Plan 17-04: Channel Modals, Group Management Drawer & Module Verification Gate** (`.planning/phases/17-internal-chat-module-complete-audit-ui-redesign-improvements/17-04-PLAN.md`)
 
 ---
 

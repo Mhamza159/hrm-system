@@ -4,9 +4,9 @@
  * Responsive split view with conversations pane, active message stream, and modals.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
-import { MessageSquare, Loader2, Plus, Sparkles } from 'lucide-react';
+import { MessageSquare, Loader2, Plus, Users } from 'lucide-react';
 import {
   useGetConversationsQuery,
   useSyncDepartmentChannelMutation
@@ -32,7 +32,7 @@ export const ChatPage = () => {
   const { data: convData, isLoading: isLoadingConversations } = useGetConversationsQuery();
   const [syncDepartmentChannel, { isLoading: isSyncingDept }] = useSyncDepartmentChannelMutation();
 
-  const conversations = convData?.data || [];
+  const conversations = useMemo(() => convData?.data || [], [convData?.data]);
 
   // Active conversation object
   const activeConversation = conversations.find((c) => c._id === activeConversationId) || null;
@@ -63,17 +63,19 @@ export const ChatPage = () => {
 
   if (isLoadingConversations) {
     return (
-      <div className="h-[calc(100vh-4rem)] flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-sm font-medium">Connecting to internal chat channels...</p>
+      <div className="h-[calc(100vh-4rem)] flex items-center justify-center bg-white dark:bg-[#061A14]">
+        <div className="flex flex-col items-center gap-3 text-slate-500 dark:text-[#7E9E8F]">
+          <div className="w-12 h-12 rounded-2xl bg-[#00C471]/15 text-[#00C471] border border-[#00C471]/30 flex items-center justify-center">
+            <Loader2 className="w-6 h-6 animate-spin" />
+          </div>
+          <p className="text-xs sm:text-sm font-medium">Connecting to enterprise chat channels...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex bg-background overflow-hidden border border-border/50 rounded-xl shadow-xs">
+    <div className="h-[calc(100vh-4rem)] flex bg-white dark:bg-[#061A14] overflow-hidden border border-slate-200 dark:border-[#1A3125] rounded-2xl shadow-xl">
       {/* 1. Conversations List Sidebar (Hidden on mobile if conversation is selected) */}
       <div className={`h-full ${activeConversationId ? 'hidden md:flex' : 'flex w-full md:w-auto'}`}>
         <ConversationList
@@ -89,7 +91,7 @@ export const ChatPage = () => {
       </div>
 
       {/* 2. Active Chat Feed Workspace */}
-      <div className={`flex-1 h-full ${!activeConversationId ? 'hidden md:flex' : 'flex'}`}>
+      <div className={`flex-1 h-full ${!activeConversationId ? 'hidden md:flex' : 'flex'} bg-slate-50 dark:bg-[#0A110D]`}>
         {activeConversation ? (
           <ChatArea
             conversation={activeConversation}
@@ -101,29 +103,37 @@ export const ChatPage = () => {
             isUserOnline={isUserOnline}
           />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-muted-foreground bg-muted/5">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4 shadow-inner">
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50 dark:bg-[#0A110D]">
+            <div className="w-16 h-16 rounded-2xl bg-[#00C471]/15 text-[#00C471] border border-[#00C471]/30 flex items-center justify-center mb-4 shadow-sm">
               <MessageSquare className="w-8 h-8" />
             </div>
-            <h3 className="font-semibold text-lg text-foreground mb-1">Your Team Conversations</h3>
-            <p className="text-sm max-w-sm mb-6 text-muted-foreground">
-              Select a conversation from the sidebar or start a new message with any colleague.
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-bold text-lg text-slate-900 dark:text-[#F8FAFC]">
+                Enterprise Team Messaging
+              </h3>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase bg-[#00C471]/15 text-[#00C471] border border-[#00C471]/30">
+                Encrypted
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm max-w-md mb-6 text-slate-500 dark:text-[#7E9E8F] leading-relaxed">
+              Select a coworker or group channel from the left sidebar to resume messaging, or initiate a new secure chat with any colleague.
             </p>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={() => setIsNewChatOpen(true)}
-                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition flex items-center gap-2 shadow-xs"
+                className="px-4 py-2.5 rounded-xl bg-[#00C471] hover:bg-[#00B064] text-white text-xs font-semibold transition-all flex items-center gap-2 shadow-sm"
               >
                 <Plus className="w-4 h-4" />
-                <span>New Direct Chat</span>
+                <span>Start Direct Chat</span>
               </button>
               <button
                 type="button"
                 onClick={() => setIsNewGroupOpen(true)}
-                className="px-4 py-2 rounded-lg border border-border bg-card text-foreground text-xs font-semibold hover:bg-muted transition"
+                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-700 dark:text-[#CBD5E1] hover:bg-slate-100 dark:hover:bg-[#1A3125] text-xs font-semibold transition-all flex items-center gap-2"
               >
-                Create Group
+                <Users className="w-4 h-4 text-[#00C471]" />
+                <span>Create Group</span>
               </button>
             </div>
           </div>
