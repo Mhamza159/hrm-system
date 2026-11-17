@@ -107,9 +107,9 @@ export const AttritionRiskDonutChart = ({
           No evaluated employees available
         </div>
       ) : (
-        <div className="flex flex-col sm:flex-row items-center justify-around gap-6 py-4">
-          {/* Donut SVG */}
-          <div className="relative w-44 h-44 shrink-0 flex items-center justify-center">
+        <div className="flex-1 flex flex-col items-center justify-between py-3 gap-4">
+          {/* Centered Donut SVG */}
+          <div className="relative w-44 h-44 shrink-0 flex items-center justify-center my-auto">
             <svg
               className="w-full h-full transform -rotate-90"
               viewBox="0 0 180 180"
@@ -154,17 +154,17 @@ export const AttritionRiskDonutChart = ({
 
             {/* Central Score Gauge */}
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-              <span className="font-mono text-2xl font-bold text-slate-900 dark:text-white">
+              <span className="font-mono text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
                 {Math.round(averageScore)}
               </span>
-              <span className="text-[10px] text-slate-400 dark:text-[#7E9E8F] uppercase tracking-wider font-semibold">
-                Avg Score
+              <span className="text-[10px] text-slate-400 dark:text-[#7E9E8F] uppercase tracking-wider font-semibold mt-0.5">
+                Avg Risk Score
               </span>
             </div>
           </div>
 
-          {/* Interactive Legend List */}
-          <div className="space-y-2.5 w-full sm:w-auto">
+          {/* Interactive Legend List - Full width at bottom, clean stack */}
+          <div className="w-full space-y-1.5 pt-2 border-t border-slate-100 dark:border-[#1A3125]/60">
             {tiers.map((t) => {
               const Icon = t.icon;
               const isSelected = selectedRiskLevel === t.id;
@@ -177,7 +177,7 @@ export const AttritionRiskDonutChart = ({
                   onClick={() => onSelectRiskLevel && onSelectRiskLevel(isSelected ? '' : t.id)}
                   onMouseEnter={() => setHoveredTier(t.id)}
                   onMouseLeave={() => setHoveredTier(null)}
-                  className={`w-full flex items-center justify-between gap-4 p-2 rounded-xl border text-left transition-all cursor-pointer ${
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border text-left transition-all cursor-pointer ${
                     isSelected
                       ? 'border-[#00C471] bg-emerald-500/10 dark:bg-[#162820]'
                       : isHovered
@@ -185,21 +185,21 @@ export const AttritionRiskDonutChart = ({
                       : 'border-transparent hover:bg-slate-50 dark:hover:bg-[#061A14]/50'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
                     <span
-                      className="w-3 h-3 rounded-md shrink-0"
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
                       style={{ backgroundColor: t.color }}
                     />
-                    <Icon className="w-3.5 h-3.5 text-slate-400" />
-                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    <Icon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
                       {t.label}
                     </span>
                   </div>
-                  <div className="text-right">
-                    <span className="font-mono font-bold text-xs text-slate-900 dark:text-white">
+                  <div className="text-right shrink-0 font-mono text-xs pl-2 whitespace-nowrap">
+                    <span className="font-bold text-slate-900 dark:text-white">
                       {t.count}
                     </span>
-                    <span className="text-[10px] text-slate-400 dark:text-[#7E9E8F] ml-1.5">
+                    <span className="text-[11px] text-slate-400 dark:text-[#7E9E8F] ml-1.5 font-normal">
                       ({t.pct.toFixed(0)}%)
                     </span>
                   </div>

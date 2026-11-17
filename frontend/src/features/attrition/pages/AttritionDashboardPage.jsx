@@ -345,24 +345,40 @@ export const AttritionDashboardPage = () => {
 
       {/* Main Scored Employee Table Card */}
       <div className="bg-white dark:bg-[#111D17] rounded-2xl border border-slate-200 dark:border-[#1A3125] shadow-sm overflow-hidden p-5 space-y-4">
-        {/* Table Header and Toolbar */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-3 border-b border-slate-100 dark:border-[#1A3125]">
+        {/* Table Header Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-[#1A3125]">
           <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <span>Evaluated Workforce Risk Docket</span>
-              <span className="text-xs font-mono font-normal text-slate-400">
-                ({pagination.total} records)
+            <div className="flex items-center gap-2.5">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                Evaluated Workforce Risk Docket
+              </h3>
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-[#162820] text-slate-600 dark:text-[#7E9E8F] border border-slate-200 dark:border-[#1A3125]">
+                {pagination.total} records
               </span>
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-[#7E9E8F]">
+            </div>
+            <p className="text-xs text-slate-500 dark:text-[#7E9E8F] mt-0.5">
               Inspect individual signal contributions, drill down into drivers, and record confidential retention interventions
             </p>
           </div>
 
-          {/* Action & Filter Controls */}
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex items-center gap-2 self-start sm:self-center">
+            {/* Export CSV Button */}
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              className="h-9 px-3.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-[#1A3125] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162820] transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap shadow-xs"
+            >
+              <Download className="h-4 w-4 text-[#00C471]" />
+              <span>Export CSV</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Dedicated Full-Width Filter Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50/70 dark:bg-[#061A14]/70 border border-slate-200/80 dark:border-[#1A3125]">
+          <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
             {/* Search Input */}
-            <div className="relative">
+            <div className="relative min-w-[200px] flex-1 max-w-xs">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
               <input
                 type="text"
@@ -372,7 +388,7 @@ export const AttritionDashboardPage = () => {
                   setPage(1);
                 }}
                 placeholder="Search by name or code..."
-                className="h-9 pl-9 pr-3 text-xs rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#061A14] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#00C471] w-52 transition"
+                className="w-full h-9 pl-9 pr-3 text-xs rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#00C471] transition"
               />
             </div>
 
@@ -384,7 +400,7 @@ export const AttritionDashboardPage = () => {
                   setDepartmentId(e.target.value);
                   setPage(1);
                 }}
-                className="h-9 px-3 text-xs rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#061A14] text-slate-900 dark:text-white focus:outline-none focus:border-[#00C471]"
+                className="h-9 px-3 text-xs rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-900 dark:text-white focus:outline-none focus:border-[#00C471]"
               >
                 <option value="">All Departments</option>
                 {departmentsList.map((d) => (
@@ -396,7 +412,7 @@ export const AttritionDashboardPage = () => {
             )}
 
             {/* Risk Tier Segmented Buttons */}
-            <div className="h-9 p-0.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#061A14] flex items-center text-xs">
+            <div className="h-9 p-0.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] flex items-center text-xs shadow-xs">
               {[
                 { id: '', label: 'All' },
                 { id: 'High', label: 'High' },
@@ -410,7 +426,7 @@ export const AttritionDashboardPage = () => {
                     setRiskLevel(btn.id);
                     setPage(1);
                   }}
-                  className={`h-7.5 px-3 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center ${
+                  className={`h-7.5 px-3 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center whitespace-nowrap ${
                     riskLevel === btn.id
                       ? 'bg-[#00C471] text-white shadow-xs'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -420,41 +436,32 @@ export const AttritionDashboardPage = () => {
                 </button>
               ))}
             </div>
+          </div>
 
-            {/* Reset Filters Button */}
-            {(search || departmentId || riskLevel) && (
-              <button
-                type="button"
-                onClick={handleResetFilters}
-                className="h-9 w-9 rounded-xl border border-slate-200 dark:border-[#1A3125] flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer"
-                title="Reset filters"
-              >
-                <RotateCcw className="h-4 w-4" />
-              </button>
-            )}
-
-            {/* Export CSV Button */}
+          {/* Reset Filters Action */}
+          {(search || departmentId || riskLevel) && (
             <button
               type="button"
-              onClick={handleExportCSV}
-              className="h-9 px-3.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-[#1A3125] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162820] transition flex items-center gap-1.5 cursor-pointer"
+              onClick={handleResetFilters}
+              className="h-9 px-3 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-xs font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition cursor-pointer flex items-center gap-1.5"
+              title="Reset filters"
             >
-              <Download className="h-4 w-4" />
-              <span>Export CSV</span>
+              <RotateCcw className="h-3.5 w-3.5 text-amber-500" />
+              <span>Reset Filters</span>
             </button>
-          </div>
+          )}
         </div>
 
         {/* Data Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs table-fixed">
+          <table className="w-full text-left text-xs min-w-[1050px]">
             <thead>
               <tr className="border-b border-slate-200 dark:border-[#1A3125] text-[11px] font-bold text-slate-500 dark:text-[#7E9E8F] uppercase tracking-wider">
-                <th className="py-3 px-3 w-[280px]">Employee</th>
+                <th className="py-3 px-3 w-[260px]">Employee</th>
                 <th className="py-3 px-3 w-[200px]">Department & Role</th>
-                <th className="py-3 px-3 w-[100px]">Tenure</th>
+                <th className="py-3 px-3 w-[90px]">Tenure</th>
                 <th
-                  className="py-3 px-3 w-[170px] cursor-pointer hover:text-slate-900 dark:hover:text-white transition"
+                  className="py-3 px-3 w-[180px] cursor-pointer hover:text-slate-900 dark:hover:text-white transition select-none"
                   onClick={() => handleSort('riskScore')}
                 >
                   <div className="flex items-center gap-1">
@@ -463,8 +470,8 @@ export const AttritionDashboardPage = () => {
                   </div>
                 </th>
                 <th className="py-3 px-3 w-[140px]">Risk Tier</th>
-                <th className="py-3 px-3 min-w-[200px]">Primary Signal Triggers</th>
-                <th className="py-3 px-3 w-[120px] text-right">Interventions</th>
+                <th className="py-3 px-3 w-[250px]">Primary Signal Triggers</th>
+                <th className="py-3 px-3 w-[130px] text-right">Interventions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-[#1A3125]/40">
@@ -492,8 +499,8 @@ export const AttritionDashboardPage = () => {
                       className="hover:bg-slate-50/70 dark:hover:bg-[#162820]/50 transition group"
                     >
                       {/* Employee Identity */}
-                      <td className="py-3 px-3 w-[280px]">
-                        <div className="flex items-center gap-3 min-w-0">
+                      <td className="py-3.5 px-3">
+                        <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[#00C471] flex items-center justify-center font-bold text-[11px] shrink-0">
                             {emp.avatar ? (
                               <img src={emp.avatar} alt={emp.name} className="w-8 h-8 rounded-full object-cover" />
@@ -501,7 +508,7 @@ export const AttritionDashboardPage = () => {
                               (emp.name || 'EM').slice(0, 2).toUpperCase()
                             )}
                           </div>
-                          <div className="min-w-0 flex-1">
+                          <div className="min-w-0 max-w-[200px]">
                             <span className="font-bold text-slate-900 dark:text-white block group-hover:text-[#00C471] transition truncate">
                               {emp.name || 'Unnamed Employee'}
                             </span>
@@ -513,61 +520,61 @@ export const AttritionDashboardPage = () => {
                       </td>
 
                       {/* Department & Role */}
-                      <td className="py-3 px-3 w-[200px]">
-                        <span className="font-medium text-slate-800 dark:text-slate-200 block truncate">
+                      <td className="py-3.5 px-3">
+                        <span className="font-medium text-slate-800 dark:text-slate-200 block truncate max-w-[180px]">
                           {dept.name || 'Department N/A'}
                         </span>
-                        <span className="text-[10px] text-slate-400 dark:text-[#7E9E8F] block truncate">
+                        <span className="text-[10px] text-slate-400 dark:text-[#7E9E8F] block truncate max-w-[180px]">
                           {emp.designationId?.title || 'Designation N/A'}
                         </span>
                       </td>
 
                       {/* Tenure */}
-                      <td className="py-3 px-3 w-[100px]">
-                        <span className="font-mono text-slate-700 dark:text-slate-300">
+                      <td className="py-3.5 px-3">
+                        <span className="font-mono text-slate-700 dark:text-slate-300 whitespace-nowrap">
                           {formatTenure(emp.joiningDate, scoreDoc.calculatedAt)}
                         </span>
                       </td>
 
                       {/* Risk Gauge */}
-                      <td className="py-3 px-3 w-[170px]">
+                      <td className="py-3.5 px-3">
                         <RiskScoreGauge score={scoreDoc.riskScore} size="sm" />
                       </td>
 
                       {/* Risk Tier Badge */}
-                      <td className="py-3 px-3 w-[140px]">
+                      <td className="py-3.5 px-3">
                         <RiskTierBadge score={scoreDoc.riskScore} level={scoreDoc.riskLevel} size="sm" showScore={false} />
                       </td>
 
                       {/* Top Factor Chips */}
-                      <td className="py-3 px-3 min-w-[200px]">
-                        <div className="flex flex-wrap gap-1">
+                      <td className="py-3.5 px-3">
+                        <div className="flex items-center gap-1.5 flex-wrap max-w-[240px]">
                           {factors.slice(0, 2).map((factor, fIdx) => (
                             <span
                               key={fIdx}
-                              className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#061A14] border border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-[#7E9E8F] truncate max-w-[180px]"
+                              className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#061A14] border border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-[#7E9E8F] whitespace-nowrap"
                               title={factor}
                             >
                               {factor.split(':')[0]}
                             </span>
                           ))}
                           {factors.length > 2 && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-[#061A14] text-slate-400">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-[#061A14] text-slate-400 whitespace-nowrap font-mono">
                               +{factors.length - 2}
                             </span>
                           )}
                           {factors.length === 0 && (
-                            <span className="text-[10px] text-slate-400">Nominal signals</span>
+                            <span className="text-[10px] text-slate-400 whitespace-nowrap">Nominal signals</span>
                           )}
                         </div>
                       </td>
 
                       {/* Actions */}
-                      <td className="py-3 px-3 w-[120px] text-right">
+                      <td className="py-3.5 px-3 text-right">
                         <button
                           type="button"
                           onClick={() => handleOpenDetailModal(scoreDoc)}
-                          className="h-8 px-3 text-xs font-bold rounded-lg border border-emerald-500/30 text-[#00C471] hover:bg-emerald-500/10 transition cursor-pointer"
+                          className="h-8 px-3.5 text-xs font-bold rounded-lg border border-emerald-500/30 text-[#00C471] hover:bg-emerald-500/10 transition cursor-pointer whitespace-nowrap inline-flex items-center justify-center shadow-xs"
                         >
                           View Dossier
                         </button>
