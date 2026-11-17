@@ -427,6 +427,53 @@ Plans:
 
 ---
 
+### Phase 15: Reward & Engagement Module – Complete Audit, UI Redesign & Improvements
+
+**Goal:** Deliver a comprehensive audit, full visual modernization, and strict PBAC permission compliance across all four submodules of the Reward & Engagement Module (Module M20): Award & Honors, Appreciation Wall, Celebration Wall, and Pulse Survey. Unify every page and modal with the Forest & Emerald Enterprise design system, enforce dynamic action gating, ensure cryptographic survey anonymity, and verify with automated E2E tests, Oxlint, and production builds.
+
+**Requirements**:
+- **1. Award & Honors Submodule**:
+  - High-density KPI cards (Total Cycles, Open Nominations, Active Voting Ballots, Honored Winners).
+  - Segmented status tabs (`All Cycles`, `Accepting Nominations`, `Voting Open`, `Announced Winners`).
+  - Dark forest & emerald honors showcase hero for the latest announced winner.
+  - Redesigned `VotingCard.jsx` with single-ballot voting, nomination citations, and admin vote tally stats.
+  - Redesigned `CreateAwardModal.jsx`, `NominateModal.jsx`, and `AnnounceWinnerModal.jsx`.
+- **2. Appreciation Wall Submodule**:
+  - Peer kudos feed with overview metrics, interactive badge filters, and text search.
+  - Redesigned `KudosCard.jsx` with sender $\rightarrow$ receiver directional flow, badge pills, quotations, and optimistic like reactions.
+  - Redesigned `GiveKudosModal.jsx` with searchable colleague picker, 7-badge selector grid, and character counter.
+  - Real-time updates via `kudos:created` WebSocket broadcast.
+- **3. Celebration Wall Submodule**:
+  - Today's Spotlight Celebration banner for birthdays and work anniversaries with festive emerald accents.
+  - Customizable lookahead timeline selector (15, 30, 60, 90 days).
+  - Redesigned `CelebrationCard.jsx` with countdown badges (`Tomorrow`, `In X days`) and milestone tags.
+  - One-click "Send Milestone Kudos" bridge connecting to the Appreciation Wall.
+- **4. Pulse Survey & Analytics Submodule**:
+  - Survey overview dashboard with participation KPI cards and status tabs (`Active`, `Draft`, `Closed`).
+  - Redesigned `SurveyFillModal.jsx` with prominent privacy guarantee, progress bar, 5-star rating, single/multi-choice polls, and qualitative feedback.
+  - Redesigned `SurveyBuilderModal.jsx` with dynamic question builder and department targeting.
+  - Redesigned `RatingBreakdownChart.jsx` with participation rates, rating distribution bars, and strictly anonymized feedback.
+- **5. PBAC Permissions & Data Security**:
+  - Replace hardcoded role checks with capability-based checks (`rewards.manage`, `rewards.nominate`, `rewards.vote`, `rewards.kudos`, `rewards.respond`).
+  - Hide all unauthorized action buttons.
+  - Enforce cryptographic survey anonymity: zero responder IDs exposed.
+- **6. Design Consistency & Verification**:
+  - 100% Forest & Emerald brand palette (`#111D17` surface, `#1A3125` border, `#00C471` emerald accent).
+  - 100% pass on `tests/e2e/m20-rewards.spec.js`.
+  - Zero Oxlint errors, zero warnings, zero `prop-types` imports, and clean `vite build`.
+
+**Depends on:** Phase 14
+**Plans:** 4 plans
+
+Plans:
+
+- [x] **Plan 15-01: Award & Honors Submodule Audit, UI Redesign & PBAC Enforcement** (`.planning/phases/15-reward-engagement-module-complete-audit-ui-redesign-improvements/15-01-PLAN.md`)
+- [x] **Plan 15-02: Appreciation Wall Submodule Audit, UI Redesign & Interaction Overhaul** (`.planning/phases/15-reward-engagement-module-complete-audit-ui-redesign-improvements/15-02-PLAN.md`)
+- [x] **Plan 15-03: Celebration Wall Submodule Audit, UI Redesign & Lifecycle Integration** (`.planning/phases/15-reward-engagement-module-complete-audit-ui-redesign-improvements/15-03-PLAN.md`)
+- [x] **Plan 15-04: Pulse Surveys & Analytics Submodule Overhaul & Module Verification Gate** (`.planning/phases/15-reward-engagement-module-complete-audit-ui-redesign-improvements/15-04-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features
