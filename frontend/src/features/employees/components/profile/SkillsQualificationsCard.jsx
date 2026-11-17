@@ -8,7 +8,6 @@
  */
 
 import React, { useState } from 'react';
-import PropTypes from 'prop-types';
 import { Tag, Plus, X, Loader2 } from 'lucide-react';
 import { Card } from '../../../../components/common/Card.jsx';
 
@@ -93,10 +92,3 @@ export function SkillsQualificationsCard({
     </Card>
   );
 }
-
-SkillsQualificationsCard.propTypes = {
-  skills: PropTypes.arrayOf(PropTypes.string),
-  onAddSkill: PropTypes.func.isRequired,
-  onRemoveSkill: PropTypes.func.isRequired,
-  isUpdating: PropTypes.bool
-};

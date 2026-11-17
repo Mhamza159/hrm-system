@@ -9,7 +9,6 @@
  */
 
 import React from 'react';
-import PropTypes from 'prop-types';
 import {
   Building2,
   Clock,
@@ -223,15 +222,3 @@ export function EmployeeCard({
     </div>
   );
 }
-
-EmployeeCard.propTypes = {
-  employee: PropTypes.object.isRequired,
-  onViewDetails: PropTypes.func.isRequired,
-  onEdit: PropTypes.func.isRequired,
-  onArchive: PropTypes.func.isRequired,
-  onRestore: PropTypes.func.isRequired,
-  onPermanentDelete: PropTypes.func.isRequired,
-  onResetPassword: PropTypes.func.isRequired,
-  isArchived: PropTypes.bool,
-  isSuperAdmin: PropTypes.bool
-};

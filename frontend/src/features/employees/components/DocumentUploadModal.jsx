@@ -10,7 +10,6 @@
  */
 
 import React, { useState } from 'react';
-import PropTypes from 'prop-types';
 import { toast } from 'sonner';
 import { Upload, X, Loader2 } from 'lucide-react';
 import { useUploadDocumentMutation } from '../employeesApi.js';
@@ -144,9 +143,3 @@ export function DocumentUploadModal({ isOpen, onClose, employeeId }) {
     </div>
   );
 }
-
-DocumentUploadModal.propTypes = {
-  isOpen: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-  employeeId: PropTypes.string.isRequired
-};

@@ -8,7 +8,6 @@
  */
 
 import React from 'react';
-import PropTypes from 'prop-types';
 import {
   CreditCard,
   Building,
@@ -129,9 +128,3 @@ export function PayrollBankCard({
     </Card>
   );
 }
-
-PayrollBankCard.propTypes = {
-  bankDetails: PropTypes.object,
-  emergencyContact: PropTypes.object,
-  onRequestChange: PropTypes.func
-};

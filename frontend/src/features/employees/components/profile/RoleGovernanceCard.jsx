@@ -10,7 +10,6 @@
  */
 
 import React from 'react';
-import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import {
   Crown,
@@ -243,9 +242,3 @@ export function RoleGovernanceCard({
     </Card>
   );
 }
-
-RoleGovernanceCard.propTypes = {
-  isSuperAdminRole: PropTypes.bool,
-  isHRRole: PropTypes.bool,
-  isDeptManagerRole: PropTypes.bool
-};

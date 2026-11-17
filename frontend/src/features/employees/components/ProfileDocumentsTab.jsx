@@ -9,7 +9,6 @@
  */
 
 import React, { useState } from 'react';
-import PropTypes from 'prop-types';
 import { toast } from 'sonner';
 import {
   FileText,
@@ -169,9 +168,3 @@ export function ProfileDocumentsTab({ employeeId, documents = [], canManage = fa
     </div>
   );
 }
-
-ProfileDocumentsTab.propTypes = {
-  employeeId: PropTypes.string.isRequired,
-  documents: PropTypes.array,
-  canManage: PropTypes.bool
-};

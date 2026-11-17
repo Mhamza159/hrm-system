@@ -11,7 +11,6 @@
  */
 
 import React, { useState } from 'react';
-import PropTypes from 'prop-types';
 import {
   BadgeDollarSign,
   TrendingUp,
@@ -385,9 +384,4 @@ export function ProfileSalaryTab({ employee, canView = false }) {
     </div>
   );
 }
-
-ProfileSalaryTab.propTypes = {
-  employee: PropTypes.object,
-  canView: PropTypes.bool
-};
 

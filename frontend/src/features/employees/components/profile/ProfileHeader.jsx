@@ -9,7 +9,6 @@
  */
 
 import React, { useRef } from 'react';
-import PropTypes from 'prop-types';
 import {
   Mail,
   Phone,
@@ -217,14 +216,3 @@ export function ProfileHeader({
     </div>
   );
 }
-
-ProfileHeader.propTypes = {
-  employee: PropTypes.object,
-  user: PropTypes.object,
-  isSuperAdminRole: PropTypes.bool,
-  isHRRole: PropTypes.bool,
-  isDeptManagerRole: PropTypes.bool,
-  onUploadAvatar: PropTypes.func,
-  isUploadingAvatar: PropTypes.bool,
-  primaryAction: PropTypes.node
-};

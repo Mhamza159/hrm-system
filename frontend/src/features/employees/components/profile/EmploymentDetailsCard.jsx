@@ -9,7 +9,6 @@
  */
 
 import React from 'react';
-import PropTypes from 'prop-types';
 import {
   Building2,
   Briefcase,
@@ -169,10 +168,3 @@ export function EmploymentDetailsCard({
     </Card>
   );
 }
-
-EmploymentDetailsCard.propTypes = {
-  employee: PropTypes.object,
-  isSuperAdminRole: PropTypes.bool,
-  isHRRole: PropTypes.bool,
-  isDeptManagerRole: PropTypes.bool
-};

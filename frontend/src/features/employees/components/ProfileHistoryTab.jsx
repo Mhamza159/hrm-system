@@ -9,7 +9,6 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import PropTypes from 'prop-types';
 import { toast } from 'sonner';
 import {
   TrendingUp,
@@ -269,8 +268,3 @@ export function ProfileHistoryTab({ employeeId, canManage = false }) {
     </div>
   );
 }
-
-ProfileHistoryTab.propTypes = {
-  employeeId: PropTypes.string.isRequired,
-  canManage: PropTypes.bool
-};

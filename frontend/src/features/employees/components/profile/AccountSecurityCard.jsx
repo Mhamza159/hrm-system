@@ -8,7 +8,6 @@
  */
 
 import React from 'react';
-import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import {
   ShieldCheck,
@@ -123,11 +122,3 @@ export function AccountSecurityCard({
     </Card>
   );
 }
-
-AccountSecurityCard.propTypes = {
-  user: PropTypes.object,
-  employee: PropTypes.object,
-  is2faActive: PropTypes.bool,
-  onOpen2faModal: PropTypes.func,
-  onOpenChangePasswordModal: PropTypes.func
-};

@@ -8,7 +8,6 @@
  */
 
 import React from 'react';
-import PropTypes from 'prop-types';
 import {
   User,
   Mail,
@@ -134,10 +133,3 @@ export function PersonalInfoCard({ employee, user, isSuperAdminRole, onRequestCh
     </Card>
   );
 }
-
-PersonalInfoCard.propTypes = {
-  employee: PropTypes.object,
-  user: PropTypes.object,
-  isSuperAdminRole: PropTypes.bool,
-  onRequestChange: PropTypes.func
-};

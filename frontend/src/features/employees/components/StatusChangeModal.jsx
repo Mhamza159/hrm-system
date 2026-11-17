@@ -11,7 +11,6 @@
  */
 
 import React, { useState } from 'react';
-import PropTypes from 'prop-types';
 import { toast } from 'sonner';
 import { ShieldAlert, AlertTriangle, X, Loader2 } from 'lucide-react';
 import { useUpdateEmployeeStatusMutation } from '../employeesApi.js';
@@ -142,10 +141,3 @@ export function StatusChangeModal({ isOpen, onClose, employeeId, currentStatus }
     </div>
   );
 }
-
-StatusChangeModal.propTypes = {
-  isOpen: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-  employeeId: PropTypes.string,
-  currentStatus: PropTypes.string
-};

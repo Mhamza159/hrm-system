@@ -9,7 +9,6 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import PropTypes from 'prop-types';
 import {
   User,
   MapPin,
@@ -285,9 +284,3 @@ export function ProfileOverviewTab({ employee, isOwn = false, canViewFinancials 
     </div>
   );
 }
-
-ProfileOverviewTab.propTypes = {
-  employee: PropTypes.object,
-  isOwn: PropTypes.bool,
-  canViewFinancials: PropTypes.bool
-};

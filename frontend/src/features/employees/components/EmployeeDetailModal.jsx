@@ -18,7 +18,6 @@
  */
 
 import React, { useState } from 'react';
-import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import {
   X,
@@ -735,15 +734,3 @@ export function EmployeeDetailModal({
     </div>
   );
 }
-
-EmployeeDetailModal.propTypes = {
-  isOpen: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-  employee: PropTypes.object,
-  onEdit: PropTypes.func,
-  onChangeStatus: PropTypes.func,
-  onResetPassword: PropTypes.func,
-  onArchive: PropTypes.func,
-  onRestore: PropTypes.func,
-  isArchived: PropTypes.bool
-};
