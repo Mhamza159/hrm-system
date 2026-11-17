@@ -44,14 +44,18 @@ export const EmployeePoliciesPage = () => {
     limit: 100
   });
 
-  const policies = policiesData?.policies || [];
+  const rawPolicies =
+    policiesData?.items ||
+    policiesData?.policies ||
+    (Array.isArray(policiesData?.data) ? policiesData.data : Array.isArray(policiesData) ? policiesData : []);
+  const policies = Array.isArray(rawPolicies) ? rawPolicies : [];
 
   // Partition policies by acknowledgement state
   const pendingPolicies = policies.filter(
-    (p) => p.requiresAcknowledgement && !p.userAcknowledged
+    (p) => p.requiresAcknowledgement && !(p.hasAcknowledged || p.userAcknowledged)
   );
   const acknowledgedPolicies = policies.filter(
-    (p) => p.userAcknowledged
+    (p) => (p.hasAcknowledged || p.userAcknowledged)
   );
   const generalPolicies = policies;
 

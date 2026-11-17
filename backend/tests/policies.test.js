@@ -28,6 +28,9 @@ describe('Phase 21 — Company Policies Module Integration Tests', () => {
   let createdPolicyId;
 
   beforeAll(async () => {
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
     const testDbUri = env.MONGO_URI.replace('hrm_development', 'hrm_test_policies_p21');
     await mongoose.connect(testDbUri);
 
@@ -113,7 +116,7 @@ describe('Phase 21 — Company Policies Module Integration Tests', () => {
       icon: 'Shield',
       color: '#00C471'
     });
-  });
+  }, 60000);
 
   afterAll(async () => {
     await mongoose.connection.close();

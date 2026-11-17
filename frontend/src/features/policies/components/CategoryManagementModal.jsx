@@ -48,7 +48,9 @@ const PRESET_COLORS = [
 ];
 
 export const CategoryManagementModal = ({ isOpen, onClose }) => {
-  const { data: categories = [], isLoading } = useGetCategoriesQuery();
+  const { data: categoriesData, isLoading } = useGetCategoriesQuery();
+  const rawCategories = categoriesData?.data || (Array.isArray(categoriesData) ? categoriesData : []);
+  const categories = Array.isArray(rawCategories) ? rawCategories : [];
   const [createCategory, { isLoading: isCreating }] = useCreateCategoryMutation();
   const [updateCategory, { isLoading: isUpdating }] = useUpdateCategoryMutation();
   const [deleteCategory, { isLoading: isDeleting }] = useDeleteCategoryMutation();

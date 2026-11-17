@@ -15,10 +15,12 @@ import {
 import { useGetPolicyVersionsQuery } from '../policyApi.js';
 
 export const PolicyVersionHistoryModal = ({ isOpen, onClose, policy }) => {
-  const { data: versions = [], isLoading } = useGetPolicyVersionsQuery(
+  const { data: versionsData, isLoading } = useGetPolicyVersionsQuery(
     policy?._id,
     { skip: !policy?._id || !isOpen }
   );
+  const rawVersions = versionsData?.data || (Array.isArray(versionsData) ? versionsData : []);
+  const versions = Array.isArray(rawVersions) ? rawVersions : [];
 
   const [selectedVersion, setSelectedVersion] = useState(null);
 

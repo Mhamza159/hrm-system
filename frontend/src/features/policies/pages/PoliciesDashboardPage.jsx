@@ -65,7 +65,7 @@ export const PoliciesDashboardPage = () => {
 
   // Queries
   const { data: statsData, refetch: refetchStats } = useGetPolicyStatsQuery();
-  const { data: categories = [], refetch: refetchCategories } = useGetCategoriesQuery();
+  const { data: rawCategoriesData, refetch: refetchCategories } = useGetCategoriesQuery();
   const {
     data: policiesData,
     isLoading: isPoliciesLoading,
@@ -81,15 +81,30 @@ export const PoliciesDashboardPage = () => {
   const [deletePolicy] = useDeletePolicyMutation();
   const [submitPolicyForApproval] = useSubmitPolicyForApprovalMutation();
 
-  const policies = policiesData?.policies || [];
-  const stats = statsData?.stats || {
-    total: 0,
-    published: 0,
-    draft: 0,
-    pendingApproval: 0,
-    archived: 0,
-    requiresAck: 0,
-    complianceRate: 0
+  // Defensively extract categories array
+  const categories = Array.isArray(rawCategoriesData)
+    ? rawCategoriesData
+    : Array.isArray(rawCategoriesData?.data)
+    ? rawCategoriesData.data
+    : [];
+
+  // Defensively extract policies items array
+  const rawPolicies =
+    policiesData?.items ||
+    policiesData?.policies ||
+    (Array.isArray(policiesData?.data) ? policiesData.data : Array.isArray(policiesData) ? policiesData : []);
+  const policies = Array.isArray(rawPolicies) ? rawPolicies : [];
+
+  // Defensively extract stats object with standard and fallback keys
+  const rawStats = statsData?.data || statsData || {};
+  const stats = {
+    total: rawStats.totalPolicies ?? rawStats.total ?? policies.length,
+    published: rawStats.publishedPolicies ?? rawStats.published ?? 0,
+    draft: rawStats.draftPolicies ?? rawStats.draft ?? 0,
+    pendingApproval: rawStats.pendingApprovalPolicies ?? rawStats.pendingApproval ?? 0,
+    archived: rawStats.archivedPolicies ?? rawStats.archived ?? 0,
+    requiresAck: rawStats.requiringAcknowledgementCount ?? rawStats.requiresAck ?? 0,
+    complianceRate: rawStats.overallComplianceRate ?? rawStats.complianceRate ?? 0
   };
 
   const handleRefresh = () => {

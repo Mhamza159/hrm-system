@@ -35,11 +35,16 @@ export const PolicyAcknowledgementRosterModal = ({ isOpen, onClose, policy }) =>
 
   if (!isOpen || !policy) return null;
 
-  const roster = rosterData?.roster || [];
-  const totalRequired = rosterData?.totalRequired || 0;
-  const totalAcknowledged = rosterData?.totalAcknowledged || 0;
-  const complianceRate = totalRequired > 0 ? Math.round((totalAcknowledged / totalRequired) * 100) : 0;
-  const deptBreakdown = rosterData?.departmentBreakdown || [];
+  const activeRosterData = rosterData?.data || rosterData || {};
+  const roster = Array.isArray(activeRosterData.roster) ? activeRosterData.roster : [];
+  const totalRequired = activeRosterData.totalEligible ?? activeRosterData.totalRequired ?? 0;
+  const totalAcknowledged = activeRosterData.signedCount ?? activeRosterData.totalAcknowledged ?? 0;
+  const complianceRate =
+    activeRosterData.compliancePercentage ??
+    (totalRequired > 0 ? Math.round((totalAcknowledged / totalRequired) * 100) : 0);
+  const deptBreakdown = Array.isArray(activeRosterData.departmentBreakdown)
+    ? activeRosterData.departmentBreakdown
+    : [];
 
   // Filter roster by local status if selected
   const filteredRoster = roster.filter((item) => {

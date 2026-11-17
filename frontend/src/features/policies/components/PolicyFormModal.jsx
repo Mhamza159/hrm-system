@@ -3,7 +3,7 @@
  * @description Administrative modal for authoring and revising company policies.
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   X,
   FileText,
@@ -80,9 +80,17 @@ export const PolicyFormModal = ({
 }) => {
   const isEditing = Boolean(initialPolicy?._id);
 
-  const { data: categories = [] } = useGetCategoriesQuery();
+  const { data: rawCategoriesData } = useGetCategoriesQuery();
+  const categories = useMemo(() => {
+    const raw = rawCategoriesData?.data || (Array.isArray(rawCategoriesData) ? rawCategoriesData : []);
+    return Array.isArray(raw) ? raw : [];
+  }, [rawCategoriesData]);
+
   const { data: departmentsData } = useGetDepartmentsQuery();
-  const departments = departmentsData?.data || [];
+  const departments = useMemo(() => {
+    const raw = departmentsData?.data || (Array.isArray(departmentsData) ? departmentsData : []);
+    return Array.isArray(raw) ? raw : [];
+  }, [departmentsData]);
 
   const [createPolicy, { isLoading: isCreating }] = useCreatePolicyMutation();
   const [updatePolicy, { isLoading: isUpdating }] = useUpdatePolicyMutation();

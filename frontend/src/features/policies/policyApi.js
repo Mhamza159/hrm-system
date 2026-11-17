@@ -24,16 +24,19 @@ export const policyApi = baseApi.injectEndpoints({
           myPoliciesOnly: params.myPoliciesOnly || undefined
         }
       }),
+      transformResponse: (response) => response?.data ?? response,
       providesTags: ['Policies']
     }),
 
     getPolicyStats: builder.query({
       query: () => '/policies/stats',
+      transformResponse: (response) => response?.data ?? response,
       providesTags: ['Policies']
     }),
 
     getPolicyById: builder.query({
       query: (id) => `/policies/${id}`,
+      transformResponse: (response) => response?.data ?? response,
       providesTags: (result, error, id) => [{ type: 'Policies', id }]
     }),
 
@@ -115,16 +118,19 @@ export const policyApi = baseApi.injectEndpoints({
           search: search || undefined
         }
       }),
+      transformResponse: (response) => response?.data ?? response,
       providesTags: (result, error, { id }) => [{ type: 'Policies', id }]
     }),
 
     getPolicyVersions: builder.query({
       query: (id) => `/policies/${id}/versions`,
+      transformResponse: (response) => response?.data ?? response,
       providesTags: (result, error, id) => [{ type: 'Policies', id }]
     }),
 
     getCategories: builder.query({
       query: () => '/policies/categories',
+      transformResponse: (response) => response?.data ?? response,
       providesTags: ['Policies']
     }),
 
