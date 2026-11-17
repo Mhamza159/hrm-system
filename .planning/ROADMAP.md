@@ -696,6 +696,45 @@ Plans:
 
 ---
 
+### Phase 21: Company Policies Module — Complete Audit, Refinement, Implementation & UI/UX Redesign
+
+**Goal:** Deliver a comprehensive end-to-end audit, architectural refinement, and complete implementation of the **Company Policies Module** across both administrative and employee dimensions. Support dynamic database-driven categories, semantic version control with immutable revision ledgers, multi-tier approval and publishing workflows, personalized employee applicability scoping, legally compliant digital acknowledgements, real-time compliance tracking rosters, secure document streaming, and seamless integration with the AI Chatbot and notification pipelines.
+
+**Requirements**:
+- **1. Backend Policies Architecture, Schemas, Validation & RBAC Engine (`policy.model.js`, `policyCategory.model.js`, `policyVersion.model.js`, `policyAcknowledgement.model.js`, `policy.service.js`)**:
+  - Implement full policy lifecycle states: `Draft`, `Pending Approval`, `Approved`, `Published`, `Rejected`, `Archived`, `Expired`.
+  - Immutable version history preserving previous snapshots, author attribution, and revision summaries without destructive overwrites.
+  - Digital employee acknowledgement tracking with signature, timestamp, IP address, and unique version binding.
+  - Granular PBAC permissions catalogue (`policy.view`, `policy.create`, `policy.edit`, `policy.delete`, `policy.manage`, `policy.approve`, `policy.publish`, `policy.acknowledge`, `policy.track`).
+- **2. Administrative Policy Console, Analytics Dashboard & Category Management (`PoliciesDashboardPage.jsx`, `PolicyCard.jsx`, `PolicyTable.jsx`, `CategoryManagementModal.jsx`, `PolicyFormModal.jsx`)**:
+  - Executive KPI summary cards across 7 compliance metrics.
+  - Category segmented pills, status filtering, search bar, and grid vs table view toggle.
+  - Comprehensive authoring modal supporting markdown content, department/role scoping, grace periods, and file attachments.
+  - Dynamic category management dialog with color and icon customizers.
+- **3. Version History, Approval Workflow & Detail Inspection Drawer/View (`PolicyDetailDrawer.jsx`, `PolicyVersionHistoryModal.jsx`, `PolicyApprovalModal.jsx`, `PublishPolicyModal.jsx`)**:
+  - Structured policy inspection drawer with formatted articles, metadata sidebar, and signed document streaming.
+  - Interactive version history modal allowing inspection of past versions without mutating active policy.
+  - Manager review interface with one-click approval and mandatory rejection feedback.
+  - Publishing modal with effective date verification and multi-channel workforce alert dispatch.
+- **4. Employee Policy Portal, Acknowledgement Workflow, Tracking Roster & Verification Gate (`EmployeePoliciesPage.jsx`, `PolicyAcknowledgementModal.jsx`, `PolicyAcknowledgementRosterModal.jsx`)**:
+  - Personalized employee portal with "Pending Sign-off", "Acknowledged", and "All Policies" tabs.
+  - Legally compliant digital sign-off modal with mandatory declaration and signature capture.
+  - Administrative compliance tracking sheet with department progress bars, search, and CSV export.
+  - Router and Sidebar integration in `App.jsx` and `Sidebar.jsx`.
+  - Full verification gate: 0 Oxlint warnings, 100% backend integration tests passing, clean Vite production build.
+
+**Depends on:** Phase 20
+**Plans:** 4 plans
+
+Plans:
+
+- [ ] **Plan 21-01: Backend Policies Architecture, Schemas, Validation & RBAC Engine** (`.planning/phases/21-company-policies-module-complete-audit-refinement-implementation-ui-ux-redesign/21-01-PLAN.md`)
+- [ ] **Plan 21-02: Administrative Policy Console, Analytics Dashboard & Category Management** (`.planning/phases/21-company-policies-module-complete-audit-refinement-implementation-ui-ux-redesign/21-02-PLAN.md`)
+- [ ] **Plan 21-03: Version History, Approval Workflow & Detail Inspection Drawer/View** (`.planning/phases/21-company-policies-module-complete-audit-refinement-implementation-ui-ux-redesign/21-03-PLAN.md`)
+- [ ] **Plan 21-04: Employee Policy Portal, Acknowledgement Workflow, Tracking Roster & Verification Gate** (`.planning/phases/21-company-policies-module-complete-audit-refinement-implementation-ui-ux-redesign/21-04-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features
