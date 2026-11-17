@@ -454,24 +454,24 @@ export const AttritionDashboardPage = () => {
 
         {/* Data Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs min-w-[1050px]">
+          <table className="w-full text-left text-xs min-w-[1180px]">
             <thead>
               <tr className="border-b border-slate-200 dark:border-[#1A3125] text-[11px] font-bold text-slate-500 dark:text-[#7E9E8F] uppercase tracking-wider">
-                <th className="py-3 px-3 w-[260px]">Employee</th>
-                <th className="py-3 px-3 w-[200px]">Department & Role</th>
-                <th className="py-3 px-3 w-[90px]">Tenure</th>
+                <th className="py-3 px-3.5 w-[240px] whitespace-nowrap">Employee</th>
+                <th className="py-3 px-3.5 w-[190px] whitespace-nowrap">Department & Role</th>
+                <th className="py-3 px-3.5 w-[90px] whitespace-nowrap">Tenure</th>
                 <th
-                  className="py-3 px-3 w-[180px] cursor-pointer hover:text-slate-900 dark:hover:text-white transition select-none"
+                  className="py-3 px-3.5 w-[170px] whitespace-nowrap cursor-pointer hover:text-slate-900 dark:hover:text-white transition select-none"
                   onClick={() => handleSort('riskScore')}
                 >
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
                     <span>Flight Risk Gauge</span>
                     <ArrowUpDown className="w-3 h-3 text-slate-400" />
                   </div>
                 </th>
-                <th className="py-3 px-3 w-[140px]">Risk Tier</th>
-                <th className="py-3 px-3 w-[250px]">Primary Signal Triggers</th>
-                <th className="py-3 px-3 w-[130px] text-right">Interventions</th>
+                <th className="py-3 px-3.5 w-[130px] whitespace-nowrap">Risk Tier</th>
+                <th className="py-3 px-3.5 w-[250px] whitespace-nowrap">Primary Signal Triggers</th>
+                <th className="py-3 px-3.5 w-[110px] text-right whitespace-nowrap">Interventions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-[#1A3125]/40">
@@ -499,7 +499,7 @@ export const AttritionDashboardPage = () => {
                       className="hover:bg-slate-50/70 dark:hover:bg-[#162820]/50 transition group"
                     >
                       {/* Employee Identity */}
-                      <td className="py-3.5 px-3">
+                      <td className="py-3 px-3.5">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[#00C471] flex items-center justify-center font-bold text-[11px] shrink-0">
                             {emp.avatar ? (
@@ -508,7 +508,7 @@ export const AttritionDashboardPage = () => {
                               (emp.name || 'EM').slice(0, 2).toUpperCase()
                             )}
                           </div>
-                          <div className="min-w-0 max-w-[200px]">
+                          <div className="min-w-0 max-w-[190px]">
                             <span className="font-bold text-slate-900 dark:text-white block group-hover:text-[#00C471] transition truncate">
                               {emp.name || 'Unnamed Employee'}
                             </span>
@@ -520,7 +520,7 @@ export const AttritionDashboardPage = () => {
                       </td>
 
                       {/* Department & Role */}
-                      <td className="py-3.5 px-3">
+                      <td className="py-3 px-3.5">
                         <span className="font-medium text-slate-800 dark:text-slate-200 block truncate max-w-[180px]">
                           {dept.name || 'Department N/A'}
                         </span>
@@ -530,51 +530,51 @@ export const AttritionDashboardPage = () => {
                       </td>
 
                       {/* Tenure */}
-                      <td className="py-3.5 px-3">
+                      <td className="py-3 px-3.5">
                         <span className="font-mono text-slate-700 dark:text-slate-300 whitespace-nowrap">
                           {formatTenure(emp.joiningDate, scoreDoc.calculatedAt)}
                         </span>
                       </td>
 
                       {/* Risk Gauge */}
-                      <td className="py-3.5 px-3">
+                      <td className="py-3 px-3.5 whitespace-nowrap">
                         <RiskScoreGauge score={scoreDoc.riskScore} size="sm" />
                       </td>
 
                       {/* Risk Tier Badge */}
-                      <td className="py-3.5 px-3">
+                      <td className="py-3 px-3.5 whitespace-nowrap">
                         <RiskTierBadge score={scoreDoc.riskScore} level={scoreDoc.riskLevel} size="sm" showScore={false} />
                       </td>
 
                       {/* Top Factor Chips */}
-                      <td className="py-3.5 px-3">
-                        <div className="flex items-center gap-1.5 flex-wrap max-w-[240px]">
+                      <td className="py-3 px-3.5">
+                        <div className="flex items-center gap-1.5 flex-nowrap overflow-hidden">
                           {factors.slice(0, 2).map((factor, fIdx) => (
                             <span
                               key={fIdx}
-                              className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#061A14] border border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-[#7E9E8F] whitespace-nowrap"
+                              className="text-[11px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#061A14] border border-slate-200 dark:border-[#1A3125] text-slate-700 dark:text-[#7E9E8F] whitespace-nowrap shrink-0"
                               title={factor}
                             >
                               {factor.split(':')[0]}
                             </span>
                           ))}
                           {factors.length > 2 && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-[#061A14] text-slate-400 whitespace-nowrap font-mono">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-[#061A14] text-slate-400 whitespace-nowrap font-mono shrink-0">
                               +{factors.length - 2}
                             </span>
                           )}
                           {factors.length === 0 && (
-                            <span className="text-[10px] text-slate-400 whitespace-nowrap">Nominal signals</span>
+                            <span className="text-[11px] text-slate-400 whitespace-nowrap">Nominal signals</span>
                           )}
                         </div>
                       </td>
 
                       {/* Actions */}
-                      <td className="py-3.5 px-3 text-right">
+                      <td className="py-3 px-3.5 text-right whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => handleOpenDetailModal(scoreDoc)}
-                          className="h-8 px-3.5 text-xs font-bold rounded-lg border border-emerald-500/30 text-[#00C471] hover:bg-emerald-500/10 transition cursor-pointer whitespace-nowrap inline-flex items-center justify-center shadow-xs"
+                          className="h-8 px-3 text-xs font-bold rounded-lg border border-emerald-500/30 text-[#00C471] hover:bg-emerald-500/10 transition cursor-pointer whitespace-nowrap inline-flex items-center justify-center shadow-xs"
                         >
                           View Dossier
                         </button>

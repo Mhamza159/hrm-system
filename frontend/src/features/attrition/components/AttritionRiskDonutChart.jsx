@@ -81,35 +81,35 @@ export const AttritionRiskDonutChart = ({
   const health = getHealthBadge();
 
   return (
-    <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-5 shadow-sm flex flex-col justify-between h-full">
+    <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-5 shadow-sm flex flex-col h-full overflow-hidden">
       {/* Chart Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1A3125]">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1A3125] shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[#00C471]">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[#00C471] shrink-0">
             <PieChart className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="font-bold text-sm text-slate-900 dark:text-white">Risk Tier Breakdown</h3>
-            <p className="text-[11px] text-slate-500 dark:text-[#7E9E8F]">Workforce proportion by flight risk</p>
+            <h3 className="font-bold text-sm text-slate-900 dark:text-white leading-tight">Risk Tier Breakdown</h3>
+            <p className="text-[11px] text-slate-500 dark:text-[#7E9E8F] leading-normal">Workforce proportion by flight risk</p>
           </div>
         </div>
-        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${health.color}`}>
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap shrink-0 ${health.color}`}>
           {health.text}
         </span>
       </div>
 
       {isLoading ? (
-        <div className="h-56 flex items-center justify-center text-xs text-slate-400 dark:text-[#7E9E8F]">
+        <div className="flex-1 min-h-[260px] flex items-center justify-center text-xs text-slate-400 dark:text-[#7E9E8F]">
           Loading risk distribution...
         </div>
       ) : total === 0 ? (
-        <div className="h-56 flex items-center justify-center text-xs text-slate-400 dark:text-[#7E9E8F]">
+        <div className="flex-1 min-h-[260px] flex items-center justify-center text-xs text-slate-400 dark:text-[#7E9E8F]">
           No evaluated employees available
         </div>
       ) : (
-        <div className="flex-1 flex flex-col items-center justify-between py-3 gap-4">
+        <div className="flex-1 flex flex-col items-center justify-center py-4 gap-4">
           {/* Centered Donut SVG */}
-          <div className="relative w-44 h-44 shrink-0 flex items-center justify-center my-auto">
+          <div className="relative w-40 h-40 shrink-0 flex items-center justify-center">
             <svg
               className="w-full h-full transform -rotate-90"
               viewBox="0 0 180 180"
@@ -153,18 +153,18 @@ export const AttritionRiskDonutChart = ({
             </svg>
 
             {/* Central Score Gauge */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-              <span className="font-mono text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none select-none">
+              <span className="font-mono text-3xl font-bold tracking-tight text-slate-900 dark:text-white leading-none">
                 {Math.round(averageScore)}
               </span>
-              <span className="text-[10px] text-slate-400 dark:text-[#7E9E8F] uppercase tracking-wider font-semibold mt-0.5">
+              <span className="text-[10px] text-slate-400 dark:text-[#7E9E8F] uppercase tracking-wider font-semibold mt-1">
                 Avg Risk Score
               </span>
             </div>
           </div>
 
           {/* Interactive Legend List - Full width at bottom, clean stack */}
-          <div className="w-full space-y-1.5 pt-2 border-t border-slate-100 dark:border-[#1A3125]/60">
+          <div className="w-full space-y-1.5 pt-3 border-t border-slate-100 dark:border-[#1A3125]/80">
             {tiers.map((t) => {
               const Icon = t.icon;
               const isSelected = selectedRiskLevel === t.id;
