@@ -512,10 +512,10 @@ Plans:
 
 Plans:
 
-- [ ] **Plan 16-01: Submit Feedback Submodule Audit & UI Redesign** (`.planning/phases/16-feedback-grievance-module-complete-audit-ui-redesign-improvements/16-01-PLAN.md`)
-- [ ] **Plan 16-02: Track Case Submodule Audit, Dual-Mode Tracking & Timeline UI Redesign** (`.planning/phases/16-feedback-grievance-module-complete-audit-ui-redesign-improvements/16-02-PLAN.md`)
-- [ ] **Plan 16-03: Grievance Admin Submodule & Management Drawer Audit & Redesign** (`.planning/phases/16-feedback-grievance-module-complete-audit-ui-redesign-improvements/16-03-PLAN.md`)
-- [ ] **Plan 16-04: Inquiry Committee Submodule & Module Verification Gate** (`.planning/phases/16-feedback-grievance-module-complete-audit-ui-redesign-improvements/16-04-PLAN.md`)
+- [x] **Plan 16-01: Submit Feedback Submodule Audit & UI Redesign** (`.planning/phases/16-feedback-grievance-module-complete-audit-ui-redesign-improvements/16-01-PLAN.md`)
+- [x] **Plan 16-02: Track Case Submodule Audit, Dual-Mode Tracking & Timeline UI Redesign** (`.planning/phases/16-feedback-grievance-module-complete-audit-ui-redesign-improvements/16-02-PLAN.md`)
+- [x] **Plan 16-03: Grievance Admin Submodule & Management Drawer Audit & Redesign** (`.planning/phases/16-feedback-grievance-module-complete-audit-ui-redesign-improvements/16-03-PLAN.md`)
+- [x] **Plan 16-04: Inquiry Committee Submodule & Module Verification Gate** (`.planning/phases/16-feedback-grievance-module-complete-audit-ui-redesign-improvements/16-04-PLAN.md`)
 
 ---
 
