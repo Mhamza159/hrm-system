@@ -640,10 +640,10 @@ Plans:
 
 Plans:
 
-- [ ] **Plan 19-01: Header, KPI Summary Cards & Global Toolbar Layout Alignment** (`.planning/phases/19-attrition-prediction-module-complete-ui-alignment-layout-correction-modal-redesign/19-01-PLAN.md`)
-- [ ] **Plan 19-02: Charts Suite Geometry, Grid Height Balance & SVG Responsive Polish** (`.planning/phases/19-attrition-prediction-module-complete-ui-alignment-layout-correction-modal-redesign/19-02-PLAN.md`)
-- [ ] **Plan 19-03: Employee Risk Table Column Alignment, Sizing & Pagination Overhaul** (`.planning/phases/19-attrition-prediction-module-complete-ui-alignment-layout-correction-modal-redesign/19-03-PLAN.md`)
-- [ ] **Plan 19-04: Employee Risk Dossier Modal Redesign & Module Verification Gate** (`.planning/phases/19-attrition-prediction-module-complete-ui-alignment-layout-correction-modal-redesign/19-04-PLAN.md`)
+- [x] **Plan 19-01: Header, KPI Summary Cards & Global Toolbar Layout Alignment** (`.planning/phases/19-attrition-prediction-module-complete-ui-alignment-layout-correction-modal-redesign/19-01-PLAN.md`)
+- [x] **Plan 19-02: Charts Suite Geometry, Grid Height Balance & SVG Responsive Polish** (`.planning/phases/19-attrition-prediction-module-complete-ui-alignment-layout-correction-modal-redesign/19-02-PLAN.md`)
+- [x] **Plan 19-03: Employee Risk Table Column Alignment, Sizing & Pagination Overhaul** (`.planning/phases/19-attrition-prediction-module-complete-ui-alignment-layout-correction-modal-redesign/19-03-PLAN.md`)
+- [x] **Plan 19-04: Employee Risk Dossier Modal Redesign & Module Verification Gate** (`.planning/phases/19-attrition-prediction-module-complete-ui-alignment-layout-correction-modal-redesign/19-04-PLAN.md`)
 
 ---
 

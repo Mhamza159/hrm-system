@@ -36,14 +36,14 @@ export const RiskScoreGauge = ({ score = 0, size = 'md', showBar = true }) => {
   const isSmall = size === 'sm';
 
   return (
-    <div className="flex items-center gap-2.5">
-      <span className={`font-mono font-bold ${isSmall ? 'text-xs' : 'text-sm'} ${colors.text}`}>
+    <div className="flex items-center gap-2">
+      <span className={`font-mono font-bold w-12 shrink-0 ${isSmall ? 'text-xs' : 'text-sm'} ${colors.text}`}>
         {clampedScore}
         <span className="text-[10px] text-slate-400 dark:text-[#7E9E8F] font-normal">/100</span>
       </span>
 
       {showBar && (
-        <div className={`rounded-full overflow-hidden ${colors.track} ${isSmall ? 'w-16 h-1.5' : 'w-24 h-2'}`}>
+        <div className={`rounded-full overflow-hidden ${colors.track} ${isSmall ? 'w-16 h-1.5' : 'w-20 h-2'} shrink-0`}>
           <div
             className={`h-full rounded-full transition-all duration-500 ${colors.bar}`}
             style={{ width: `${clampedScore}%` }}

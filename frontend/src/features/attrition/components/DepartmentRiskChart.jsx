@@ -236,7 +236,7 @@ export const DepartmentRiskChart = ({
 
         {/* Hover Tooltip Popup */}
         {hoveredDept && (
-          <div className="absolute top-2 right-4 bg-white dark:bg-[#061A14] border border-slate-200 dark:border-[#1A3125] shadow-2xl rounded-xl p-3 text-xs z-10 min-w-[210px] pointer-events-none animate-in fade-in zoom-in-95 duration-100">
+          <div className="absolute top-2 right-4 bg-white/95 dark:bg-[#061A14]/95 backdrop-blur-md border border-slate-200 dark:border-[#1A3125] shadow-2xl rounded-xl p-3.5 text-xs z-10 min-w-[220px] pointer-events-none animate-in fade-in zoom-in-95 duration-100">
             <p className="font-bold text-slate-900 dark:text-white border-b border-slate-100 dark:border-[#1A3125] pb-1.5 flex items-center justify-between">
               <span>{hoveredDept.departmentName}</span>
               <span className="font-mono text-[10px] text-slate-400">({hoveredDept.departmentCode})</span>

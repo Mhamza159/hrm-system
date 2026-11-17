@@ -34,6 +34,19 @@ import { AttritionFactorsChart } from '../components/AttritionFactorsChart.jsx';
 import { EmployeeRiskDetailModal } from '../components/EmployeeRiskDetailModal.jsx';
 import { toast } from 'sonner';
 
+// Format tenure duration relative to calculation timestamp
+const formatTenure = (joiningDate, calculatedAt) => {
+  if (!joiningDate) return '—';
+  const joinTs = new Date(joiningDate).getTime();
+  if (Number.isNaN(joinTs)) return '—';
+  const refTs = calculatedAt ? new Date(calculatedAt).getTime() : joinTs;
+  const months = Math.max(0, Math.floor((refTs - joinTs) / (1000 * 60 * 60 * 24 * 30.44)));
+  const years = Math.floor(months / 12);
+  const remMonths = months % 12;
+  if (years === 0) return `${remMonths}m`;
+  return `${years}y ${remMonths > 0 ? `${remMonths}m` : ''}`;
+};
+
 export const AttritionDashboardPage = () => {
   const { user, isHR, isSuperAdmin } = useAuth();
 
@@ -184,18 +197,8 @@ export const AttritionDashboardPage = () => {
     toast.success('Attrition risk report exported successfully');
   };
 
-  // Calculate Tenure Helper
-  const formatTenure = (joiningDate) => {
-    if (!joiningDate) return '—';
-    const months = Math.max(0, Math.floor((Date.now() - new Date(joiningDate).getTime()) / (1000 * 60 * 60 * 24 * 30.44)));
-    const years = Math.floor(months / 12);
-    const remMonths = months % 12;
-    if (years === 0) return `${remMonths}m`;
-    return `${years}y ${remMonths > 0 ? `${remMonths}m` : ''}`;
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#061A14] p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#061A14] p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] p-5 rounded-2xl shadow-sm">
         <div className="flex items-center gap-3">
@@ -224,7 +227,7 @@ export const AttritionDashboardPage = () => {
               type="button"
               onClick={handleRecalculate}
               disabled={isRecalculating}
-              className="px-4 py-2 text-xs font-bold text-white bg-[#00C471] hover:bg-[#00B064] rounded-xl transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+              className="h-9 px-4 text-xs font-bold text-white bg-[#00C471] hover:bg-[#00B064] rounded-xl transition-all shadow-sm flex items-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${isRecalculating ? 'animate-spin' : ''}`} />
               <span>{isRecalculating ? 'Evaluating Signals...' : 'Recalculate Risk'}</span>
@@ -236,85 +239,95 @@ export const AttritionDashboardPage = () => {
       {/* KPI Metric Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Workforce Evaluated */}
-        <div className="bg-white dark:bg-[#111D17] p-5 rounded-2xl border border-slate-200 dark:border-[#1A3125] shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-slate-500 dark:text-[#7E9E8F] block">
+        <div className="bg-white dark:bg-[#111D17] p-5 rounded-2xl border border-slate-200 dark:border-[#1A3125] shadow-sm flex flex-col justify-between h-32">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 dark:text-[#7E9E8F]">
               Evaluated Workforce
             </span>
-            <p className="text-2xl font-bold font-mono text-slate-900 dark:text-white">{totalWorkforce}</p>
-            <span className="text-[11px] text-slate-400">
+            <div className="h-11 w-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[#00C471]">
+              <Users className="h-5 w-5" />
+            </div>
+          </div>
+          <div>
+            <p className="text-2xl font-bold font-mono tracking-tight text-slate-900 dark:text-white">{totalWorkforce}</p>
+            <span className="text-[11px] text-slate-400 font-medium">
               Active staff analyzed
             </span>
-          </div>
-          <div className="h-11 w-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[#00C471]">
-            <Users className="h-5 w-5" />
           </div>
         </div>
 
         {/* High Flight Risk */}
-        <div className="bg-white dark:bg-[#111D17] p-5 rounded-2xl border border-red-500/30 dark:border-red-900/40 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-red-600 dark:text-red-400 block">
+        <div className="bg-white dark:bg-[#111D17] p-5 rounded-2xl border border-red-500/30 dark:border-red-900/40 shadow-sm flex flex-col justify-between h-32">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-red-600 dark:text-red-400">
               High Flight Risk
             </span>
-            <p className="text-2xl font-bold font-mono text-red-600 dark:text-red-400">{highRiskTotal}</p>
-            <span className="text-[11px] text-slate-400">
+            <div className="h-11 w-11 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
+              <ShieldAlert className="h-5 w-5" />
+            </div>
+          </div>
+          <div>
+            <p className="text-2xl font-bold font-mono tracking-tight text-red-600 dark:text-red-400">{highRiskTotal}</p>
+            <span className="text-[11px] text-slate-400 font-medium">
               Score &ge; 70 ({totalWorkforce > 0 ? ((highRiskTotal / totalWorkforce) * 100).toFixed(0) : 0}%)
             </span>
-          </div>
-          <div className="h-11 w-11 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
-            <ShieldAlert className="h-5 w-5" />
           </div>
         </div>
 
         {/* Moderate Risk */}
-        <div className="bg-white dark:bg-[#111D17] p-5 rounded-2xl border border-amber-500/30 dark:border-amber-900/40 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 block">
+        <div className="bg-white dark:bg-[#111D17] p-5 rounded-2xl border border-amber-500/30 dark:border-amber-900/40 shadow-sm flex flex-col justify-between h-32">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
               Moderate Risk
             </span>
-            <p className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400">{mediumRiskTotal}</p>
-            <span className="text-[11px] text-slate-400">
+            <div className="h-11 w-11 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+          </div>
+          <div>
+            <p className="text-2xl font-bold font-mono tracking-tight text-amber-600 dark:text-amber-400">{mediumRiskTotal}</p>
+            <span className="text-[11px] text-slate-400 font-medium">
               Score 40–69 ({totalWorkforce > 0 ? ((mediumRiskTotal / totalWorkforce) * 100).toFixed(0) : 0}%)
             </span>
-          </div>
-          <div className="h-11 w-11 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
-            <AlertTriangle className="h-5 w-5" />
           </div>
         </div>
 
         {/* Stable Retention */}
-        <div className="bg-white dark:bg-[#111D17] p-5 rounded-2xl border border-emerald-500/30 dark:border-emerald-900/40 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-emerald-600 dark:text-[#00C471] block">
+        <div className="bg-white dark:bg-[#111D17] p-5 rounded-2xl border border-emerald-500/30 dark:border-emerald-900/40 shadow-sm flex flex-col justify-between h-32">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-emerald-600 dark:text-[#00C471]">
               Stable Retention
             </span>
-            <p className="text-2xl font-bold font-mono text-emerald-600 dark:text-[#00C471]">{lowRiskTotal}</p>
-            <span className="text-[11px] text-slate-400">
+            <div className="h-11 w-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[#00C471]">
+              <Sparkles className="h-5 w-5" />
+            </div>
+          </div>
+          <div>
+            <p className="text-2xl font-bold font-mono tracking-tight text-emerald-600 dark:text-[#00C471]">{lowRiskTotal}</p>
+            <span className="text-[11px] text-slate-400 font-medium">
               Score &lt; 40 ({totalWorkforce > 0 ? ((lowRiskTotal / totalWorkforce) * 100).toFixed(0) : 0}%)
             </span>
-          </div>
-          <div className="h-11 w-11 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[#00C471]">
-            <Sparkles className="h-5 w-5" />
           </div>
         </div>
       </div>
 
       {/* Analytics Charts Suite Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <AttritionRiskDonutChart
-          highRisk={highRiskTotal}
-          mediumRisk={mediumRiskTotal}
-          lowRisk={lowRiskTotal}
-          averageScore={averageScore}
-          selectedRiskLevel={riskLevel}
-          onSelectRiskLevel={(tier) => {
-            setRiskLevel(tier);
-            setPage(1);
-          }}
-          isLoading={isDeptLoading}
-        />
-        <div className="lg:col-span-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+        <div className="lg:col-span-1 h-full">
+          <AttritionRiskDonutChart
+            highRisk={highRiskTotal}
+            mediumRisk={mediumRiskTotal}
+            lowRisk={lowRiskTotal}
+            averageScore={averageScore}
+            selectedRiskLevel={riskLevel}
+            onSelectRiskLevel={(tier) => {
+              setRiskLevel(tier);
+              setPage(1);
+            }}
+            isLoading={isDeptLoading}
+          />
+        </div>
+        <div className="lg:col-span-2 h-full">
           <AttritionFactorsChart />
         </div>
       </div>
@@ -350,7 +363,7 @@ export const AttritionDashboardPage = () => {
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Search Input */}
             <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
               <input
                 type="text"
                 value={search}
@@ -359,33 +372,31 @@ export const AttritionDashboardPage = () => {
                   setPage(1);
                 }}
                 placeholder="Search by name or code..."
-                className="pl-8.5 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#061A14] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#00C471] w-48 transition"
+                className="h-9 pl-9 pr-3 text-xs rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#061A14] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#00C471] w-52 transition"
               />
             </div>
 
             {/* Department Dropdown (HR Manager & Super Admin) */}
             {(isHR || isSuperAdmin) && (
-              <div className="flex items-center gap-1.5">
-                <select
-                  value={departmentId}
-                  onChange={(e) => {
-                    setDepartmentId(e.target.value);
-                    setPage(1);
-                  }}
-                  className="px-2.5 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#061A14] text-slate-900 dark:text-white focus:outline-none focus:border-[#00C471]"
-                >
-                  <option value="">All Departments</option>
-                  {departmentsList.map((d) => (
-                    <option key={d._id} value={d._id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <select
+                value={departmentId}
+                onChange={(e) => {
+                  setDepartmentId(e.target.value);
+                  setPage(1);
+                }}
+                className="h-9 px-3 text-xs rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#061A14] text-slate-900 dark:text-white focus:outline-none focus:border-[#00C471]"
+              >
+                <option value="">All Departments</option>
+                {departmentsList.map((d) => (
+                  <option key={d._id} value={d._id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
             )}
 
             {/* Risk Tier Segmented Buttons */}
-            <div className="flex items-center p-0.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#061A14] text-xs">
+            <div className="h-9 p-0.5 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#061A14] flex items-center text-xs">
               {[
                 { id: '', label: 'All' },
                 { id: 'High', label: 'High' },
@@ -399,7 +410,7 @@ export const AttritionDashboardPage = () => {
                     setRiskLevel(btn.id);
                     setPage(1);
                   }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  className={`h-7.5 px-3 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center ${
                     riskLevel === btn.id
                       ? 'bg-[#00C471] text-white shadow-xs'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -415,10 +426,10 @@ export const AttritionDashboardPage = () => {
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="p-1.5 rounded-xl border border-slate-200 dark:border-[#1A3125] text-slate-400 hover:text-slate-700 dark:hover:text-white transition"
+                className="h-9 w-9 rounded-xl border border-slate-200 dark:border-[#1A3125] flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white transition cursor-pointer"
                 title="Reset filters"
               >
-                <RotateCcw className="h-3.5 w-3.5" />
+                <RotateCcw className="h-4 w-4" />
               </button>
             )}
 
@@ -426,9 +437,9 @@ export const AttritionDashboardPage = () => {
             <button
               type="button"
               onClick={handleExportCSV}
-              className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-[#1A3125] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162820] transition flex items-center gap-1.5 cursor-pointer"
+              className="h-9 px-3.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-[#1A3125] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162820] transition flex items-center gap-1.5 cursor-pointer"
             >
-              <Download className="h-3.5 w-3.5" />
+              <Download className="h-4 w-4" />
               <span>Export CSV</span>
             </button>
           </div>
@@ -436,14 +447,14 @@ export const AttritionDashboardPage = () => {
 
         {/* Data Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-xs table-fixed">
             <thead>
               <tr className="border-b border-slate-200 dark:border-[#1A3125] text-[11px] font-bold text-slate-500 dark:text-[#7E9E8F] uppercase tracking-wider">
-                <th className="py-3 px-3">Employee</th>
-                <th className="py-3 px-3">Department & Role</th>
-                <th className="py-3 px-3">Tenure</th>
+                <th className="py-3 px-3 w-[280px]">Employee</th>
+                <th className="py-3 px-3 w-[200px]">Department & Role</th>
+                <th className="py-3 px-3 w-[100px]">Tenure</th>
                 <th
-                  className="py-3 px-3 cursor-pointer hover:text-slate-900 dark:hover:text-white transition"
+                  className="py-3 px-3 w-[170px] cursor-pointer hover:text-slate-900 dark:hover:text-white transition"
                   onClick={() => handleSort('riskScore')}
                 >
                   <div className="flex items-center gap-1">
@@ -451,9 +462,9 @@ export const AttritionDashboardPage = () => {
                     <ArrowUpDown className="w-3 h-3 text-slate-400" />
                   </div>
                 </th>
-                <th className="py-3 px-3">Risk Tier</th>
-                <th className="py-3 px-3">Primary Signal Triggers</th>
-                <th className="py-3 px-3 text-right">Interventions</th>
+                <th className="py-3 px-3 w-[140px]">Risk Tier</th>
+                <th className="py-3 px-3 min-w-[200px]">Primary Signal Triggers</th>
+                <th className="py-3 px-3 w-[120px] text-right">Interventions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-[#1A3125]/40">
@@ -481,8 +492,8 @@ export const AttritionDashboardPage = () => {
                       className="hover:bg-slate-50/70 dark:hover:bg-[#162820]/50 transition group"
                     >
                       {/* Employee Identity */}
-                      <td className="py-3 px-3">
-                        <div className="flex items-center gap-3">
+                      <td className="py-3 px-3 w-[280px]">
+                        <div className="flex items-center gap-3 min-w-0">
                           <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[#00C471] flex items-center justify-center font-bold text-[11px] shrink-0">
                             {emp.avatar ? (
                               <img src={emp.avatar} alt={emp.name} className="w-8 h-8 rounded-full object-cover" />
@@ -490,11 +501,11 @@ export const AttritionDashboardPage = () => {
                               (emp.name || 'EM').slice(0, 2).toUpperCase()
                             )}
                           </div>
-                          <div>
-                            <span className="font-bold text-slate-900 dark:text-white block group-hover:text-[#00C471] transition">
+                          <div className="min-w-0 flex-1">
+                            <span className="font-bold text-slate-900 dark:text-white block group-hover:text-[#00C471] transition truncate">
                               {emp.name || 'Unnamed Employee'}
                             </span>
-                            <span className="font-mono text-[10px] text-[#7E9E8F] block">
+                            <span className="font-mono text-[10px] text-[#7E9E8F] block truncate">
                               {emp.employeeCode || 'EMP-N/A'} • {emp.email || ''}
                             </span>
                           </div>
@@ -502,39 +513,39 @@ export const AttritionDashboardPage = () => {
                       </td>
 
                       {/* Department & Role */}
-                      <td className="py-3 px-3">
-                        <span className="font-medium text-slate-800 dark:text-slate-200 block">
+                      <td className="py-3 px-3 w-[200px]">
+                        <span className="font-medium text-slate-800 dark:text-slate-200 block truncate">
                           {dept.name || 'Department N/A'}
                         </span>
-                        <span className="text-[10px] text-slate-400 dark:text-[#7E9E8F] block">
+                        <span className="text-[10px] text-slate-400 dark:text-[#7E9E8F] block truncate">
                           {emp.designationId?.title || 'Designation N/A'}
                         </span>
                       </td>
 
                       {/* Tenure */}
-                      <td className="py-3 px-3">
+                      <td className="py-3 px-3 w-[100px]">
                         <span className="font-mono text-slate-700 dark:text-slate-300">
-                          {formatTenure(emp.joiningDate)}
+                          {formatTenure(emp.joiningDate, scoreDoc.calculatedAt)}
                         </span>
                       </td>
 
                       {/* Risk Gauge */}
-                      <td className="py-3 px-3">
+                      <td className="py-3 px-3 w-[170px]">
                         <RiskScoreGauge score={scoreDoc.riskScore} size="sm" />
                       </td>
 
                       {/* Risk Tier Badge */}
-                      <td className="py-3 px-3">
+                      <td className="py-3 px-3 w-[140px]">
                         <RiskTierBadge score={scoreDoc.riskScore} level={scoreDoc.riskLevel} size="sm" showScore={false} />
                       </td>
 
                       {/* Top Factor Chips */}
-                      <td className="py-3 px-3 max-w-xs">
+                      <td className="py-3 px-3 min-w-[200px]">
                         <div className="flex flex-wrap gap-1">
                           {factors.slice(0, 2).map((factor, fIdx) => (
                             <span
                               key={fIdx}
-                              className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#061A14] border border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-[#7E9E8F] truncate max-w-[200px]"
+                              className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#061A14] border border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-[#7E9E8F] truncate max-w-[180px]"
                               title={factor}
                             >
                               {factor.split(':')[0]}
@@ -552,11 +563,11 @@ export const AttritionDashboardPage = () => {
                       </td>
 
                       {/* Actions */}
-                      <td className="py-3 px-3 text-right">
+                      <td className="py-3 px-3 w-[120px] text-right">
                         <button
                           type="button"
                           onClick={() => handleOpenDetailModal(scoreDoc)}
-                          className="px-3 py-1.5 text-xs font-bold rounded-lg border border-emerald-500/30 text-[#00C471] hover:bg-emerald-500/10 transition cursor-pointer"
+                          className="h-8 px-3 text-xs font-bold rounded-lg border border-emerald-500/30 text-[#00C471] hover:bg-emerald-500/10 transition cursor-pointer"
                         >
                           View Dossier
                         </button>
@@ -586,7 +597,7 @@ export const AttritionDashboardPage = () => {
                   setLimit(Number(e.target.value));
                   setPage(1);
                 }}
-                className="px-2 py-1 text-xs rounded-lg border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#061A14] text-slate-900 dark:text-white"
+                className="h-8 px-2 text-xs rounded-lg border border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#061A14] text-slate-900 dark:text-white focus:outline-none focus:border-[#00C471]"
               >
                 <option value={10}>10</option>
                 <option value={25}>25</option>
@@ -599,7 +610,7 @@ export const AttritionDashboardPage = () => {
                 type="button"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={pagination.page <= 1 || isScoresFetching}
-                className="p-1.5 rounded-lg border border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162820] disabled:opacity-40 transition"
+                className="h-8 w-8 rounded-lg border border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162820] disabled:opacity-40 transition flex items-center justify-center cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
@@ -610,7 +621,7 @@ export const AttritionDashboardPage = () => {
                 type="button"
                 onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))}
                 disabled={pagination.page >= pagination.pages || isScoresFetching}
-                className="p-1.5 rounded-lg border border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162820] disabled:opacity-40 transition"
+                className="h-8 w-8 rounded-lg border border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162820] disabled:opacity-40 transition flex items-center justify-center cursor-pointer"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>

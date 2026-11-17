@@ -39,16 +39,16 @@ export const RiskTierBadge = ({ level, score, showScore = true, size = 'md' }) =
   return (
     <span
       className={`inline-flex items-center gap-1.5 font-bold rounded-full border transition-all ${current.bg} ${current.text} ${current.border} ${
-        isSmall ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs'
+        isSmall ? 'px-2 py-0.5 text-[11px] h-5' : 'px-2.5 py-1 text-xs h-6'
       }`}
     >
-      <span className="relative flex h-2 w-2">
+      <span className="relative flex h-2 w-2 shrink-0">
         {normalizedLevel === 'High' && (
           <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${current.dot}`} />
         )}
         <span className={`relative inline-flex rounded-full h-2 w-2 ${current.dot}`} />
       </span>
-      <span>{current.label}</span>
+      <span className="truncate">{current.label}</span>
       {showScore && typeof score === 'number' && (
         <span className="font-mono text-[11px] opacity-90">({Math.round(score)})</span>
       )}

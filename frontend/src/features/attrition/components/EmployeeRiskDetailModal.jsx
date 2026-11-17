@@ -21,6 +21,19 @@ import { useAddRetentionNoteMutation, useGetRetentionNotesQuery } from '../attri
 import { RiskTierBadge } from './RiskTierBadge.jsx';
 import { toast } from 'sonner';
 
+// Helper to format tenure relative to score calculation timestamp
+const formatTenure = (joiningDate, calculatedAt) => {
+  if (!joiningDate) return 'N/A';
+  const joinTs = new Date(joiningDate).getTime();
+  if (Number.isNaN(joinTs)) return 'N/A';
+  const refTs = calculatedAt ? new Date(calculatedAt).getTime() : joinTs;
+  const months = Math.max(0, Math.floor((refTs - joinTs) / (1000 * 60 * 60 * 24 * 30.44)));
+  const years = Math.floor(months / 12);
+  const remMonths = months % 12;
+  if (years === 0) return `${remMonths} mo`;
+  return `${years} yr${years > 1 ? 's' : ''} ${remMonths > 0 ? `${remMonths} mo` : ''}`;
+};
+
 export const EmployeeRiskDetailModal = ({
   isOpen,
   onClose,
@@ -51,18 +64,7 @@ export const EmployeeRiskDetailModal = ({
   const topFactors = score.topFactors || [];
   const notes = notesData?.data || score.notes || [];
 
-  // Calculate tenure
-  const calculateTenure = () => {
-    if (!employee.joiningDate) return 'N/A';
-    const months = Math.max(
-      0,
-      Math.floor((Date.now() - new Date(employee.joiningDate).getTime()) / (1000 * 60 * 60 * 24 * 30.44))
-    );
-    const years = Math.floor(months / 12);
-    const remMonths = months % 12;
-    if (years === 0) return `${remMonths} mo`;
-    return `${years} yr${years > 1 ? 's' : ''} ${remMonths > 0 ? `${remMonths} mo` : ''}`;
-  };
+  const tenureText = formatTenure(employee.joiningDate, score.calculatedAt);
 
   // Dynamic Contextual Retention Recommendations
   const getRetentionRecommendations = () => {
@@ -211,36 +213,36 @@ export const EmployeeRiskDetailModal = ({
             <>
               {/* Top Overview Cards Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#061A14] border border-slate-200 dark:border-[#1A3125]">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#7E9E8F] block">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#061A14] border border-slate-200 dark:border-[#1A3125] flex flex-col justify-between h-20">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#7E9E8F] block tracking-wider">
                     Calculated Risk Score
                   </span>
-                  <p className="font-mono text-xl font-bold text-slate-900 dark:text-white mt-1">
+                  <p className="font-mono text-xl font-bold text-slate-900 dark:text-white">
                     {score.riskScore}
                     <span className="text-xs font-normal text-slate-400">/100</span>
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#061A14] border border-slate-200 dark:border-[#1A3125]">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#7E9E8F] block">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#061A14] border border-slate-200 dark:border-[#1A3125] flex flex-col justify-between h-20">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#7E9E8F] block tracking-wider">
                     Tenure at Firm
                   </span>
-                  <p className="font-mono text-base font-bold text-slate-900 dark:text-white mt-1">
-                    {calculateTenure()}
+                  <p className="font-mono text-base font-bold text-slate-900 dark:text-white">
+                    {tenureText}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#061A14] border border-slate-200 dark:border-[#1A3125]">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#7E9E8F] block">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#061A14] border border-slate-200 dark:border-[#1A3125] flex flex-col justify-between h-20">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#7E9E8F] block tracking-wider">
                     Evaluation Date
                   </span>
-                  <p className="font-mono text-xs font-bold text-slate-900 dark:text-white mt-1">
+                  <p className="font-mono text-xs font-bold text-slate-900 dark:text-white">
                     {score.calculatedAt ? new Date(score.calculatedAt).toLocaleDateString() : 'Recent'}
                   </p>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#061A14] border border-slate-200 dark:border-[#1A3125]">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#7E9E8F] block">
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#061A14] border border-slate-200 dark:border-[#1A3125] flex flex-col justify-between h-20">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#7E9E8F] block tracking-wider">
                     Intervention Logs
                   </span>
-                  <p className="font-mono text-base font-bold text-[#00C471] mt-1">
+                  <p className="font-mono text-base font-bold text-[#00C471]">
                     {notes.length} logged
                   </p>
                 </div>
@@ -270,7 +272,7 @@ export const EmployeeRiskDetailModal = ({
                           {row.score} <span className="text-[10px] text-slate-400">/ {row.max} pts</span>
                         </span>
                       </div>
-                      <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-[#162820] overflow-hidden">
+                      <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-[#162820] overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all duration-300 ${row.color}`}
                           style={{ width: `${(row.score / row.max) * 100}%` }}
@@ -337,7 +339,7 @@ export const EmployeeRiskDetailModal = ({
                           );
                           setActiveTab('notes');
                         }}
-                        className="px-3 py-1.5 text-xs font-bold rounded-lg border border-emerald-500/30 text-[#00C471] hover:bg-emerald-500/10 transition shrink-0 self-start sm:self-center cursor-pointer"
+                        className="h-8 px-3 text-xs font-bold rounded-lg border border-emerald-500/30 text-[#00C471] hover:bg-emerald-500/10 flex items-center transition shrink-0 self-start sm:self-center cursor-pointer"
                       >
                         Log This Action
                       </button>
@@ -363,7 +365,7 @@ export const EmployeeRiskDetailModal = ({
                     <select
                       value={actionTaken}
                       onChange={(e) => setActionTaken(e.target.value)}
-                      className="w-full text-xs p-2 bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-[#00C471]"
+                      className="w-full h-9 px-3 text-xs bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-[#00C471]"
                     >
                       <option value="One-on-One Wellness Check">One-on-One Wellness Check</option>
                       <option value="Compensation Review">Compensation Review</option>
@@ -382,7 +384,7 @@ export const EmployeeRiskDetailModal = ({
                       type="date"
                       value={followUpDate}
                       onChange={(e) => setFollowUpDate(e.target.value)}
-                      className="w-full text-xs p-2 bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-[#00C471]"
+                      className="w-full h-9 px-3 text-xs bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-xl text-slate-900 dark:text-white focus:outline-none focus:border-[#00C471]"
                     />
                   </div>
                 </div>
@@ -409,7 +411,7 @@ export const EmployeeRiskDetailModal = ({
                   <button
                     type="submit"
                     disabled={isAddingNote || !noteText.trim()}
-                    className="px-4 py-2 text-xs font-bold rounded-xl bg-[#00C471] hover:bg-[#00B064] text-white transition flex items-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
+                    className="h-9 px-4 text-xs font-bold rounded-xl bg-[#00C471] hover:bg-[#00B064] text-white transition flex items-center gap-1.5 shadow-sm disabled:opacity-50 cursor-pointer"
                   >
                     {isAddingNote ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
                     <span>Record Intervention</span>

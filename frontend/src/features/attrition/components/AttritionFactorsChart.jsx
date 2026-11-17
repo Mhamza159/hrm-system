@@ -52,7 +52,7 @@ export const AttritionFactorsChart = () => {
   ];
 
   return (
-    <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+    <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-5 shadow-sm flex flex-col justify-between h-full">
       {/* Chart Header */}
       <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#1A3125]">
         <div className="flex items-center gap-2.5">
@@ -70,7 +70,7 @@ export const AttritionFactorsChart = () => {
       </div>
 
       {/* Factor Bars */}
-      <div className="space-y-3.5 py-4">
+      <div className="space-y-3.5 py-4 flex-1 flex flex-col justify-around">
         {factors.map((f) => {
           const Icon = f.icon;
           return (
