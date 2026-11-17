@@ -613,6 +613,40 @@ Plans:
 
 ---
 
+### Phase 19: Attrition Prediction Module — Complete UI Alignment, Layout Correction & Modal Redesign
+
+**Goal:** Perform an exhaustive UI/UX alignment, layout correction, and modal redesign of the entire Attrition Prediction Module (Module M17). Eliminate all layout drift, unequal card heights, misaligned flex containers, and unconstrained table widths. Align charts into equal-height paired grid rows with responsive SVG scaling, lock down the employee risk table with fixed column width constraints to eliminate column jumping during pagination or sorting, and completely overhaul the Employee Risk Details Modal (`EmployeeRiskDetailModal.jsx`) with uniform metrics mini-cards, aligned form inputs (`h-9`), and an elegant historical notes docket.
+
+**Requirements**:
+- **1. Header, KPI Summary Cards & Global Toolbar Layout Alignment (`AttritionDashboardPage.jsx`)**:
+  - Rebalance all 4 KPI summary cards to uniform height (`h-32`), equal internal padding (`p-5`), standardized icon containers (`w-11 h-11 rounded-xl`), and aligned baseline metrics.
+  - Standardize the global filter toolbar with unified `h-9` controls, consistent icon spacing, and responsive wrapping across mobile and desktop.
+  - Align header title, predictive signal badge, and recalculation button (`h-9 px-4`).
+- **2. Charts Suite Geometry, Grid Height Balance & SVG Responsive Polish (`AttritionRiskDonutChart.jsx`, `AttritionFactorsChart.jsx`, `DepartmentRiskChart.jsx`)**:
+  - Equalize card heights for Row 1 charts (`AttritionRiskDonutChart.jsx` and `AttritionFactorsChart.jsx`) with `h-full flex flex-col justify-between`.
+  - Refine donut chart SVG centering, legend spacing, and tooltip positioning.
+  - Polish `DepartmentRiskChart.jsx` with responsive SVG viewBox, aligned X-axis labels, standardized bar widths, and elevated glassmorphism tooltips.
+- **3. Employee Risk Table Column Alignment, Sizing & Pagination Overhaul (`AttritionDashboardPage.jsx`, `RiskScoreGauge.jsx`, `RiskTierBadge.jsx`)**:
+  - Establish fixed width constraints on table columns (`w-[280px]`, `w-[200px]`, `w-[100px]`, `w-[170px]`, `w-[140px]`, `w-[180px]`, `w-[90px]`) to prevent layout jumps during sorting or page transitions.
+  - Align employee credentials with non-wrapping avatar rows, truncate overflow cleanly, and standardize risk score gauges (`w-36`) and risk tier badges (`w-32`).
+  - Align pagination toolbar with consistent button touch targets and baseline record counters.
+- **4. Employee Risk Dossier Modal Redesign & Module Verification Gate (`EmployeeRiskDetailModal.jsx`)**:
+  - Overhaul `EmployeeRiskDetailModal.jsx` with balanced grid layouts for the 4 overview cards (`h-20 flex flex-col justify-between`), standardized 5-factor progress bar heights, uniform trigger badges, and clean recommendation cards.
+  - Redesign the intervention note form with `h-9` inputs, aligned labels, and an elegant historical timeline.
+  - Execute the complete verification gate (zero `prop-types`, zero Oxlint warnings, 22/22 backend test pass, clean Vite production build).
+
+**Depends on:** Phase 18
+**Plans:** 4 plans
+
+Plans:
+
+- [ ] **Plan 19-01: Header, KPI Summary Cards & Global Toolbar Layout Alignment** (`.planning/phases/19-attrition-prediction-module-complete-ui-alignment-layout-correction-modal-redesign/19-01-PLAN.md`)
+- [ ] **Plan 19-02: Charts Suite Geometry, Grid Height Balance & SVG Responsive Polish** (`.planning/phases/19-attrition-prediction-module-complete-ui-alignment-layout-correction-modal-redesign/19-02-PLAN.md`)
+- [ ] **Plan 19-03: Employee Risk Table Column Alignment, Sizing & Pagination Overhaul** (`.planning/phases/19-attrition-prediction-module-complete-ui-alignment-layout-correction-modal-redesign/19-03-PLAN.md`)
+- [ ] **Plan 19-04: Employee Risk Dossier Modal Redesign & Module Verification Gate** (`.planning/phases/19-attrition-prediction-module-complete-ui-alignment-layout-correction-modal-redesign/19-04-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features
