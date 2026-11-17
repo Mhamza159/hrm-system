@@ -58,6 +58,12 @@ const announcementSchema = new mongoose.Schema(
       ref: 'Department',
       default: null
     },
+    departmentIds: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Department'
+      }
+    ],
     priority: {
       type: String,
       enum: {
@@ -74,6 +80,32 @@ const announcementSchema = new mongoose.Schema(
       type: Date,
       default: null
     },
+    isArchived: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+    archivedAt: {
+      type: Date,
+      default: null
+    },
+    archivedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    },
+    expiryDate: {
+      type: Date,
+      default: null
+    },
+    attachments: [
+      {
+        name: { type: String, trim: true },
+        url: { type: String, trim: true },
+        fileType: { type: String, trim: true, default: 'document' },
+        size: { type: Number, default: 0 }
+      }
+    ],
     authorId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -91,8 +123,19 @@ const announcementSchema = new mongoose.Schema(
   }
 );
 
+// Synchronize legacy departmentId and modern departmentIds array
+announcementSchema.pre('save', function (next) {
+  if (this.departmentIds && this.departmentIds.length > 0 && !this.departmentId) {
+    this.departmentId = this.departmentIds[0];
+  } else if (this.departmentId && (!this.departmentIds || this.departmentIds.length === 0)) {
+    this.departmentIds = [this.departmentId];
+  }
+  next();
+});
+
 // Compound indexes for performant notice board & target audience filtering
-announcementSchema.index({ targetAudience: 1, departmentId: 1, isDeleted: 1, createdAt: -1 });
+announcementSchema.index({ targetAudience: 1, departmentId: 1, isArchived: 1, isDeleted: 1, createdAt: -1 });
+announcementSchema.index({ targetAudience: 1, departmentIds: 1, isArchived: 1, isDeleted: 1, createdAt: -1 });
 announcementSchema.index({ pinned: -1, createdAt: -1 });
 announcementSchema.index({ 'readBy.userId': 1 });
 

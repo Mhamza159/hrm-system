@@ -763,10 +763,10 @@ Plans:
 
 Plans:
 
-- [ ] **Plan 22-01: Backend Architecture, Schemas, Validation & Archival APIs** (`.planning/phases/22-announcement-module-complete-audit-refinement-feature-implementation/22-01-PLAN.md`)
-- [ ] **Plan 22-02: Announcements Feed, Dedicated Archive Tab & Multi-Filters** (`.planning/phases/22-announcement-module-complete-audit-refinement-feature-implementation/22-02-PLAN.md`)
-- [ ] **Plan 22-03: Complete Modals Suite Redesign & Engagement Analytics** (`.planning/phases/22-announcement-module-complete-audit-refinement-feature-implementation/22-03-PLAN.md`)
-- [ ] **Plan 22-04: End-to-End Testing, Vitest Integration Suite & Verification Gate** (`.planning/phases/22-announcement-module-complete-audit-refinement-feature-implementation/22-04-PLAN.md`)
+- [x] **Plan 22-01: Backend Architecture, Schemas, Validation & Archival APIs** (`.planning/phases/22-announcement-module-complete-audit-refinement-feature-implementation/22-01-PLAN.md`)
+- [x] **Plan 22-02: Announcements Feed, Dedicated Archive Tab & Multi-Filters** (`.planning/phases/22-announcement-module-complete-audit-refinement-feature-implementation/22-02-PLAN.md`)
+- [x] **Plan 22-03: Complete Modals Suite Redesign & Engagement Analytics** (`.planning/phases/22-announcement-module-complete-audit-refinement-feature-implementation/22-03-PLAN.md`)
+- [x] **Plan 22-04: End-to-End Testing, Vitest Integration Suite & Verification Gate** (`.planning/phases/22-announcement-module-complete-audit-refinement-feature-implementation/22-04-PLAN.md`)
 
 ---
 

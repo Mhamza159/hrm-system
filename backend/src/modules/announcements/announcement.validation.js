@@ -10,6 +10,13 @@ const objectIdSchema = z.string().refine((val) => !val || mongoose.Types.ObjectI
   message: 'Invalid ObjectId format'
 });
 
+const attachmentSchema = z.object({
+  name: z.string().trim().optional(),
+  url: z.string().trim(),
+  fileType: z.string().trim().optional(),
+  size: z.number().optional()
+});
+
 export const createAnnouncementSchema = z.object({
   body: z.object({
     title: z
@@ -27,12 +34,15 @@ export const createAnnouncementSchema = z.object({
       })
       .default('company'),
     departmentId: objectIdSchema.nullable().optional(),
+    departmentIds: z.array(objectIdSchema).optional(),
     priority: z
       .enum(['low', 'normal', 'high', 'urgent'], {
         errorMap: () => ({ message: "Priority must be 'low', 'normal', 'high', or 'urgent'" })
       })
       .default('normal'),
-    pinned: z.boolean().optional().default(false)
+    pinned: z.boolean().optional().default(false),
+    expiryDate: z.string().datetime().nullable().optional().or(z.string().nullable().optional()),
+    attachments: z.array(attachmentSchema).optional()
   })
 });
 
@@ -42,8 +52,11 @@ export const updateAnnouncementSchema = z.object({
     content: z.string().trim().min(5).optional(),
     targetAudience: z.enum(['company', 'department']).optional(),
     departmentId: objectIdSchema.nullable().optional(),
+    departmentIds: z.array(objectIdSchema).optional(),
     priority: z.enum(['low', 'normal', 'high', 'urgent']).optional(),
-    pinned: z.boolean().optional()
+    pinned: z.boolean().optional(),
+    expiryDate: z.string().datetime().nullable().optional().or(z.string().nullable().optional()),
+    attachments: z.array(attachmentSchema).optional()
   })
 });
 
@@ -53,8 +66,11 @@ export const queryAnnouncementSchema = z.object({
     limit: z.coerce.number().int().positive().max(100).default(10),
     priority: z.enum(['low', 'normal', 'high', 'urgent']).optional(),
     targetAudience: z.enum(['company', 'department']).optional(),
-    departmentId: objectIdSchema.optional(),
+    departmentId: z.string().optional(),
     pinnedOnly: z.coerce.boolean().optional(),
+    isArchived: z.coerce.boolean().optional(),
+    hasRead: z.coerce.boolean().optional(),
+    sort: z.enum(['newest', 'oldest', 'priority']).optional(),
     search: z.string().trim().optional()
   }).optional()
 });

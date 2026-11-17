@@ -6,9 +6,12 @@
 import { Router } from 'express';
 import {
   getAnnouncements,
+  getAnnouncementById,
   createAnnouncement,
   updateAnnouncement,
   deleteAnnouncement,
+  archiveAnnouncement,
+  restoreAnnouncement,
   togglePinAnnouncement,
   recordReadReceipt,
   getReadReceipts
@@ -43,6 +46,10 @@ router
 
 router
   .route('/:id')
+  .get(
+    checkPermission('announcement.view'),
+    getAnnouncementById
+  )
   .put(
     checkPermission('announcement.edit'),
     validate(updateAnnouncementSchema),
@@ -51,6 +58,20 @@ router
   .delete(
     checkPermission('announcement.delete'),
     deleteAnnouncement
+  );
+
+router
+  .route('/:id/archive')
+  .patch(
+    checkPermission('announcement.delete'),
+    archiveAnnouncement
+  );
+
+router
+  .route('/:id/restore')
+  .patch(
+    checkPermission('announcement.delete'),
+    restoreAnnouncement
   );
 
 router

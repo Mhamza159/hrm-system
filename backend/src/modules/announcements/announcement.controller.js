@@ -20,6 +20,19 @@ export const getAnnouncements = asyncHandler(async (req, res) => {
   });
 });
 
+export const getAnnouncementById = asyncHandler(async (req, res) => {
+  const announcement = await announcementService.getAnnouncementById(
+    req.params.id,
+    req.user,
+    req.permissionScope || 'own'
+  );
+
+  res.status(200).json({
+    success: true,
+    data: announcement
+  });
+});
+
 export const createAnnouncement = asyncHandler(async (req, res) => {
   const announcement = await announcementService.createAnnouncement(
     req.body,
@@ -59,6 +72,34 @@ export const deleteAnnouncement = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     message: result.message
+  });
+});
+
+export const archiveAnnouncement = asyncHandler(async (req, res) => {
+  const announcement = await announcementService.archiveAnnouncement(
+    req.params.id,
+    req.user,
+    req.permissionScope || 'own'
+  );
+
+  res.status(200).json({
+    success: true,
+    message: 'Announcement archived successfully',
+    data: announcement
+  });
+});
+
+export const restoreAnnouncement = asyncHandler(async (req, res) => {
+  const announcement = await announcementService.restoreAnnouncement(
+    req.params.id,
+    req.user,
+    req.permissionScope || 'own'
+  );
+
+  res.status(200).json({
+    success: true,
+    message: 'Announcement restored to active feed',
+    data: announcement
   });
 });
 

@@ -1,6 +1,6 @@
 /**
  * @file announcementsApi.js
- * @description RTK Query endpoints for Announcements, Pinning & Read Receipts (Module M8 / Slices 8.6, 8.7, 8.8).
+ * @description RTK Query endpoints for Announcements, Pinning, Archiving & Read Receipts (Module M8 / Slices 8.6, 8.7, 8.8).
  */
 
 import { baseApi } from '../../lib/baseApi.js';
@@ -20,6 +20,14 @@ export const announcementsApi = baseApi.injectEndpoints({
               { type: 'Announcement', id: 'LIST' }
             ]
           : [{ type: 'Announcement', id: 'LIST' }]
+    }),
+
+    getAnnouncementById: builder.query({
+      query: (id) => ({
+        url: `/announcements/${id}`,
+        method: 'GET'
+      }),
+      providesTags: (result, error, id) => [{ type: 'Announcement', id }]
     }),
 
     createAnnouncement: builder.mutation({
@@ -47,6 +55,28 @@ export const announcementsApi = baseApi.injectEndpoints({
       query: (id) => ({
         url: `/announcements/${id}`,
         method: 'DELETE'
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Announcement', id },
+        { type: 'Announcement', id: 'LIST' }
+      ]
+    }),
+
+    archiveAnnouncement: builder.mutation({
+      query: (id) => ({
+        url: `/announcements/${id}/archive`,
+        method: 'PATCH'
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Announcement', id },
+        { type: 'Announcement', id: 'LIST' }
+      ]
+    }),
+
+    restoreAnnouncement: builder.mutation({
+      query: (id) => ({
+        url: `/announcements/${id}/restore`,
+        method: 'PATCH'
       }),
       invalidatesTags: (result, error, id) => [
         { type: 'Announcement', id },
@@ -83,9 +113,12 @@ export const announcementsApi = baseApi.injectEndpoints({
 
 export const {
   useGetAnnouncementsQuery,
+  useGetAnnouncementByIdQuery,
   useCreateAnnouncementMutation,
   useUpdateAnnouncementMutation,
   useDeleteAnnouncementMutation,
+  useArchiveAnnouncementMutation,
+  useRestoreAnnouncementMutation,
   useTogglePinAnnouncementMutation,
   useRecordReadReceiptMutation,
   useGetReadReceiptsQuery
