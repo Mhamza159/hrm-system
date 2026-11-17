@@ -9,12 +9,12 @@
  */
 
 import dayjs from 'dayjs';
-import mongoose from 'mongoose';
 import { ApiError } from '../../utils/ApiError.js';
 import { Employee } from '../../models/employee.model.js';
 import { Department } from '../../models/department.model.js';
 import { Attendance } from '../../models/attendance.model.js';
 import { Leave } from '../../models/leave.model.js';
+import { LeaveBalance } from '../../models/leaveBalance.model.js';
 import { PayrollRun } from '../../models/payrollRun.model.js';
 import { Payslip } from '../../models/payslip.model.js';
 
@@ -99,7 +99,7 @@ export const generateReportData = async ({
       break;
 
     case 'headcount':
-      result = await generateHeadcountReport({ departmentId, status, page, limit });
+      result = await generateHeadcountReport({ from, to, departmentId, status, page, limit });
       break;
 
     case 'turnover':
@@ -160,7 +160,8 @@ export const generateReportData = async ({
     summary: result.summary || {
       totalRecords: result.total ?? items.length,
       totalApplications: result.total ?? items.length
-    }
+    },
+    chartData: result.chartData || {}
   };
 };
 
@@ -230,7 +231,7 @@ async function generateAttendanceReport({ from, to, departmentId, employeeId, st
 
   // 1. Compute Overall KPI Summary Across All Matching Records
   const allMatched = await Attendance.find(query)
-    .select('status workDurationMinutes overtimeMinutes overtimeApproved checkIn')
+    .select('status workDurationMinutes overtimeMinutes overtimeApproved checkIn date')
     .lean();
 
   const totalWorkedMinutes = allMatched.reduce((acc, a) => acc + (a.workDurationMinutes || 0), 0);
@@ -247,8 +248,37 @@ async function generateAttendanceReport({ from, to, departmentId, employeeId, st
     totalWorkHours: Math.round((totalWorkedMinutes / 60) * 10) / 10,
     totalOvertimeHours: Math.round((totalOtMinutes / 60) * 10) / 10,
     totalLates: lateCount,
+    totalHalfDays: halfDayCount,
     totalAbsents: absentCount,
     attendanceRate: rate
+  };
+
+  // Visual analytics chart data
+  const statusDistribution = [
+    { status: 'Present', count: presentCount, pct: totalPunches > 0 ? Math.round((presentCount / totalPunches) * 100) : 0, color: '#00C471' },
+    { status: 'Late', count: lateCount, pct: totalPunches > 0 ? Math.round((lateCount / totalPunches) * 100) : 0, color: '#F59E0B' },
+    { status: 'Half-Day', count: halfDayCount, pct: totalPunches > 0 ? Math.round((halfDayCount / totalPunches) * 100) : 0, color: '#3B82F6' },
+    { status: 'Absent', count: absentCount, pct: totalPunches > 0 ? Math.round((absentCount / totalPunches) * 100) : 0, color: '#EF4444' }
+  ];
+
+  const dailyMap = {};
+  for (const a of allMatched) {
+    if (!a.date) continue;
+    const dStr = dayjs(a.date).format('YYYY-MM-DD');
+    if (!dailyMap[dStr]) {
+      dailyMap[dStr] = { date: dStr, label: dayjs(a.date).format('DD MMM'), present: 0, late: 0, halfDay: 0, absent: 0, total: 0 };
+    }
+    dailyMap[dStr].total += 1;
+    if (a.status === 'present') dailyMap[dStr].present += 1;
+    else if (a.status === 'late') dailyMap[dStr].late += 1;
+    else if (a.status === 'half_day') dailyMap[dStr].halfDay += 1;
+    else if (a.status === 'absent') dailyMap[dStr].absent += 1;
+  }
+  const dailyTrend = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date)).slice(-31);
+
+  const chartData = {
+    statusDistribution,
+    dailyTrend
   };
 
   // 2. View Mode: Employee-wise Aggregated Rollup with Drill-Down
@@ -368,6 +398,7 @@ async function generateAttendanceReport({ from, to, departmentId, employeeId, st
       page,
       limit,
       summary,
+      chartData,
       title: 'Employee Attendance Rollup & Analytics'
     };
   }
@@ -429,7 +460,7 @@ async function generateAttendanceReport({ from, to, departmentId, employeeId, st
     };
   });
 
-  return { columns, items, total, page, limit, summary, title: 'Attendance Summary Report' };
+  return { columns, items, total, page, limit, summary, chartData, title: 'Attendance Summary Report' };
 }
 
 /**
@@ -484,10 +515,13 @@ async function generateLeaveReport({ from, to, departmentId, employeeId, status,
   let paidDays = 0;
   let unpaidDays = 0;
   let pendingCount = 0;
+  let approvedCount = 0;
+  let rejectedCount = 0;
 
   for (const l of allLeaves) {
     const d = l.days ?? l.totalDays ?? 1;
     if (l.status === 'approved') {
+      approvedCount += 1;
       totalApprovedDays += d;
       if (l.leaveTypeId?.isPaid !== false && l.leaveTypeId?.code !== 'UNPAID') {
         paidDays += d;
@@ -496,6 +530,8 @@ async function generateLeaveReport({ from, to, departmentId, employeeId, status,
       }
     } else if (l.status === 'pending') {
       pendingCount += 1;
+    } else if (l.status === 'rejected') {
+      rejectedCount += 1;
     }
   }
 
@@ -504,7 +540,38 @@ async function generateLeaveReport({ from, to, departmentId, employeeId, status,
     totalLeaveDays: totalApprovedDays,
     paidLeaveDays: paidDays,
     unpaidLeaveDays: unpaidDays,
-    pendingApplications: pendingCount
+    pendingApplications: pendingCount,
+    approvedApplications: approvedCount,
+    rejectedApplications: rejectedCount
+  };
+
+  const leaveStatusDist = [
+    { status: 'Approved', count: approvedCount, pct: allLeaves.length > 0 ? Math.round((approvedCount / allLeaves.length) * 100) : 0, color: '#00C471' },
+    { status: 'Pending', count: pendingCount, pct: allLeaves.length > 0 ? Math.round((pendingCount / allLeaves.length) * 100) : 0, color: '#F59E0B' },
+    { status: 'Rejected', count: rejectedCount, pct: allLeaves.length > 0 ? Math.round((rejectedCount / allLeaves.length) * 100) : 0, color: '#EF4444' }
+  ];
+
+  const typeMap = {};
+  for (const l of allLeaves) {
+    if (l.status !== 'approved') continue;
+    const tName = l.leaveTypeId?.name || 'Other Leave';
+    const tCode = (l.leaveTypeId?.code || 'OTHER').toUpperCase();
+    const d = l.days ?? l.totalDays ?? 1;
+    if (!typeMap[tCode]) {
+      typeMap[tCode] = { name: tName, code: tCode, days: 0 };
+    }
+    typeMap[tCode].days += d;
+  }
+  const typeColors = ['#00C471', '#3B82F6', '#F59E0B', '#8B5CF6', '#EC4899', '#10B981'];
+  const typeBreakdown = Object.values(typeMap).map((t, idx) => ({
+    ...t,
+    pct: totalApprovedDays > 0 ? Math.round((t.days / totalApprovedDays) * 100) : 0,
+    color: typeColors[idx % typeColors.length]
+  }));
+
+  const chartData = {
+    statusDistribution: leaveStatusDist,
+    typeBreakdown
   };
 
   // 2. View Mode: Employee-wise Aggregated Rollup with Drill-Down
@@ -604,6 +671,7 @@ async function generateLeaveReport({ from, to, departmentId, employeeId, status,
       page,
       limit,
       summary,
+      chartData,
       title: 'Employee Leave Ledger & Utilization'
     };
   }
@@ -653,7 +721,7 @@ async function generateLeaveReport({ from, to, departmentId, employeeId, status,
     reason: l.reason || '-'
   }));
 
-  return { columns, items, total, page, limit, summary, title: 'Leave Utilization Report' };
+  return { columns, items, total, page, limit, summary, chartData, title: 'Leave Utilization Report' };
 }
 
 /**
@@ -687,6 +755,46 @@ async function generatePayrollReport({ from, to, page, limit }) {
     ];
   }
 
+  const allRuns = await PayrollRun.find(query).sort({ year: 1, month: 1 }).lean();
+  let totalGrossPaisa = 0;
+  let totalNetPaisa = 0;
+  let totalTaxPaisa = 0;
+  let totalDeductionsPaisa = 0;
+  let totalEmployeesPaid = 0;
+
+  for (const r of allRuns) {
+    totalGrossPaisa += (r.totalGrossPay ?? r.totalGross) || 0;
+    totalNetPaisa += (r.totalNetPay ?? r.totalNetPayable) || 0;
+    totalTaxPaisa += r.totalTaxWithheld || 0;
+    totalDeductionsPaisa += r.totalDeductions || 0;
+    totalEmployeesPaid += r.totalEmployees || 0;
+  }
+
+  const summary = {
+    totalGrossPkr: Math.round(totalGrossPaisa / 100).toLocaleString('en-PK'),
+    totalNetPkr: Math.round(totalNetPaisa / 100).toLocaleString('en-PK'),
+    totalTaxPkr: Math.round(totalTaxPaisa / 100).toLocaleString('en-PK'),
+    totalDeductionsPkr: Math.round(totalDeductionsPaisa / 100).toLocaleString('en-PK'),
+    totalRuns: allRuns.length,
+    totalEmployees: totalEmployeesPaid
+  };
+
+  const monthlyTrend = allRuns.map((r) => {
+    const monthStr = r.year && r.month ? `${r.year}-${String(r.month).padStart(2, '0')}` : r.month || '-';
+    return {
+      runId: r._id,
+      month: monthStr,
+      grossPkr: Math.round(((r.totalGrossPay ?? r.totalGross) || 0) / 100),
+      netPkr: Math.round(((r.totalNetPay ?? r.totalNetPayable) || 0) / 100),
+      taxPkr: Math.round((r.totalTaxWithheld || 0) / 100),
+      deductionsPkr: Math.round((r.totalDeductions || 0) / 100)
+    };
+  });
+
+  const chartData = {
+    monthlyTrend
+  };
+
   const total = await PayrollRun.countDocuments(query);
   const runs = await PayrollRun.find(query)
     .sort({ year: -1, month: -1 })
@@ -711,23 +819,95 @@ async function generatePayrollReport({ from, to, page, limit }) {
       month: monthStr,
       status: r.status?.toUpperCase(),
       totalEmployees: r.totalEmployees || 0,
-      grossPkr: Math.round(((r.totalGrossPay ?? r.totalGross) || 0) / 100).toLocaleString(),
-      taxPkr: Math.round((r.totalTaxWithheld || 0) / 100).toLocaleString(),
-      deductionsPkr: Math.round((r.totalDeductions || 0) / 100).toLocaleString(),
-      netPkr: Math.round(((r.totalNetPay ?? r.totalNetPayable) || 0) / 100).toLocaleString()
+      grossPkr: Math.round(((r.totalGrossPay ?? r.totalGross) || 0) / 100).toLocaleString('en-PK'),
+      taxPkr: Math.round((r.totalTaxWithheld || 0) / 100).toLocaleString('en-PK'),
+      deductionsPkr: Math.round((r.totalDeductions || 0) / 100).toLocaleString('en-PK'),
+      netPkr: Math.round(((r.totalNetPay ?? r.totalNetPayable) || 0) / 100).toLocaleString('en-PK')
     };
   });
 
-  return { columns, items, total, page, limit, title: 'Payroll Summary Report' };
+  return { columns, items, total, page, limit, summary, chartData, title: 'Payroll Summary Report' };
 }
 
 /**
  * Headcount & Demographics Report
  */
-async function generateHeadcountReport({ departmentId, status, page, limit }) {
+async function generateHeadcountReport({ from, to, departmentId, status, page, limit }) {
   const query = { isDeleted: false };
   if (departmentId) query.departmentId = departmentId;
   if (status) query.status = status;
+
+  const totalHeadcount = await Employee.countDocuments({ ...query, status: 'Active' });
+
+  // Period-aware calculations
+  const hireQuery = { isDeleted: false };
+  if (departmentId) hireQuery.departmentId = departmentId;
+  if (from && to) {
+    hireQuery.joiningDate = { $gte: new Date(from), $lte: new Date(to) };
+  } else if (from) {
+    hireQuery.joiningDate = { $gte: new Date(from) };
+  } else if (to) {
+    hireQuery.joiningDate = { $lte: new Date(to) };
+  }
+  const newHiresCount = await Employee.countDocuments(hireQuery);
+
+  const exitQuery = {
+    isDeleted: false,
+    status: { $in: ['Resigned', 'Terminated'] }
+  };
+  if (departmentId) exitQuery.departmentId = departmentId;
+  if (from && to) {
+    exitQuery.updatedAt = { $gte: new Date(from), $lte: new Date(to) };
+  }
+  const periodExitsCount = await Employee.countDocuments(exitQuery);
+
+  const today = new Date();
+  const onLeaveCount = await Leave.countDocuments({
+    status: 'approved',
+    startDate: { $lte: today },
+    endDate: { $gte: today }
+  });
+
+  const summary = {
+    totalHeadcount,
+    newHires: newHiresCount,
+    periodExits: periodExitsCount,
+    onLeave: onLeaveCount
+  };
+
+  // Department-wise breakdown
+  const allEmps = await Employee.find({ isDeleted: false, status: 'Active' })
+    .populate('departmentId', 'name')
+    .select('departmentId employmentType')
+    .lean();
+
+  const deptMap = {};
+  const empTypeMap = { Permanent: 0, Contract: 0, Probation: 0, Intern: 0 };
+  for (const e of allEmps) {
+    const dName = e.departmentId?.name || 'Unassigned';
+    deptMap[dName] = (deptMap[dName] || 0) + 1;
+    const eType = e.employmentType || 'Permanent';
+    empTypeMap[eType] = (empTypeMap[eType] || 0) + 1;
+  }
+
+  const departmentBreakdown = Object.entries(deptMap)
+    .map(([departmentName, count]) => ({
+      departmentName,
+      count,
+      pct: allEmps.length > 0 ? Math.round((count / allEmps.length) * 100) : 0
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  const employmentTypeBreakdown = Object.entries(empTypeMap).map(([type, count]) => ({
+    type,
+    count,
+    pct: allEmps.length > 0 ? Math.round((count / allEmps.length) * 100) : 0
+  }));
+
+  const chartData = {
+    departmentBreakdown,
+    employmentTypeBreakdown
+  };
 
   const total = await Employee.countDocuments(query);
   const records = await Employee.find(query)
@@ -753,6 +933,7 @@ async function generateHeadcountReport({ departmentId, status, page, limit }) {
     _id: e._id,
     employeeCode: e.employeeCode,
     name: e.name,
+    avatar: e.avatar || null,
     department: e.departmentId?.name || 'Unassigned',
     designation: e.designationId?.title || 'Staff',
     gender: e.gender || 'Not Specified',
@@ -761,16 +942,70 @@ async function generateHeadcountReport({ departmentId, status, page, limit }) {
     joiningDate: e.joiningDate ? dayjs(e.joiningDate).format('YYYY-MM-DD') : '-'
   }));
 
-  return { columns, items, total, page, limit, title: 'Headcount & Demographics Report' };
+  return { columns, items, total, page, limit, summary, chartData, title: 'Headcount & Demographics Report' };
 }
 
 /**
  * Turnover & Attrition Report
  */
-async function generateTurnoverReport({ from, to, page, limit }) {
+async function generateTurnoverReport({ from, to, departmentId, page, limit }) {
   const query = {
     isDeleted: false,
     status: { $in: ['Resigned', 'Terminated'] }
+  };
+  if (departmentId) query.departmentId = departmentId;
+  if (from && to) {
+    query.updatedAt = { $gte: new Date(from), $lte: new Date(to) };
+  } else if (from) {
+    query.updatedAt = { $gte: new Date(from) };
+  } else if (to) {
+    query.updatedAt = { $lte: new Date(to) };
+  }
+
+  const allExits = await Employee.find(query).lean();
+  const voluntaryResignations = allExits.filter((e) => e.status === 'Resigned').length;
+  const involuntaryTerminations = allExits.filter((e) => e.status === 'Terminated').length;
+  const totalExits = allExits.length;
+
+  const currentHeadcount = await Employee.countDocuments({ isDeleted: false, status: 'Active' });
+  const startHeadcount = currentHeadcount + totalExits;
+  const avgHeadcount = (startHeadcount + currentHeadcount) / 2 || 1;
+  const turnoverRate = Math.round((totalExits / avgHeadcount) * 1000) / 10;
+
+  let totalTenureMonths = 0;
+  for (const e of allExits) {
+    if (e.joiningDate && e.updatedAt) {
+      const months = Math.max(0, dayjs(e.updatedAt).diff(dayjs(e.joiningDate), 'month'));
+      totalTenureMonths += months;
+    }
+  }
+  const averageTenureMonths = totalExits > 0 ? Math.round((totalTenureMonths / totalExits) * 10) / 10 : 0;
+
+  const summary = {
+    totalExits,
+    voluntaryResignations,
+    involuntaryTerminations,
+    turnoverRate: `${turnoverRate}%`,
+    averageTenureMonths
+  };
+
+  const exitTypeDistribution = [
+    { type: 'Voluntary Resignation', count: voluntaryResignations, pct: totalExits > 0 ? Math.round((voluntaryResignations / totalExits) * 100) : 0, color: '#F59E0B' },
+    { type: 'Involuntary Termination', count: involuntaryTerminations, pct: totalExits > 0 ? Math.round((involuntaryTerminations / totalExits) * 100) : 0, color: '#EF4444' }
+  ];
+
+  const monthExitsMap = {};
+  for (const e of allExits) {
+    const mStr = dayjs(e.updatedAt).format('YYYY-MM');
+    monthExitsMap[mStr] = (monthExitsMap[mStr] || 0) + 1;
+  }
+  const monthlyExitTrend = Object.entries(monthExitsMap)
+    .map(([month, exits]) => ({ month, exits }))
+    .sort((a, b) => a.month.localeCompare(b.month));
+
+  const chartData = {
+    exitTypeDistribution,
+    monthlyExitTrend
   };
 
   const total = await Employee.countDocuments(query);
@@ -797,6 +1032,7 @@ async function generateTurnoverReport({ from, to, page, limit }) {
     _id: e._id,
     employeeCode: e.employeeCode,
     name: e.name,
+    avatar: e.avatar || null,
     department: e.departmentId?.name || 'Unassigned',
     designation: e.designationId?.title || 'Staff',
     status: e.status,
@@ -805,23 +1041,41 @@ async function generateTurnoverReport({ from, to, page, limit }) {
     exitDate: dayjs(e.updatedAt).format('YYYY-MM-DD')
   }));
 
-  return { columns, items, total, page, limit, title: 'Workforce Turnover & Attrition Report' };
+  return { columns, items, total, page, limit, summary, chartData, title: 'Workforce Turnover & Attrition Report' };
 }
 
 /**
  * Departmental Cost Analytics Report
  */
-async function generateDepartmentCostReport() {
-  const latestRun = await PayrollRun.findOne({ status: { $in: ['approved', 'paid'] } })
-    .sort({ year: -1, month: -1 })
-    .lean();
-
-  if (!latestRun) {
-    return { columns: [], items: [], total: 0, page: 1, limit: 10, title: 'Department Cost Report' };
+async function generateDepartmentCostReport({ from, to }) {
+  const runQuery = { status: { $in: ['approved', 'paid'] } };
+  if (from && to) {
+    const fromMonth = from.slice(0, 7);
+    const toMonth = to.slice(0, 7);
+    const fromDate = dayjs(from).startOf('day').toDate();
+    const toDate = dayjs(to).endOf('day').toDate();
+    runQuery.$or = [
+      { month: { $gte: fromMonth, $lte: toMonth } },
+      { cycleStartDate: { $gte: fromDate, $lte: toDate } }
+    ];
   }
 
+  let matchingRuns = await PayrollRun.find(runQuery).select('_id year month').lean();
+  if (matchingRuns.length === 0) {
+    const latest = await PayrollRun.findOne({ status: { $in: ['approved', 'paid'] } })
+      .sort({ year: -1, month: -1 })
+      .lean();
+    if (latest) matchingRuns = [latest];
+  }
+
+  if (matchingRuns.length === 0) {
+    return { columns: [], items: [], total: 0, page: 1, limit: 10, summary: {}, chartData: {}, title: 'Department Cost Report' };
+  }
+
+  const runIds = matchingRuns.map((r) => r._id);
+
   const departmentCosts = await Payslip.aggregate([
-    { $match: { $or: [{ payrollRunId: latestRun._id }, { runId: latestRun._id }] } },
+    { $match: { $or: [{ payrollRunId: { $in: runIds } }, { runId: { $in: runIds } }] } },
     {
       $lookup: {
         from: 'employees',
@@ -853,6 +1107,37 @@ async function generateDepartmentCostReport() {
     { $sort: { totalGrossPaisa: -1 } }
   ]);
 
+  let grandTotalGrossPaisa = 0;
+  let grandTotalTaxPaisa = 0;
+  let totalStaff = 0;
+  for (const d of departmentCosts) {
+    grandTotalGrossPaisa += d.totalGrossPaisa;
+    grandTotalTaxPaisa += d.totalTaxPaisa;
+    totalStaff += d.headcount;
+  }
+  const topDept = departmentCosts[0];
+
+  const summary = {
+    totalCostPkr: Math.round(grandTotalGrossPaisa / 100).toLocaleString('en-PK'),
+    avgCostPerEmployeePkr: totalStaff > 0 ? Math.round((grandTotalGrossPaisa / totalStaff) / 100).toLocaleString('en-PK') : '0',
+    topDepartmentName: topDept?.departmentName || 'N/A',
+    topDepartmentCostPkr: topDept ? Math.round(topDept.totalGrossPaisa / 100).toLocaleString('en-PK') : '0',
+    totalTaxComponentPkr: Math.round(grandTotalTaxPaisa / 100).toLocaleString('en-PK')
+  };
+
+  const departmentCostComparison = departmentCosts.map((d) => ({
+    departmentName: d.departmentName,
+    headcount: d.headcount,
+    grossPkr: Math.round(d.totalGrossPaisa / 100),
+    taxPkr: Math.round(d.totalTaxPaisa / 100),
+    netPkr: Math.round(d.totalNetPaisa / 100),
+    avgCostPerEmpPkr: d.headcount > 0 ? Math.round((d.totalGrossPaisa / d.headcount) / 100) : 0
+  }));
+
+  const chartData = {
+    departmentCostComparison
+  };
+
   const columns = [
     { header: 'Department', key: 'departmentName' },
     { header: 'Headcount', key: 'headcount' },
@@ -865,14 +1150,10 @@ async function generateDepartmentCostReport() {
     _id: d._id,
     departmentName: d.departmentName,
     headcount: d.headcount,
-    grossPkr: Math.round(d.totalGrossPaisa / 100).toLocaleString(),
-    taxPkr: Math.round(d.totalTaxPaisa / 100).toLocaleString(),
-    netPkr: Math.round(d.totalNetPaisa / 100).toLocaleString()
+    grossPkr: Math.round(d.totalGrossPaisa / 100).toLocaleString('en-PK'),
+    taxPkr: Math.round(d.totalTaxPaisa / 100).toLocaleString('en-PK'),
+    netPkr: Math.round(d.totalNetPaisa / 100).toLocaleString('en-PK')
   }));
-
-  const monthLabel = latestRun.year && latestRun.month
-    ? `${latestRun.year}-${String(latestRun.month).padStart(2, '0')}`
-    : latestRun.month || 'Current';
 
   return {
     columns,
@@ -880,6 +1161,301 @@ async function generateDepartmentCostReport() {
     total: items.length,
     page: 1,
     limit: items.length,
-    title: `Department Cost Report (${monthLabel})`
+    summary,
+    chartData,
+    title: 'Department Cost Analytics Report'
   };
 }
+
+/**
+ * Deep Inspection Details for Modals & Dossier Sheets
+ */
+export const getReportInspectionDetails = async ({
+  type,
+  employeeId,
+  departmentId,
+  runId,
+  from,
+  to,
+  user,
+  userScope = 'all'
+}) => {
+  // Prohibit managers from inspecting financial reports
+  const financialReports = ['payroll', 'department-cost'];
+  if (financialReports.includes(type) && userScope !== 'all') {
+    throw new ApiError(
+      403,
+      'Access Denied: You do not have permission to inspect financial and cost reports.'
+    );
+  }
+
+  // If team-scoped, check that employeeId belongs to the manager's team
+  if (userScope === 'team' && employeeId) {
+    const teamMemberIds = await resolveTeamMemberIds(user);
+    const isTeamMember = teamMemberIds.some((id) => id.toString() === employeeId.toString());
+    if (!isTeamMember) {
+      throw new ApiError(403, 'Access Denied: Employee is not part of your managed team.');
+    }
+  }
+
+  switch (type) {
+    case 'attendance': {
+      if (!employeeId) throw new ApiError(400, 'Employee ID is required for attendance inspection.');
+      const emp = await Employee.findById(employeeId)
+        .populate('departmentId', 'name')
+        .populate('designationId', 'title')
+        .lean();
+      if (!emp) throw new ApiError(404, 'Employee not found.');
+
+      const query = { employeeId };
+      if (from && to) {
+        query.date = { $gte: from, $lte: to };
+      }
+
+      const punches = await Attendance.find(query).sort({ date: -1 }).lean();
+
+      const totalDays = punches.length;
+      const presentDays = punches.filter((p) => p.status === 'present').length;
+      const lateDays = punches.filter((p) => p.status === 'late').length;
+      const halfDays = punches.filter((p) => p.status === 'half_day').length;
+      const absentDays = punches.filter((p) => p.status === 'absent').length;
+      const totalWorkMins = punches.reduce((acc, p) => acc + (p.workDurationMinutes || 0), 0);
+      const totalOtMins = punches.reduce((acc, p) => acc + (p.overtimeMinutes || 0), 0);
+      const punctualityRate = totalDays > 0 ? Math.round(((presentDays + halfDays * 0.5) / totalDays) * 100) : 0;
+
+      return {
+        type: 'attendance',
+        employee: {
+          _id: emp._id,
+          name: emp.name,
+          employeeCode: emp.employeeCode,
+          avatar: emp.avatar,
+          department: emp.departmentId?.name || 'Unassigned',
+          designation: emp.designationId?.title || 'Staff',
+          joiningDate: emp.joiningDate ? dayjs(emp.joiningDate).format('YYYY-MM-DD') : '-'
+        },
+        summary: {
+          totalDays,
+          presentDays,
+          lateDays,
+          halfDays,
+          absentDays,
+          totalWorkHours: Math.round((totalWorkMins / 60) * 10) / 10,
+          totalOvertimeHours: Math.round((totalOtMins / 60) * 10) / 10,
+          punctualityRate: `${punctualityRate}%`
+        },
+        punches: punches.map((p) => ({
+          _id: p._id,
+          date: dayjs(p.date).format('DD MMM YYYY'),
+          rawDate: p.date,
+          status: p.status?.toUpperCase() || 'PRESENT',
+          checkIn: p.checkIn ? dayjs(p.checkIn).format('hh:mm A') : '-',
+          checkOut: p.checkOut ? dayjs(p.checkOut).format('hh:mm A') : '-',
+          workHours: Math.round(((p.workDurationMinutes || 0) / 60) * 10) / 10,
+          lateMinutes: p.lateMinutes || 0,
+          overtimeHours: Math.round(((p.overtimeMinutes || 0) / 60) * 10) / 10,
+          overtimeApproved: !!p.overtimeApproved
+        }))
+      };
+    }
+
+    case 'leave': {
+      if (!employeeId) throw new ApiError(400, 'Employee ID is required for leave inspection.');
+      const emp = await Employee.findById(employeeId)
+        .populate('departmentId', 'name')
+        .populate('designationId', 'title')
+        .lean();
+      if (!emp) throw new ApiError(404, 'Employee not found.');
+
+      const currentYear = new Date().getFullYear();
+      const balances = await LeaveBalance.findOne({ employeeId, year: currentYear })
+        .populate('balances.leaveTypeId', 'name code isPaid')
+        .lean();
+
+      const leaves = await Leave.find({ employeeId })
+        .populate('leaveTypeId', 'name code')
+        .sort({ createdAt: -1 })
+        .lean();
+
+      const totalApprovedDays = leaves
+        .filter((l) => l.status === 'approved')
+        .reduce((sum, l) => sum + (l.days ?? l.totalDays ?? 1), 0);
+
+      const pendingRequests = leaves.filter((l) => l.status === 'pending').length;
+
+      return {
+        type: 'leave',
+        employee: {
+          _id: emp._id,
+          name: emp.name,
+          employeeCode: emp.employeeCode,
+          avatar: emp.avatar,
+          department: emp.departmentId?.name || 'Unassigned',
+          designation: emp.designationId?.title || 'Staff'
+        },
+        balances: balances?.balances || [],
+        summary: {
+          totalApprovedDays,
+          pendingRequests,
+          totalApplications: leaves.length
+        },
+        applications: leaves.map((l) => ({
+          _id: l._id,
+          leaveType: l.leaveTypeId?.name || 'Leave',
+          code: l.leaveTypeId?.code || 'LEAVE',
+          startDate: l.startDate ? dayjs(l.startDate).format('DD MMM YYYY') : '-',
+          endDate: l.endDate ? dayjs(l.endDate).format('DD MMM YYYY') : '-',
+          totalDays: l.days ?? l.totalDays ?? 1,
+          status: l.status?.toUpperCase() || 'PENDING',
+          reason: l.reason || '-',
+          createdAt: dayjs(l.createdAt).format('DD MMM YYYY')
+        }))
+      };
+    }
+
+    case 'payroll': {
+      if (!runId && !employeeId) {
+        throw new ApiError(400, 'Either runId or employeeId is required for payroll inspection.');
+      }
+
+      if (runId) {
+        const run = await PayrollRun.findById(runId).lean();
+        if (!run) throw new ApiError(404, 'Payroll run not found.');
+
+        const payslips = await Payslip.find({
+          $or: [{ payrollRunId: runId }, { runId: runId }]
+        })
+          .populate({
+            path: 'employeeId',
+            select: 'name employeeCode departmentId designationId avatar',
+            populate: [
+              { path: 'departmentId', select: 'name' },
+              { path: 'designationId', select: 'title' }
+            ]
+          })
+          .sort({ grossPay: -1 })
+          .lean();
+
+        return {
+          type: 'payroll',
+          run: {
+            _id: run._id,
+            month: run.month,
+            year: run.year,
+            status: run.status?.toUpperCase(),
+            totalEmployees: run.totalEmployees || payslips.length,
+            grossPkr: Math.round(((run.totalGrossPay ?? run.totalGross) || 0) / 100).toLocaleString('en-PK'),
+            netPkr: Math.round(((run.totalNetPay ?? run.totalNetPayable) || 0) / 100).toLocaleString('en-PK'),
+            taxPkr: Math.round((run.totalTaxWithheld || 0) / 100).toLocaleString('en-PK'),
+            deductionsPkr: Math.round((run.totalDeductions || 0) / 100).toLocaleString('en-PK')
+          },
+          payslips: payslips.map((ps) => ({
+            _id: ps._id,
+            employeeCode: ps.employeeId?.employeeCode || 'N/A',
+            name: ps.employeeId?.name || 'Staff',
+            avatar: ps.employeeId?.avatar || null,
+            department: ps.employeeId?.departmentId?.name || 'General',
+            designation: ps.employeeId?.designationId?.title || 'Staff',
+            grossPkr: Math.round((ps.grossPay || 0) / 100).toLocaleString('en-PK'),
+            netPkr: Math.round(((ps.netPay ?? ps.netPayable) || 0) / 100).toLocaleString('en-PK'),
+            taxPkr: Math.round((ps.taxWithheld || 0) / 100).toLocaleString('en-PK'),
+            deductionsPkr: Math.round((ps.totalDeductions || 0) / 100).toLocaleString('en-PK'),
+            status: ps.status?.toUpperCase() || 'PAID'
+          }))
+        };
+      }
+
+      // employeeId payslip history
+      const emp = await Employee.findById(employeeId).populate('departmentId', 'name').lean();
+      const payslips = await Payslip.find({ employeeId }).sort({ createdAt: -1 }).limit(12).lean();
+      return {
+        type: 'payroll',
+        employee: emp,
+        payslips: payslips.map((ps) => ({
+          _id: ps._id,
+          month: ps.month || dayjs(ps.createdAt).format('YYYY-MM'),
+          grossPkr: Math.round((ps.grossPay || 0) / 100).toLocaleString('en-PK'),
+          netPkr: Math.round(((ps.netPay ?? ps.netPayable) || 0) / 100).toLocaleString('en-PK'),
+          taxPkr: Math.round((ps.taxWithheld || 0) / 100).toLocaleString('en-PK'),
+          status: ps.status?.toUpperCase() || 'PAID'
+        }))
+      };
+    }
+
+    case 'department-cost': {
+      if (!departmentId) throw new ApiError(400, 'Department ID is required for cost inspection.');
+      const dept = await Department.findById(departmentId).lean();
+      if (!dept) throw new ApiError(404, 'Department not found.');
+
+      const staff = await Employee.find({ departmentId, isDeleted: false })
+        .populate('designationId', 'title')
+        .sort({ name: 1 })
+        .lean();
+
+      // Find payslips for these employees from latest approved run
+      const staffIds = staff.map((s) => s._id);
+      const latestRun = await PayrollRun.findOne({ status: { $in: ['approved', 'paid'] } })
+        .sort({ year: -1, month: -1 })
+        .lean();
+
+      let staffPayslips = [];
+      if (latestRun) {
+        staffPayslips = await Payslip.find({
+          employeeId: { $in: staffIds },
+          $or: [{ payrollRunId: latestRun._id }, { runId: latestRun._id }]
+        }).lean();
+      }
+
+      const psMap = {};
+      for (const ps of staffPayslips) {
+        psMap[ps.employeeId.toString()] = ps;
+      }
+
+      let deptGrossPaisa = 0;
+      let deptTaxPaisa = 0;
+      let deptNetPaisa = 0;
+
+      const roster = staff.map((s) => {
+        const ps = psMap[s._id.toString()];
+        const gross = ps?.grossPay || (s.salary ? s.salary * 100 : 0);
+        const tax = ps?.taxWithheld || 0;
+        const net = ps?.netPay || ps?.netPayable || gross - tax;
+
+        deptGrossPaisa += gross;
+        deptTaxPaisa += tax;
+        deptNetPaisa += net;
+
+        return {
+          _id: s._id,
+          employeeCode: s.employeeCode,
+          name: s.name,
+          avatar: s.avatar || null,
+          designation: s.designationId?.title || 'Staff',
+          grossPkr: Math.round(gross / 100).toLocaleString('en-PK'),
+          taxPkr: Math.round(tax / 100).toLocaleString('en-PK'),
+          netPkr: Math.round(net / 100).toLocaleString('en-PK')
+        };
+      });
+
+      return {
+        type: 'department-cost',
+        department: {
+          _id: dept._id,
+          name: dept.name,
+          code: dept.code
+        },
+        summary: {
+          headcount: staff.length,
+          totalCostPkr: Math.round(deptGrossPaisa / 100).toLocaleString('en-PK'),
+          totalTaxPkr: Math.round(deptTaxPaisa / 100).toLocaleString('en-PK'),
+          totalNetPkr: Math.round(deptNetPaisa / 100).toLocaleString('en-PK'),
+          avgCostPerEmpPkr: staff.length > 0 ? Math.round((deptGrossPaisa / staff.length) / 100).toLocaleString('en-PK') : '0'
+        },
+        roster
+      };
+    }
+
+    default:
+      throw new ApiError(400, `Unsupported inspection type: ${type}`);
+  }
+};

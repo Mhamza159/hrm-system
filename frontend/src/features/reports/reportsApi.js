@@ -22,8 +22,20 @@ export const reportsApi = baseApi.injectEndpoints({
         }
       }),
       providesTags: (result, error, { type }) => [{ type: 'Report', id: type }]
+    }),
+    getReportInspection: builder.query({
+      query: ({ type, employeeId, departmentId, runId, from, to }) => ({
+        url: `/reports/${type}/inspect`,
+        params: {
+          employeeId: employeeId || undefined,
+          departmentId: departmentId || undefined,
+          runId: runId || undefined,
+          from: from || undefined,
+          to: to || undefined
+        }
+      })
     })
   })
 });
 
-export const { useGetReportDataQuery } = reportsApi;
+export const { useGetReportDataQuery, useGetReportInspectionQuery } = reportsApi;

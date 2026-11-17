@@ -454,7 +454,7 @@ export const AttritionDashboardPage = () => {
 
         {/* Data Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs min-w-[1180px]">
+          <table className="w-full text-left text-xs min-w-[1220px]">
             <thead>
               <tr className="border-b border-slate-200 dark:border-[#1A3125] text-[11px] font-bold text-slate-500 dark:text-[#7E9E8F] uppercase tracking-wider">
                 <th className="py-3 px-3.5 w-[240px] whitespace-nowrap">Employee</th>
@@ -470,8 +470,8 @@ export const AttritionDashboardPage = () => {
                   </div>
                 </th>
                 <th className="py-3 px-3.5 w-[130px] whitespace-nowrap">Risk Tier</th>
-                <th className="py-3 px-3.5 w-[250px] whitespace-nowrap">Primary Signal Triggers</th>
-                <th className="py-3 px-3.5 w-[110px] text-right whitespace-nowrap">Interventions</th>
+                <th className="py-3 px-3.5 w-[270px] whitespace-nowrap">Primary Signal Triggers</th>
+                <th className="py-3 px-3.5 w-[130px] text-right whitespace-nowrap">Interventions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-[#1A3125]/40">

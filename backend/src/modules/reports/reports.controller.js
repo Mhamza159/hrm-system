@@ -6,7 +6,7 @@
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { ApiResponse } from '../../utils/apiResponse.js';
 import { ApiError } from '../../utils/ApiError.js';
-import { reportQuerySchema } from './reports.validation.js';
+import { reportQuerySchema, reportInspectionQuerySchema } from './reports.validation.js';
 import * as reportsService from './reports.service.js';
 import { generateExcelReport, generatePdfReport } from '../../services/reportExport.service.js';
 import { recordAuditLog } from '../../services/audit.service.js';
@@ -110,5 +110,32 @@ export const getReport = asyncHandler(async (req, res) => {
   // 5. Default JSON Response
   return res.status(200).json(
     new ApiResponse(200, reportData, 'Report generated successfully')
+  );
+});
+
+export const getReportInspection = asyncHandler(async (req, res) => {
+  const queryParams = {
+    type: req.params.type,
+    ...req.query
+  };
+  const validatedQuery = reportInspectionQuerySchema.parse(queryParams);
+
+  const userRoles = Array.isArray(req.user?.roles)
+    ? req.user.roles.map((r) => (typeof r === 'object' ? r.name : r))
+    : [];
+  const isSuperAdminOrHr =
+    req.user?.isSuperAdmin ||
+    userRoles.includes('Super Admin') ||
+    userRoles.includes('HR Manager');
+  const userScope = req.permissionScope || (isSuperAdminOrHr ? 'all' : 'team');
+
+  const inspectionData = await reportsService.getReportInspectionDetails({
+    ...validatedQuery,
+    user: req.user,
+    userScope
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, inspectionData, 'Report inspection details retrieved successfully')
   );
 });

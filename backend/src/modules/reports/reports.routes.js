@@ -27,6 +27,17 @@ const reportLimiter = rateLimit({
 router.use(authenticate);
 
 /**
+ * Route: GET /api/v1/reports/:type/inspect
+ * Deep drilldown dossier inspection for individual employees, runs, or departments
+ */
+router.get(
+  '/:type/inspect',
+  reportLimiter,
+  checkPermission('report.view'),
+  reportsController.getReportInspection
+);
+
+/**
  * 7.6-BE & 7.8-BE: Multi-Axis Report Data & Streaming Export
  * Route: GET /api/v1/reports/:type
  */

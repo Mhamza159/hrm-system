@@ -22,8 +22,7 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  XCircle,
-  FileText
+  XCircle
 } from 'lucide-react';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 
@@ -123,7 +122,8 @@ export function ReportDataTable({
   isLoading = false,
   onPageChange,
   view = 'daily',
-  reportType = 'attendance'
+  reportType = 'attendance',
+  onInspect
 }) {
   const totalPages = Math.ceil(total / limit) || 1;
   const [expandedRows, setExpandedRows] = useState({});
@@ -165,14 +165,15 @@ export function ReportDataTable({
   }
 
   const isEmployeeView = view === 'employee';
+  const hasInspectableAction = onInspect && (reportType === 'payroll' || reportType === 'department-cost');
 
   return (
     <div className="bg-white dark:bg-[#111D17] rounded-2xl border border-slate-200 dark:border-[#1A3125] overflow-hidden shadow-xs">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs border-collapse">
+        <table className="w-full text-left text-xs border-collapse min-w-[1150px]">
           <thead>
             <tr className="border-b border-slate-200 dark:border-[#1A3125] bg-slate-50/80 dark:bg-[#13221B] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold text-[11px]">
-              {isEmployeeView && <th className="py-3 px-3 w-10 text-center">#</th>}
+              {isEmployeeView && <th className="py-3 px-3 w-10 text-center whitespace-nowrap">#</th>}
               {columns.map((col) => (
                 <th key={col.key} className="py-3 px-4 whitespace-nowrap">
                   {col.header}
@@ -180,6 +181,9 @@ export function ReportDataTable({
               ))}
               {isEmployeeView && (
                 <th className="py-3 px-4 text-right whitespace-nowrap">Drilldown</th>
+              )}
+              {hasInspectableAction && (
+                <th className="py-3 px-4 text-right whitespace-nowrap">Inspection</th>
               )}
             </tr>
           </thead>
@@ -327,31 +331,63 @@ export function ReportDataTable({
                     {/* Drilldown Expander Cell */}
                     {isEmployeeView && (
                       <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                        {canExpand ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleRow(rowId);
-                            }}
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border ${
-                              isExpanded
-                                ? 'bg-emerald-500 text-white border-emerald-600 dark:border-emerald-500 shadow-xs'
-                                : 'bg-slate-100 hover:bg-slate-200 dark:bg-[#1A3125] dark:hover:bg-[#223F30] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-[#1A3125]'
-                            }`}
-                          >
-                            <span>{isExpanded ? 'Hide' : 'Inspect'}</span>
-                            <ChevronDown
-                              className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                                isExpanded ? 'rotate-180' : ''
+                        <div className="inline-flex items-center gap-1.5 justify-end">
+                          {canExpand && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleRow(rowId);
+                              }}
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all border ${
+                                isExpanded
+                                  ? 'bg-emerald-500 text-white border-emerald-600 dark:border-emerald-500 shadow-xs'
+                                  : 'bg-slate-100 hover:bg-slate-200 dark:bg-[#1A3125] dark:hover:bg-[#223F30] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-[#1A3125]'
                               }`}
-                            />
-                          </button>
-                        ) : (
-                          <span className="text-[11px] text-slate-400 dark:text-slate-600 font-mono">
-                            No logs
-                          </span>
-                        )}
+                            >
+                              <span>{isExpanded ? 'Hide' : 'Logs'}</span>
+                              <ChevronDown
+                                className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                                  isExpanded ? 'rotate-180' : ''
+                                }`}
+                              />
+                            </button>
+                          )}
+                          {onInspect && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onInspect({
+                                  type: reportType,
+                                  targetId: row._id || row.employeeId
+                                });
+                              }}
+                              className="px-2.5 py-1 rounded-lg text-[11px] font-semibold text-[#00C471] bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition shadow-xs"
+                            >
+                              Inspect
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
+
+                    {/* Inspection Action for Financial Reports */}
+                    {hasInspectableAction && (
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onInspect({
+                              type: reportType,
+                              targetId: row._id || row.departmentId
+                            });
+                          }}
+                          className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-[#00C471] bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition shadow-xs cursor-pointer"
+                        >
+                          {reportType === 'payroll' ? 'Inspect Run' : 'Inspect Dept'}
+                        </button>
                       </td>
                     )}
                   </tr>
@@ -359,7 +395,7 @@ export function ReportDataTable({
                   {/* Inline Accordion Detail View */}
                   {canExpand && isExpanded && (
                     <tr className="bg-slate-50/70 dark:bg-[#0A110D] border-y border-slate-200 dark:border-[#1A3125]">
-                      <td colSpan={columns.length + 2} className="p-4 sm:p-5">
+                      <td colSpan={columns.length + (isEmployeeView ? 2 : 1) + (hasInspectableAction ? 1 : 0)} className="p-4 sm:p-5">
                         <div className="bg-white dark:bg-[#111D17] rounded-xl border border-slate-200 dark:border-[#1A3125] p-4 shadow-xs space-y-3">
                           <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#1A3125] pb-2.5">
                             <div className="flex items-center gap-2">

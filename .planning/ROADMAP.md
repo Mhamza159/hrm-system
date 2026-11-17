@@ -689,10 +689,10 @@ Plans:
 
 Plans:
 
-- [ ] **Plan 20-01: Backend Analytics Engine & Aggregation Overhaul** (`.planning/phases/20-reports-module-complete-audit-implementation-database-integration-ui-ux-redesign/20-01-PLAN.md`)
-- [ ] **Plan 20-02: Core Reports Console, Comprehensive Date Presets & Filter Architecture** (`.planning/phases/20-reports-module-complete-audit-implementation-database-integration-ui-ux-redesign/20-02-PLAN.md`)
-- [ ] **Plan 20-03: Interactive Visual Analytics Suite & Charts for All 6 Reports** (`.planning/phases/20-reports-module-complete-audit-implementation-database-integration-ui-ux-redesign/20-03-PLAN.md`)
-- [ ] **Plan 20-04: Enhanced Data Tables, Chronological Timelines & Comprehensive Inspection Sheets** (`.planning/phases/20-reports-module-complete-audit-implementation-database-integration-ui-ux-redesign/20-04-PLAN.md`)
+- [x] **Plan 20-01: Backend Analytics Engine & Aggregation Overhaul** (`.planning/phases/20-reports-module-complete-audit-implementation-database-integration-ui-ux-redesign/20-01-PLAN.md`)
+- [x] **Plan 20-02: Core Reports Console, Comprehensive Date Presets & Filter Architecture** (`.planning/phases/20-reports-module-complete-audit-implementation-database-integration-ui-ux-redesign/20-02-PLAN.md`)
+- [x] **Plan 20-03: Interactive Visual Analytics Suite & Charts for All 6 Reports** (`.planning/phases/20-reports-module-complete-audit-implementation-database-integration-ui-ux-redesign/20-03-PLAN.md`)
+- [x] **Plan 20-04: Enhanced Data Tables, Chronological Timelines & Comprehensive Inspection Sheets** (`.planning/phases/20-reports-module-complete-audit-implementation-database-integration-ui-ux-redesign/20-04-PLAN.md`)
 
 ---
 

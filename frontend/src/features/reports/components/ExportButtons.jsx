@@ -1,16 +1,12 @@
 /**
  * @file ExportButtons.jsx
  * @description Streaming Excel (.xlsx) and PDF (.pdf) export triggers using in-memory Redux tokens.
- * 
- * SPECIFICATION:
- * - Module: M7 Dashboard & Reports (BUILD-GUIDE Section 13 · Row 7.8)
- * - Layer: Component (React 18 / Tailwind)
- * - Security: Reads token from Redux memory and passes credentials: 'include'
+ * Styled in Forest & Emerald Enterprise theme with standardized h-9 control heights.
  */
 
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { FileSpreadsheet, FileText, Download } from 'lucide-react';
+import { FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { usePermission } from '../../../hooks/usePermission.js';
 
@@ -62,7 +58,9 @@ export function ExportButtons({ type, from, to, departmentId, employeeId, status
         try {
           const errData = await res.json();
           errorMsg = errData.message || errorMsg;
-        } catch (_) {}
+        } catch {
+          // ignore parsing error
+        }
         throw new Error(errorMsg);
       }
 
@@ -95,10 +93,10 @@ export function ExportButtons({ type, from, to, departmentId, employeeId, status
         type="button"
         disabled={isExportingExcel || isExportingPdf}
         onClick={() => handleExport('xlsx')}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-colors disabled:opacity-50"
+        className="h-9 px-3 text-xs font-bold rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-[#00C471] hover:bg-[#00C471] hover:text-white transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
       >
         {isExportingExcel ? (
-          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
         ) : (
           <FileSpreadsheet className="w-3.5 h-3.5" />
         )}
@@ -109,10 +107,10 @@ export function ExportButtons({ type, from, to, departmentId, employeeId, status
         type="button"
         disabled={isExportingExcel || isExportingPdf}
         onClick={() => handleExport('pdf')}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors disabled:opacity-50"
+        className="h-9 px-3 text-xs font-bold rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162820] transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
       >
         {isExportingPdf ? (
-          <div className="w-3.5 h-3.5 border-2 border-slate-500 border-t-transparent rounded-full animate-spin" />
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
         ) : (
           <FileText className="w-3.5 h-3.5 text-rose-500" />
         )}
@@ -121,3 +119,5 @@ export function ExportButtons({ type, from, to, departmentId, employeeId, status
     </div>
   );
 }
+
+export default ExportButtons;

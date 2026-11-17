@@ -8,7 +8,7 @@ import { z } from 'zod';
 export const reportQuerySchema = z
   .object({
     type: z.enum(
-      ['attendance', 'leave', 'payroll', 'headcount', 'turnover', 'department-cost'],
+      ['attendance', 'leave', 'payroll', 'headcount', 'turnover', 'department-cost', 'expenses'],
       { required_error: 'Report type is required' }
     ),
     from: z
@@ -21,6 +21,8 @@ export const reportQuerySchema = z
       .optional(),
     departmentId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid department ID').optional(),
     employeeId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid employee ID').optional(),
+    employeeInspectionId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid inspection employee ID').optional(),
+    departmentInspectionId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid inspection department ID').optional(),
     status: z.string().max(40).regex(/^[a-zA-Z0-9_\s-]+$/, 'Invalid status format').optional(),
     view: z.enum(['daily', 'employee']).default('daily').optional(),
     format: z.enum(['json', 'xlsx', 'pdf']).default('json'),
@@ -39,3 +41,20 @@ export const reportQuerySchema = z
       path: ['from']
     }
   );
+
+export const reportInspectionQuerySchema = z.object({
+  type: z.enum(['attendance', 'leave', 'payroll', 'department-cost', 'headcount'], {
+    required_error: 'Report type is required for inspection'
+  }),
+  employeeId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid employee ID').optional(),
+  departmentId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid department ID').optional(),
+  runId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid run ID').optional(),
+  from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'From date must be in YYYY-MM-DD format')
+    .optional(),
+  to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'To date must be in YYYY-MM-DD format')
+    .optional()
+});
