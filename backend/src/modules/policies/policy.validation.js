@@ -26,16 +26,26 @@ export const createPolicySchema = z.object({
     content: z.string().min(10, 'Policy content must be at least 10 characters'),
     scope: z.enum(['All Employees', 'Department Specific', 'Role Specific', 'Management Only']).optional().default('All Employees'),
     applicableDepartmentIds: z.array(z.string().regex(mongoIdRegex, 'Invalid Department ObjectId')).optional().default([]),
+    departmentIds: z.array(z.string().regex(mongoIdRegex)).optional(),
     applicableRoleNames: z.array(z.string()).optional().default([]),
+    targetRoles: z.array(z.string()).optional(),
     requiresAcknowledgement: z.boolean().optional().default(false),
     acknowledgementGracePeriodDays: z.number().int().min(1).max(180).optional().default(7),
+    gracePeriodDays: z.number().int().min(1).max(180).optional(),
     effectiveDate: z.string().optional().nullable(),
     reviewDate: z.string().optional().nullable(),
     expiryDate: z.string().optional().nullable(),
+    expiresAt: z.string().optional().nullable(),
     fileUrl: z.string().optional().nullable(),
     fileType: z.string().optional().nullable(),
     fileSize: z.number().optional().default(0)
-  })
+  }).transform((data) => ({
+    ...data,
+    applicableDepartmentIds: data.applicableDepartmentIds?.length > 0 ? data.applicableDepartmentIds : (data.departmentIds || []),
+    applicableRoleNames: data.applicableRoleNames?.length > 0 ? data.applicableRoleNames : (data.targetRoles || []),
+    acknowledgementGracePeriodDays: data.acknowledgementGracePeriodDays || data.gracePeriodDays || 7,
+    expiryDate: data.expiryDate || data.expiresAt || null
+  }))
 });
 
 export const updatePolicySchema = z.object({
@@ -49,17 +59,27 @@ export const updatePolicySchema = z.object({
     content: z.string().min(10).optional(),
     scope: z.enum(['All Employees', 'Department Specific', 'Role Specific', 'Management Only']).optional(),
     applicableDepartmentIds: z.array(z.string().regex(mongoIdRegex)).optional(),
+    departmentIds: z.array(z.string().regex(mongoIdRegex)).optional(),
     applicableRoleNames: z.array(z.string()).optional(),
+    targetRoles: z.array(z.string()).optional(),
     requiresAcknowledgement: z.boolean().optional(),
     acknowledgementGracePeriodDays: z.number().int().min(1).max(180).optional(),
+    gracePeriodDays: z.number().int().min(1).max(180).optional(),
     effectiveDate: z.string().optional().nullable(),
     reviewDate: z.string().optional().nullable(),
     expiryDate: z.string().optional().nullable(),
+    expiresAt: z.string().optional().nullable(),
     fileUrl: z.string().optional().nullable(),
     fileType: z.string().optional().nullable(),
     fileSize: z.number().optional(),
     changeSummary: z.string().max(500).optional()
-  })
+  }).transform((data) => ({
+    ...data,
+    applicableDepartmentIds: data.applicableDepartmentIds !== undefined ? data.applicableDepartmentIds : data.departmentIds,
+    applicableRoleNames: data.applicableRoleNames !== undefined ? data.applicableRoleNames : data.targetRoles,
+    acknowledgementGracePeriodDays: data.acknowledgementGracePeriodDays !== undefined ? data.acknowledgementGracePeriodDays : data.gracePeriodDays,
+    expiryDate: data.expiryDate !== undefined ? data.expiryDate : data.expiresAt
+  }))
 });
 
 export const policyCategorySchema = z.object({
@@ -118,6 +138,6 @@ export const policyQuerySchema = z.object({
     scope: z.string().optional(),
     page: z.coerce.number().int().min(1).optional().default(1),
     limit: z.coerce.number().int().min(1).max(100).optional().default(20),
-    myPoliciesOnly: z.coerce.boolean().optional().default(false)
+    myPoliciesOnly: z.preprocess((val) => val === 'true' || val === true, z.boolean()).optional().default(false)
   })
 });

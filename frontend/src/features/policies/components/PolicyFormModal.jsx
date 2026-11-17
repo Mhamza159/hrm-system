@@ -170,15 +170,22 @@ export const PolicyFormModal = ({
     }
 
     const payload = {
-      ...formData,
+      title: formData.title.trim(),
       policyCode: formData.policyCode.toUpperCase().trim(),
-      departmentIds: formData.scope === 'Department Specific' ? formData.departmentIds : [],
-      targetRoles: formData.scope === 'Role Specific' ? formData.targetRoles : [],
+      categoryId: formData.categoryId,
+      description: formData.description,
+      content: formData.content,
+      scope: formData.scope,
+      applicableDepartmentIds: formData.scope === 'Department Specific' ? formData.departmentIds : [],
+      applicableRoleNames: formData.scope === 'Role Specific' ? formData.targetRoles : [],
+      requiresAcknowledgement: formData.requiresAcknowledgement,
+      acknowledgementGracePeriodDays: formData.gracePeriodDays || 7,
       effectiveDate: formData.effectiveDate || undefined,
       reviewDate: formData.reviewDate || undefined,
-      expiresAt: formData.expiresAt || undefined,
+      expiryDate: formData.expiresAt || undefined,
+      changeSummary: formData.changeSummary || undefined,
       fileUrl: formData.fileUrl ? formData.fileUrl : undefined,
-      fileName: formData.fileUrl ? (formData.fileName || 'Document') : undefined
+      fileType: formData.fileUrl ? (formData.fileType || 'pdf') : undefined
     };
 
     try {

@@ -51,16 +51,18 @@ export const PolicyAcknowledgementRosterModal = ({ isOpen, onClose, policy }) =>
   const handleExportCsv = () => {
     if (filteredRoster.length === 0) return;
 
+    const escapeCsv = (str) => `"${String(str || '').replace(/"/g, '""')}"`;
+
     const headers = ['Employee Name', 'Employee Code', 'Department', 'Designation', 'Status', 'Signed At', 'Signature Text', 'IP Address'];
     const rows = filteredRoster.map((r) => [
-      `"${r.employee?.name || ''}"`,
-      `"${r.employee?.employeeId || ''}"`,
-      `"${r.employee?.department?.name || ''}"`,
-      `"${r.employee?.designation?.name || ''}"`,
+      escapeCsv(r.name || r.employee?.name),
+      escapeCsv(r.employeeCode || r.employee?.employeeId),
+      escapeCsv(r.department || r.employee?.department?.name),
+      escapeCsv(r.designation || r.employee?.designation?.name),
       r.isAcknowledged ? 'Signed' : 'Pending',
       r.acknowledgedAt ? new Date(r.acknowledgedAt).toLocaleString() : '',
-      `"${r.signatureText || ''}"`,
-      `"${r.ipAddress || ''}"`
+      escapeCsv(r.signatureText),
+      escapeCsv(r.ipAddress)
     ]);
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');

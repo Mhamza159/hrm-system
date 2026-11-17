@@ -106,14 +106,24 @@ export const getPolicies = async (query = {}, user) => {
     mongoQuery.scope = scope;
   }
 
-  // Search filter
+  // Search filter (safely combines with role-based scoping using $and if $or is already set)
   if (search && search.trim()) {
     const s = search.trim();
-    mongoQuery.$or = [
+    const searchConditions = [
       { title: { $regex: s, $options: 'i' } },
       { policyCode: { $regex: s, $options: 'i' } },
       { description: { $regex: s, $options: 'i' } }
     ];
+
+    if (mongoQuery.$or) {
+      mongoQuery.$and = [
+        { $or: mongoQuery.$or },
+        { $or: searchConditions }
+      ];
+      delete mongoQuery.$or;
+    } else {
+      mongoQuery.$or = searchConditions;
+    }
   }
 
   const skip = (Number(page) - 1) * Number(limit);

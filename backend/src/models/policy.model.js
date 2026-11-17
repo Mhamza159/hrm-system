@@ -23,11 +23,9 @@ const policySchema = new mongoose.Schema(
     policyCode: {
       type: String,
       required: [true, 'Policy code is required'],
-      unique: true,
       trim: true,
       uppercase: true,
-      maxlength: [50, 'Policy code cannot exceed 50 characters'],
-      index: true
+      maxlength: [50, 'Policy code cannot exceed 50 characters']
     },
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -146,6 +144,12 @@ const policySchema = new mongoose.Schema(
   {
     timestamps: true
   }
+);
+
+// Unique code index scoped to non-deleted policies (permits reuse of archived codes)
+policySchema.index(
+  { policyCode: 1 },
+  { unique: true, partialFilterExpression: { isDeleted: false }, name: 'PolicyCodeUniqueActive' }
 );
 
 // Compound text index for search queries
