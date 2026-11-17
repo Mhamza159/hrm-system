@@ -15,6 +15,8 @@ import RoleFormPage from './features/roles/pages/RoleFormPage.jsx';
 import DelegationPage from './features/roles/pages/DelegationPage.jsx';
 import SettingsPage from './features/settings/pages/SettingsPage.jsx';
 import PoliciesPage from './features/settings/pages/PoliciesPage.jsx';
+import PoliciesDashboardPage from './features/policies/pages/PoliciesDashboardPage.jsx';
+import EmployeePoliciesPage from './features/policies/pages/EmployeePoliciesPage.jsx';
 import DepartmentsPage from './features/departments/pages/DepartmentsPage.jsx';
 import DesignationsPage from './features/departments/pages/DesignationsPage.jsx';
 import ShiftsPage from './features/departments/pages/ShiftsPage.jsx';
@@ -101,8 +103,13 @@ import { ChatbotWidget } from './features/chatbot/components/ChatbotWidget.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
 import { useRefreshTokenMutation } from './features/auth/authApi.js';
-import { setCredentials, setInitialized, logout } from './features/auth/authSlice.js';
+import { setCredentials, setInitialized } from './features/auth/authSlice.js';
 import { useAuth } from './hooks/useAuth.js';
+
+const PoliciesIndexRoute = () => {
+  const { isHR, isSuperAdmin } = useAuth();
+  return isHR || isSuperAdmin ? <PoliciesDashboardPage /> : <EmployeePoliciesPage />;
+};
 
 export default function App() {
   const dispatch = useDispatch();
@@ -242,6 +249,22 @@ export default function App() {
           />
           <Route
             path="policies"
+            element={
+              <ProtectedRoute requiredPermission="policy.view">
+                <PoliciesIndexRoute />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="policies/my-policies"
+            element={
+              <ProtectedRoute requiredPermission="policy.view">
+                <EmployeePoliciesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="settings/handbook"
             element={
               <ProtectedRoute requiredPermission="settings.view">
                 <PoliciesPage />

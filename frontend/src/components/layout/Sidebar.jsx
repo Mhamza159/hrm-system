@@ -249,7 +249,7 @@ export function Sidebar({ isOpen = false, onClose }) {
         { type: 'link', name: 'Internal Chat', path: '/chat', icon: MessageSquare, permission: 'chat.access' },
     { type: 'link', name: 'Attrition Prediction', path: '/attrition', icon: TrendingDown, permission: 'attrition.view' },
     { type: 'link', name: 'Reports', path: '/reports', icon: BarChart3, permission: 'report.view', managerOnly: true },
-    { type: 'link', name: 'Company Policies', path: '/policies', icon: BookOpen, permission: 'settings.view' },
+    { type: 'link', name: 'Company Policies', path: '/policies', icon: BookOpen, permission: 'policy.view' },
     { type: 'link', name: 'Announcements', path: '/announcements', icon: Megaphone, permission: 'announcement.view' },
     { type: 'link', name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount > 0 ? unreadCount : undefined },
     { type: 'link', name: 'Login History', path: '/login-history', icon: History, permission: 'login.history' }

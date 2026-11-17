@@ -728,10 +728,10 @@ Plans:
 
 Plans:
 
-- [ ] **Plan 21-01: Backend Policies Architecture, Schemas, Validation & RBAC Engine** (`.planning/phases/21-company-policies-module-complete-audit-refinement-implementation-ui-ux-redesign/21-01-PLAN.md`)
-- [ ] **Plan 21-02: Administrative Policy Console, Analytics Dashboard & Category Management** (`.planning/phases/21-company-policies-module-complete-audit-refinement-implementation-ui-ux-redesign/21-02-PLAN.md`)
-- [ ] **Plan 21-03: Version History, Approval Workflow & Detail Inspection Drawer/View** (`.planning/phases/21-company-policies-module-complete-audit-refinement-implementation-ui-ux-redesign/21-03-PLAN.md`)
-- [ ] **Plan 21-04: Employee Policy Portal, Acknowledgement Workflow, Tracking Roster & Verification Gate** (`.planning/phases/21-company-policies-module-complete-audit-refinement-implementation-ui-ux-redesign/21-04-PLAN.md`)
+- [x] **Plan 21-01: Backend Policies Architecture, Schemas, Validation & RBAC Engine** (`.planning/phases/21-company-policies-module-complete-audit-refinement-implementation-ui-ux-redesign/21-01-PLAN.md`)
+- [x] **Plan 21-02: Administrative Policy Console, Analytics Dashboard & Category Management** (`.planning/phases/21-company-policies-module-complete-audit-refinement-implementation-ui-ux-redesign/21-02-PLAN.md`)
+- [x] **Plan 21-03: Version History, Approval Workflow & Detail Inspection Drawer/View** (`.planning/phases/21-company-policies-module-complete-audit-refinement-implementation-ui-ux-redesign/21-03-PLAN.md`)
+- [x] **Plan 21-04: Employee Policy Portal, Acknowledgement Workflow, Tracking Roster & Verification Gate** (`.planning/phases/21-company-policies-module-complete-audit-refinement-implementation-ui-ux-redesign/21-04-PLAN.md`)
 
 ---
 

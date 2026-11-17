@@ -1071,6 +1071,77 @@ export const PERMISSIONS_CATALOGUE = [
         defaultScope: 'all'
       }
     ]
+  },
+  {
+    module: 'policies',
+    label: 'Company Policies & Compliance',
+    subject: 'Policy',
+    description: 'Corporate handbooks, SOPs, semantic version control, review approval workflows, and employee legal acknowledgements.',
+    actions: [
+      {
+        action: 'policy.view',
+        label: 'View Applicable Company Policies',
+        description: 'Read published corporate policies applicable to user department and role.',
+        allowedScopes: ['own', 'department', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'policy.create',
+        label: 'Draft & Propose Policies',
+        description: 'Create new draft policies and author proposed revisions.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'policy.edit',
+        label: 'Edit Draft Policies',
+        description: 'Modify policy drafts and revision metadata.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'policy.delete',
+        label: 'Delete & Archive Policies',
+        description: 'Soft-delete drafts or archive obsolete published policies.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'policy.manage',
+        label: 'Manage Policy Categories & Classifications',
+        description: 'Create, update, and manage dynamic policy category taxonomies.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'policy.approve',
+        label: 'Review & Approve Policy Proposals',
+        description: 'Approve or reject submitted policy proposals with review feedback.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'policy.publish',
+        label: 'Publish Policies & Dispatch Alerts',
+        description: 'Publish approved policies and trigger workforce acknowledgement mandates.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'policy.acknowledge',
+        label: 'Sign & Acknowledge Policies',
+        description: 'Legally sign and submit digital employee policy acknowledgement receipts.',
+        allowedScopes: ['own'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'policy.track',
+        label: 'Track Compliance & View Acknowledgement Rosters',
+        description: 'View compliance rates, employee sign-off records, and export audit sheets.',
+        allowedScopes: ['department', 'all'],
+        defaultScope: 'all'
+      }
+    ]
   }
 ];
 

@@ -141,7 +141,16 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'feedback.manage', subject: 'Feedback', scope: 'all' },
       { action: 'feedback.escalate', subject: 'Feedback', scope: 'all' },
       { action: 'chat.access', subject: 'Chat', scope: 'all' },
-      { action: 'chat.create_group', subject: 'Chat', scope: 'all' }
+      { action: 'chat.create_group', subject: 'Chat', scope: 'all' },
+      { action: 'policy.view', subject: 'Policy', scope: 'all' },
+      { action: 'policy.create', subject: 'Policy', scope: 'all' },
+      { action: 'policy.edit', subject: 'Policy', scope: 'all' },
+      { action: 'policy.delete', subject: 'Policy', scope: 'all' },
+      { action: 'policy.manage', subject: 'Policy', scope: 'all' },
+      { action: 'policy.approve', subject: 'Policy', scope: 'all' },
+      { action: 'policy.publish', subject: 'Policy', scope: 'all' },
+      { action: 'policy.acknowledge', subject: 'Policy', scope: 'own' },
+      { action: 'policy.track', subject: 'Policy', scope: 'all' }
     ]
   },
   {
@@ -215,7 +224,10 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'rewards.respond', subject: 'Rewards', scope: 'all' },
       { action: 'feedback.submit', subject: 'Feedback', scope: 'own' },
       { action: 'chat.access', subject: 'Chat', scope: 'own' },
-      { action: 'chat.create_group', subject: 'Chat', scope: 'own' }
+      { action: 'chat.create_group', subject: 'Chat', scope: 'own' },
+      { action: 'policy.view', subject: 'Policy', scope: 'department' },
+      { action: 'policy.acknowledge', subject: 'Policy', scope: 'own' },
+      { action: 'policy.track', subject: 'Policy', scope: 'team' }
     ]
   },
   {
@@ -264,7 +276,9 @@ export const CORE_ROLES_DEFINITIONS = [
       { action: 'rewards.respond', subject: 'Rewards', scope: 'own' },
       { action: 'feedback.submit', subject: 'Feedback', scope: 'own' },
       { action: 'chat.access', subject: 'Chat', scope: 'own' },
-      { action: 'chat.create_group', subject: 'Chat', scope: 'own' }
+      { action: 'chat.create_group', subject: 'Chat', scope: 'own' },
+      { action: 'policy.view', subject: 'Policy', scope: 'own' },
+      { action: 'policy.acknowledge', subject: 'Policy', scope: 'own' }
     ]
   }
 ];
