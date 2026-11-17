@@ -474,6 +474,51 @@ Plans:
 
 ---
 
+### Phase 16: Feedback & Grievance Module – Complete Audit, UI Redesign & Improvements
+
+**Goal:** Deliver a comprehensive audit, full visual modernization, and strict PBAC/RBAC permission compliance across all four submodules of the Feedback & Grievance Module (Module M21): Submit Feedback, Track Case, Grievance Admin, and Inquiry Committee. Standardize every page, drawer, and modal to the Forest & Emerald Enterprise design system, enforce strict role isolation (Department Managers barred from admin/committee; Harassment complaints strictly quarantined to the Inquiry Committee), support authenticated + cryptographic case tracking, and verify with Oxlint and production builds.
+
+**Requirements**:
+- **1. Submit Feedback Submodule (`SubmitFeedbackPage.jsx`)**:
+  - Distinct header with shield badge and channel description.
+  - Interactive 6-category selection grid (Open Suggestion, Formal Grievance, Workplace Issue, Harassment Complaint, Health & Safety, Other) with dynamic active indicator.
+  - Anonymous mode toggle with cryptographic tracking code guarantee banner.
+  - Department targeting, priority selector, character counter, and optional attachment URLs.
+  - High-craft tracking code modal with one-click clipboard copy and direct navigation to case tracking.
+- **2. Track Case Submodule (`TrackFeedbackPage.jsx`)**:
+  - Dual-mode tracking interface: `Track by Code` (for anonymous or direct tracking) and `My Submitted Cases` (authenticated feed via `useGetMyFeedbackSubmissionsQuery`).
+  - Elevated 4-stage visual timeline (Submitted $\rightarrow$ Under Review $\rightarrow$ Active Investigation $\rightarrow$ Resolved / Closed).
+  - Sanitized public updates and resolution notes feed; confidential administrative notes strictly hidden.
+- **3. Grievance Admin Submodule (`GrievanceAdminPage.jsx` & Drawers)**:
+  - Real-time KPI summary cards (Total Grievances, Active Investigations, Escalated Cases, Resolved/Closed, Urgent Priority) via `useGetGrievanceStatsQuery`.
+  - Comprehensive filtering by search query, category, priority, and segmented status tabs (`All`, `Active`, `Under Review`, `Escalated`, `Resolved`, `Dismissed`).
+  - High-density docket table with monospaced tracking code, complainant anonymity pill, status badges, and action triggers.
+  - Redesigned `CaseDetailsDrawer.jsx` with full case details, public/private note toggles, and direct status updates.
+  - Redesigned `StatusChangeModal.jsx` and `EscalateModal.jsx` (escalate to Super Admin).
+  - Strict PBAC Gate: Department Managers are strictly barred with 403 Access Denied.
+- **4. Inquiry Committee Submodule (`CommitteeDashboardPage.jsx`)**:
+  - Restricted clearance executive console with statutory crimson insignia (Pakistan Protection Against Harassment at the Workplace Act).
+  - Quarantined case docket exclusively querying `category: 'Harassment'` (inaccessible to standard HR and managers).
+  - High-privacy docket table with complainant identity masking and formal investigation controls.
+  - Strict PBAC Gate: Accessible exclusively to designated committee members and Super Admin.
+- **5. Design Consistency & Verification**:
+  - 100% Forest & Emerald brand palette (`#111D17` surface, `#1A3125` border, `#00C471` emerald accent; with `#E11D48` crimson quarantine accent).
+  - Zero `prop-types` imports across all 7 feedback files.
+  - Zero Oxlint errors, zero warnings.
+  - Clean Vite production build (`npm run build`).
+
+**Depends on:** Phase 15
+**Plans:** 4 plans
+
+Plans:
+
+- [ ] **Plan 16-01: Submit Feedback Submodule Audit & UI Redesign** (`.planning/phases/16-feedback-grievance-module-complete-audit-ui-redesign-improvements/16-01-PLAN.md`)
+- [ ] **Plan 16-02: Track Case Submodule Audit, Dual-Mode Tracking & Timeline UI Redesign** (`.planning/phases/16-feedback-grievance-module-complete-audit-ui-redesign-improvements/16-02-PLAN.md`)
+- [ ] **Plan 16-03: Grievance Admin Submodule & Management Drawer Audit & Redesign** (`.planning/phases/16-feedback-grievance-module-complete-audit-ui-redesign-improvements/16-03-PLAN.md`)
+- [ ] **Plan 16-04: Inquiry Committee Submodule & Module Verification Gate** (`.planning/phases/16-feedback-grievance-module-complete-audit-ui-redesign-improvements/16-04-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features
