@@ -873,11 +873,11 @@ Plans:
 
 Plans:
 
-- [ ] **Plan 25-01: Critical Regression Fix — Department Listing Restoration & Schema Normalization** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-01-PLAN.md`)
-- [ ] **Plan 25-02: RBAC & PBAC Compliance, Authorization Audit & Backend API Verification** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-02-PLAN.md`)
-- [ ] **Plan 25-03: Active Department Listing, Data Table & Filter Modernization per DESIGN.md & UI-REFERENCE.md** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-03-PLAN.md`)
-- [ ] **Plan 25-04: Archive Tab, Modals Redesign Suite & Mandatory Employee Deletion Guard** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-04-PLAN.md`)
-- [ ] **Plan 25-05: Comprehensive Regression & End-to-End Testing Suite** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-05-PLAN.md`)
+- [x] **Plan 25-01: Critical Regression Fix — Department Listing Restoration & Schema Normalization** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-01-PLAN.md`)
+- [x] **Plan 25-02: RBAC & PBAC Compliance, Authorization Audit & Backend API Verification** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-02-PLAN.md`)
+- [x] **Plan 25-03: Active Department Listing, Data Table & Filter Modernization per DESIGN.md & UI-REFERENCE.md** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-03-PLAN.md`)
+- [x] **Plan 25-04: Archive Tab, Modals Redesign Suite & Mandatory Employee Deletion Guard** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-04-PLAN.md`)
+- [x] **Plan 25-05: Comprehensive Regression & End-to-End Testing Suite** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-05-PLAN.md`)
 
 ---
 

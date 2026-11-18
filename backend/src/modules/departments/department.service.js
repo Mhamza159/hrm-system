@@ -65,11 +65,16 @@ const detectCircularParent = async (deptId, targetParentId) => {
 export const getAllDepartments = async ({ search = '', parentId, isActive, isArchived, page, limit } = {}) => {
   const query = { isDeleted: false };
 
+  // Backwards-compatible archival filter: matches both explicit false and unpopulated legacy documents
   if (isArchived !== undefined) {
-    query.isArchived = isArchived === 'true' || isArchived === true;
+    const shouldBeArchived = isArchived === 'true' || isArchived === true;
+    query.isArchived = shouldBeArchived ? true : { $ne: true };
   } else {
-    query.isArchived = false;
+    query.isArchived = { $ne: true };
   }
+
+  // Idempotent background normalization of unpopulated legacy records
+  Department.updateMany({ isArchived: { $exists: false } }, { $set: { isArchived: false } }).catch(() => {});
 
   if (search && typeof search === 'string' && search.trim()) {
     const term = escapeRegex(search.trim());
@@ -349,12 +354,12 @@ export const assignDepartmentHead = async (id, headId, actor) => {
 export const getDepartmentStats = async () => {
   const [total, active, archived] = await Promise.all([
     Department.countDocuments({ isDeleted: false }),
-    Department.countDocuments({ isArchived: false, isDeleted: false }),
+    Department.countDocuments({ isArchived: { $ne: true }, isDeleted: false }),
     Department.countDocuments({ isArchived: true, isDeleted: false })
   ]);
 
   // Aggregate active departments with and without employees
-  const activeDepts = await Department.find({ isArchived: false, isDeleted: false }).select('_id').lean();
+  const activeDepts = await Department.find({ isArchived: { $ne: true }, isDeleted: false }).select('_id').lean();
   const activeIds = activeDepts.map((d) => d._id);
 
   const populatedCounts = await Employee.aggregate([
@@ -470,7 +475,7 @@ export const archiveDepartment = async (id, actor) => {
   // Active Sub-Department Guard: Cannot archive department if active child sub-departments report to it
   const childDepartmentCount = await Department.countDocuments({
     parentId: id,
-    isArchived: false,
+    isArchived: { $ne: true },
     isDeleted: false
   });
 
@@ -519,7 +524,7 @@ export const restoreDepartment = async (id, actor) => {
   const existingCode = await Department.findOne({
     _id: { $ne: id },
     code: department.code.toUpperCase(),
-    isArchived: false,
+    isArchived: { $ne: true },
     isDeleted: false
   });
 
@@ -534,7 +539,7 @@ export const restoreDepartment = async (id, actor) => {
   if (department.parentId) {
     const parentDept = await Department.findOne({
       _id: department.parentId,
-      isArchived: false,
+      isArchived: { $ne: true },
       isDeleted: false
     });
     if (!parentDept) {

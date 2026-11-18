@@ -207,7 +207,7 @@ export function DepartmentsPage() {
       cell: (row) => (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-[#00C471] dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60">
           <Users className="w-3 h-3" />
-          <span>{row.headcount || 0} members</span>
+          <span className="tabular-nums font-mono">{row.headcount || 0}</span> members
         </span>
       )
     },
@@ -219,6 +219,15 @@ export function DepartmentsPage() {
           status={row.isActive ? 'active' : 'inactive'}
           label={row.isActive ? 'Active' : 'Inactive'}
         />
+      )
+    },
+    {
+      header: 'Created Date',
+      accessor: 'createdAt',
+      cell: (row) => (
+        <span className="font-mono text-xs text-slate-500 dark:text-slate-400">
+          {formatTime(row.createdAt)}
+        </span>
       )
     },
     {

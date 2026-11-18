@@ -195,6 +195,27 @@ describe('Phase 25: Department Module Archive Lifecycle & Employee Guard E2E', (
     expect(archivedCodes).toContain('RND-LEGACY');
   });
 
+  it('4b. Legacy regression check: Unpopulated isArchived field is correctly retrieved as active department', async () => {
+    // Directly insert raw mongo document without isArchived field
+    await mongoose.connection.collection('departments').insertOne({
+      name: 'Legacy Operations Directorate',
+      code: 'LEG-OPS',
+      description: 'Historical department without isArchived BSON key',
+      isDeleted: false,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    const res = await request(app)
+      .get('/api/v1/departments')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    const codes = res.body.data.map((d) => d.code);
+    expect(codes).toContain('LEG-OPS');
+  });
+
   it('5. POST /api/v1/employees fails when assigning to an archived department', async () => {
     const rndDept = await Department.findOne({ code: 'RND-LEGACY' });
 
