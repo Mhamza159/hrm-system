@@ -13,9 +13,9 @@ import { X, Building2, AlertCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   useCreateDepartmentMutation,
-  useUpdateDepartmentMutation,
-  useGetHeadCandidatesQuery
+  useUpdateDepartmentMutation
 } from '../departmentsApi.js';
+import { EmployeeSelectDropdown } from './EmployeeSelectDropdown.jsx';
 
 export function DepartmentModal({
   isOpen,
@@ -32,9 +32,6 @@ export function DepartmentModal({
     isActive: true
   });
   const [errorMessage, setErrorMessage] = useState('');
-
-  const { data: candidatesResponse } = useGetHeadCandidatesQuery(undefined, { skip: !isOpen });
-  const candidates = candidatesResponse?.data || [];
 
   const [createDepartment, { isLoading: isCreating }] = useCreateDepartmentMutation();
   const [updateDepartment, { isLoading: isUpdating }] = useUpdateDepartmentMutation();
@@ -202,22 +199,15 @@ export function DepartmentModal({
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Department Head / Director
+              Department Head / Leadership Director
             </label>
-            <select
+            <EmployeeSelectDropdown
               value={formData.headId}
-              onChange={(e) => setFormData({ ...formData, headId: e.target.value })}
-              className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 dark:bg-[#0A120E] border border-slate-200 dark:border-[#1A3125] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471]"
-            >
-              <option value="">Unassigned</option>
-              {candidates.map((cand) => (
-                <option key={cand._id} value={cand._id}>
-                  {cand.name} ({cand.email})
-                </option>
-              ))}
-            </select>
+              onChange={(headId) => setFormData({ ...formData, headId })}
+              placeholder="Search & appoint department head..."
+            />
             <p className="mt-1 text-[11px] text-slate-400">
-              Assigned leadership user responsible for approvals and managerial oversight.
+              Assigned leadership user responsible for approvals, evaluations, and managerial oversight.
             </p>
           </div>
 

@@ -42,6 +42,12 @@ export const departmentsApi = baseApi.injectEndpoints({
       providesTags: ['DepartmentStats']
     }),
 
+    // Department Comprehensive Workforce Analytics
+    getDepartmentAnalytics: builder.query({
+      query: () => '/departments/analytics',
+      providesTags: ['DepartmentAnalytics', 'DepartmentStats']
+    }),
+
     // Retrieve Archived Departments
     getArchivedDepartments: builder.query({
       query: (params) => ({
@@ -137,9 +143,13 @@ export const departmentsApi = baseApi.injectEndpoints({
       ]
     }),
 
-    // 4.2: Retrieve eligible candidate users for department head
+    // 4.2: Retrieve eligible candidate users for department head with rich profile details
     getHeadCandidates: builder.query({
-      query: () => '/departments/heads/candidates'
+      query: (params) => ({
+        url: '/departments/heads/candidates',
+        params: typeof params === 'string' ? { search: params } : params
+      }),
+      providesTags: ['DepartmentCandidates']
     }),
 
     // 4.1: Delete department
@@ -268,6 +278,7 @@ export const {
   useGetDepartmentsQuery,
   useGetDepartmentByIdQuery,
   useGetDepartmentStatsQuery,
+  useGetDepartmentAnalyticsQuery,
   useGetArchivedDepartmentsQuery,
   useArchiveDepartmentMutation,
   useRestoreDepartmentMutation,

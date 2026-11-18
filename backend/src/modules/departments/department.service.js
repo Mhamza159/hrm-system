@@ -155,9 +155,9 @@ export const getAllDepartments = async ({ search = '', parentId, isActive, isArc
 };
 
 /**
- * 4.1: Retrieve single department by ID
+ * 4.1: Retrieve single department by ID with assigned staff roster and enriched leadership
  * @param {string} id 
- * @returns {Object} Department document
+ * @returns {Object} Enriched department document
  */
 export const getDepartmentById = async (id) => {
   const department = await Department.findOne({ _id: id, isDeleted: false })
@@ -165,7 +165,11 @@ export const getDepartmentById = async (id) => {
     .populate({
       path: 'headId',
       select: 'email roles employeeId',
-      populate: { path: 'employeeId', select: 'name employeeCode' }
+      populate: {
+        path: 'employeeId',
+        select: 'name employeeCode avatar designationId',
+        populate: { path: 'designationId', select: 'title grade' }
+      }
     })
     .lean();
 
@@ -173,17 +177,45 @@ export const getDepartmentById = async (id) => {
     throw new ApiError(404, 'Department not found');
   }
 
-  const headcount = await Employee.countDocuments({ departmentId: id, isDeleted: false });
+  // Fetch all active assigned staff members with their designations
+  const employees = await Employee.find({ departmentId: id, isDeleted: false })
+    .select('name employeeCode email designationId status joiningDate avatar')
+    .populate('designationId', 'title grade')
+    .sort({ name: 1 })
+    .lean();
 
   let headName = null;
+  let headDetails = null;
   if (department.headId) {
     headName = department.headId.employeeId?.name || department.headId.email;
+    headDetails = {
+      _id: department.headId._id,
+      name: headName,
+      email: department.headId.email,
+      employeeCode: department.headId.employeeId?.employeeCode || '—',
+      avatar: department.headId.employeeId?.avatar || null,
+      designation: department.headId.employeeId?.designationId?.title || 'Department Head'
+    };
   }
+
+  const formattedEmployees = employees.map((emp) => ({
+    _id: emp._id,
+    name: emp.name,
+    employeeCode: emp.employeeCode || '—',
+    email: emp.email,
+    designation: emp.designationId?.title || 'Staff Member',
+    grade: emp.designationId?.grade || '',
+    status: emp.status || 'Active',
+    joiningDate: emp.joiningDate,
+    avatar: emp.avatar || null
+  }));
 
   return {
     ...department,
     headName,
-    headcount
+    headDetails,
+    headcount: employees.length,
+    employees: formattedEmployees
   };
 };
 
@@ -319,21 +351,49 @@ export const updateDepartment = async (id, payload, actor) => {
 };
 
 /**
- * 4.2: Retrieve active user candidates for Department Head assignment
- * @returns {Array} List of candidate users
+ * 4.2: Retrieve active user candidates for Department Head assignment with rich profile details
+ * Supports server-side search by name, email, employee code, or designation.
+ * @param {Object} [options]
+ * @param {string} [options.search]
+ * @returns {Array} List of candidate users with full employee metadata
  */
-export const getHeadCandidates = async () => {
+export const getHeadCandidates = async ({ search = '' } = {}) => {
   const users = await User.find({ isDeleted: false, isActive: true })
     .select('_id email employeeId')
-    .populate('employeeId', 'name employeeCode')
+    .populate({
+      path: 'employeeId',
+      select: 'name employeeCode avatar status departmentId designationId',
+      populate: [
+        { path: 'designationId', select: 'title grade' },
+        { path: 'departmentId', select: 'name code' }
+      ]
+    })
     .sort({ email: 1 })
     .lean();
 
-  return users.map((u) => ({
+  let candidates = users.map((u) => ({
     _id: u._id,
     email: u.email,
-    name: u.employeeId?.name || u.email
+    name: u.employeeId?.name || u.email,
+    employeeCode: u.employeeId?.employeeCode || '—',
+    avatar: u.employeeId?.avatar || null,
+    designation: u.employeeId?.designationId?.title || 'Staff Member',
+    currentDepartment: u.employeeId?.departmentId?.name || 'Unassigned',
+    status: u.employeeId?.status || 'Active'
   }));
+
+  if (search && typeof search === 'string' && search.trim()) {
+    const term = search.trim().toLowerCase();
+    candidates = candidates.filter(
+      (c) =>
+        c.name.toLowerCase().includes(term) ||
+        c.email.toLowerCase().includes(term) ||
+        c.employeeCode.toLowerCase().includes(term) ||
+        c.designation.toLowerCase().includes(term)
+    );
+  }
+
+  return candidates;
 };
 
 /**
@@ -348,35 +408,130 @@ export const assignDepartmentHead = async (id, headId, actor) => {
 };
 
 /**
- * Retrieve aggregated department statistics for dashboard KPI cards
- * @returns {Object} Total, active, archived, withEmployees, withoutEmployees counts
+ * Retrieve comprehensive department analytics & workforce distribution metrics
+ * @returns {Object} Live workforce analytics, distributions, and top/lowest units
  */
-export const getDepartmentStats = async () => {
-  const [total, active, archived] = await Promise.all([
+export const getDepartmentAnalytics = async () => {
+  const [totalDepartments, activeDepartments, archivedDepartments] = await Promise.all([
     Department.countDocuments({ isDeleted: false }),
     Department.countDocuments({ isArchived: { $ne: true }, isDeleted: false }),
     Department.countDocuments({ isArchived: true, isDeleted: false })
   ]);
 
-  // Aggregate active departments with and without employees
-  const activeDepts = await Department.find({ isArchived: { $ne: true }, isDeleted: false }).select('_id').lean();
+  // Retrieve active departments
+  const activeDepts = await Department.find({ isArchived: { $ne: true }, isDeleted: false })
+    .select('_id name code headId parentId createdAt')
+    .populate('parentId', 'name code')
+    .populate({
+      path: 'headId',
+      select: 'email employeeId',
+      populate: { path: 'employeeId', select: 'name employeeCode avatar designationId' }
+    })
+    .sort({ name: 1 })
+    .lean();
+
   const activeIds = activeDepts.map((d) => d._id);
 
-  const populatedCounts = await Employee.aggregate([
+  // Group employee counts by department
+  const employeeCounts = await Employee.aggregate([
     { $match: { departmentId: { $in: activeIds }, isDeleted: false } },
-    { $group: { _id: '$departmentId' } },
-    { $count: 'withEmployees' }
+    { $group: { _id: '$departmentId', count: { $sum: 1 } } }
   ]);
 
-  const withEmployees = populatedCounts[0]?.withEmployees || 0;
-  const withoutEmployees = Math.max(0, active - withEmployees);
+  const countMap = new Map();
+  let totalAssignedEmployees = 0;
+  employeeCounts.forEach((c) => {
+    countMap.set(c._id.toString(), c.count);
+    totalAssignedEmployees += c.count;
+  });
+
+  let staffedDepartments = 0;
+  let emptyDepartments = 0;
+  let unassignedHeads = 0;
+
+  const departmentBreakdown = activeDepts.map((dept) => {
+    const count = countMap.get(dept._id.toString()) || 0;
+    if (count > 0) staffedDepartments += 1;
+    else emptyDepartments += 1;
+
+    const hasHead = !!dept.headId;
+    if (!hasHead) unassignedHeads += 1;
+
+    const percentage = totalAssignedEmployees > 0 ? Math.round((count / totalAssignedEmployees) * 100) : 0;
+
+    return {
+      _id: dept._id,
+      name: dept.name,
+      code: dept.code,
+      headcount: count,
+      percentage,
+      hasHead,
+      headName: dept.headId?.employeeId?.name || dept.headId?.email || null,
+      parentName: dept.parentId?.name || null
+    };
+  });
+
+  // Sort by headcount desc
+  const sortedByHeadcount = [...departmentBreakdown].sort((a, b) => b.headcount - a.headcount);
+  const topDepartment = sortedByHeadcount[0] || null;
+  const staffedUnits = sortedByHeadcount.filter((d) => d.headcount > 0);
+  const lowestDepartment = staffedUnits.length > 0 ? staffedUnits[staffedUnits.length - 1] : null;
+
+  const headAssignmentRatio = activeDepartments > 0
+    ? Math.round(((activeDepartments - unassignedHeads) / activeDepartments) * 100)
+    : 0;
+
+  // Donut chart distribution segments (top 5 + other units)
+  const top5 = sortedByHeadcount.slice(0, 5);
+  const othersCount = sortedByHeadcount.slice(5).reduce((acc, d) => acc + d.headcount, 0);
+  const workforceDistribution = top5.map((d) => ({
+    name: d.name,
+    code: d.code,
+    count: d.headcount,
+    percentage: d.percentage
+  }));
+  if (othersCount > 0) {
+    workforceDistribution.push({
+      name: 'Other Units',
+      code: 'OTHER',
+      count: othersCount,
+      percentage: totalAssignedEmployees > 0 ? Math.round((othersCount / totalAssignedEmployees) * 100) : 0
+    });
+  }
 
   return {
-    total,
-    active,
-    archived,
-    withEmployees,
-    withoutEmployees
+    summary: {
+      totalDepartments,
+      activeDepartments,
+      archivedDepartments,
+      totalAssignedEmployees,
+      staffedDepartments,
+      emptyDepartments,
+      unassignedHeads,
+      headAssignmentRatio
+    },
+    departmentBreakdown,
+    workforceDistribution,
+    topDepartment,
+    lowestDepartment
+  };
+};
+
+/**
+ * Retrieve aggregated department statistics for dashboard KPI cards
+ * @returns {Object} Total, active, archived, withEmployees, withoutEmployees counts
+ */
+export const getDepartmentStats = async () => {
+  const analytics = await getDepartmentAnalytics();
+  return {
+    total: analytics.summary.totalDepartments,
+    active: analytics.summary.activeDepartments,
+    archived: analytics.summary.archivedDepartments,
+    totalAssignedEmployees: analytics.summary.totalAssignedEmployees,
+    withEmployees: analytics.summary.staffedDepartments,
+    withoutEmployees: analytics.summary.emptyDepartments,
+    unassignedHeads: analytics.summary.unassignedHeads,
+    headAssignmentRatio: analytics.summary.headAssignmentRatio
   };
 };
 

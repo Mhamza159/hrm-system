@@ -878,13 +878,13 @@ Plans:
 
 Plans:
 
-- [ ] **Plan 25-01: Backend Analytics Aggregation & Rich Searchable Employee Candidates API** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-01-PLAN.md`)
-- [ ] **Plan 25-02: Department Dashboard Analytics, 7 KPI Cards & Interactive Visualizations** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-02-PLAN.md`)
-- [ ] **Plan 25-03: Department Listing Redesign, Dual View Switcher (Table & Grid) & Advanced Multi-Filters** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-03-PLAN.md`)
-- [ ] **Plan 25-04: Redesigned Create & Edit Modals with Complete Searchable Employee Dropdown** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-04-PLAN.md`)
-- [ ] **Plan 25-05: Comprehensive Department Details Modal with Leadership Spotlight & Staff Roster** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-05-PLAN.md`)
-- [ ] **Plan 25-06: Archive Tab, Revert/Restore & Permanent Delete with Mandatory Employee Guard** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-06-PLAN.md`)
-- [ ] **Plan 25-07: Comprehensive End-to-End Vitest Test Suite & Quality Verification** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-07-PLAN.md`)
+- [x] **Plan 25-01: Backend Analytics Aggregation & Rich Searchable Employee Candidates API** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-01-PLAN.md`)
+- [x] **Plan 25-02: Department Dashboard Analytics, 7 KPI Cards & Interactive Visualizations** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-02-PLAN.md`)
+- [x] **Plan 25-03: Department Listing Redesign, Dual View Switcher (Table & Grid) & Advanced Multi-Filters** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-03-PLAN.md`)
+- [x] **Plan 25-04: Redesigned Create & Edit Modals with Complete Searchable Employee Dropdown** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-04-PLAN.md`)
+- [x] **Plan 25-05: Comprehensive Department Details Modal with Leadership Spotlight & Staff Roster** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-05-PLAN.md`)
+- [x] **Plan 25-06: Archive Tab, Revert/Restore & Permanent Delete with Mandatory Employee Guard** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-06-PLAN.md`)
+- [x] **Plan 25-07: Comprehensive End-to-End Vitest Test Suite & Quality Verification** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-07-PLAN.md`)
 
 ---
 

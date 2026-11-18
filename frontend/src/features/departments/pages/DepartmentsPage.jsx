@@ -4,15 +4,17 @@
  * 
  * SPECIFICATION & FEATURES (Phase 25):
  * - BUILD-GUIDE ID 4.1: Departments Master, Archive Management & Employee Deletion Guard
- * - KPI Summary Stat Cards backed by live database aggregation (`GET /departments/stats`)
+ * - 7 KPI Summary Stat Cards backed by live database aggregation (`GET /departments/stats`)
+ * - Interactive Analytics Section with visual distribution and headcount charts
+ * - Dual View Switcher: High-density Table View vs. Visual Card Grid View
+ * - Comprehensive multi-dimensional filtering (search, division, status, staff headcount, leadership assignment)
  * - Dual View Tabs: Active Departments vs. Archived Departments
- * - High-density enterprise tables with real-time assigned headcount badges
  * - Full suite of modals: Create/Edit, Detailed Inspection, Archive, Restore, and Permanent Delete
  * - Strict Non-Negotiable Guard: Permanent delete is locked while employees are assigned
  * - Permissions: Protected by Can I="org.manage" a="Organization"
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Building2,
   Plus,
@@ -23,7 +25,10 @@ import {
   Archive,
   RotateCcw,
   Eye,
-  AlertTriangle
+  AlertTriangle,
+  LayoutGrid,
+  List,
+  BarChart3
 } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { DataTable } from '../../../components/common/DataTable.jsx';
@@ -34,10 +39,13 @@ import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import {
   useGetDepartmentsQuery,
   useGetArchivedDepartmentsQuery,
-  useGetDepartmentStatsQuery
+  useGetDepartmentStatsQuery,
+  useGetDepartmentAnalyticsQuery
 } from '../departmentsApi.js';
 import { DepartmentStatsCards } from '../components/DepartmentStatsCards.jsx';
+import { DepartmentAnalyticsSection } from '../components/DepartmentAnalyticsSection.jsx';
 import { DepartmentFilterBar } from '../components/DepartmentFilterBar.jsx';
+import { DepartmentCardView } from '../components/DepartmentCardView.jsx';
 import { DepartmentModal } from '../components/DepartmentModal.jsx';
 import { DepartmentDetailModal } from '../components/DepartmentDetailModal.jsx';
 import { DepartmentArchiveModal } from '../components/DepartmentArchiveModal.jsx';
@@ -46,11 +54,15 @@ import { DepartmentPermanentDeleteModal } from '../components/DepartmentPermanen
 
 export function DepartmentsPage() {
   const [activeTab, setActiveTab] = useState('ACTIVE');
+  const [viewMode, setViewMode] = useState('TABLE'); // 'TABLE' | 'CARD'
+  const [showAnalytics, setShowAnalytics] = useState(true);
 
   // Filter States
   const [search, setSearch] = useState('');
   const [parentFilter, setParentFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [headcountFilter, setHeadcountFilter] = useState('ALL'); // 'ALL' | 'STAFFED' | 'EMPTY'
+  const [leadershipFilter, setLeadershipFilter] = useState('ALL'); // 'ALL' | 'HEAD_ASSIGNED' | 'NO_HEAD'
   const [archivePage, setArchivePage] = useState(1);
   const archiveLimit = 10;
 
@@ -77,6 +89,13 @@ export function DepartmentsPage() {
     refetch: refetchStats
   } = useGetDepartmentStatsQuery();
   const stats = statsResponse?.data || {};
+
+  const {
+    data: analyticsResponse,
+    isLoading: isAnalyticsLoading,
+    refetch: refetchAnalytics
+  } = useGetDepartmentAnalyticsQuery();
+  const analytics = analyticsResponse?.data || {};
 
   const activeQueryParams = {
     search: search || undefined,
@@ -111,12 +130,37 @@ export function DepartmentsPage() {
     skip: activeTab !== 'ARCHIVED'
   });
 
-  const activeDepartments = activeResponse?.data || [];
+  const rawActiveDepartments = activeResponse?.data || [];
   const archivedData = archivedResponse?.data || {};
   const archivedDepartments = archivedData?.docs || archivedData?.departments || [];
 
+  // Client-side multi-filtering for Headcount & Leadership on active departments
+  const displayedActiveDepartments = useMemo(() => {
+    return rawActiveDepartments.filter((dept) => {
+      // Headcount filter
+      if (headcountFilter === 'STAFFED' && (!dept.headcount || dept.headcount <= 0)) {
+        return false;
+      }
+      if (headcountFilter === 'EMPTY' && (dept.headcount && dept.headcount > 0)) {
+        return false;
+      }
+
+      // Leadership filter
+      const hasHead = Boolean(dept.headName || dept.headId);
+      if (leadershipFilter === 'HEAD_ASSIGNED' && !hasHead) {
+        return false;
+      }
+      if (leadershipFilter === 'NO_HEAD' && hasHead) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [rawActiveDepartments, headcountFilter, leadershipFilter]);
+
   const handleRefresh = () => {
     refetchStats();
+    refetchAnalytics();
     if (activeTab === 'ACTIVE') refetchActive();
     else refetchArchived();
   };
@@ -125,7 +169,42 @@ export function DepartmentsPage() {
     setSearch('');
     setParentFilter('ALL');
     setStatusFilter('ALL');
+    setHeadcountFilter('ALL');
+    setLeadershipFilter('ALL');
     setArchivePage(1);
+  };
+
+  // Quick filter shortcuts from KPI Stat Cards
+  const handleStatCardClick = (cardId) => {
+    switch (cardId) {
+      case 'TOTAL':
+        setActiveTab('ACTIVE');
+        handleResetFilters();
+        break;
+      case 'ACTIVE':
+        setActiveTab('ACTIVE');
+        setStatusFilter('ACTIVE');
+        break;
+      case 'ARCHIVED':
+        setActiveTab('ARCHIVED');
+        handleResetFilters();
+        break;
+      case 'ASSIGNED_STAFF':
+      case 'STAFFED':
+        setActiveTab('ACTIVE');
+        setHeadcountFilter('STAFFED');
+        break;
+      case 'EMPTY':
+        setActiveTab('ACTIVE');
+        setHeadcountFilter('EMPTY');
+        break;
+      case 'UNASSIGNED_HEADS':
+        setActiveTab('ACTIVE');
+        setLeadershipFilter('NO_HEAD');
+        break;
+      default:
+        break;
+    }
   };
 
   const formatTime = (ts) => {
@@ -145,7 +224,7 @@ export function DepartmentsPage() {
   };
 
   // Top parent division options for dropdown
-  const parentOptions = activeDepartments.filter((d) => !d.parentId);
+  const parentOptions = rawActiveDepartments.filter((d) => !d.parentId);
 
   // Columns for Active Departments Table
   const activeColumns = [
@@ -388,6 +467,19 @@ export function DepartmentsPage() {
         subtitle="Manage business units, divisional reporting lines, and organizational structure."
         actions={
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowAnalytics((prev) => !prev)}
+              className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
+                showAnalytics
+                  ? 'border-emerald-200 dark:border-[#1A3125] text-[#00C471] bg-emerald-50/50 dark:bg-[#15241C]'
+                  : 'border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-[#15241C]'
+              }`}
+              title="Toggle Workforce Analytics"
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span>{showAnalytics ? 'Hide Analytics' : 'Show Analytics'}</span>
+            </button>
             <RefreshButton
               onRefresh={handleRefresh}
               isFetching={activeTab === 'ACTIVE' ? isActiveFetching : isArchivedFetching}
@@ -410,10 +502,22 @@ export function DepartmentsPage() {
       />
 
       {/* Overview Stat Cards */}
-      <DepartmentStatsCards stats={stats} isLoading={isStatsLoading} />
+      <DepartmentStatsCards
+        stats={stats}
+        isLoading={isStatsLoading}
+        onFilterClick={handleStatCardClick}
+      />
 
-      {/* Segmented View Tabs */}
-      <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#1A3125] pb-2">
+      {/* Visual Analytics Section */}
+      {showAnalytics && (
+        <DepartmentAnalyticsSection
+          analytics={analytics}
+          isLoading={isAnalyticsLoading}
+        />
+      )}
+
+      {/* Segmented View Tabs & View Switcher */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-[#1A3125] pb-2">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -430,7 +534,7 @@ export function DepartmentsPage() {
             <Building2 className="w-3.5 h-3.5" />
             <span>Active Departments</span>
             <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-800 dark:bg-[#234232] text-slate-200">
-              {stats.active || activeDepartments.length}
+              {stats.active || rawActiveDepartments.length}
             </span>
           </button>
 
@@ -453,6 +557,38 @@ export function DepartmentsPage() {
             </span>
           </button>
         </div>
+
+        {/* View Mode Switcher (Active Tab only) */}
+        {activeTab === 'ACTIVE' && (
+          <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-[#0E1712] border border-slate-200/80 dark:border-[#1A3125] self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setViewMode('TABLE')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                viewMode === 'TABLE'
+                  ? 'bg-white dark:bg-[#1A3125] text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+              }`}
+              title="Table view"
+            >
+              <List className="w-3.5 h-3.5" />
+              <span>Table</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('CARD')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                viewMode === 'CARD'
+                  ? 'bg-white dark:bg-[#1A3125] text-slate-900 dark:text-white shadow-xs'
+                  : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+              }`}
+              title="Card Grid view"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span>Cards</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Filter Toolbar */}
@@ -463,29 +599,55 @@ export function DepartmentsPage() {
         onParentChange={setParentFilter}
         status={statusFilter}
         onStatusChange={setStatusFilter}
+        headcountFilter={headcountFilter}
+        onHeadcountFilterChange={activeTab === 'ACTIVE' ? setHeadcountFilter : null}
+        leadershipFilter={leadershipFilter}
+        onLeadershipFilterChange={activeTab === 'ACTIVE' ? setLeadershipFilter : null}
         parentOptions={parentOptions}
         onReset={handleResetFilters}
         showStatusFilter={activeTab === 'ACTIVE'}
       />
 
-      {/* Data Table */}
-      <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-6 shadow-xs">
-        {activeTab === 'ACTIVE' ? (
-          isActiveLoading && !activeResponse ? (
+      {/* Main Content Area */}
+      {activeTab === 'ACTIVE' ? (
+        isActiveLoading && !activeResponse ? (
+          <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-6 shadow-xs">
             <ScreenSkeleton variant="table" />
-          ) : (
+          </div>
+        ) : viewMode === 'TABLE' ? (
+          <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-6 shadow-xs">
             <DataTable
               columns={activeColumns}
-              data={activeDepartments}
+              data={displayedActiveDepartments}
               isLoading={isActiveLoading}
               searchPlaceholder="Filter current view..."
               searchField="name"
               emptyMessage="No active departments found matching your criteria."
             />
-          )
-        ) : isArchivedLoading && !archivedResponse ? (
-          <ScreenSkeleton variant="table" />
+          </div>
         ) : (
+          <DepartmentCardView
+            departments={displayedActiveDepartments}
+            onInspect={(id) => {
+              setDetailDeptId(id);
+              setIsDetailModalOpen(true);
+            }}
+            onEdit={(dept) => {
+              setSelectedDept(dept);
+              setIsFormModalOpen(true);
+            }}
+            onArchive={(dept) => {
+              setArchiveTarget(dept);
+              setIsArchiveModalOpen(true);
+            }}
+          />
+        )
+      ) : isArchivedLoading && !archivedResponse ? (
+        <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-6 shadow-xs">
+          <ScreenSkeleton variant="table" />
+        </div>
+      ) : (
+        <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-6 shadow-xs">
           <DataTable
             columns={archivedColumns}
             data={archivedDepartments}
@@ -494,15 +656,15 @@ export function DepartmentsPage() {
             searchField="name"
             emptyMessage="No archived departments found. Inactive or retired units will appear here."
           />
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Suite of Modals */}
       <DepartmentModal
         isOpen={isFormModalOpen}
         onClose={() => setIsFormModalOpen(false)}
         department={selectedDept}
-        allDepartments={activeDepartments}
+        allDepartments={rawActiveDepartments}
       />
 
       <DepartmentDetailModal

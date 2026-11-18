@@ -33,6 +33,12 @@ router.get(
 );
 
 router.get(
+  '/analytics',
+  checkPermission('org.view'),
+  departmentController.getDepartmentAnalytics
+);
+
+router.get(
   '/stats',
   checkPermission('org.view'),
   departmentController.getDepartmentStats

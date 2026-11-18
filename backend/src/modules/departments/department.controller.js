@@ -76,9 +76,21 @@ export const updateDepartment = asyncHandler(async (req, res) => {
  * 4.2: Retrieve list of active users eligible for Department Head assignment
  */
 export const getHeadCandidates = asyncHandler(async (req, res) => {
-  const candidates = await departmentService.getHeadCandidates();
+  const { search } = req.query;
+  const candidates = await departmentService.getHeadCandidates({ search });
   return res.status(200).json(
     apiResponse(200, candidates, 'Candidate users retrieved successfully.')
+  );
+});
+
+/**
+ * GET /api/v1/departments/analytics
+ * Retrieve rich workforce analytics & department distribution metrics for dashboard visualizations
+ */
+export const getDepartmentAnalytics = asyncHandler(async (req, res) => {
+  const analytics = await departmentService.getDepartmentAnalytics();
+  return res.status(200).json(
+    apiResponse(200, analytics, 'Department analytics retrieved successfully.')
   );
 });
 
