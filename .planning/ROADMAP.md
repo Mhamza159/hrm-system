@@ -888,6 +888,53 @@ Plans:
 
 ---
 
+## Phase 26: Designation Module — Complete UI Overhaul, System-Wide Integration Audit, RBAC/PBAC Compliance, Analytics & Error Fixing
+
+**Goal:** Transform the Designation Module into an enterprise-grade corporate job hierarchy and organizational taxonomy system. Implement a 7-KPI analytics command center with interactive workforce distribution visualizations (horizontal bar chart and grade share SVG donut), dual view switcher (high-density Enterprise Table View vs Designation Cards Grid View), and multi-dimensional filtering (search, department, grade tier, status, headcount range). Redesign all modals (Create, Edit, Deep Inspection Details, Archive, Restore, and Permanent Delete) with department selection, grade tier hierarchy (`Junior`, `Mid`, `Senior`, `Lead`, `Executive`), assigned staff roster sub-tables, and strict enforcement of the non-negotiable **Employee Assignment Restriction Guard** (a designation cannot be permanently deleted while $\ge 1$ employee is assigned). Audit and harden cross-module integrations (Employees, Performance/Appraisals, Recruitment/ATS, Shifts, Org Chart) ensuring archived designations cannot be assigned to new hires or promotions. Verify complete functionality through an automated Vitest E2E test suite, 0 oxlint errors, and a clean Vite production build.
+
+**Requirements**:
+- **1. Backend Schema Expansion, Archival Lifecycle & Cross-Module Assignment Guard (`designation.model.js`, `department.service.js`, `employee.service.js`)**:
+  - Add `isArchived`, `archivedAt`, and `archivedBy` fields and indexes to `Designation` schema.
+  - Implement soft archive (`PATCH /api/v1/designations/:id/archive`), restore (`PATCH /api/v1/designations/:id/restore`), and permanent delete (`DELETE /api/v1/designations/:id/permanent`).
+  - Strict Employee Assignment Restriction Guard: Permanent deletion is blocked if $\ge 1$ employee is assigned.
+  - Guard `createEmployee`, `updateEmployee`, and `recordPromotionHistory` to forbid assigning archived designations.
+- **2. Backend Analytics Aggregation, KPI Statistics & Single Designation Roster Enriched API (`department.service.js`, `department.controller.js`, `department.routes.js`)**:
+  - `GET /api/v1/designations/stats`: 7 aggregated KPIs (Total, Active, Archived, Total Assigned Staff, Staffed, Empty, Departments Represented).
+  - `GET /api/v1/designations/analytics`: Workforce distribution by designation and grade breakdown.
+  - `GET /api/v1/designations/:id`: Single designation inspection with assigned employee roster.
+- **3. Dashboard Analytics, 7 KPI Summary Cards & Visual Distribution Charts (`DesignationStatsCards.jsx`, `DesignationAnalyticsSection.jsx`)**:
+  - 7 KPI summary cards matching Forest & Emerald Enterprise theme (`#061A14`, `#111D17`, `#1A3125`, `#00C471`).
+  - Interactive SVG Donut chart (Grade tier distribution) and flex-bar distribution chart with interactive hover tooltips.
+- **4. Designation Directory Overhaul, Dual View Switcher (Table & Card Grid) & Multi-Dimensional Filtering (`DesignationsPage.jsx`, `DesignationFilterBar.jsx`, `DesignationCardView.jsx`)**:
+  - Dual view switcher: Enterprise high-density Table View vs interactive Card Grid View.
+  - Multi-dimensional filter bar with instant search, department selector, grade tier selector, status, and headcount filters.
+- **5. Redesigned Create & Edit Modal with Department Selector & Archival Safeguards (`DesignationModal.jsx`)**:
+  - Department selector with real departments, grade tier selection, uppercase code validation, and description.
+- **6. Deep Inspection Details Modal with Assigned Staff Roster & Search (`DesignationDetailModal.jsx`)**:
+  - Full designation profile, grade tier, department info, archival notice, and assigned staff roster with in-modal search.
+- **7. Archive Management Console, Revert/Restore & Permanent Delete with Mandatory Employee Guard (`DesignationsPage.jsx`, `DesignationArchiveModal.jsx`, `DesignationRestoreModal.jsx`, `DesignationPermanentDeleteModal.jsx`, `ArchivedDesignationList.jsx`)**:
+  - Dedicated Archive Tab with paginated archived designations.
+  - Revert/Restore modal returning designation to active directory.
+  - Permanent delete modal with strict employee lock (disabled button and warning message when headcount > 0).
+- **8. Cross-Module Integration Audit & Comprehensive End-to-End Vitest Test Suite (`backend/tests/designations.overhaul.e2e.test.js`)**:
+  - Comprehensive integration test suite covering CRUD, stats, analytics, archive, restore, and employee guard; 0 oxlint errors and clean Vite production build.
+
+**Depends on:** Phase 25  
+**Plans:** 8 plans  
+
+Plans:
+
+- [ ] **Plan 26-01: Backend Schema Expansion, Archival Lifecycle & Cross-Module Assignment Guard** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-01-PLAN.md`)
+- [ ] **Plan 26-02: Backend Analytics Aggregation, KPI Statistics & Single Designation Roster Enriched API** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-02-PLAN.md`)
+- [ ] **Plan 26-03: Dashboard Analytics, 7 KPI Summary Cards & Visual Distribution Charts** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-03-PLAN.md`)
+- [ ] **Plan 26-04: Designation Directory Overhaul, Dual View Switcher (Table & Card Grid) & Multi-Dimensional Filtering** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-04-PLAN.md`)
+- [ ] **Plan 26-05: Redesigned Create & Edit Modal with Department Selector & Archival Safeguards** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-05-PLAN.md`)
+- [ ] **Plan 26-06: Deep Inspection Details Modal with Assigned Staff Roster & Search** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-06-PLAN.md`)
+- [ ] **Plan 26-07: Archive Management Console, Revert/Restore & Permanent Delete with Mandatory Employee Guard** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-07-PLAN.md`)
+- [ ] **Plan 26-08: Cross-Module Integration Audit & Comprehensive End-to-End Vitest Test Suite** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-08-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features
