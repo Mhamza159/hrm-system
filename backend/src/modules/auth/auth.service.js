@@ -1320,7 +1320,11 @@ export class AuthService {
 
     const escapeCsv = (val) => {
       if (val === null || val === undefined) return '""';
-      const str = String(val).replace(/"/g, '""');
+      let str = String(val).replace(/"/g, '""');
+      // Neutralize potential CSV injection / spreadsheet formula execution
+      if (/^[=+\-@\t\r]/.test(str)) {
+        str = `'${str}`;
+      }
       return `"${str}"`;
     };
 
