@@ -1,40 +1,17 @@
 /**
  * @file useModuleNotificationCounts.js
  * @description Custom hook mapping backend unread notification categories to sidebar modules & routes.
+ * 
+ * Note: Real-time cache updates are driven reactively by `useSocket.js` invalidating
+ * the `NotificationCounts` tag on incoming socket events (`notification:new`, `notification:read`, `notification:read_all`).
  */
 
-import { useEffect } from 'react';
 import { useGetModuleNotificationCountsQuery } from '../notificationsApi.js';
-import { getSocket } from './useSocket.js';
 
 export function useModuleNotificationCounts() {
   const { data, refetch } = useGetModuleNotificationCountsQuery(undefined, {
-    pollingInterval: 20000
+    pollingInterval: 30000 // Fallback poll every 30s
   });
-
-  // Listen to live Socket.io notification events to trigger instant refetch
-  useEffect(() => {
-    let boundSocket = null;
-    const intervalId = setInterval(() => {
-      const socket = getSocket();
-      if (socket && socket !== boundSocket) {
-        boundSocket = socket;
-        const handleLiveNotif = () => {
-          refetch();
-        };
-        socket.on('notification:new', handleLiveNotif);
-        socket.on('notification:read', handleLiveNotif);
-      }
-    }, 1500);
-
-    return () => {
-      clearInterval(intervalId);
-      if (boundSocket) {
-        boundSocket.off('notification:new');
-        boundSocket.off('notification:read');
-      }
-    };
-  }, [refetch]);
 
   const summary = data || { totalUnread: 0, byModule: {}, byRoute: {} };
   const byModule = summary.byModule || {};

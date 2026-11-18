@@ -36,7 +36,7 @@ export const getUserNotifications = async (
   if (isArchived === 'true' || isArchived === true) {
     filter.isArchived = true;
   } else {
-    filter.isArchived = false;
+    filter.isArchived = { $ne: true };
   }
 
   // Unread filter
@@ -82,7 +82,7 @@ export const getUserNotifications = async (
     Notification.countDocuments(filter),
     Notification.countDocuments({
       userId: new mongoose.Types.ObjectId(userId),
-      isArchived: false,
+      isArchived: { $ne: true },
       isRead: false
     }),
     Notification.countDocuments({
@@ -167,7 +167,7 @@ export const markAllAsRead = async (userId) => {
   const result = await Notification.updateMany(
     {
       userId: new mongoose.Types.ObjectId(userId),
-      isArchived: false,
+      isArchived: { $ne: true },
       isRead: false
     },
     {
@@ -246,7 +246,7 @@ export const archiveAllNotifications = async (userId) => {
   const result = await Notification.updateMany(
     {
       userId: new mongoose.Types.ObjectId(userId),
-      isArchived: false,
+      isArchived: { $ne: true },
       isRead: true
     },
     {

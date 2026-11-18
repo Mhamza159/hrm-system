@@ -309,14 +309,14 @@ export const getModuleUnreadCounts = async (userId) => {
 
   const [moduleStats, routeStats, totalUnread] = await Promise.all([
     Notification.aggregate([
-      { $match: { userId: uId, isArchived: false, isRead: false } },
+      { $match: { userId: uId, isArchived: { $ne: true }, isRead: false } },
       { $group: { _id: '$module', count: { $sum: 1 } } }
     ]),
     Notification.aggregate([
-      { $match: { userId: uId, isArchived: false, isRead: false, link: { $ne: null } } },
+      { $match: { userId: uId, isArchived: { $ne: true }, isRead: false, link: { $ne: null } } },
       { $group: { _id: '$link', count: { $sum: 1 } } }
     ]),
-    Notification.countDocuments({ userId: uId, isArchived: false, isRead: false })
+    Notification.countDocuments({ userId: uId, isArchived: { $ne: true }, isRead: false })
   ]);
 
   const byModule = {};
