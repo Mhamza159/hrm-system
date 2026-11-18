@@ -356,4 +356,35 @@ describe('Phase 26: Designation Module Overhaul, Archival Lifecycle & Employee G
 
     expect(deleteRes.status).toBe(403);
   });
+
+  it('15. CastError Defense (WR-01): Non-ObjectId departmentId query parameter safely returns 200', async () => {
+    const res = await request(app)
+      .get('/api/v1/designations?departmentId=ALL')
+      .set('Authorization', `Bearer ${staffToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  it('16. Department Archival Guard (WR-02): Creating designation in archived department is rejected', async () => {
+    // Archive secondaryDept
+    await Department.updateOne({ _id: secondaryDept._id }, { isArchived: true });
+
+    const res = await request(app)
+      .post('/api/v1/designations')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        title: 'Archived Unit Role',
+        code: 'AUR',
+        grade: 'Junior',
+        departmentId: secondaryDept._id.toString()
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain('Cannot create designation in archived department');
+
+    // Restore secondaryDept for subsequent tests
+    await Department.updateOne({ _id: secondaryDept._id }, { isArchived: false });
+  });
 });

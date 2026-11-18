@@ -999,7 +999,7 @@ export const getAllDesignations = async ({ departmentId, grade, isActive, page, 
     query.isArchived = { $ne: true };
   }
 
-  if (departmentId) {
+  if (departmentId && mongoose.Types.ObjectId.isValid(departmentId)) {
     query.departmentId = departmentId;
   }
   if (grade) {
@@ -1078,7 +1078,7 @@ export const getArchivedDesignations = async ({
 } = {}) => {
   const query = { isArchived: true, isDeleted: false };
 
-  if (departmentId) {
+  if (departmentId && mongoose.Types.ObjectId.isValid(departmentId)) {
     query.departmentId = departmentId;
   }
   if (grade) {
@@ -1180,10 +1180,13 @@ export const getDesignationById = async (id) => {
 export const createDesignation = async (payload, actor) => {
   const { title, code, grade, departmentId, description, isActive } = payload;
 
-  // Validate department exists
+  // Validate department exists and is active
   const dept = await Department.findOne({ _id: departmentId, isDeleted: false });
   if (!dept) {
     throw new ApiError(400, 'Specified department does not exist');
+  }
+  if (dept.isArchived) {
+    throw new ApiError(400, `Cannot create designation in archived department '${dept.name}'.`);
   }
 
   // Check code uniqueness in department
@@ -1236,6 +1239,9 @@ export const updateDesignation = async (id, payload, actor) => {
     const dept = await Department.findOne({ _id: payload.departmentId, isDeleted: false });
     if (!dept) {
       throw new ApiError(400, 'Specified department does not exist');
+    }
+    if (dept.isArchived) {
+      throw new ApiError(400, `Cannot associate designation with archived department '${dept.name}'.`);
     }
     designation.departmentId = payload.departmentId;
   }
@@ -1360,6 +1366,12 @@ export const restoreDesignation = async (id, actor) => {
 
   if (!designation.isArchived) {
     throw new ApiError(400, `Designation '${designation.title}' is not archived`);
+  }
+
+  // Associated department validity guard
+  const dept = await Department.findOne({ _id: designation.departmentId, isDeleted: false });
+  if (!dept) {
+    throw new ApiError(400, 'Cannot restore designation because its associated department has been deleted.');
   }
 
   // Active Code Uniqueness Guard within department
