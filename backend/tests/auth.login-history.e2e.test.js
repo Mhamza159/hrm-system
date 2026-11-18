@@ -36,6 +36,9 @@ describe('Phase 24: Login History Module E2E Test Suite', () => {
   let testEmployee;
 
   beforeAll(async () => {
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
     const testDbUri = env.MONGO_URI.replace('hrm_development', 'hrm_test_p24_history');
     await mongoose.connect(testDbUri);
     await User.deleteMany({});

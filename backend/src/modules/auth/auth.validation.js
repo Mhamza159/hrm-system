@@ -157,7 +157,8 @@ export const getLoginHistoryQuerySchema = z.object({
     deviceType: z.enum(['DESKTOP', 'MOBILE', 'TABLET', 'UNKNOWN', 'ALL']).optional(),
     role: z.string().trim().optional(),
     search: z.string().trim().optional(),
-    sortBy: z.enum(['newest', 'oldest']).optional().default('newest'),
+    sortBy: z.enum(['newest', 'oldest', 'createdAt']).optional().default('newest'),
+    sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
     email: z.string().trim().optional()
   }).optional()
 });

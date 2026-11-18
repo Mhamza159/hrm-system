@@ -19,7 +19,8 @@ import {
   changePasswordSchema,
   verifyOtpSchema,
   verify2faSetupSchema,
-  disable2faSchema
+  disable2faSchema,
+  getLoginHistoryQuerySchema
 } from './auth.validation.js';
 
 const router = Router();
@@ -184,6 +185,7 @@ router.get(
   '/login-history/export',
   authenticate,
   checkPermission('login.history'),
+  validate(getLoginHistoryQuerySchema),
   AuthController.exportLoginHistory
 );
 
@@ -208,6 +210,7 @@ router.get(
   '/login-history',
   authenticate,
   checkPermission('login.history'),
+  validate(getLoginHistoryQuerySchema),
   AuthController.getLoginHistory
 );
 

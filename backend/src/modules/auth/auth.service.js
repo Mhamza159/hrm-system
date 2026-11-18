@@ -65,7 +65,8 @@ async function recordLoginHistory({
         employeeCode = employee.employeeCode;
         department = employee.departmentId?.name || employee.department?.name || null;
       } else {
-        employeeName = targetUser.email === 'mhamzaofficial159@gmail.com' ? 'Muhammad Hamza' : targetUser.email.split('@')[0];
+        const username = targetUser.email.split('@')[0];
+        employeeName = username.charAt(0).toUpperCase() + username.slice(1);
       }
     } else {
       employeeName = 'Unregistered Account';
@@ -1042,7 +1043,9 @@ export class AuthService {
     const filter = {};
     if (!canViewAll) {
       // Scoped strictly to caller's own records
-      filter.userId = new mongoose.Types.ObjectId(userId);
+      filter.userId = mongoose.Types.ObjectId.isValid(userId)
+        ? new mongoose.Types.ObjectId(userId)
+        : null;
     } else {
       const targetEmail = email || filterEmail;
       if (targetEmail) {
@@ -1096,11 +1099,14 @@ export class AuthService {
     const currentPage = Math.max(1, parseInt(page, 10) || 1);
     const pageLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
     const skip = (currentPage - 1) * pageLimit;
-    const sortOrder = sortBy === 'oldest' ? { createdAt: 1 } : { createdAt: -1 };
+    let sortCriteria = { createdAt: -1 };
+    if (sortBy === 'oldest' || (sortBy === 'createdAt' && sortOrder === 'asc')) {
+      sortCriteria = { createdAt: 1 };
+    }
 
     const [docs, total] = await Promise.all([
       LoginHistory.find(filter)
-        .sort(sortOrder)
+        .sort(sortCriteria)
         .skip(skip)
         .limit(pageLimit)
         .lean(),
@@ -1140,7 +1146,9 @@ export class AuthService {
 
     const match = {};
     if (!canViewAll) {
-      match.userId = new mongoose.Types.ObjectId(userId);
+      match.userId = mongoose.Types.ObjectId.isValid(userId)
+        ? new mongoose.Types.ObjectId(userId)
+        : null;
     }
 
     if (startDate || endDate) {
@@ -1237,11 +1245,13 @@ export class AuthService {
     // Security threat correlation: count consecutive failed attempts from same IP or email in last 24h
     const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const [recentFailuresFromIp, recentFailuresFromAccount] = await Promise.all([
-      LoginHistory.countDocuments({
-        ipAddress: record.ipAddress,
-        status: { $in: ['FAILED', 'LOCKED', '2FA_FAILED'] },
-        createdAt: { $gte: dayAgo }
-      }),
+      record.ipAddress
+        ? LoginHistory.countDocuments({
+            ipAddress: record.ipAddress,
+            status: { $in: ['FAILED', 'LOCKED', '2FA_FAILED'] },
+            createdAt: { $gte: dayAgo }
+          })
+        : 0,
       record.email
         ? LoginHistory.countDocuments({
             email: record.email,
@@ -1284,7 +1294,9 @@ export class AuthService {
 
     const filter = {};
     if (!canViewAll) {
-      filter.userId = new mongoose.Types.ObjectId(userId);
+      filter.userId = mongoose.Types.ObjectId.isValid(userId)
+        ? new mongoose.Types.ObjectId(userId)
+        : null;
     }
 
     const { status, deviceType, startDate, endDate, search, email } = query;

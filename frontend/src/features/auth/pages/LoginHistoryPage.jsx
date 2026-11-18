@@ -94,7 +94,7 @@ export default function LoginHistoryPage() {
     deviceType: filters.deviceType !== 'ALL' ? filters.deviceType : undefined,
     startDate: filters.startDate || undefined,
     endDate: filters.endDate || undefined,
-    sortBy: 'createdAt',
+    sortBy: 'newest',
     sortOrder: 'desc'
   };
 

@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import { Search, Download, RotateCcw, Calendar, Monitor, Filter, Loader2 } from 'lucide-react';
 import { useSelector } from 'react-redux';
+import { toast } from 'sonner';
 
 export function LoginHistoryFilterBar({
   filters,
@@ -85,8 +86,10 @@ export function LoginHistoryFilterBar({
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+      toast.success('Authentication audit report downloaded');
     } catch (err) {
       console.error('Failed to export login audit CSV:', err);
+      toast.error('Failed to export login audit CSV report');
     } finally {
       setIsExporting(false);
     }
