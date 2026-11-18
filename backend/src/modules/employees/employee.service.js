@@ -131,6 +131,17 @@ export const createEmployee = async (payload, actor) => {
     }
   }
 
+  // Department validity & archival guard
+  if (payload.departmentId) {
+    const dept = await Department.findOne({ _id: payload.departmentId, isDeleted: false });
+    if (!dept) {
+      throw new ApiError(404, 'Specified department does not exist');
+    }
+    if (dept.isArchived) {
+      throw new ApiError(400, `Cannot assign employee to department '${dept.name}' because it is archived.`);
+    }
+  }
+
   // 3. Encrypt sensitive fields
   const employeeData = { ...payload };
   if (employeeData.cnic) {
@@ -516,6 +527,17 @@ export const updateEmployee = async (id, payload, actor) => {
     });
     if (existing) {
       throw new ApiError(400, `Email '${payload.email}' is already in use`);
+    }
+  }
+
+  // Department validity & archival guard
+  if (payload.departmentId && String(payload.departmentId) !== String(employee.departmentId)) {
+    const dept = await Department.findOne({ _id: payload.departmentId, isDeleted: false });
+    if (!dept) {
+      throw new ApiError(404, 'Specified department does not exist');
+    }
+    if (dept.isArchived) {
+      throw new ApiError(400, `Cannot assign employee to department '${dept.name}' because it is archived.`);
     }
   }
 

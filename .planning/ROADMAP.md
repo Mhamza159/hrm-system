@@ -877,10 +877,10 @@ Plans:
 
 Plans:
 
-- [ ] **Plan 25-01: Backend Schema Expansion, Archival Lifecycle & Employee Assignment Restriction Guard** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-01-PLAN.md`)
-- [ ] **Plan 25-02: Department Stats Aggregation, Archive Query Endpoints & Employee Guard Integration** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-02-PLAN.md`)
-- [ ] **Plan 25-03: Department Dashboard, Tabs (Active vs Archived), Filter Toolbar & Modernized Data Table** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-03-PLAN.md`)
-- [ ] **Plan 25-04: Complete Modals Suite (Detail, Archive, Restore, and Permanent Delete with Employee Guard) & End-to-End Verification** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-04-PLAN.md`)
+- [x] **Plan 25-01: Backend Schema Expansion, Archival Lifecycle & Employee Assignment Restriction Guard** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-01-PLAN.md`)
+- [x] **Plan 25-02: Department Stats Aggregation, Archive Query Endpoints & Employee Guard Integration** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-02-PLAN.md`)
+- [x] **Plan 25-03: Department Dashboard, Tabs (Active vs Archived), Filter Toolbar & Modernized Data Table** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-03-PLAN.md`)
+- [x] **Plan 25-04: Complete Modals Suite (Detail, Archive, Restore, and Permanent Delete with Employee Guard) & End-to-End Verification** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-04-PLAN.md`)
 
 ---
 

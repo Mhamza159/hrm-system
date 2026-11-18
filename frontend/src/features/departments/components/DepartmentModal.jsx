@@ -10,6 +10,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Building2, AlertCircle, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   useCreateDepartmentMutation,
   useUpdateDepartmentMutation,
@@ -96,8 +97,10 @@ export function DepartmentModal({
           id: department._id || department.id,
           ...payload
         }).unwrap();
+        toast.success(`Department '${payload.name}' updated successfully.`);
       } else {
         await createDepartment(payload).unwrap();
+        toast.success(`Department '${payload.name}' created successfully.`);
       }
 
       onClose();

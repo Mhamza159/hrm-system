@@ -33,6 +33,18 @@ router.get(
 );
 
 router.get(
+  '/stats',
+  checkPermission('org.view'),
+  departmentController.getDepartmentStats
+);
+
+router.get(
+  '/archived',
+  checkPermission('org.view'),
+  departmentController.getArchivedDepartments
+);
+
+router.get(
   '/heads/candidates',
   checkPermission('org.view'),
   departmentController.getHeadCandidates
@@ -71,10 +83,28 @@ router.patch(
 );
 
 router.patch(
+  '/:id/archive',
+  checkPermission('org.manage'),
+  departmentController.archiveDepartment
+);
+
+router.patch(
+  '/:id/restore',
+  checkPermission('org.manage'),
+  departmentController.restoreDepartment
+);
+
+router.patch(
   '/:id/head',
   checkPermission('org.manage'),
   validate(assignHeadSchema),
   departmentController.assignDepartmentHead
+);
+
+router.delete(
+  '/:id/permanent',
+  checkPermission('org.manage'),
+  departmentController.permanentDeleteDepartment
 );
 
 router.delete(

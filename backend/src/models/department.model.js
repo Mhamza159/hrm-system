@@ -47,6 +47,20 @@ const departmentSchema = new mongoose.Schema(
       type: Boolean,
       default: true
     },
+    isArchived: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+    archivedAt: {
+      type: Date,
+      default: null
+    },
+    archivedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    },
     isDeleted: {
       type: Boolean,
       default: false
@@ -68,5 +82,8 @@ const departmentSchema = new mongoose.Schema(
 departmentSchema.index({ parentId: 1, isDeleted: 1 });
 departmentSchema.index({ headId: 1 });
 departmentSchema.index({ isActive: 1, isDeleted: 1 });
+departmentSchema.index({ isArchived: 1, isDeleted: 1 });
+departmentSchema.index({ parentId: 1, isArchived: 1 });
+departmentSchema.index({ code: 1, isDeleted: 1 });
 
 export const Department = mongoose.model('Department', departmentSchema);

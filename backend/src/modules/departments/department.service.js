@@ -62,8 +62,14 @@ const detectCircularParent = async (deptId, targetParentId) => {
  * @param {Object} queryOptions 
  * @returns {Object} List of departments and count
  */
-export const getAllDepartments = async ({ search = '', parentId, isActive, page, limit } = {}) => {
+export const getAllDepartments = async ({ search = '', parentId, isActive, isArchived, page, limit } = {}) => {
   const query = { isDeleted: false };
+
+  if (isArchived !== undefined) {
+    query.isArchived = isArchived === 'true' || isArchived === true;
+  } else {
+    query.isArchived = false;
+  }
 
   if (search && typeof search === 'string' && search.trim()) {
     const term = escapeRegex(search.trim());
@@ -334,6 +340,273 @@ export const getHeadCandidates = async () => {
  */
 export const assignDepartmentHead = async (id, headId, actor) => {
   return await updateDepartment(id, { headId }, actor);
+};
+
+/**
+ * Retrieve aggregated department statistics for dashboard KPI cards
+ * @returns {Object} Total, active, archived, withEmployees, withoutEmployees counts
+ */
+export const getDepartmentStats = async () => {
+  const [total, active, archived] = await Promise.all([
+    Department.countDocuments({ isDeleted: false }),
+    Department.countDocuments({ isArchived: false, isDeleted: false }),
+    Department.countDocuments({ isArchived: true, isDeleted: false })
+  ]);
+
+  // Aggregate active departments with and without employees
+  const activeDepts = await Department.find({ isArchived: false, isDeleted: false }).select('_id').lean();
+  const activeIds = activeDepts.map((d) => d._id);
+
+  const populatedCounts = await Employee.aggregate([
+    { $match: { departmentId: { $in: activeIds }, isDeleted: false } },
+    { $group: { _id: '$departmentId' } },
+    { $count: 'withEmployees' }
+  ]);
+
+  const withEmployees = populatedCounts[0]?.withEmployees || 0;
+  const withoutEmployees = Math.max(0, active - withEmployees);
+
+  return {
+    total,
+    active,
+    archived,
+    withEmployees,
+    withoutEmployees
+  };
+};
+
+/**
+ * Retrieve list of archived departments with search, pagination, and assigned employee counts
+ */
+export const getArchivedDepartments = async ({
+  search = '',
+  page = 1,
+  limit = 20,
+  sortBy = 'archivedAt',
+  sortOrder = 'desc'
+} = {}) => {
+  const query = { isArchived: true, isDeleted: false };
+
+  if (search && typeof search === 'string' && search.trim()) {
+    const term = escapeRegex(search.trim());
+    if (term) {
+      query.$or = [
+        { name: { $regex: term, $options: 'i' } },
+        { code: { $regex: term, $options: 'i' } }
+      ];
+    }
+  }
+
+  const pageNum = Math.max(1, parseInt(page, 10));
+  const limitNum = Math.max(1, parseInt(limit, 10));
+  const skip = (pageNum - 1) * limitNum;
+
+  const sortDirection = sortOrder === 'asc' ? 1 : -1;
+  const sortObj = { [sortBy]: sortDirection };
+
+  const [total, departments] = await Promise.all([
+    Department.countDocuments(query),
+    Department.find(query)
+      .populate('parentId', 'name code')
+      .populate({
+        path: 'headId',
+        select: 'email roles employeeId',
+        populate: { path: 'employeeId', select: 'name employeeCode' }
+      })
+      .populate('archivedBy', 'email name')
+      .sort(sortObj)
+      .skip(skip)
+      .limit(limitNum)
+      .lean()
+  ]);
+
+  const deptIds = departments.map((d) => d._id);
+  const employeeCounts = await Employee.aggregate([
+    { $match: { departmentId: { $in: deptIds }, isDeleted: false } },
+    { $group: { _id: '$departmentId', count: { $sum: 1 } } }
+  ]);
+
+  const countMap = new Map();
+  employeeCounts.forEach((c) => countMap.set(c._id.toString(), c.count));
+
+  const enrichedDepartments = departments.map((dept) => {
+    let headName = null;
+    if (dept.headId) {
+      headName = dept.headId.employeeId?.name || dept.headId.email;
+    }
+    const archivedByName = dept.archivedBy?.name || dept.archivedBy?.email || 'Administrator';
+
+    return {
+      ...dept,
+      headName,
+      archivedByName,
+      headcount: countMap.get(dept._id.toString()) || 0
+    };
+  });
+
+  return {
+    docs: enrichedDepartments,
+    departments: enrichedDepartments,
+    total,
+    page: pageNum,
+    limit: limitNum,
+    totalPages: Math.ceil(total / limitNum) || 1
+  };
+};
+
+/**
+ * Move department to archive (cold storage)
+ */
+export const archiveDepartment = async (id, actor) => {
+  const department = await Department.findOne({ _id: id, isDeleted: false });
+  if (!department) {
+    throw new ApiError(404, 'Department not found');
+  }
+
+  if (department.isArchived) {
+    throw new ApiError(400, `Department '${department.name}' is already archived`);
+  }
+
+  // Active Sub-Department Guard: Cannot archive department if active child sub-departments report to it
+  const childDepartmentCount = await Department.countDocuments({
+    parentId: id,
+    isArchived: false,
+    isDeleted: false
+  });
+
+  if (childDepartmentCount > 0) {
+    throw new ApiError(
+      400,
+      `Cannot archive department '${department.name}'. ${childDepartmentCount} active sub-department(s) report to it. Reassign or archive sub-departments first.`
+    );
+  }
+
+  const beforeState = department.toObject();
+  department.isArchived = true;
+  department.archivedAt = new Date();
+  department.archivedBy = actor?._id || null;
+  await department.save();
+
+  await recordAuditLog({
+    userId: actor?._id,
+    actor,
+    action: 'department.archive',
+    entity: 'Department',
+    entityId: department._id,
+    before: beforeState,
+    after: department.toObject(),
+    ip: actor?.ip,
+    details: { name: department.name, code: department.code }
+  });
+
+  return department;
+};
+
+/**
+ * Restore an archived department back to active directory
+ */
+export const restoreDepartment = async (id, actor) => {
+  const department = await Department.findOne({ _id: id, isDeleted: false });
+  if (!department) {
+    throw new ApiError(404, 'Department not found');
+  }
+
+  if (!department.isArchived) {
+    throw new ApiError(400, `Department '${department.name}' is already active`);
+  }
+
+  // Code Uniqueness Guard: Check if another active department is using the same code
+  const existingCode = await Department.findOne({
+    _id: { $ne: id },
+    code: department.code.toUpperCase(),
+    isArchived: false,
+    isDeleted: false
+  });
+
+  if (existingCode) {
+    throw new ApiError(
+      400,
+      `Cannot restore department. Active department '${existingCode.name}' is already using code '${department.code}'.`
+    );
+  }
+
+  // If parentId is archived or deleted, detach it so restored department becomes top-level
+  if (department.parentId) {
+    const parentDept = await Department.findOne({
+      _id: department.parentId,
+      isArchived: false,
+      isDeleted: false
+    });
+    if (!parentDept) {
+      department.parentId = null;
+    }
+  }
+
+  const beforeState = department.toObject();
+  department.isArchived = false;
+  department.archivedAt = null;
+  department.archivedBy = null;
+  department.isActive = true;
+  await department.save();
+
+  await recordAuditLog({
+    userId: actor?._id,
+    actor,
+    action: 'department.restore',
+    entity: 'Department',
+    entityId: department._id,
+    before: beforeState,
+    after: department.toObject(),
+    ip: actor?.ip,
+    details: { name: department.name, code: department.code }
+  });
+
+  return department;
+};
+
+/**
+ * Permanently purge department from database
+ * MANDATORY GUARD: A department must NOT be permanently deleted as long as one or more employees are assigned to it.
+ */
+export const permanentDeleteDepartment = async (id, actor) => {
+  const department = await Department.findById(id);
+  if (!department || department.isDeleted) {
+    throw new ApiError(404, 'Department not found');
+  }
+
+  // CRITICAL MANDATORY BUSINESS RULE: Check employee assignment
+  const assignedCount = await Employee.countDocuments({ departmentId: id });
+  if (assignedCount > 0) {
+    throw new ApiError(
+      400,
+      `This department cannot be permanently deleted because ${assignedCount} employee(s) are still assigned to it. Please reassign all employees to another department before proceeding.`
+    );
+  }
+
+  // Sub-Department Guard: Check no child departments exist
+  const childCount = await Department.countDocuments({ parentId: id, isDeleted: false });
+  if (childCount > 0) {
+    throw new ApiError(
+      400,
+      `Cannot permanently delete department '${department.name}'. ${childCount} sub-department(s) report to it. Reassign or delete sub-departments first.`
+    );
+  }
+
+  const beforeState = department.toObject();
+  await Department.deleteOne({ _id: id });
+
+  await recordAuditLog({
+    userId: actor?._id,
+    actor,
+    action: 'department.permanent_delete',
+    entity: 'Department',
+    entityId: id,
+    before: beforeState,
+    ip: actor?.ip,
+    details: { name: department.name, code: department.code }
+  });
+
+  return { message: `Department '${department.name}' permanently deleted.` };
 };
 
 /**

@@ -36,6 +36,69 @@ export const departmentsApi = baseApi.injectEndpoints({
       providesTags: (result, error, id) => [{ type: 'Departments', id }]
     }),
 
+    // Department Stats KPI Aggregation
+    getDepartmentStats: builder.query({
+      query: () => '/departments/stats',
+      providesTags: ['DepartmentStats']
+    }),
+
+    // Retrieve Archived Departments
+    getArchivedDepartments: builder.query({
+      query: (params) => ({
+        url: '/departments/archived',
+        params
+      }),
+      providesTags: (result) =>
+        result?.data?.docs
+          ? [
+              ...result.data.docs.map(({ _id }) => ({ type: 'ArchivedDepartments', id: _id })),
+              { type: 'ArchivedDepartments', id: 'LIST' }
+            ]
+          : [{ type: 'ArchivedDepartments', id: 'LIST' }]
+    }),
+
+    // Archive Department
+    archiveDepartment: builder.mutation({
+      query: (id) => ({
+        url: `/departments/${id}/archive`,
+        method: 'PATCH'
+      }),
+      invalidatesTags: [
+        { type: 'Departments', id: 'LIST' },
+        { type: 'ArchivedDepartments', id: 'LIST' },
+        'DepartmentStats',
+        'OrgChart'
+      ]
+    }),
+
+    // Restore Department
+    restoreDepartment: builder.mutation({
+      query: (id) => ({
+        url: `/departments/${id}/restore`,
+        method: 'PATCH'
+      }),
+      invalidatesTags: [
+        { type: 'Departments', id: 'LIST' },
+        { type: 'ArchivedDepartments', id: 'LIST' },
+        'DepartmentStats',
+        'OrgChart'
+      ]
+    }),
+
+    // Permanent Delete Department
+    permanentDeleteDepartment: builder.mutation({
+      query: (id) => ({
+        url: `/departments/${id}/permanent`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: [
+        { type: 'Departments', id: 'LIST' },
+        { type: 'ArchivedDepartments', id: 'LIST' },
+        'DepartmentStats',
+        'OrgChart'
+      ]
+    }),
+
     // 4.1: Create department
     createDepartment: builder.mutation({
       query: (data) => ({
@@ -204,6 +267,11 @@ export const departmentsApi = baseApi.injectEndpoints({
 export const {
   useGetDepartmentsQuery,
   useGetDepartmentByIdQuery,
+  useGetDepartmentStatsQuery,
+  useGetArchivedDepartmentsQuery,
+  useArchiveDepartmentMutation,
+  useRestoreDepartmentMutation,
+  usePermanentDeleteDepartmentMutation,
   useGetHeadCandidatesQuery,
   useCreateDepartmentMutation,
   useUpdateDepartmentMutation,

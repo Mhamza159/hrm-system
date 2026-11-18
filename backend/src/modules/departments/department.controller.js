@@ -117,6 +117,91 @@ export const deleteDepartment = asyncHandler(async (req, res) => {
 });
 
 /**
+ * GET /api/v1/departments/stats
+ * Retrieve aggregated statistics for dashboard KPI cards
+ */
+export const getDepartmentStats = asyncHandler(async (req, res) => {
+  const stats = await departmentService.getDepartmentStats();
+  return res.status(200).json(
+    apiResponse(200, stats, 'Department statistics retrieved successfully.')
+  );
+});
+
+/**
+ * GET /api/v1/departments/archived
+ * Retrieve paginated list of archived departments
+ */
+export const getArchivedDepartments = asyncHandler(async (req, res) => {
+  const { search, page, limit, sortBy, sortOrder } = req.query;
+  const result = await departmentService.getArchivedDepartments({
+    search,
+    page,
+    limit,
+    sortBy,
+    sortOrder
+  });
+  return res.status(200).json(
+    apiResponse(200, result, 'Archived departments retrieved successfully.', {
+      page: result.page,
+      limit: result.limit,
+      total: result.total,
+      totalPages: result.totalPages
+    })
+  );
+});
+
+/**
+ * PATCH /api/v1/departments/:id/archive
+ * Move department to archive (cold storage)
+ */
+export const archiveDepartment = asyncHandler(async (req, res) => {
+  const actor = {
+    _id: req.user?._id,
+    email: req.user?.email,
+    roles: req.user?.roles,
+    ip: req.ip
+  };
+  const department = await departmentService.archiveDepartment(req.params.id, actor);
+  return res.status(200).json(
+    apiResponse(200, department, `Department '${department.name}' successfully archived.`)
+  );
+});
+
+/**
+ * PATCH /api/v1/departments/:id/restore
+ * Restore archived department to active directory
+ */
+export const restoreDepartment = asyncHandler(async (req, res) => {
+  const actor = {
+    _id: req.user?._id,
+    email: req.user?.email,
+    roles: req.user?.roles,
+    ip: req.ip
+  };
+  const department = await departmentService.restoreDepartment(req.params.id, actor);
+  return res.status(200).json(
+    apiResponse(200, department, `Department '${department.name}' successfully restored.`)
+  );
+});
+
+/**
+ * DELETE /api/v1/departments/:id/permanent
+ * Permanently purge department (guarded against assigned employees)
+ */
+export const permanentDeleteDepartment = asyncHandler(async (req, res) => {
+  const actor = {
+    _id: req.user?._id,
+    email: req.user?.email,
+    roles: req.user?.roles,
+    ip: req.ip
+  };
+  const result = await departmentService.permanentDeleteDepartment(req.params.id, actor);
+  return res.status(200).json(
+    apiResponse(200, null, result.message)
+  );
+});
+
+/**
  * GET /api/v1/designations
  * 4.3: Retrieve list of designations
  */
