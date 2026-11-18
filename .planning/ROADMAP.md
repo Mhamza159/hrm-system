@@ -770,6 +770,42 @@ Plans:
 
 ---
 
+## Phase 23: Notification Module — Complete Audit, Cross-Module Integration, RBAC/PBAC Implementation & UI/UX Upgrade
+
+**Goal:** Deliver a comprehensive end-to-end audit, architectural expansion, and UI/UX modernization for the **Notification Module** across the entire HRMS. Support explicit module classification across all 16 domains, priority classification (`urgent`, `high`, `normal`, `low`), dedicated Archive & Restore lifecycle tabs, high-speed unread aggregation (`GET /api/v1/notifications/module-counts`), dynamic real-time unread badges & indicator dots in `Sidebar.jsx` and `Header.jsx`, a completely redesigned Notification Center (`/notifications`) and slide-out Drawer (`NotificationDrawer.jsx`), and strict PBAC confidentiality enforcement.
+
+**Requirements**:
+- **1. Backend Architecture, Schemas, Validation & Archival APIs (`notification.model.js`, `notify.service.js`, `notification.service.js`, `notification.controller.js`, `notification.routes.js`)**:
+  - Support explicit `module` enum across 16 domains, `priority` tiers, and soft archival (`isArchived`, `archivedAt`).
+  - Implement module unread count aggregation endpoint (`GET /api/v1/notifications/module-counts`) and archive endpoints (`PATCH /:id/archive`, `PATCH /:id/unarchive`, `PATCH /archive-all`).
+  - Centralized `notify.service.js` enhancement supporting alias normalization, priority handling, and multi-channel dispatch.
+- **2. Cross-Module Notification Trigger Instrumentation (16 Domains)**:
+  - Audit and wire missing business event notifications across Recruitment/ATS, Onboarding/Lifecycle, Attendance, Leaves, Payroll, Loans, Expenses, Assets, Timesheets, Performance, Policies, Announcements, Rewards, Grievances, Chat, Attrition, and System Security.
+  - Strict PBAC confidentiality guarantees: Grievances isolated to Committee/HR, Attrition risks isolated to SuperAdmin/HR, and masked salary privacy.
+- **3. Dynamic Sidebar Notification Indicators (`Sidebar.jsx`, `Header.jsx`, `useModuleNotificationCounts.js`)**:
+  - Module-level unread dots/badges in sidebar navigation for both standalone links and collapsible tree groups.
+  - Real-time updates via Socket.io `notification:new` events and automatic count decrements on route visits and read events.
+- **4. Notification Center & Drawer Complete UI/UX Redesign (`NotificationsPage.jsx`, `NotificationDrawer.jsx`, `NotificationCard.jsx`)**:
+  - Slide-out quick drawer with "Mark All as Read" and filter pills.
+  - Full Notification Center command page with Active vs Archived tabs, horizontal module filter pills, priority tags, search, and bulk operations.
+  - Forest & Emerald Enterprise theme styling (`#061A14`, `#111D17`, `#1A3125`, `#00C471`).
+- **5. End-to-End Testing, Vitest Integration Suite & Verification Gate (`tests/notifications.e2e.test.js`)**:
+  - 10 comprehensive integration tests covering schema creation, dispatch, module aggregation, priority handling, read/unread lifecycle, archiving, and PBAC security.
+  - 0 Oxlint warnings, 100% backend test pass rate, clean Vite production build.
+
+**Depends on:** Phase 22
+**Plans:** 5 plans
+
+Plans:
+
+- [ ] **Plan 23-01: Backend Architecture, Schema Expansion & Module Aggregation APIs** (`.planning/phases/23-notification-module-complete-audit-cross-module-integration-rbac-pbac-sidebar-dots-ui-ux-upgrade/23-01-PLAN.md`)
+- [ ] **Plan 23-02: Cross-Module Notification Trigger Instrumentation (16 Domains)** (`.planning/phases/23-notification-module-complete-audit-cross-module-integration-rbac-pbac-sidebar-dots-ui-ux-upgrade/23-02-PLAN.md`)
+- [ ] **Plan 23-03: Dynamic Sidebar Indicators & Real-Time Synchronization** (`.planning/phases/23-notification-module-complete-audit-cross-module-integration-rbac-pbac-sidebar-dots-ui-ux-upgrade/23-03-PLAN.md`)
+- [ ] **Plan 23-04: Notification Center & Drawer Complete UI/UX Redesign** (`.planning/phases/23-notification-module-complete-audit-cross-module-integration-rbac-pbac-sidebar-dots-ui-ux-upgrade/23-04-PLAN.md`)
+- [ ] **Plan 23-05: End-to-End Testing, Vitest Integration Suite & Verification Gate** (`.planning/phases/23-notification-module-complete-audit-cross-module-integration-rbac-pbac-sidebar-dots-ui-ux-upgrade/23-05-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features
