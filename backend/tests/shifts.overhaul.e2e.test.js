@@ -377,4 +377,81 @@ describe('Phase 27: Work Shifts Module Overhaul, Archival Lifecycle & Employee G
 
     expect(res.status).toBe(403);
   });
+
+  // 7. Code Review Hardening Verifications
+  it('17. POST /api/v1/shifts/:id/assign with action: clear completely unassigns all staff (WR-01)', async () => {
+    // Assign employee to nightShift first
+    await request(app)
+      .post(`/api/v1/shifts/${nightShift._id}/assign`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        employeeIds: [testEmployee._id.toString()],
+        action: 'add'
+      });
+
+    let emp = await Employee.findById(testEmployee._id);
+    expect(emp.shiftId?.toString()).toBe(nightShift._id.toString());
+
+    // Execute clear action
+    const clearRes = await request(app)
+      .post(`/api/v1/shifts/${nightShift._id}/assign`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        action: 'clear'
+      });
+
+    expect(clearRes.status).toBe(200);
+    expect(clearRes.body.data.headcount).toBe(0);
+
+    emp = await Employee.findById(testEmployee._id);
+    expect(emp.shiftId).toBeNull();
+  });
+
+  it('18. GET /api/v1/shifts/invalid-id returns 404 without Mongoose CastError (WR-03)', async () => {
+    const res = await request(app)
+      .get('/api/v1/shifts/invalid-non-objectid')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toContain('Shift not found');
+  });
+
+  it('19. PATCH /api/v1/shifts/:id/restore unlinks department if department is archived (IN-01)', async () => {
+    // Create a temporary shift with testDept
+    const createRes = await request(app)
+      .post('/api/v1/shifts')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name: 'Department Test Shift',
+        code: 'DTS-01',
+        type: 'fixed',
+        startTime: '08:00',
+        endTime: '16:00',
+        departmentId: testDept._id.toString()
+      });
+    expect(createRes.status).toBe(201);
+    const tempShiftId = createRes.body.data._id;
+
+    // Soft-archive the shift
+    await request(app)
+      .patch(`/api/v1/shifts/${tempShiftId}/archive`)
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    // Soft-archive the department
+    await Department.findByIdAndUpdate(testDept._id, { isArchived: true, archivedAt: new Date() });
+
+    // Restore the shift
+    const restoreRes = await request(app)
+      .patch(`/api/v1/shifts/${tempShiftId}/restore`)
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(restoreRes.status).toBe(200);
+    expect(restoreRes.body.data.isArchived).toBe(false);
+    // departmentId should be unlinked because testDept is archived
+    expect(restoreRes.body.data.departmentId).toBeNull();
+
+    // Cleanup: restore department for any other tests
+    await Department.findByIdAndUpdate(testDept._id, { isArchived: false, archivedAt: null });
+  });
 });

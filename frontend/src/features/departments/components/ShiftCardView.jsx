@@ -68,8 +68,8 @@ export function ShiftCardView({
         const staffCount = shift.headcount || 0;
         const capacity = shift.capacity || 0;
         const isOvernight = shift.isCrossMidnight || shift.type === 'night';
-        const netHours = Math.floor(shift.durationMinutes / 60);
-        const netMins = shift.durationMinutes % 60;
+        const netHours = Math.floor((shift.durationMinutes || 0) / 60);
+        const netMins = (shift.durationMinutes || 0) % 60;
         const capacityPct = capacity > 0 ? Math.min(100, Math.round((staffCount / capacity) * 100)) : null;
 
         return (

@@ -120,11 +120,11 @@ export function ShiftsPage() {
   });
 
   const activeShiftsRaw = activeResponse?.data || [];
-  const activePagination = activeResponse?.pagination || {
-    page: 1,
+  const activePagination = activeResponse?.meta || activeResponse?.pagination || {
+    page: activePage,
     limit: activeLimit,
     total: activeShiftsRaw.length,
-    totalPages: 1
+    totalPages: Math.ceil(activeShiftsRaw.length / activeLimit) || 1
   };
 
   // Client-side guard for overnight filter if needed

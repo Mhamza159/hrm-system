@@ -339,7 +339,7 @@ export function ShiftModal({
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50/50 dark:bg-[#0E1712] text-slate-700 dark:text-slate-300 focus:outline-none focus:border-[#00C471] transition-colors cursor-pointer"
               >
                 <option value="">All Departments (Global Shift)</option>
-                {departments.map((dept) => (
+                {departments.filter((dept) => !dept.isArchived).map((dept) => (
                   <option key={dept._id} value={dept._id}>
                     {dept.name} ({dept.code})
                   </option>

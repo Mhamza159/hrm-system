@@ -1757,6 +1757,10 @@ export const getShiftStats = async () => {
  * 4.4: Retrieve single shift by ID
  */
 export const getShiftById = async (id) => {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new ApiError(404, 'Shift not found');
+  }
+
   const shift = await Shift.findOne({ _id: id, isDeleted: false })
     .populate('departmentId', 'name code')
     .populate('createdBy', 'name email')
@@ -1774,6 +1778,10 @@ export const getShiftById = async (id) => {
  * 4.4: Retrieve assigned employee roster for a shift
  */
 export const getShiftEmployees = async (id, { page = 1, limit = 10, search = '' } = {}) => {
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new ApiError(404, 'Shift not found');
+  }
+
   const shift = await Shift.findOne({ _id: id, isDeleted: false });
   if (!shift) {
     throw new ApiError(404, 'Shift not found');
@@ -1834,7 +1842,13 @@ export const assignEmployeesToShift = async (shiftId, { employeeIds = [], action
 
   let modifiedCount = 0;
 
-  if (action === 'remove') {
+  if (action === 'clear') {
+    const res = await Employee.updateMany(
+      { shiftId: shift._id, isDeleted: false },
+      { $set: { shiftId: null } }
+    );
+    modifiedCount = res.modifiedCount;
+  } else if (action === 'remove') {
     const res = await Employee.updateMany(
       { _id: { $in: validIds }, shiftId: shiftId, isDeleted: false },
       { $set: { shiftId: null } }
@@ -1956,11 +1970,11 @@ export const restoreShift = async (id, actor) => {
     );
   }
 
-  // If department association exists, verify department is not deleted
+  // If department association exists, verify department is not deleted or archived
   if (shift.departmentId) {
     const dept = await Department.findOne({ _id: shift.departmentId, isDeleted: false });
-    if (!dept) {
-      shift.departmentId = null; // Unlink deleted department gracefully
+    if (!dept || dept.isArchived) {
+      shift.departmentId = null; // Unlink deleted or archived department gracefully
     }
   }
 
