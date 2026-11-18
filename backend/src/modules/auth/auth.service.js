@@ -18,6 +18,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import mongoose from 'mongoose';
 import { User } from '../../models/user.model.js';
+import { Role } from '../../models/role.model.js';
 import { Employee } from '../../models/employee.model.js';
 import { LoginHistory } from '../../models/loginHistory.model.js';
 import { Delegation } from '../../models/delegation.model.js';
@@ -49,16 +50,39 @@ async function recordLoginHistory({
     let department = null;
     let role = null;
 
-    const targetUser = userDoc || (userId ? await User.findById(userId).populate('roles') : null);
+    let targetUser = userDoc;
+    if (!targetUser && userId) {
+      targetUser = await User.findById(userId);
+    }
+    if (!targetUser && email) {
+      targetUser = await User.findOne({ email: email.toLowerCase().trim(), isDeleted: false });
+    }
 
     if (targetUser) {
+      // Resolve role name(s)
       if (Array.isArray(targetUser.roles) && targetUser.roles.length > 0) {
         const firstRole = targetUser.roles[0];
-        role = typeof firstRole === 'string' ? firstRole : firstRole?.name || null;
+        if (firstRole?.name) {
+          role = targetUser.roles.map((r) => (typeof r === 'string' ? r : r?.name)).filter(Boolean).join(', ');
+        } else {
+          // roles array holds ObjectIds
+          const roleDocs = await Role.find({ _id: { $in: targetUser.roles } });
+          role = roleDocs.map((r) => r.name).filter(Boolean).join(', ') || null;
+        }
       }
 
-      // Query linked employee record
-      const employee = await Employee.findOne({ userId: targetUser._id }).populate('departmentId');
+      // Query linked employee record: by user.employeeId OR by userId OR by email
+      let employee = null;
+      if (targetUser.employeeId) {
+        employee = await Employee.findById(targetUser.employeeId).populate('departmentId');
+      }
+      if (!employee) {
+        employee = await Employee.findOne({ userId: targetUser._id }).populate('departmentId');
+      }
+      if (!employee && targetUser.email) {
+        employee = await Employee.findOne({ email: targetUser.email.toLowerCase().trim() }).populate('departmentId');
+      }
+
       if (employee) {
         employeeId = employee._id;
         employeeName = employee.name;
@@ -93,6 +117,59 @@ async function recordLoginHistory({
     // Critical invariant: Failure in audit recording must never disrupt core authentication
     console.error('[AuthService.recordLoginHistory] Error recording login audit:', err);
     return null;
+  }
+}
+
+/**
+ * Dynamically enrich a login history document with real user/employee data if missing
+ */
+async function enrichLoginRecord(doc) {
+  if (!doc) return doc;
+  if (doc.role && doc.employeeName && doc.employeeName !== 'Unregistered Account' && doc.department) {
+    return doc;
+  }
+  if (!doc.email && !doc.userId) return doc;
+
+  try {
+    const targetUser = doc.userId
+      ? await User.findById(doc.userId).populate('roles')
+      : await User.findOne({ email: String(doc.email).toLowerCase().trim(), isDeleted: false }).populate('roles');
+
+    if (!targetUser) return doc;
+
+    let role = doc.role;
+    if (!role && Array.isArray(targetUser.roles) && targetUser.roles.length > 0) {
+      const firstRole = targetUser.roles[0];
+      if (firstRole?.name) {
+        role = targetUser.roles.map((r) => r.name || r).filter(Boolean).join(', ');
+      } else {
+        const roleDocs = await Role.find({ _id: { $in: targetUser.roles } });
+        role = roleDocs.map((r) => r.name).filter(Boolean).join(', ') || null;
+      }
+    }
+
+    let employee = null;
+    if (targetUser.employeeId) {
+      employee = await Employee.findById(targetUser.employeeId).populate('departmentId');
+    }
+    if (!employee) {
+      employee = await Employee.findOne({ userId: targetUser._id }).populate('departmentId');
+    }
+    if (!employee && targetUser.email) {
+      employee = await Employee.findOne({ email: targetUser.email.toLowerCase().trim() }).populate('departmentId');
+    }
+
+    return {
+      ...doc,
+      userId: doc.userId || targetUser._id,
+      employeeId: doc.employeeId || employee?._id || null,
+      employeeName: employee?.name || (doc.employeeName && doc.employeeName !== 'Unregistered Account' ? doc.employeeName : targetUser.email.split('@')[0]),
+      employeeCode: employee?.employeeCode || doc.employeeCode || null,
+      department: employee?.departmentId?.name || employee?.department?.name || doc.department || null,
+      role: role || doc.role || null
+    };
+  } catch {
+    return doc;
   }
 }
 
@@ -1104,7 +1181,7 @@ export class AuthService {
       sortCriteria = { createdAt: 1 };
     }
 
-    const [docs, total] = await Promise.all([
+    const [rawDocs, total] = await Promise.all([
       LoginHistory.find(filter)
         .sort(sortCriteria)
         .skip(skip)
@@ -1112,6 +1189,8 @@ export class AuthService {
         .lean(),
       LoginHistory.countDocuments(filter)
     ]);
+
+    const docs = await Promise.all(rawDocs.map(enrichLoginRecord));
 
     return {
       docs,
@@ -1261,8 +1340,10 @@ export class AuthService {
         : 0
     ]);
 
+    const enrichedRecord = await enrichLoginRecord(record);
+
     return {
-      ...record,
+      ...enrichedRecord,
       securityCorrelation: {
         recentFailuresFromIp,
         recentFailuresFromAccount,
@@ -1325,10 +1406,12 @@ export class AuthService {
     }
 
     // Limit exports to 10,000 records to protect server memory
-    const docs = await LoginHistory.find(filter)
+    const rawDocs = await LoginHistory.find(filter)
       .sort({ createdAt: -1 })
       .limit(10000)
       .lean();
+
+    const docs = await Promise.all(rawDocs.map(enrichLoginRecord));
 
     const escapeCsv = (val) => {
       if (val === null || val === undefined) return '""';

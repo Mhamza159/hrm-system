@@ -191,8 +191,13 @@ export default function LoginHistoryPage() {
       label: 'Account Identity',
       sortable: true,
       render: (row) => {
-        const displayName = row.employeeName || row.email?.split('@')[0] || 'Unknown';
-        const initial = displayName.charAt(0).toUpperCase();
+        const resolvedName =
+          row.employeeName && row.employeeName !== 'Unregistered Account'
+            ? row.employeeName
+            : row.email
+            ? row.email.split('@')[0]
+            : 'Unregistered Account';
+        const initial = (resolvedName || 'U').charAt(0).toUpperCase();
 
         return (
           <div className="flex items-center gap-2.5">
@@ -202,7 +207,7 @@ export default function LoginHistoryPage() {
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="font-semibold text-slate-800 dark:text-slate-100 text-xs truncate">
-                  {row.employeeName || 'Unregistered Account'}
+                  {resolvedName}
                 </span>
                 {row.employeeCode && (
                   <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-slate-100 dark:bg-[#1A3125] text-slate-500 dark:text-slate-400 shrink-0">
@@ -279,16 +284,19 @@ export default function LoginHistoryPage() {
     },
     {
       key: 'failureReason',
-      label: 'Notice / Failure',
-      render: (row) => (
-        <span className="text-xs">
-          {row.failureReason ? (
-            <span className="text-rose-500 font-medium">{row.failureReason}</span>
-          ) : (
-            <span className="text-slate-400">—</span>
-          )}
-        </span>
-      )
+      label: 'Notice / Reason',
+      render: (row) => {
+        if (!row.failureReason) {
+          return <span className="text-slate-400">—</span>;
+        }
+        let colorClass = 'text-rose-500 font-medium';
+        if (row.status === 'SUCCESS') {
+          colorClass = 'text-[#00C471] dark:text-[#00C471] font-medium';
+        } else if (row.status === '2FA_PENDING') {
+          colorClass = 'text-amber-500 dark:text-amber-400 font-medium';
+        }
+        return <span className={`text-xs ${colorClass}`}>{row.failureReason}</span>;
+      }
     },
     {
       key: 'actions',

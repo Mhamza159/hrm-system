@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useGetLoginHistoryDetailQuery } from '../authApi.js';
 import { StatusBadge } from '../../../components/common/StatusBadge.jsx';
+import { RoleBadge } from '../../../components/common/RoleBadge.jsx';
 
 export function LoginDetailModal({ isOpen, onClose, recordId, initialRecord = null }) {
   const [copiedIp, setCopiedIp] = useState(false);
@@ -188,7 +189,9 @@ export function LoginDetailModal({ isOpen, onClose, recordId, initialRecord = nu
                   <div>
                     <span className="text-[11px] text-slate-400 block">Employee Name</span>
                     <span className="font-semibold text-slate-900 dark:text-white">
-                      {record?.employeeName || 'Unregistered / Unknown'}
+                      {record?.employeeName && record.employeeName !== 'Unregistered Account' && record.employeeName !== 'Unregistered / Unknown'
+                        ? record.employeeName
+                        : (record?.email ? record.email.split('@')[0] : 'Unregistered / Unknown')}
                     </span>
                     {record?.employeeCode && (
                       <span className="ml-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-[#1A3125] text-slate-600 dark:text-slate-300">
@@ -204,9 +207,13 @@ export function LoginDetailModal({ isOpen, onClose, recordId, initialRecord = nu
                   </div>
                   <div>
                     <span className="text-[11px] text-slate-400 block">Assigned Role</span>
-                    <span className="font-medium text-slate-800 dark:text-slate-200">
-                      {record?.role || 'None'}
-                    </span>
+                    {record?.role && record.role !== 'None' ? (
+                      <div className="mt-0.5">
+                        <RoleBadge role={record.role} size="sm" />
+                      </div>
+                    ) : (
+                      <span className="text-slate-400 font-medium">—</span>
+                    )}
                   </div>
                   <div>
                     <span className="text-[11px] text-slate-400 block">Department</span>
@@ -232,8 +239,14 @@ export function LoginDetailModal({ isOpen, onClose, recordId, initialRecord = nu
                   </div>
                   <div>
                     <span className="text-[11px] text-slate-400 block">Notice / Reason</span>
-                    <span className={`font-medium ${record?.failureReason ? 'text-rose-500' : 'text-[#00C471]'}`}>
-                      {record?.failureReason || 'Authentication Successful'}
+                    <span className={`font-medium ${
+                      record?.status === 'SUCCESS'
+                        ? 'text-[#00C471]'
+                        : record?.status === '2FA_PENDING'
+                        ? 'text-amber-500 dark:text-amber-400'
+                        : 'text-rose-500'
+                    }`}>
+                      {record?.failureReason || (record?.status === 'SUCCESS' ? 'Authentication successful' : '—')}
                     </span>
                   </div>
                 </div>
