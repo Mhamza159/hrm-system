@@ -162,13 +162,28 @@ export const authApi = baseApi.injectEndpoints({
       invalidatesTags: ['Auth', 'User']
     }),
 
-    // GET /api/v1/auth/login-history (Slice 1.12)
+    // GET /api/v1/auth/login-history (Slice 1.12 / Phase 24)
     getLoginHistory: builder.query({
       query: (params) => ({
         url: '/auth/login-history',
         params
       }),
-      providesTags: ['Auth']
+      providesTags: ['Auth', 'LoginHistory']
+    }),
+
+    // GET /api/v1/auth/login-history/stats (Phase 24)
+    getLoginHistoryStats: builder.query({
+      query: (params) => ({
+        url: '/auth/login-history/stats',
+        params
+      }),
+      providesTags: ['LoginHistory']
+    }),
+
+    // GET /api/v1/auth/login-history/:id (Phase 24)
+    getLoginHistoryDetail: builder.query({
+      query: (id) => `/auth/login-history/${id}`,
+      providesTags: (result, error, id) => [{ type: 'LoginHistory', id }]
     }),
 
     // POST /api/v1/users/:id/reset-password (Slice 1.14)
@@ -197,6 +212,8 @@ export const {
   useVerifyEnable2faMutation,
   useDisable2faMutation,
   useGetLoginHistoryQuery,
+  useGetLoginHistoryStatsQuery,
+  useGetLoginHistoryDetailQuery,
   useAdminResetPasswordMutation
 } = authApi;
 

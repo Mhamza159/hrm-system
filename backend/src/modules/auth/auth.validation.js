@@ -144,3 +144,21 @@ export const disable2faSchema = z.object({
   })
 });
 
+/**
+ * Validation schema for GET /api/v1/auth/login-history queries (Slice 1.12 / Phase 24)
+ */
+export const getLoginHistoryQuerySchema = z.object({
+  query: z.object({
+    page: z.coerce.number().int().positive().optional().default(1),
+    limit: z.coerce.number().int().positive().max(100).optional().default(20),
+    startDate: z.string().optional(),
+    endDate: z.string().optional(),
+    status: z.enum(['SUCCESS', 'FAILED', 'LOCKED', 'BLOCKED', 'RESTRICTED', '2FA_PENDING', '2FA_FAILED', 'ALL']).optional(),
+    deviceType: z.enum(['DESKTOP', 'MOBILE', 'TABLET', 'UNKNOWN', 'ALL']).optional(),
+    role: z.string().trim().optional(),
+    search: z.string().trim().optional(),
+    sortBy: z.enum(['newest', 'oldest']).optional().default('newest'),
+    email: z.string().trim().optional()
+  }).optional()
+});
+

@@ -14,7 +14,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { ShieldCheck, ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
+import { ShieldCheck, ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useVerifyOtpMutation } from '../authApi.js';
 import { setCredentials } from '../authSlice.js';

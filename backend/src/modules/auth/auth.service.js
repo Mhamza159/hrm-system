@@ -18,21 +18,81 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import mongoose from 'mongoose';
 import { User } from '../../models/user.model.js';
+import { Employee } from '../../models/employee.model.js';
 import { LoginHistory } from '../../models/loginHistory.model.js';
 import { Delegation } from '../../models/delegation.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { env } from '../../config/env.js';
 import { emailService } from '../../services/email.service.js';
 import { AuditService } from '../../services/audit.service.js';
+import { parseUserAgent, normalizeIp } from '../../utils/userAgentParser.js';
 
 /**
- * Infer client device type from User Agent string
+ * Safely record an authentication attempt to LoginHistory with complete identity and client environment
  */
-function inferDeviceType(userAgent = '') {
-  const ua = String(userAgent).toLowerCase();
-  if (/mobile|android|iphone|ipod/.test(ua)) return 'MOBILE';
-  if (/tablet|ipad/.test(ua)) return 'TABLET';
-  return 'DESKTOP';
+async function recordLoginHistory({
+  userId = null,
+  email,
+  ipAddress = '127.0.0.1',
+  userAgent = 'unknown',
+  status,
+  failureReason = null,
+  userDoc = null
+}) {
+  try {
+    const normalizedIp = normalizeIp(ipAddress);
+    const clientEnv = parseUserAgent(userAgent);
+
+    let employeeId = null;
+    let employeeName = null;
+    let employeeCode = null;
+    let department = null;
+    let role = null;
+
+    const targetUser = userDoc || (userId ? await User.findById(userId).populate('roles') : null);
+
+    if (targetUser) {
+      if (Array.isArray(targetUser.roles) && targetUser.roles.length > 0) {
+        const firstRole = targetUser.roles[0];
+        role = typeof firstRole === 'string' ? firstRole : firstRole?.name || null;
+      }
+
+      // Query linked employee record
+      const employee = await Employee.findOne({ userId: targetUser._id }).populate('departmentId');
+      if (employee) {
+        employeeId = employee._id;
+        employeeName = employee.name;
+        employeeCode = employee.employeeCode;
+        department = employee.departmentId?.name || employee.department?.name || null;
+      } else {
+        employeeName = targetUser.email === 'mhamzaofficial159@gmail.com' ? 'Muhammad Hamza' : targetUser.email.split('@')[0];
+      }
+    } else {
+      employeeName = 'Unregistered Account';
+    }
+
+    return await LoginHistory.create({
+      userId: targetUser ? targetUser._id : null,
+      employeeId,
+      employeeName,
+      employeeCode,
+      role,
+      department,
+      email: (email || targetUser?.email || '').toLowerCase().trim(),
+      ipAddress: normalizedIp,
+      location: 'Local / Private Network',
+      userAgent: userAgent || 'unknown',
+      browser: clientEnv.browser,
+      os: clientEnv.os,
+      deviceType: clientEnv.deviceType,
+      status,
+      failureReason
+    });
+  } catch (err) {
+    // Critical invariant: Failure in audit recording must never disrupt core authentication
+    console.error('[AuthService.recordLoginHistory] Error recording login audit:', err);
+    return null;
+  }
 }
 
 export class AuthService {
@@ -57,11 +117,10 @@ export class AuthService {
 
     // 3. Timing-Attack Mitigation:
     if (!user) {
-      await LoginHistory.create({
+      await recordLoginHistory({
         email: normalizedEmail,
-        ipAddress: ipAddress || '127.0.0.1',
-        userAgent: userAgent || 'unknown',
-        deviceType: inferDeviceType(userAgent),
+        ipAddress,
+        userAgent,
         status: 'FAILED',
         failureReason: 'Invalid email or password'
       });
@@ -71,13 +130,13 @@ export class AuthService {
 
     // 4. Validate Account Status (Slice 1.13):
     if (!user.isActive) {
-      await LoginHistory.create({
+      await recordLoginHistory({
         userId: user._id,
+        userDoc: user,
         email: normalizedEmail,
-        ipAddress: ipAddress || '127.0.0.1',
-        userAgent: userAgent || 'unknown',
-        deviceType: inferDeviceType(userAgent),
-        status: 'FAILED',
+        ipAddress,
+        userAgent,
+        status: 'RESTRICTED',
         failureReason: 'Account is deactivated'
       });
       throw new ApiError(403, 'Account is deactivated. Please contact your HR administrator.');
@@ -86,14 +145,14 @@ export class AuthService {
     // 5. Automated Brute-Force Lockout Evaluation (Slice 1.3):
     const now = new Date();
     if (user.lockUntil && user.lockUntil > now) {
-      await LoginHistory.create({
+      await recordLoginHistory({
         userId: user._id,
+        userDoc: user,
         email: normalizedEmail,
-        ipAddress: ipAddress || '127.0.0.1',
-        userAgent: userAgent || 'unknown',
-        deviceType: inferDeviceType(userAgent),
+        ipAddress,
+        userAgent,
         status: 'LOCKED',
-        failureReason: 'Account is locked'
+        failureReason: 'Account is locked due to consecutive failed attempts'
       });
       const remainingMinutes = Math.ceil((user.lockUntil.getTime() - now.getTime()) / (60 * 1000));
       throw new ApiError(
@@ -112,23 +171,24 @@ export class AuthService {
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
       user.failedAttempts = (user.failedAttempts || 0) + 1;
+      const isNowLocked = user.failedAttempts >= 5;
 
-      if (user.failedAttempts >= 5) {
+      if (isNowLocked) {
         user.lockUntil = new Date(Date.now() + 15 * 60 * 1000);
       }
       await user.save();
 
-      await LoginHistory.create({
+      await recordLoginHistory({
         userId: user._id,
+        userDoc: user,
         email: normalizedEmail,
-        ipAddress: ipAddress || '127.0.0.1',
-        userAgent: userAgent || 'unknown',
-        deviceType: inferDeviceType(userAgent),
-        status: user.failedAttempts >= 5 ? 'LOCKED' : 'FAILED',
-        failureReason: user.failedAttempts >= 5 ? 'Account locked after 5 failed attempts' : 'Invalid email or password'
+        ipAddress,
+        userAgent,
+        status: isNowLocked ? 'LOCKED' : 'FAILED',
+        failureReason: isNowLocked ? 'Account locked after 5 failed attempts' : 'Invalid email or password'
       });
 
-      if (user.failedAttempts >= 5) {
+      if (isNowLocked) {
         throw new ApiError(
           423,
           'Account has been locked for 15 minutes due to 5 consecutive failed login attempts.'
@@ -151,14 +211,14 @@ export class AuthService {
       user.twoFactorOtpExpires = new Date(Date.now() + 10 * 60 * 1000);
       await user.save();
 
-      await LoginHistory.create({
+      await recordLoginHistory({
         userId: user._id,
+        userDoc: user,
         email: normalizedEmail,
-        ipAddress: ipAddress || '127.0.0.1',
-        userAgent: userAgent || 'unknown',
-        deviceType: inferDeviceType(userAgent),
+        ipAddress,
+        userAgent,
         status: '2FA_PENDING',
-        failureReason: null
+        failureReason: 'Two-factor authentication challenge issued'
       });
 
       await emailService.sendOtpEmail(user.email, otp, 'Two-Factor Authentication');
@@ -198,14 +258,14 @@ export class AuthService {
     await user.save();
 
     // Record successful login in LoginHistory (Slice 1.12)
-    await LoginHistory.create({
+    await recordLoginHistory({
       userId: user._id,
+      userDoc: user,
       email: normalizedEmail,
-      ipAddress: ipAddress || '127.0.0.1',
-      userAgent: userAgent || 'unknown',
-      deviceType: inferDeviceType(userAgent),
+      ipAddress,
+      userAgent,
       status: 'SUCCESS',
-      failureReason: null
+      failureReason: 'Authentication successful'
     });
 
     // Ensure roles are populated for client authorization and UI guards
@@ -729,6 +789,15 @@ export class AuthService {
     // 3. Verify OTP expiration
     const now = new Date();
     if (!user.twoFactorOtpExpires || user.twoFactorOtpExpires < now) {
+      await recordLoginHistory({
+        userId: user._id,
+        userDoc: user,
+        email: user.email,
+        ipAddress,
+        userAgent,
+        status: '2FA_FAILED',
+        failureReason: 'Two-factor verification code expired'
+      });
       throw new ApiError(400, 'Two-factor verification code has expired. Please sign in again.');
     }
 
@@ -739,6 +808,15 @@ export class AuthService {
 
     const isMatch = await bcrypt.compare(otp, user.twoFactorOtpHash);
     if (!isMatch) {
+      await recordLoginHistory({
+        userId: user._id,
+        userDoc: user,
+        email: user.email,
+        ipAddress,
+        userAgent,
+        status: '2FA_FAILED',
+        failureReason: 'Invalid two-factor verification code'
+      });
       throw new ApiError(400, 'Invalid two-factor verification code.');
     }
 
@@ -764,14 +842,14 @@ export class AuthService {
     await user.save();
 
     // Record successful login in LoginHistory (Slice 1.12)
-    await LoginHistory.create({
+    await recordLoginHistory({
       userId: user._id,
+      userDoc: user,
       email: user.email,
-      ipAddress: ipAddress || '127.0.0.1',
-      userAgent: userAgent || 'unknown',
-      deviceType: inferDeviceType(userAgent),
+      ipAddress,
+      userAgent,
       status: 'SUCCESS',
-      failureReason: null
+      failureReason: 'Two-factor authentication completed successfully'
     });
 
     await user.populate('roles');
@@ -926,41 +1004,103 @@ export class AuthService {
   }
 
   /**
-   * Fetch paginated login history (Slice 1.12).
-   * Super Admin & HR Manager can view company-wide history or filter by user.
+   * Fetch paginated login history (Slice 1.12 / Phase 24).
+   * Super Admin & HR Manager can view company-wide history or filter by user, role, status, device, and date range.
    * Employees & Department Managers are scoped strictly to their own login records.
    * 
    * @param {Object} params
-   * @param {string} params.userId - Authenticated user identifier
-   * @param {Array} params.userRoles - Authenticated user roles
-   * @param {number} [params.page=1] - Page number
-   * @param {number} [params.limit=20] - Records per page
-   * @param {string} [params.filterEmail] - Filter by specific email (admin only)
    * @returns {Promise<{ docs: Array, total: number, page: number, limit: number, totalPages: number }>}
    */
-  static async getLoginHistory({ userId, userRoles = [], permissionScope = 'own', page = 1, limit = 20, filterEmail = null }) {
+  static async getLoginHistory({
+    userId,
+    userRoles = [],
+    permissionScope = 'own',
+    page = 1,
+    limit = 20,
+    startDate,
+    endDate,
+    status,
+    deviceType,
+    role,
+    search,
+    sortBy = 'newest',
+    email,
+    filterEmail = null
+  }) {
     const isSuperAdmin = userRoles.some((r) => {
       const roleName = typeof r === 'string' ? r : r?.name;
       return roleName === 'Super Admin';
     });
 
-    const canViewAll = isSuperAdmin || permissionScope === 'all';
+    const isHR = userRoles.some((r) => {
+      const roleName = typeof r === 'string' ? r : r?.name;
+      return roleName === 'HR Manager';
+    });
+
+    const canViewAll = isSuperAdmin || isHR || permissionScope === 'all';
 
     const filter = {};
     if (!canViewAll) {
       // Scoped strictly to caller's own records
-      filter.userId = userId;
-    } else if (filterEmail) {
-      filter.email = filterEmail.toLowerCase().trim();
+      filter.userId = new mongoose.Types.ObjectId(userId);
+    } else {
+      const targetEmail = email || filterEmail;
+      if (targetEmail) {
+        filter.email = targetEmail.toLowerCase().trim();
+      }
+      if (role && role !== 'ALL') {
+        filter.role = role;
+      }
+    }
+
+    // Status filter
+    if (status && status !== 'ALL') {
+      filter.status = status;
+    }
+
+    // Device type filter
+    if (deviceType && deviceType !== 'ALL') {
+      filter.deviceType = deviceType;
+    }
+
+    // Date range filter
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) {
+        filter.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        if (typeof endDate === 'string' && endDate.length <= 10) {
+          end.setHours(23, 59, 59, 999);
+        }
+        filter.createdAt.$lte = end;
+      }
+    }
+
+    // Keyword search over email, employeeName, ipAddress, browser, os, failureReason
+    if (search && search.trim()) {
+      const escaped = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(escaped, 'i');
+      filter.$or = [
+        { email: { $regex: searchRegex } },
+        { employeeName: { $regex: searchRegex } },
+        { employeeCode: { $regex: searchRegex } },
+        { ipAddress: { $regex: searchRegex } },
+        { browser: { $regex: searchRegex } },
+        { os: { $regex: searchRegex } },
+        { failureReason: { $regex: searchRegex } }
+      ];
     }
 
     const currentPage = Math.max(1, parseInt(page, 10) || 1);
     const pageLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
     const skip = (currentPage - 1) * pageLimit;
+    const sortOrder = sortBy === 'oldest' ? { createdAt: 1 } : { createdAt: -1 };
 
     const [docs, total] = await Promise.all([
       LoginHistory.find(filter)
-        .sort({ createdAt: -1 })
+        .sort(sortOrder)
         .skip(skip)
         .limit(pageLimit)
         .lean(),
@@ -974,6 +1114,254 @@ export class AuthService {
       limit: pageLimit,
       totalPages: Math.ceil(total / pageLimit) || 1
     };
+  }
+
+  /**
+   * Aggregate login history metrics across the selected filter window (Phase 24)
+   * @param {Object} params
+   * @returns {Promise<Object>}
+   */
+  static async getLoginHistoryStats({
+    userId,
+    userRoles = [],
+    permissionScope = 'own',
+    startDate,
+    endDate
+  }) {
+    const isSuperAdmin = userRoles.some((r) => {
+      const roleName = typeof r === 'string' ? r : r?.name;
+      return roleName === 'Super Admin';
+    });
+    const isHR = userRoles.some((r) => {
+      const roleName = typeof r === 'string' ? r : r?.name;
+      return roleName === 'HR Manager';
+    });
+    const canViewAll = isSuperAdmin || isHR || permissionScope === 'all';
+
+    const match = {};
+    if (!canViewAll) {
+      match.userId = new mongoose.Types.ObjectId(userId);
+    }
+
+    if (startDate || endDate) {
+      match.createdAt = {};
+      if (startDate) match.createdAt.$gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        if (typeof endDate === 'string' && endDate.length <= 10) {
+          end.setHours(23, 59, 59, 999);
+        }
+        match.createdAt.$lte = end;
+      }
+    }
+
+    const [metrics] = await LoginHistory.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: null,
+          totalAttempts: { $sum: 1 },
+          successfulLogins: {
+            $sum: { $cond: [{ $eq: ['$status', 'SUCCESS'] }, 1, 0] }
+          },
+          failedLogins: {
+            $sum: {
+              $cond: [
+                { $in: ['$status', ['FAILED', '2FA_FAILED']] },
+                1,
+                0
+              ]
+            }
+          },
+          lockedAttempts: {
+            $sum: { $cond: [{ $eq: ['$status', 'LOCKED'] }, 1, 0] }
+          },
+          blockedAttempts: {
+            $sum: { $cond: [{ $in: ['$status', ['BLOCKED', 'RESTRICTED']] }, 1, 0] }
+          },
+          twoFactorChallenges: {
+            $sum: { $cond: [{ $eq: ['$status', '2FA_PENDING'] }, 1, 0] }
+          },
+          uniqueEmails: { $addToSet: '$email' }
+        }
+      }
+    ]);
+
+    const total = metrics?.totalAttempts || 0;
+    const successful = metrics?.successfulLogins || 0;
+    const successRate = total > 0 ? Math.round((successful / total) * 100) : 100;
+
+    return {
+      totalAttempts: total,
+      successfulLogins: successful,
+      failedLogins: metrics?.failedLogins || 0,
+      lockedAttempts: metrics?.lockedAttempts || 0,
+      blockedAttempts: metrics?.blockedAttempts || 0,
+      twoFactorChallenges: metrics?.twoFactorChallenges || 0,
+      uniqueAccounts: metrics?.uniqueEmails ? metrics.uniqueEmails.length : 0,
+      successRate
+    };
+  }
+
+  /**
+   * Retrieve single login history attempt detail with threat correlation (Phase 24)
+   * @param {string} id - LoginHistory document ID
+   * @param {Object} userContext
+   * @returns {Promise<Object>}
+   */
+  static async getLoginHistoryDetail(id, { userId, userRoles = [], permissionScope = 'own' }) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      throw new ApiError(400, 'Invalid login history record identifier.');
+    }
+
+    const record = await LoginHistory.findById(id).lean();
+    if (!record) {
+      throw new ApiError(404, 'Login history record not found.');
+    }
+
+    const isSuperAdmin = userRoles.some((r) => {
+      const roleName = typeof r === 'string' ? r : r?.name;
+      return roleName === 'Super Admin';
+    });
+    const isHR = userRoles.some((r) => {
+      const roleName = typeof r === 'string' ? r : r?.name;
+      return roleName === 'HR Manager';
+    });
+    const canViewAll = isSuperAdmin || isHR || permissionScope === 'all';
+
+    // Data-scope isolation: non-admins cannot inspect other users' login records
+    if (!canViewAll && String(record.userId) !== String(userId)) {
+      throw new ApiError(403, 'You do not have permission to inspect this authentication record.');
+    }
+
+    // Security threat correlation: count consecutive failed attempts from same IP or email in last 24h
+    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const [recentFailuresFromIp, recentFailuresFromAccount] = await Promise.all([
+      LoginHistory.countDocuments({
+        ipAddress: record.ipAddress,
+        status: { $in: ['FAILED', 'LOCKED', '2FA_FAILED'] },
+        createdAt: { $gte: dayAgo }
+      }),
+      record.email
+        ? LoginHistory.countDocuments({
+            email: record.email,
+            status: { $in: ['FAILED', 'LOCKED', '2FA_FAILED'] },
+            createdAt: { $gte: dayAgo }
+          })
+        : 0
+    ]);
+
+    return {
+      ...record,
+      securityCorrelation: {
+        recentFailuresFromIp,
+        recentFailuresFromAccount,
+        isSuspiciousOrigin: recentFailuresFromIp >= 5 || recentFailuresFromAccount >= 5
+      }
+    };
+  }
+
+  /**
+   * Export filtered login history records to clean streaming CSV format (Phase 24)
+   * @param {Object} params
+   * @returns {Promise<string>}
+   */
+  static async exportLoginHistory({
+    userId,
+    userRoles = [],
+    permissionScope = 'own',
+    query = {}
+  }) {
+    const isSuperAdmin = userRoles.some((r) => {
+      const roleName = typeof r === 'string' ? r : r?.name;
+      return roleName === 'Super Admin';
+    });
+    const isHR = userRoles.some((r) => {
+      const roleName = typeof r === 'string' ? r : r?.name;
+      return roleName === 'HR Manager';
+    });
+    const canViewAll = isSuperAdmin || isHR || permissionScope === 'all';
+
+    const filter = {};
+    if (!canViewAll) {
+      filter.userId = new mongoose.Types.ObjectId(userId);
+    }
+
+    const { status, deviceType, startDate, endDate, search, email } = query;
+    if (canViewAll && email) filter.email = email.toLowerCase().trim();
+    if (status && status !== 'ALL') filter.status = status;
+    if (deviceType && deviceType !== 'ALL') filter.deviceType = deviceType;
+
+    if (startDate || endDate) {
+      filter.createdAt = {};
+      if (startDate) filter.createdAt.$gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        if (typeof endDate === 'string' && endDate.length <= 10) end.setHours(23, 59, 59, 999);
+        filter.createdAt.$lte = end;
+      }
+    }
+
+    if (search && search.trim()) {
+      const escaped = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const searchRegex = new RegExp(escaped, 'i');
+      filter.$or = [
+        { email: { $regex: searchRegex } },
+        { employeeName: { $regex: searchRegex } },
+        { ipAddress: { $regex: searchRegex } }
+      ];
+    }
+
+    // Limit exports to 10,000 records to protect server memory
+    const docs = await LoginHistory.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(10000)
+      .lean();
+
+    const escapeCsv = (val) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    const headers = [
+      'Timestamp (PKT)',
+      'Account Email',
+      'Employee Name',
+      'Employee Code',
+      'Role',
+      'Department',
+      'Status',
+      'IP Address',
+      'Device Type',
+      'Browser',
+      'Operating System',
+      'Notice / Reason'
+    ].join(',');
+
+    const rows = docs.map((doc) => {
+      const date = new Date(doc.createdAt);
+      const pktDate = !isNaN(date.getTime())
+        ? date.toLocaleString('en-GB', { timeZone: 'Asia/Karachi' })
+        : '';
+
+      return [
+        escapeCsv(pktDate),
+        escapeCsv(doc.email),
+        escapeCsv(doc.employeeName || '—'),
+        escapeCsv(doc.employeeCode || '—'),
+        escapeCsv(doc.role || '—'),
+        escapeCsv(doc.department || '—'),
+        escapeCsv(doc.status),
+        escapeCsv(doc.ipAddress),
+        escapeCsv(doc.deviceType),
+        escapeCsv(doc.browser || '—'),
+        escapeCsv(doc.os || '—'),
+        escapeCsv(doc.failureReason || 'Authentication completed')
+      ].join(',');
+    });
+
+    return [headers, ...rows].join('\r\n');
   }
 
   /**

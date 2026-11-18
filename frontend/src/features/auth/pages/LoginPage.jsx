@@ -23,8 +23,6 @@ import { z } from 'zod';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import {
-  Lock,
-  Mail,
   AlertTriangle,
   Loader2,
   Landmark,

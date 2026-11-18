@@ -164,8 +164,44 @@ router.post(
 );
 
 /**
+ * @route   GET /api/v1/auth/login-history/stats
+ * @desc    Fetch aggregated login history metrics across selected filter window (Phase 24)
+ * @access  Protected
+ */
+router.get(
+  '/login-history/stats',
+  authenticate,
+  checkPermission('login.history'),
+  AuthController.getLoginHistoryStats
+);
+
+/**
+ * @route   GET /api/v1/auth/login-history/export
+ * @desc    Export filtered login history records to CSV format (Phase 24)
+ * @access  Protected
+ */
+router.get(
+  '/login-history/export',
+  authenticate,
+  checkPermission('login.history'),
+  AuthController.exportLoginHistory
+);
+
+/**
+ * @route   GET /api/v1/auth/login-history/:id
+ * @desc    Fetch detailed login history record with threat correlation (Phase 24)
+ * @access  Protected
+ */
+router.get(
+  '/login-history/:id',
+  authenticate,
+  checkPermission('login.history'),
+  AuthController.getLoginHistoryDetail
+);
+
+/**
  * @route   GET /api/v1/auth/login-history
- * @desc    Fetch authenticated user or company-wide login history audit trail (Slice 1.12)
+ * @desc    Fetch authenticated user or company-wide login history audit trail (Slice 1.12 / Phase 24)
  * @access  Protected
  */
 router.get(

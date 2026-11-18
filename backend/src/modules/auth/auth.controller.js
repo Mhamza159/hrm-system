@@ -320,23 +320,71 @@ export class AuthController {
   });
 
   /**
-   * Fetch paginated login history audit trail (Slice 1.12)
+   * Fetch paginated login history audit trail (Slice 1.12 / Phase 24)
    * GET /api/v1/auth/login-history
    */
   static getLoginHistory = asyncHandler(async (req, res) => {
-    const { page, limit, email } = req.query;
     const result = await AuthService.getLoginHistory({
       userId: req.userId,
       userRoles: req.user?.roles,
       permissionScope: req.permissionScope,
-      page,
-      limit,
-      filterEmail: email
+      ...req.query
     });
 
     return res.status(200).json(
       new ApiResponse(200, result, 'Login history retrieved successfully')
     );
+  });
+
+  /**
+   * Fetch login history aggregated statistics (Phase 24)
+   * GET /api/v1/auth/login-history/stats
+   */
+  static getLoginHistoryStats = asyncHandler(async (req, res) => {
+    const stats = await AuthService.getLoginHistoryStats({
+      userId: req.userId,
+      userRoles: req.user?.roles,
+      permissionScope: req.permissionScope,
+      ...req.query
+    });
+
+    return res.status(200).json(
+      new ApiResponse(200, stats, 'Login history metrics computed successfully')
+    );
+  });
+
+  /**
+   * Fetch detailed login history record with threat correlation (Phase 24)
+   * GET /api/v1/auth/login-history/:id
+   */
+  static getLoginHistoryDetail = asyncHandler(async (req, res) => {
+    const detail = await AuthService.getLoginHistoryDetail(req.params.id, {
+      userId: req.userId,
+      userRoles: req.user?.roles,
+      permissionScope: req.permissionScope
+    });
+
+    return res.status(200).json(
+      new ApiResponse(200, detail, 'Login attempt details retrieved successfully')
+    );
+  });
+
+  /**
+   * Export filtered login history records to CSV (Phase 24)
+   * GET /api/v1/auth/login-history/export
+   */
+  static exportLoginHistory = asyncHandler(async (req, res) => {
+    const csvContent = await AuthService.exportLoginHistory({
+      userId: req.userId,
+      userRoles: req.user?.roles,
+      permissionScope: req.permissionScope,
+      query: req.query
+    });
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="login-history-${timestamp}.csv"`);
+    return res.status(200).send(csvContent);
   });
 
   /**

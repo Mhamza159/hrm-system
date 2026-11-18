@@ -17,7 +17,6 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   KeyRound,
-  Lock,
   Eye,
   EyeOff,
   Loader2,
