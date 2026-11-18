@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
+import { ErrorState } from '../../../components/common/ErrorState.jsx';
 import {
   useGetNotificationsQuery,
   useMarkAllAsReadMutation,
@@ -71,6 +72,8 @@ export const NotificationsPage = () => {
     data: notificationsData,
     isLoading,
     isFetching,
+    isError,
+    error,
     refetch
   } = useGetNotificationsQuery({
     page,
@@ -89,6 +92,10 @@ export const NotificationsPage = () => {
   const total = notificationsData?.total ?? notificationsData?.data?.total ?? 0;
   const unreadCount = notificationsData?.unreadCount ?? notificationsData?.data?.unreadCount ?? 0;
   const archivedCount = notificationsData?.archivedCount ?? notificationsData?.data?.archivedCount ?? 0;
+  const urgentCount =
+    notificationsData?.urgentCount ??
+    notificationsData?.data?.urgentCount ??
+    items.filter((i) => i?.priority === 'urgent' && !i?.isRead).length;
   const totalPages = notificationsData?.totalPages ?? notificationsData?.data?.totalPages ?? 1;
 
   const handleMarkAllRead = async () => {
@@ -171,7 +178,7 @@ export const NotificationsPage = () => {
             <Flame className="w-4 h-4 text-rose-500" />
           </div>
           <p className="text-2xl font-bold font-mono text-rose-500 mt-1">
-            {items.filter((i) => i.priority === 'urgent' && !i.isRead).length}
+            {urgentCount}
           </p>
         </div>
 
@@ -323,6 +330,10 @@ export const NotificationsPage = () => {
             <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
               Synchronizing notification stream...
             </span>
+          </div>
+        ) : isError ? (
+          <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-8 shadow-xs">
+            <ErrorState error={error} onRetry={refetch} />
           </div>
         ) : items.length === 0 ? (
           <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl py-20 px-6 flex flex-col items-center justify-center text-center shadow-xs space-y-3">

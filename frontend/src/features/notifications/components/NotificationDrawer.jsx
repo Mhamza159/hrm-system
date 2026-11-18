@@ -17,13 +17,20 @@ import {
   useArchiveAllNotificationsMutation
 } from '../notificationsApi.js';
 import { NotificationItem } from './NotificationItem.jsx';
+import { ErrorState } from '../../../components/common/ErrorState.jsx';
 import { toast } from 'sonner';
 
 export const NotificationDrawer = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const [filterTab, setFilterTab] = useState('all'); // 'all' | 'unread' | 'urgent'
 
-  const { data: notificationsData, isLoading } = useGetNotificationsQuery(
+  const {
+    data: notificationsData,
+    isLoading,
+    isError,
+    error,
+    refetch
+  } = useGetNotificationsQuery(
     {
       page: 1,
       limit: 30,
@@ -158,6 +165,8 @@ export const NotificationDrawer = ({ isOpen, onClose }) => {
                 <Loader2 className="w-6 h-6 animate-spin text-[#00C471]" />
                 <span className="text-xs">Loading notifications...</span>
               </div>
+            ) : isError ? (
+              <ErrorState error={error} onRetry={refetch} className="py-6 my-2" />
             ) : items.length === 0 ? (
               <div className="py-20 flex flex-col items-center justify-center text-center gap-2.5 px-4">
                 <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/50 flex items-center justify-center text-[#00C471]">

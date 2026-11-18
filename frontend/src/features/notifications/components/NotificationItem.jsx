@@ -171,6 +171,7 @@ const PRIORITY_BADGES = {
 const formatNotificationTime = (dateString) => {
   if (!dateString) return '';
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
   const now = new Date();
   const diffMinutes = Math.floor((now - date) / 60000);
 
@@ -201,6 +202,8 @@ export const NotificationItem = ({
   const [unarchiveNotification] = useUnarchiveNotificationMutation();
   const [deleteNotification] = useDeleteNotificationMutation();
 
+  if (!notification) return null;
+
   const {
     _id,
     module = 'system',
@@ -214,12 +217,12 @@ export const NotificationItem = ({
     createdAt
   } = notification;
 
-  const resolvedModule = module && module !== 'system' ? module : type;
+  const resolvedModule = (module && module !== 'system' ? module : type)?.toLowerCase();
   const config = MODULE_CONFIG[resolvedModule] || MODULE_CONFIG.system;
-  const IconComponent = config.icon;
+  const IconComponent = config?.icon || Bell;
 
-  const priorityMeta = PRIORITY_BADGES[priority] || PRIORITY_BADGES.normal;
-  const PriorityIcon = priorityMeta.icon;
+  const priorityMeta = PRIORITY_BADGES[priority?.toLowerCase()] || PRIORITY_BADGES.normal;
+  const PriorityIcon = priorityMeta?.icon;
 
   const handleCardClick = async () => {
     if (!isRead) {
@@ -233,7 +236,11 @@ export const NotificationItem = ({
       onCloseDrawer();
     }
     if (link) {
-      navigate(link);
+      if (link.startsWith('http://') || link.startsWith('https://')) {
+        window.open(link, '_blank', 'noopener,noreferrer');
+      } else {
+        navigate(link);
+      }
     }
   };
 
@@ -342,7 +349,11 @@ export const NotificationItem = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   if (onCloseDrawer) onCloseDrawer();
-                  navigate(link);
+                  if (link.startsWith('http://') || link.startsWith('https://')) {
+                    window.open(link, '_blank', 'noopener,noreferrer');
+                  } else {
+                    navigate(link);
+                  }
                 }}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-[#00C471] hover:bg-emerald-500/10 rounded-lg transition-colors cursor-pointer"
               >

@@ -10,6 +10,13 @@ import { ApiError } from '../../utils/ApiError.js';
 import { getModuleUnreadCounts } from '../../services/notify.service.js';
 
 /**
+ * Escape special characters in string for safe regular expression querying
+ * @param {string} s 
+ * @returns {string}
+ */
+const escapeRegex = (s) => (typeof s === 'string' ? s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '');
+
+/**
  * Retrieve paginated notifications and unread summary for authenticated user
  * @param {string|import('mongoose').Types.ObjectId} userId 
  * @param {Object} query 
@@ -59,9 +66,9 @@ export const getUserNotifications = async (
     filter.priority = priority.toLowerCase();
   }
 
-  // Search keyword in title or body
+  // Search keyword in title or body (sanitized against regex injection)
   if (search && search.trim()) {
-    const searchRegex = new RegExp(search.trim(), 'i');
+    const searchRegex = new RegExp(escapeRegex(search.trim()), 'i');
     filter.$or = [
       { title: { $regex: searchRegex } },
       { body: { $regex: searchRegex } }
@@ -72,8 +79,8 @@ export const getUserNotifications = async (
   const parsedLimit = Math.min(100, Math.max(1, parseInt(limit, 10)));
   const skip = (parsedPage - 1) * parsedLimit;
 
-  // Execute parallel queries for items, filtered total, and total unread badge count
-  const [items, totalFiltered, unreadCount, archivedCount] = await Promise.all([
+  // Execute parallel queries for items, filtered total, unread badge count, and urgent count
+  const [items, totalFiltered, unreadCount, archivedCount, urgentCount] = await Promise.all([
     Notification.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -88,6 +95,12 @@ export const getUserNotifications = async (
     Notification.countDocuments({
       userId: new mongoose.Types.ObjectId(userId),
       isArchived: true
+    }),
+    Notification.countDocuments({
+      userId: new mongoose.Types.ObjectId(userId),
+      isArchived: { $ne: true },
+      isRead: false,
+      priority: 'urgent'
     })
   ]);
 
@@ -96,6 +109,7 @@ export const getUserNotifications = async (
     total: totalFiltered,
     unreadCount,
     archivedCount,
+    urgentCount,
     page: parsedPage,
     limit: parsedLimit,
     totalPages: Math.ceil(totalFiltered / parsedLimit) || 1

@@ -395,7 +395,7 @@ export function Sidebar({ isOpen = false, onClose }) {
                               : 'bg-[#00C471] text-white'
                           )}
                         >
-                          {item.badge}
+                          {typeof item.badge === 'number' && item.badge > 99 ? '99+' : item.badge}
                         </span>
                       )}
                     </>

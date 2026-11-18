@@ -167,6 +167,16 @@ describe('Phase 23 — Notification Module Integration Tests', () => {
     expect(res.body.data.items).toHaveLength(1);
     expect(res.body.data.items[0].module).toBe('policies');
     expect(res.body.data.items[0].priority).toBe('urgent');
+    expect(res.body.meta.urgentCount).toBe(2); // Townhall Today + Mandatory Policy
+
+    // Test regex safety with special regex metacharacters
+    const regexSafeRes = await request(app)
+      .get('/api/v1/notifications')
+      .query({ search: '[Code]*+(?!)' })
+      .set('Authorization', `Bearer ${userAToken}`);
+
+    expect(regexSafeRes.status).toBe(200);
+    expect(regexSafeRes.body.success).toBe(true);
   });
 
   it('5. PATCH /api/v1/notifications/:id/read marks notification as read', async () => {

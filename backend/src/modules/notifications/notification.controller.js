@@ -16,6 +16,7 @@ export const getNotifications = asyncHandler(async (req, res) => {
       total: result.total,
       unreadCount: result.unreadCount,
       archivedCount: result.archivedCount,
+      urgentCount: result.urgentCount,
       totalPages: result.totalPages
     })
   );
