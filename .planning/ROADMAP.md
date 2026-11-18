@@ -806,6 +806,45 @@ Plans:
 
 ---
 
+## Phase 24: Login History Module — Complete Audit, Implementation, Security & UI/UX Refinement
+
+**Goal:** Deliver a complete, accurate, and secure **Login History & Authentication Audit System** across the HRMS. Record every login attempt (successful, failed, locked, restricted, 2FA challenge/verify) with complete identity snapshots (User, Employee name, code, role, department), exact UTC timestamps localized to `Asia/Karachi`, safe IP address extraction respecting trusted proxies, client environment parsing (`browser`, `os`, `deviceType`), plain-English notices and failure classifications without leaking credentials or violating user enumeration defenses. Provide dynamic KPI summary metrics (`GET /api/v1/auth/login-history/stats`), CSV export (`GET /api/v1/auth/login-history/export`), multi-filter search, detailed technical attempt inspection (`LoginDetailModal.jsx`), security alert banners for lockouts, and strict PBAC/RBAC data isolation between administrators and employees.
+
+**Requirements**:
+- **1. Backend Architecture, Schema Expansion & Event Instrumentation (`loginHistory.model.js`, `userAgentParser.js`, `auth.service.js`)**:
+  - Store identity snapshots (`employeeId`, `employeeName`, `employeeCode`, `role`, `department`), client environment (`browser`, `os`, `deviceType`, `location`), status (`SUCCESS`, `FAILED`, `LOCKED`, `BLOCKED`, `RESTRICTED`, `2FA_PENDING`, `2FA_FAILED`), and `failureReason`.
+  - Zero-dependency user-agent parser extracting accurate browser & OS versions.
+  - Reliable instrumentation for all authentication flows (unknown accounts with timing protection, wrong password, inactive accounts, brute-force lockouts, 2FA challenges, 2FA success/failure).
+  - 90-day TTL eviction index and compound query indexes.
+- **2. Advanced Query APIs, Statistics Aggregation & Secure Data Export (`auth.validation.js`, `auth.service.js`, `auth.controller.js`, `auth.routes.js`)**:
+  - `GET /api/v1/auth/login-history`: Paginated query with date range, status, device, role, and search filters.
+  - `GET /api/v1/auth/login-history/stats`: Real-time aggregated metrics (Total Attempts, Success Rate, Failed, Locked, Unique Accounts).
+  - `GET /api/v1/auth/login-history/:id`: Enriched single attempt inspection with consecutive failure correlation.
+  - `GET /api/v1/auth/login-history/export`: Streaming CSV export with header formatting and permission sanitization.
+- **3. Frontend RTK Query, KPI Metric Cards & Data Table Modernization (`authApi.js`, `LoginHistoryPage.jsx`, `LoginHistoryStatsCards.jsx`, `LoginHistoryFilterBar.jsx`)**:
+  - Modernized UI following Forest & Emerald Enterprise theme (`#061A14`, `#111D17`, `#1A3125`, `#00C471`).
+  - Metric cards showing live statistics with percentages and status badges.
+  - Filter bar with date range presets, status pills, device dropdown, and instant search.
+  - Data table with dual-line timestamps (`Asia/Karachi`), employee initials & badges, status pills, IP origins, and browser/OS icons.
+  - Adaptive Employee Self-Service Mode: Personalizes view to "My Login Security" when accessed by non-administrative staff.
+- **4. Detailed Inspection Modal, Security Alerts & Verification Gate (`LoginDetailModal.jsx`, `SecurityAlertBanner.jsx`, `tests/auth.login-history.e2e.test.js`)**:
+  - Comprehensive inspection modal displaying Account, Outcome, Network, Client, and Security details with technical user-agent view and copyable values.
+  - Security alert banner for accounts currently locked out.
+  - 15/15 Vitest integration tests covering all authentication events, PBAC data isolation, filtering, stats, and export.
+  - 0 Oxlint warnings, 100% test pass rate, clean Vite production build.
+
+**Depends on:** Phase 23
+**Plans:** 4 plans
+
+Plans:
+
+- [ ] **Plan 24-01: Backend Architecture, Schema Expansion, User-Agent Parsing & Authentication Event Instrumentation** (`.planning/phases/24-login-history-module-complete-audit-implementation-security-ui-ux-refinement/24-01-PLAN.md`)
+- [ ] **Plan 24-02: Comprehensive Audit Query APIs, Aggregated Stats & Multi-Format Data Export** (`.planning/phases/24-login-history-module-complete-audit-implementation-security-ui-ux-refinement/24-02-PLAN.md`)
+- [ ] **Plan 24-03: Frontend RTK Query Expansion, Filter Toolbar, KPI Stat Cards & Data Table Modernization** (`.planning/phases/24-login-history-module-complete-audit-implementation-security-ui-ux-refinement/24-03-PLAN.md`)
+- [ ] **Plan 24-04: Detailed Login Inspection Modal, Suspicious Activity Alerts, Security Guards & Verification Gate** (`.planning/phases/24-login-history-module-complete-audit-implementation-security-ui-ux-refinement/24-04-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features
