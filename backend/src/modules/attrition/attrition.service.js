@@ -16,7 +16,9 @@ import { Attendance } from '../../models/attendance.model.js';
 import { SalaryStructure } from '../../models/salaryStructure.model.js';
 import Review from '../../models/review.model.js';
 import { AuditLog } from '../../models/auditLog.model.js';
+import { User } from '../../models/user.model.js';
 import { ApiError } from '../../utils/ApiError.js';
+import { notify } from '../../services/notify.service.js';
 
 /**
  * Escape regex metacharacters to immunize against ReDoS attacks
@@ -214,6 +216,28 @@ export async function calculateEmployeeRisk(employeeId) {
     },
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );
+
+  // Dispatch strictly confidential alert for critical flight risk (>75%) to HR/Admin
+  if (normalizedScore >= 75) {
+    try {
+      const hrAdmins = await User.find({
+        roles: { $in: ['Super Admin', 'HR Manager', 'SuperAdmin', 'HR'] },
+        isActive: true
+      }).select('_id').lean();
+      const adminIds = hrAdmins.map((a) => a._id);
+      if (adminIds.length > 0) {
+        await notify(adminIds, {
+          module: 'attrition',
+          priority: 'urgent',
+          title: 'High Flight Risk Alert',
+          body: `Critical flight risk (${normalizedScore}%) detected for employee ${employee.name || employee.employeeCode}. Retention review recommended.`,
+          link: '/attrition'
+        });
+      }
+    } catch (notifErr) {
+      console.warn(`[attrition.service] Notification dispatch warning: ${notifErr.message}`);
+    }
+  }
 
   return savedScore;
 }

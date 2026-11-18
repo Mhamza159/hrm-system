@@ -18,7 +18,7 @@ const router = Router();
 // All notification operations require authentication
 router.use(authenticate);
 
-// 1. Fetch paginated notifications with unread counter
+// 1. Fetch paginated notifications with module and archive filters
 router.get(
   '/',
   checkPermission('notification.view'),
@@ -26,7 +26,14 @@ router.get(
   notificationController.getNotifications
 );
 
-// 1.1 Retrieve unread notifications summary by module category and target link
+// 1.1 Retrieve dynamic module unread counts for sidebar indicators & drawer badges
+router.get(
+  '/module-counts',
+  checkPermission('notification.view'),
+  notificationController.getModuleCounts
+);
+
+// 1.2 Legacy summary endpoint alias
 router.get(
   '/unread-summary',
   checkPermission('notification.view'),
@@ -40,6 +47,13 @@ router.patch(
   notificationController.markRead
 );
 
+// 2.1 Mark single notification as unread
+router.patch(
+  '/:id/unread',
+  checkPermission('notification.view'),
+  notificationController.markUnread
+);
+
 // 3. Mark all notifications as read for current user
 router.patch(
   '/read-all',
@@ -47,14 +61,42 @@ router.patch(
   notificationController.markAllRead
 );
 
-// 4. Retrieve user notification channel preferences
+// 4. Archive single notification
+router.patch(
+  '/:id/archive',
+  checkPermission('notification.view'),
+  notificationController.archiveNotification
+);
+
+// 4.1 Restore archived notification
+router.patch(
+  '/:id/unarchive',
+  checkPermission('notification.view'),
+  notificationController.unarchiveNotification
+);
+
+// 4.2 Archive all read notifications
+router.patch(
+  '/archive-all',
+  checkPermission('notification.view'),
+  notificationController.archiveAll
+);
+
+// 5. Delete notification permanently
+router.delete(
+  '/:id',
+  checkPermission('notification.view'),
+  notificationController.deleteNotification
+);
+
+// 6. Retrieve user notification channel preferences
 router.get(
   '/preferences',
   checkPermission('notification.view'),
   notificationController.getPreferences
 );
 
-// 5. Update user notification channel preferences
+// 7. Update user notification channel preferences
 router.patch(
   '/preferences',
   checkPermission('notification.view'),

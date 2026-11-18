@@ -26,7 +26,7 @@ export const NotificationBell = () => {
     { pollingInterval: 60000 } // Safety fallback poll every 60s
   );
 
-  const unreadCount = notificationsData?.data?.unreadCount || 0;
+  const unreadCount = notificationsData?.unreadCount ?? notificationsData?.data?.unreadCount ?? 0;
 
   return (
     <>

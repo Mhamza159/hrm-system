@@ -4,44 +4,58 @@
  * 
  * SPECIFICATION:
  * - Module: M8 Internal Comms & Notifications
- * - Design: Forest & Emerald Craft (DESIGN.md)
+ * - Design: Forest & Emerald Enterprise theme
  * - Layer: Component (React 18 / Tailwind)
  */
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, CheckCheck, BellOff, ExternalLink, Loader2 } from 'lucide-react';
+import { X, CheckCheck, BellOff, ExternalLink, Loader2, Archive, Flame } from 'lucide-react';
 import {
   useGetNotificationsQuery,
-  useMarkAllAsReadMutation
+  useMarkAllAsReadMutation,
+  useArchiveAllNotificationsMutation
 } from '../notificationsApi.js';
 import { NotificationItem } from './NotificationItem.jsx';
+import { toast } from 'sonner';
 
 export const NotificationDrawer = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
-  const [filterTab, setFilterTab] = useState('all'); // 'all' | 'unread'
+  const [filterTab, setFilterTab] = useState('all'); // 'all' | 'unread' | 'urgent'
 
   const { data: notificationsData, isLoading } = useGetNotificationsQuery(
     {
       page: 1,
-      limit: 25,
-      unreadOnly: filterTab === 'unread' ? 'true' : 'false'
+      limit: 30,
+      unreadOnly: filterTab === 'unread' ? 'true' : 'false',
+      priority: filterTab === 'urgent' ? 'urgent' : undefined
     },
     { skip: !isOpen }
   );
 
   const [markAllAsRead, { isLoading: isMarkingAll }] = useMarkAllAsReadMutation();
+  const [archiveAllNotifications, { isLoading: isArchivingAll }] = useArchiveAllNotificationsMutation();
 
   if (!isOpen) return null;
 
-  const items = notificationsData?.data?.items || [];
-  const unreadCount = notificationsData?.data?.unreadCount || 0;
+  const items = notificationsData?.items || notificationsData?.data?.items || [];
+  const unreadCount = notificationsData?.unreadCount ?? notificationsData?.data?.unreadCount ?? 0;
 
   const handleMarkAllRead = async () => {
     try {
       await markAllAsRead().unwrap();
-    } catch (err) {
-      console.error('Failed to mark all as read:', err);
+      toast.success('All notifications marked as read');
+    } catch {
+      toast.error('Failed to mark all as read');
+    }
+  };
+
+  const handleArchiveAllRead = async () => {
+    try {
+      await archiveAllNotifications().unwrap();
+      toast.success('All read notifications archived');
+    } catch {
+      toast.error('Failed to archive notifications');
     }
   };
 
@@ -55,12 +69,12 @@ export const NotificationDrawer = ({ isOpen, onClose }) => {
       {/* Backdrop overlay */}
       <div
         onClick={onClose}
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity"
+        className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
       />
 
       {/* Slide-out drawer panel */}
       <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-white dark:bg-[#0A110D] border-l border-slate-200 dark:border-[#1A3125] shadow-2xl flex flex-col">
+        <div className="w-screen max-w-md bg-white dark:bg-[#061A14] border-l border-slate-200 dark:border-[#1A3125] shadow-2xl flex flex-col">
           {/* Drawer Header */}
           <div className="p-4 border-b border-slate-200 dark:border-[#1A3125] flex items-center justify-between bg-slate-50/80 dark:bg-[#111D17]">
             <div className="flex items-center gap-2.5">
@@ -80,7 +94,7 @@ export const NotificationDrawer = ({ isOpen, onClose }) => {
                   type="button"
                   onClick={handleMarkAllRead}
                   disabled={isMarkingAll}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#00C471] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#00C471] hover:bg-emerald-500/10 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
                   title="Mark all as read"
                 >
                   <CheckCheck className="w-3.5 h-3.5" />
@@ -90,7 +104,7 @@ export const NotificationDrawer = ({ isOpen, onClose }) => {
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#13221B] transition-colors"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1A3125] transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -103,7 +117,7 @@ export const NotificationDrawer = ({ isOpen, onClose }) => {
               <button
                 type="button"
                 onClick={() => setFilterTab('all')}
-                className={`flex-1 py-1 rounded-lg font-semibold transition-all text-center ${
+                className={`flex-1 py-1 rounded-lg font-semibold transition-all text-center cursor-pointer ${
                   filterTab === 'all'
                     ? 'bg-white dark:bg-[#1A3125] text-slate-900 dark:text-white shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -114,13 +128,25 @@ export const NotificationDrawer = ({ isOpen, onClose }) => {
               <button
                 type="button"
                 onClick={() => setFilterTab('unread')}
-                className={`flex-1 py-1 rounded-lg font-semibold transition-all text-center ${
+                className={`flex-1 py-1 rounded-lg font-semibold transition-all text-center cursor-pointer ${
                   filterTab === 'unread'
                     ? 'bg-white dark:bg-[#1A3125] text-slate-900 dark:text-white shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 Unread ({unreadCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setFilterTab('urgent')}
+                className={`flex-1 inline-flex items-center justify-center gap-1 py-1 rounded-lg font-semibold transition-all text-center cursor-pointer ${
+                  filterTab === 'urgent'
+                    ? 'bg-rose-500/20 text-rose-500 dark:text-rose-400 shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-rose-500'
+                }`}
+              >
+                <Flame className="w-3 h-3 text-rose-500" />
+                <span>Urgent</span>
               </button>
             </div>
           </div>
@@ -143,6 +169,8 @@ export const NotificationDrawer = ({ isOpen, onClose }) => {
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                   {filterTab === 'unread'
                     ? 'You have zero unread notifications.'
+                    : filterTab === 'urgent'
+                    ? 'No urgent action items requiring immediate attention.'
                     : 'Your notification stream is currently clear.'}
                 </p>
               </div>
@@ -152,19 +180,31 @@ export const NotificationDrawer = ({ isOpen, onClose }) => {
                   key={notification._id}
                   notification={notification}
                   onCloseDrawer={onClose}
+                  compact={false}
                 />
               ))
             )}
           </div>
 
           {/* Drawer Footer */}
-          <div className="p-3.5 border-t border-slate-200 dark:border-[#1A3125] bg-slate-50/80 dark:bg-[#111D17]">
+          <div className="p-3.5 border-t border-slate-200 dark:border-[#1A3125] bg-slate-50/80 dark:bg-[#111D17] flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={handleArchiveAllRead}
+              disabled={isArchivingAll}
+              className="inline-flex items-center gap-1.5 py-1.5 px-2.5 text-xs font-medium text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1A3125] rounded-xl transition-colors cursor-pointer disabled:opacity-40"
+              title="Archive all read items"
+            >
+              <Archive className="w-3.5 h-3.5" />
+              <span>Archive read</span>
+            </button>
+
             <button
               type="button"
               onClick={handleViewAllPage}
-              className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold text-[#00C471] hover:text-[#049856] hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 rounded-xl transition-colors cursor-pointer"
+              className="flex items-center justify-center gap-1.5 py-1.5 px-3 text-xs font-semibold text-[#00C471] hover:text-[#049856] hover:bg-emerald-500/10 rounded-xl transition-colors cursor-pointer ml-auto"
             >
-              <span>View all notifications history</span>
+              <span>Full Center</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </button>
           </div>

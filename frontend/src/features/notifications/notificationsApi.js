@@ -7,16 +7,17 @@ import { baseApi } from '../../lib/baseApi.js';
 
 export const notificationsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    // Fetch paginated notifications with optional unreadOnly filter
+    // Fetch paginated notifications with optional filters (module, priority, isArchived, search)
     getNotifications: builder.query({
       query: (params) => ({
         url: '/notifications',
         params
       }),
+      transformResponse: (res) => res?.data ?? res,
       providesTags: (result) =>
-        result?.data?.items
+        result?.items
           ? [
-              ...result.data.items.map(({ _id }) => ({ type: 'Notification', id: _id })),
+              ...result.items.map(({ _id }) => ({ type: 'Notification', id: _id })),
               { type: 'Notification', id: 'LIST' }
             ]
           : [{ type: 'Notification', id: 'LIST' }]
@@ -35,6 +36,19 @@ export const notificationsApi = baseApi.injectEndpoints({
       ]
     }),
 
+    // Mark single notification as unread
+    markAsUnread: builder.mutation({
+      query: (id) => ({
+        url: `/notifications/${id}/unread`,
+        method: 'PATCH'
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Notification', id },
+        { type: 'Notification', id: 'LIST' },
+        'NotificationCounts'
+      ]
+    }),
+
     // Mark all notifications as read for current user
     markAllAsRead: builder.mutation({
       query: () => ({
@@ -44,11 +58,69 @@ export const notificationsApi = baseApi.injectEndpoints({
       invalidatesTags: [{ type: 'Notification', id: 'LIST' }, 'NotificationCounts']
     }),
 
-    // Fetch unread notification counts grouped by module & link
+    // Archive single notification
+    archiveNotification: builder.mutation({
+      query: (id) => ({
+        url: `/notifications/${id}/archive`,
+        method: 'PATCH'
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Notification', id },
+        { type: 'Notification', id: 'LIST' },
+        'NotificationCounts'
+      ]
+    }),
+
+    // Restore archived notification back to active feed
+    unarchiveNotification: builder.mutation({
+      query: (id) => ({
+        url: `/notifications/${id}/unarchive`,
+        method: 'PATCH'
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Notification', id },
+        { type: 'Notification', id: 'LIST' },
+        'NotificationCounts'
+      ]
+    }),
+
+    // Archive all read notifications
+    archiveAllNotifications: builder.mutation({
+      query: () => ({
+        url: '/notifications/archive-all',
+        method: 'PATCH'
+      }),
+      invalidatesTags: [{ type: 'Notification', id: 'LIST' }, 'NotificationCounts']
+    }),
+
+    // Delete single notification permanently
+    deleteNotification: builder.mutation({
+      query: (id) => ({
+        url: `/notifications/${id}`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: (result, error, id) => [
+        { type: 'Notification', id },
+        { type: 'Notification', id: 'LIST' },
+        'NotificationCounts'
+      ]
+    }),
+
+    // Fetch dynamic module unread counts for sidebar indicators & badges
+    getModuleNotificationCounts: builder.query({
+      query: () => ({
+        url: '/notifications/module-counts'
+      }),
+      transformResponse: (res) => res?.data ?? res,
+      providesTags: ['NotificationCounts']
+    }),
+
+    // Fetch unread notification counts grouped by module & link (legacy)
     getNotificationUnreadSummary: builder.query({
       query: () => ({
         url: '/notifications/unread-summary'
       }),
+      transformResponse: (res) => res?.data ?? res,
       providesTags: ['NotificationCounts']
     }),
 
@@ -57,6 +129,7 @@ export const notificationsApi = baseApi.injectEndpoints({
       query: () => ({
         url: '/notifications/preferences'
       }),
+      transformResponse: (res) => res?.data ?? res,
       providesTags: [{ type: 'Notification', id: 'PREFERENCES' }]
     }),
 
@@ -74,9 +147,15 @@ export const notificationsApi = baseApi.injectEndpoints({
 
 export const {
   useGetNotificationsQuery,
+  useGetModuleNotificationCountsQuery,
   useGetNotificationUnreadSummaryQuery,
   useMarkAsReadMutation,
+  useMarkAsUnreadMutation,
   useMarkAllAsReadMutation,
+  useArchiveNotificationMutation,
+  useUnarchiveNotificationMutation,
+  useArchiveAllNotificationsMutation,
+  useDeleteNotificationMutation,
   useGetNotificationPreferencesQuery,
   useUpdateNotificationPreferencesMutation
 } = notificationsApi;

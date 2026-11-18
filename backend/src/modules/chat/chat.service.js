@@ -13,6 +13,7 @@ import { Employee } from '../../models/employee.model.js';
 import { Department } from '../../models/department.model.js';
 import { Role } from '../../models/role.model.js';
 import { ApiError } from '../../utils/ApiError.js';
+import { notify } from '../../services/notify.service.js';
 import {
   emitToConversation,
   emitToUser,
@@ -598,14 +599,31 @@ export const sendMessage = async (conversationId, senderId, { content, messageTy
   emitToConversation(conversationId, 'chat:message', formattedMessage);
 
   // 2. Dispatch unobtrusive notification to all other participants' personal rooms
-  conv.participants.forEach((pId) => {
-    if (pId.toString() !== senderId.toString()) {
-      emitToUser(pId, 'chat:notification', {
-        conversationId,
-        message: formattedMessage
-      });
-    }
+  const otherParticipants = conv.participants.filter(
+    (pId) => pId.toString() !== senderId.toString()
+  );
+
+  otherParticipants.forEach((pId) => {
+    emitToUser(pId, 'chat:notification', {
+      conversationId,
+      message: formattedMessage
+    });
   });
+
+  if (otherParticipants.length > 0) {
+    try {
+      await notify(otherParticipants, {
+        module: 'chat',
+        priority: 'normal',
+        title: `Chat from ${formattedMessage.senderName}`,
+        body: (content || 'Sent an attachment').slice(0, 100),
+        link: '/chat',
+        channels: ['inApp']
+      });
+    } catch (notifErr) {
+      console.warn(`[chat.service] Failed to persist in-app chat notification: ${notifErr.message}`);
+    }
+  }
 
   return formattedMessage;
 };

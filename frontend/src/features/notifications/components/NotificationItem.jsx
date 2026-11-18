@@ -1,10 +1,10 @@
 /**
  * @file NotificationItem.jsx
- * @description Individual Notification Card Component with Category Iconography & Click Navigation.
+ * @description Enterprise Notification Card Component with Module Iconography, Priority Badge & Archival Actions.
  * 
  * SPECIFICATION:
  * - Module: M8 Internal Comms & Announcements
- * - Design: Forest & Emerald Craft (DESIGN.md)
+ * - Design: Forest & Emerald Enterprise theme
  * - Layer: Component (React 18 / Tailwind)
  */
 
@@ -17,43 +17,156 @@ import {
   DollarSign,
   Megaphone,
   ShieldAlert,
-  UserCheck
+  UserCheck,
+  BookOpen,
+  Laptop,
+  UserPlus,
+  FolderKanban,
+  Award,
+  ListChecks,
+  Trophy,
+  MessageSquare,
+  TrendingDown,
+  Archive,
+  RotateCcw,
+  Trash2,
+  Check,
+  ExternalLink,
+  Flame,
+  AlertTriangle
 } from 'lucide-react';
-import { useMarkAsReadMutation } from '../notificationsApi.js';
+import {
+  useMarkAsReadMutation,
+  useMarkAsUnreadMutation,
+  useArchiveNotificationMutation,
+  useUnarchiveNotificationMutation,
+  useDeleteNotificationMutation
+} from '../notificationsApi.js';
+import { toast } from 'sonner';
 
-const TYPE_CONFIG = {
-  leave: {
+const MODULE_CONFIG = {
+  leaves: {
     icon: Calendar,
-    color: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60'
+    label: 'Leaves',
+    color: 'text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60'
   },
   attendance: {
     icon: Clock,
-    color: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/60'
+    label: 'Attendance',
+    color: 'text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800/60'
   },
   payroll: {
     icon: DollarSign,
-    color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60'
+    label: 'Payroll',
+    color: 'text-emerald-500 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60'
   },
-  announcement: {
+  loans: {
+    icon: DollarSign,
+    label: 'Loans',
+    color: 'text-emerald-500 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60'
+  },
+  expenses: {
+    icon: DollarSign,
+    label: 'Expenses',
+    color: 'text-emerald-500 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60'
+  },
+  assets: {
+    icon: Laptop,
+    label: 'Assets',
+    color: 'text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800/60'
+  },
+  recruitment: {
+    icon: UserPlus,
+    label: 'Recruitment',
+    color: 'text-cyan-500 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 border-cyan-200 dark:border-cyan-800/60'
+  },
+  projects: {
+    icon: FolderKanban,
+    label: 'Projects',
+    color: 'text-purple-500 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800/60'
+  },
+  performance: {
+    icon: Award,
+    label: 'Performance',
+    color: 'text-orange-500 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-800/60'
+  },
+  lifecycle: {
+    icon: ListChecks,
+    label: 'Lifecycle',
+    color: 'text-teal-500 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800/60'
+  },
+  policies: {
+    icon: BookOpen,
+    label: 'Policies',
+    color: 'text-sky-500 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800/60'
+  },
+  announcements: {
     icon: Megaphone,
-    color: 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40 border-violet-200 dark:border-violet-800/60'
+    label: 'Announcements',
+    color: 'text-violet-500 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40 border-violet-200 dark:border-violet-800/60'
+  },
+  rewards: {
+    icon: Trophy,
+    label: 'Rewards',
+    color: 'text-yellow-500 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-950/40 border-yellow-200 dark:border-yellow-800/60'
+  },
+  feedback: {
+    icon: ShieldAlert,
+    label: 'Feedback',
+    color: 'text-rose-500 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/60'
+  },
+  chat: {
+    icon: MessageSquare,
+    label: 'Chat',
+    color: 'text-emerald-500 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60'
+  },
+  attrition: {
+    icon: TrendingDown,
+    label: 'Attrition',
+    color: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800'
   },
   security: {
     icon: ShieldAlert,
-    color: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/60'
+    label: 'Security',
+    color: 'text-rose-500 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/60'
   },
   profile: {
     icon: UserCheck,
-    color: 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800/60'
+    label: 'Profile',
+    color: 'text-teal-500 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800/60'
   },
   system: {
     icon: Bell,
-    color: 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+    label: 'System',
+    color: 'text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+  }
+};
+
+const PRIORITY_BADGES = {
+  urgent: {
+    label: 'Urgent',
+    icon: Flame,
+    color: 'bg-rose-500/15 text-rose-500 dark:text-rose-400 border-rose-500/30'
+  },
+  high: {
+    label: 'High',
+    icon: AlertTriangle,
+    color: 'bg-amber-500/15 text-amber-500 dark:text-amber-400 border-amber-500/30'
+  },
+  normal: {
+    label: 'Normal',
+    icon: null,
+    color: 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border-emerald-500/20'
+  },
+  low: {
+    label: 'Low',
+    icon: null,
+    color: 'bg-slate-500/10 text-slate-500 dark:text-slate-400 border-slate-500/20'
   }
 };
 
 /**
- * Format timestamp into concise relative or localized PKT time string
+ * Format timestamp into relative or localized time string
  */
 const formatNotificationTime = (dateString) => {
   if (!dateString) return '';
@@ -75,77 +188,219 @@ const formatNotificationTime = (dateString) => {
   });
 };
 
-export const NotificationItem = ({ notification, onCloseDrawer }) => {
+export const NotificationItem = ({
+  notification,
+  onCloseDrawer,
+  compact = false,
+  showActions = true
+}) => {
   const navigate = useNavigate();
   const [markAsRead] = useMarkAsReadMutation();
+  const [markAsUnread] = useMarkAsUnreadMutation();
+  const [archiveNotification] = useArchiveNotificationMutation();
+  const [unarchiveNotification] = useUnarchiveNotificationMutation();
+  const [deleteNotification] = useDeleteNotificationMutation();
 
-  const { _id, type = 'system', title, body, link, isRead, createdAt } = notification;
-  const config = TYPE_CONFIG[type] || TYPE_CONFIG.system;
+  const {
+    _id,
+    module = 'system',
+    type = 'system',
+    priority = 'normal',
+    title,
+    body,
+    link,
+    isRead,
+    isArchived,
+    createdAt
+  } = notification;
+
+  const resolvedModule = module && module !== 'system' ? module : type;
+  const config = MODULE_CONFIG[resolvedModule] || MODULE_CONFIG.system;
   const IconComponent = config.icon;
 
-  const handleClick = async () => {
-    // 1. Mark as read if currently unread
+  const priorityMeta = PRIORITY_BADGES[priority] || PRIORITY_BADGES.normal;
+  const PriorityIcon = priorityMeta.icon;
+
+  const handleCardClick = async () => {
     if (!isRead) {
       try {
         await markAsRead(_id).unwrap();
-      } catch (err) {
-        // Silently continue navigation
+      } catch {
+        // Continue navigation
       }
     }
-
-    // 2. Close slide-out drawer if open
     if (onCloseDrawer) {
       onCloseDrawer();
     }
-
-    // 3. Navigate to target link if provided
     if (link) {
       navigate(link);
     }
   };
 
+  const handleToggleRead = async (e) => {
+    e.stopPropagation();
+    try {
+      if (isRead) {
+        await markAsUnread(_id).unwrap();
+        toast.success('Marked as unread');
+      } else {
+        await markAsRead(_id).unwrap();
+        toast.success('Marked as read');
+      }
+    } catch {
+      toast.error('Failed to update status');
+    }
+  };
+
+  const handleToggleArchive = async (e) => {
+    e.stopPropagation();
+    try {
+      if (isArchived) {
+        await unarchiveNotification(_id).unwrap();
+        toast.success('Restored from archive');
+      } else {
+        await archiveNotification(_id).unwrap();
+        toast.success('Notification archived');
+      }
+    } catch {
+      toast.error('Failed to update archive state');
+    }
+  };
+
+  const handleDelete = async (e) => {
+    e.stopPropagation();
+    try {
+      await deleteNotification(_id).unwrap();
+      toast.success('Notification deleted permanently');
+    } catch {
+      toast.error('Failed to delete notification');
+    }
+  };
+
   return (
     <div
-      onClick={handleClick}
-      className={`group relative flex items-start gap-3.5 p-4 rounded-xl border transition-all cursor-pointer ${
+      onClick={handleCardClick}
+      className={`group relative flex items-start gap-3.5 p-4 rounded-2xl border transition-all cursor-pointer ${
         isRead
           ? 'bg-white dark:bg-[#111D17] border-slate-200 dark:border-[#1A3125] hover:bg-slate-50/80 dark:hover:bg-[#13221B]/80'
-          : 'bg-emerald-50/30 dark:bg-[#13221B] border-emerald-200/80 dark:border-[#1A3125] hover:border-[#00C471]/50 shadow-xs'
+          : 'bg-emerald-50/30 dark:bg-[#13221B] border-emerald-300/80 dark:border-emerald-800/40 hover:border-[#00C471]/60 shadow-xs'
       }`}
     >
-      {/* Category Icon Badge */}
+      {/* Category / Module Icon */}
       <div
-        className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center border shadow-2xs ${config.color}`}
+        className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center border shadow-xs transition-transform group-hover:scale-105 ${config.color}`}
       >
-        <IconComponent className="w-4 h-4" />
+        <IconComponent className="w-5 h-5" />
       </div>
 
-      {/* Message Content */}
-      <div className="flex-1 min-w-0 pr-3">
-        <div className="flex items-center justify-between gap-2">
-          <h4
-            className={`text-xs truncate ${
-              isRead
-                ? 'font-medium text-slate-800 dark:text-slate-300'
-                : 'font-bold text-slate-900 dark:text-white'
-            }`}
-          >
-            {title}
-          </h4>
-          <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500 shrink-0">
+      {/* Message Content & Metadata */}
+      <div className="flex-1 min-w-0 pr-2">
+        <div className="flex flex-wrap items-center gap-2 mb-1">
+          {/* Module Pill */}
+          <span className="text-[10px] font-bold tracking-wide uppercase px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#1A3125] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-[#1E3A2B]">
+            {config.label}
+          </span>
+
+          {/* Priority Badge */}
+          {priority !== 'normal' && (
+            <span
+              className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border font-mono ${priorityMeta.color}`}
+            >
+              {PriorityIcon && <PriorityIcon className="w-3 h-3" />}
+              <span>{priorityMeta.label}</span>
+            </span>
+          )}
+
+          {/* Timestamp */}
+          <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500 ml-auto shrink-0">
             {formatNotificationTime(createdAt)}
           </span>
         </div>
 
+        {/* Title */}
+        <h4
+          className={`text-sm truncate ${
+            isRead
+              ? 'font-medium text-slate-800 dark:text-slate-300'
+              : 'font-bold text-slate-900 dark:text-white'
+          }`}
+        >
+          {title}
+        </h4>
+
+        {/* Body Text */}
         <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-2 leading-relaxed">
           {body}
         </p>
+
+        {/* Interactive Action Toolbar */}
+        {showActions && !compact && (
+          <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-slate-100 dark:border-[#1A3125]/60">
+            {link && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onCloseDrawer) onCloseDrawer();
+                  navigate(link);
+                }}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-[#00C471] hover:bg-emerald-500/10 rounded-lg transition-colors cursor-pointer"
+              >
+                <span>Take Action</span>
+                <ExternalLink className="w-3 h-3" />
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleToggleRead}
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1A3125] rounded-lg transition-colors cursor-pointer"
+              title={isRead ? 'Mark as unread' : 'Mark as read'}
+            >
+              <Check className={`w-3.5 h-3.5 ${isRead ? 'text-slate-400' : 'text-[#00C471]'}`} />
+              <span className="text-[11px]">{isRead ? 'Mark unread' : 'Mark read'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleToggleArchive}
+              className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1A3125] rounded-lg transition-colors cursor-pointer"
+              title={isArchived ? 'Restore to active' : 'Archive alert'}
+            >
+              {isArchived ? (
+                <>
+                  <RotateCcw className="w-3.5 h-3.5 text-blue-400" />
+                  <span className="text-[11px]">Restore</span>
+                </>
+              ) : (
+                <>
+                  <Archive className="w-3.5 h-3.5" />
+                  <span className="text-[11px]">Archive</span>
+                </>
+              )}
+            </button>
+
+            {isArchived && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors ml-auto cursor-pointer"
+                title="Delete permanently"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="text-[11px]">Delete</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Unread Indicator Dot */}
+      {/* Unread Indicator Pulse */}
       {!isRead && (
-        <span className="absolute top-4 right-3.5 w-2 h-2 rounded-full bg-[#00C471] ring-2 ring-emerald-500/20" />
+        <span className="absolute top-4 right-3.5 w-2 h-2 rounded-full bg-[#00C471] ring-4 ring-[#00C471]/20 animate-pulse" />
       )}
     </div>
   );
 };
+
+export default NotificationItem;

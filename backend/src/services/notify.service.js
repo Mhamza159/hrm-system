@@ -5,14 +5,16 @@
  * CORE ARCHITECTURAL INVARIANT (THE SINGLE NOTIFY PIPELINE):
  * No other module, controller, or background job in this application creates notification documents
  * or dispatches raw alert emails directly. All system events (leave approved, shift adjusted,
- * payroll generated, profile edited, announcement published) MUST call `notify(userIds, payload)`.
+ * payroll generated, profile edited, announcement published, policy acknowledged, grievance reported)
+ * MUST call `notify(userIds, payload)`.
  * 
  * PIPELINE WORKFLOW:
  * 1. Normalize and deduplicate recipient User ObjectIds.
- * 2. Persist notification records in bulk via `Notification.insertMany()`.
- * 3. Emit real-time WebSocket packet (`notification:new`) to recipient's isolated Socket room `user:${id}`.
- * 4. Query user `notificationPrefs` and conditionally queue asynchronous Email or WhatsApp jobs.
- * 5. Return execution summary `{ success, count, notificationIds }` without blocking caller flow.
+ * 2. Resolve module attribution, priority level, and category.
+ * 3. Persist notification records in bulk via `Notification.insertMany()`.
+ * 4. Emit real-time WebSocket packet (`notification:new`) to recipient's isolated Socket room `user:${id}`.
+ * 5. Query user `notificationPrefs` and conditionally queue asynchronous Email or WhatsApp jobs.
+ * 6. Return execution summary `{ success, count, notifications }` without blocking caller flow.
  */
 
 import mongoose from 'mongoose';
@@ -23,12 +25,63 @@ import { queueService } from './queue.service.js';
 import { whatsappService } from './whatsapp.service.js';
 import { SettingService } from '../modules/settings/setting.service.js';
 
+// Module mapping for alias normalization across 16 domains
+const MODULE_MAP = {
+  attendance: 'attendance',
+  leave: 'leaves',
+  leaves: 'leaves',
+  payroll: 'payroll',
+  loan: 'loans',
+  loans: 'loans',
+  expense: 'expenses',
+  expenses: 'expenses',
+  asset: 'assets',
+  assets: 'assets',
+  recruitment: 'recruitment',
+  candidate: 'recruitment',
+  job: 'recruitment',
+  ats: 'recruitment',
+  project: 'projects',
+  projects: 'projects',
+  timesheet: 'projects',
+  timesheets: 'projects',
+  performance: 'performance',
+  appraisal: 'performance',
+  appraisals: 'performance',
+  onboarding: 'lifecycle',
+  offboarding: 'lifecycle',
+  resignation: 'lifecycle',
+  lifecycle: 'lifecycle',
+  policy: 'policies',
+  policies: 'policies',
+  announcement: 'announcements',
+  announcements: 'announcements',
+  reward: 'rewards',
+  rewards: 'rewards',
+  kudos: 'rewards',
+  celebration: 'rewards',
+  feedback: 'feedback',
+  grievance: 'feedback',
+  chat: 'chat',
+  attrition: 'attrition',
+  report: 'reports',
+  reports: 'reports',
+  setting: 'settings',
+  settings: 'settings',
+  employee: 'employees',
+  employees: 'employees',
+  system: 'system',
+  security: 'system'
+};
+
 /**
  * Dispatch multi-channel notification to one or more users
  * 
  * @param {string|import('mongoose').Types.ObjectId|Array<string|import('mongoose').Types.ObjectId>} userIds - Single user ID or array of user IDs
  * @param {Object} payload - Notification data
- * @param {string} [payload.type='system'] - Category ('system', 'attendance', 'leave', 'payroll', 'announcement', 'security', 'profile')
+ * @param {string} [payload.type='system'] - Category domain
+ * @param {string} [payload.module] - Explicit source module (e.g. 'leaves', 'payroll', 'attendance', 'policies')
+ * @param {string} [payload.priority='normal'] - Priority level ('low', 'normal', 'high', 'urgent')
  * @param {string} payload.title - Concise notification headline
  * @param {string} payload.body - Detailed message body
  * @param {string} [payload.link=null] - Internal route link to navigate on click
@@ -42,7 +95,7 @@ export const notify = async (userIds, payload) => {
       return { success: false, count: 0, notifications: [] };
     }
 
-    // Support polymorphic invocation: notify({ userId, title, message/body, type, link })
+    // Support polymorphic invocation: notify({ userId, title, message/body, type, module, priority, link })
     let targetRecipients = userIds;
     let targetPayload = payload || {};
 
@@ -90,6 +143,8 @@ export const notify = async (userIds, payload) => {
 
     const {
       type = 'system',
+      module: rawModule,
+      priority: rawPriority = 'normal',
       title,
       body = targetPayload.message,
       link = null,
@@ -97,20 +152,11 @@ export const notify = async (userIds, payload) => {
       channels = ['inApp', 'email', 'whatsapp']
     } = targetPayload;
 
-    const TYPE_ALIASES = {
-      loans: 'loan',
-      expenses: 'expense',
-      assets: 'asset',
-      timesheet: 'project',
-      timesheets: 'project',
-      projects: 'project',
-      resignation: 'onboarding',
-      offboarding: 'onboarding',
-      appraisal: 'performance',
-      appraisals: 'performance',
-      leaves: 'leave'
-    };
-    const normalizedType = TYPE_ALIASES[type?.toLowerCase()] || type?.toLowerCase() || 'system';
+    const normalizedType = MODULE_MAP[type?.toLowerCase()] || type?.toLowerCase() || 'system';
+    const normalizedModule = MODULE_MAP[(rawModule || normalizedType)?.toLowerCase()] || 'system';
+    const normalizedPriority = ['low', 'normal', 'high', 'urgent'].includes(rawPriority?.toLowerCase())
+      ? rawPriority.toLowerCase()
+      : 'normal';
 
     if (!title || !body) {
       throw new Error('Notification requires both title and body content');
@@ -125,10 +171,10 @@ export const notify = async (userIds, payload) => {
           const globalChannels = adminNotifSetting.channels || { inApp: true, email: true, whatsapp: false };
 
           let targetConfig = null;
-          if (normalizedType === 'announcement' && adminNotifSetting.announcements) {
+          if (normalizedModule === 'announcements' && adminNotifSetting.announcements) {
             targetConfig = adminNotifSetting.announcements;
-          } else if (normalizedType && adminNotifSetting.categories?.[normalizedType]) {
-            targetConfig = adminNotifSetting.categories[normalizedType];
+          } else if (normalizedModule && adminNotifSetting.categories?.[normalizedModule]) {
+            targetConfig = adminNotifSetting.categories[normalizedModule];
           }
 
           adminChannels = {
@@ -152,10 +198,13 @@ export const notify = async (userIds, payload) => {
       const documentsToInsert = uniqueIds.map((uid) => ({
         userId: new mongoose.Types.ObjectId(uid),
         type: normalizedType,
+        module: normalizedModule,
+        priority: normalizedPriority,
         title: title.trim(),
         body: body.trim(),
         link: link ? link.trim() : null,
         isRead: false,
+        isArchived: false,
         metadata: metadata || {}
       }));
 
@@ -167,10 +216,13 @@ export const notify = async (userIds, payload) => {
             _id: notif._id,
             userId: notif.userId,
             type: notif.type,
+            module: notif.module,
+            priority: notif.priority,
             title: notif.title,
             body: notif.body,
             link: notif.link,
             isRead: notif.isRead,
+            isArchived: notif.isArchived,
             createdAt: notif.createdAt,
             metadata: notif.metadata
           });
@@ -194,7 +246,8 @@ export const notify = async (userIds, payload) => {
         .lean()
         .then((users) => {
           for (const u of users) {
-            const prefs = u.notificationPrefs?.[normalizedType] || {
+            const prefs = u.notificationPrefs?.[normalizedModule] ||
+              u.notificationPrefs?.[normalizedType] || {
               email: true,
               whatsapp: true
             };
@@ -240,4 +293,45 @@ export const notify = async (userIds, payload) => {
     console.error(`[notify.service] Notification dispatch failed: ${error.message}`);
     throw error;
   }
+};
+
+/**
+ * Retrieve unread notification counts aggregated by module and navigation routes
+ * @param {string|import('mongoose').Types.ObjectId} userId 
+ * @returns {Promise<{ totalUnread: number, byModule: Record<string, number>, byRoute: Record<string, number> }>}
+ */
+export const getModuleUnreadCounts = async (userId) => {
+  if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+    return { totalUnread: 0, byModule: {}, byRoute: {} };
+  }
+
+  const uId = new mongoose.Types.ObjectId(userId);
+
+  const [moduleStats, routeStats, totalUnread] = await Promise.all([
+    Notification.aggregate([
+      { $match: { userId: uId, isArchived: false, isRead: false } },
+      { $group: { _id: '$module', count: { $sum: 1 } } }
+    ]),
+    Notification.aggregate([
+      { $match: { userId: uId, isArchived: false, isRead: false, link: { $ne: null } } },
+      { $group: { _id: '$link', count: { $sum: 1 } } }
+    ]),
+    Notification.countDocuments({ userId: uId, isArchived: false, isRead: false })
+  ]);
+
+  const byModule = {};
+  for (const m of moduleStats) {
+    if (m._id) byModule[m._id] = m.count;
+  }
+
+  const byRoute = {};
+  for (const r of routeStats) {
+    if (r._id) byRoute[r._id] = r.count;
+  }
+
+  return {
+    totalUnread,
+    byModule,
+    byRoute
+  };
 };

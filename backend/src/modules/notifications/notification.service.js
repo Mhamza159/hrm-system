@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import { Notification } from '../../models/notification.model.js';
 import { User } from '../../models/user.model.js';
 import { ApiError } from '../../utils/ApiError.js';
+import { getModuleUnreadCounts } from '../../services/notify.service.js';
 
 /**
  * Retrieve paginated notifications and unread summary for authenticated user
@@ -14,17 +15,57 @@ import { ApiError } from '../../utils/ApiError.js';
  * @param {Object} query 
  * @returns {Promise<Object>}
  */
-export const getUserNotifications = async (userId, { page = 1, limit = 20, unreadOnly = 'false', type } = {}) => {
+export const getUserNotifications = async (
+  userId,
+  {
+    page = 1,
+    limit = 20,
+    unreadOnly = 'false',
+    isArchived = 'false',
+    module,
+    type,
+    priority,
+    search
+  } = {}
+) => {
   const filter = {
     userId: new mongoose.Types.ObjectId(userId)
   };
 
+  // Archive filtering: defaults to active notifications (isArchived: false)
+  if (isArchived === 'true' || isArchived === true) {
+    filter.isArchived = true;
+  } else {
+    filter.isArchived = false;
+  }
+
+  // Unread filter
   if (unreadOnly === 'true' || unreadOnly === true) {
     filter.isRead = false;
   }
 
-  if (type) {
-    filter.type = type;
+  // Explicit module filter
+  if (module && module !== 'all') {
+    filter.module = module.toLowerCase();
+  }
+
+  // Fallback type filter
+  if (type && type !== 'all' && !filter.module) {
+    filter.type = type.toLowerCase();
+  }
+
+  // Priority filter
+  if (priority && priority !== 'all') {
+    filter.priority = priority.toLowerCase();
+  }
+
+  // Search keyword in title or body
+  if (search && search.trim()) {
+    const searchRegex = new RegExp(search.trim(), 'i');
+    filter.$or = [
+      { title: { $regex: searchRegex } },
+      { body: { $regex: searchRegex } }
+    ];
   }
 
   const parsedPage = Math.max(1, parseInt(page, 10));
@@ -32,20 +73,29 @@ export const getUserNotifications = async (userId, { page = 1, limit = 20, unrea
   const skip = (parsedPage - 1) * parsedLimit;
 
   // Execute parallel queries for items, filtered total, and total unread badge count
-  const [items, totalFiltered, unreadCount] = await Promise.all([
+  const [items, totalFiltered, unreadCount, archivedCount] = await Promise.all([
     Notification.find(filter)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parsedLimit)
       .lean(),
     Notification.countDocuments(filter),
-    Notification.countDocuments({ userId: new mongoose.Types.ObjectId(userId), isRead: false })
+    Notification.countDocuments({
+      userId: new mongoose.Types.ObjectId(userId),
+      isArchived: false,
+      isRead: false
+    }),
+    Notification.countDocuments({
+      userId: new mongoose.Types.ObjectId(userId),
+      isArchived: true
+    })
   ]);
 
   return {
     items,
     total: totalFiltered,
     unreadCount,
+    archivedCount,
     page: parsedPage,
     limit: parsedLimit,
     totalPages: Math.ceil(totalFiltered / parsedLimit) || 1
@@ -82,6 +132,33 @@ export const markAsRead = async (notificationId, userId) => {
 };
 
 /**
+ * Mark a single notification as unread
+ * @param {string} notificationId 
+ * @param {string} userId 
+ * @returns {Promise<Object>}
+ */
+export const markAsUnread = async (notificationId, userId) => {
+  if (!mongoose.Types.ObjectId.isValid(notificationId)) {
+    throw new ApiError(400, 'Invalid notification ID format');
+  }
+
+  const notification = await Notification.findOne({
+    _id: notificationId,
+    userId: new mongoose.Types.ObjectId(userId)
+  });
+
+  if (!notification) {
+    throw new ApiError(404, 'Notification not found or access denied');
+  }
+
+  notification.isRead = false;
+  notification.readAt = null;
+  await notification.save();
+
+  return notification;
+};
+
+/**
  * Mark all unread notifications as read for current user
  * @param {string} userId 
  * @returns {Promise<{ modifiedCount: number }>}
@@ -90,6 +167,7 @@ export const markAllAsRead = async (userId) => {
   const result = await Notification.updateMany(
     {
       userId: new mongoose.Types.ObjectId(userId),
+      isArchived: false,
       isRead: false
     },
     {
@@ -103,6 +181,108 @@ export const markAllAsRead = async (userId) => {
   return {
     modifiedCount: result.modifiedCount || 0
   };
+};
+
+/**
+ * Archive a single notification
+ * @param {string} notificationId 
+ * @param {string} userId 
+ * @returns {Promise<Object>}
+ */
+export const archiveNotification = async (notificationId, userId) => {
+  if (!mongoose.Types.ObjectId.isValid(notificationId)) {
+    throw new ApiError(400, 'Invalid notification ID format');
+  }
+
+  const notification = await Notification.findOne({
+    _id: notificationId,
+    userId: new mongoose.Types.ObjectId(userId)
+  });
+
+  if (!notification) {
+    throw new ApiError(404, 'Notification not found or access denied');
+  }
+
+  notification.isArchived = true;
+  notification.archivedAt = new Date();
+  await notification.save();
+
+  return notification;
+};
+
+/**
+ * Restore an archived notification back to active feed
+ * @param {string} notificationId 
+ * @param {string} userId 
+ * @returns {Promise<Object>}
+ */
+export const unarchiveNotification = async (notificationId, userId) => {
+  if (!mongoose.Types.ObjectId.isValid(notificationId)) {
+    throw new ApiError(400, 'Invalid notification ID format');
+  }
+
+  const notification = await Notification.findOne({
+    _id: notificationId,
+    userId: new mongoose.Types.ObjectId(userId)
+  });
+
+  if (!notification) {
+    throw new ApiError(404, 'Notification not found or access denied');
+  }
+
+  notification.isArchived = false;
+  notification.archivedAt = null;
+  await notification.save();
+
+  return notification;
+};
+
+/**
+ * Archive all read notifications for user
+ * @param {string} userId 
+ * @returns {Promise<{ modifiedCount: number }>}
+ */
+export const archiveAllNotifications = async (userId) => {
+  const result = await Notification.updateMany(
+    {
+      userId: new mongoose.Types.ObjectId(userId),
+      isArchived: false,
+      isRead: true
+    },
+    {
+      $set: {
+        isArchived: true,
+        archivedAt: new Date()
+      }
+    }
+  );
+
+  return {
+    modifiedCount: result.modifiedCount || 0
+  };
+};
+
+/**
+ * Permanently delete a single notification
+ * @param {string} notificationId 
+ * @param {string} userId 
+ * @returns {Promise<{ deleted: boolean }>}
+ */
+export const deleteNotification = async (notificationId, userId) => {
+  if (!mongoose.Types.ObjectId.isValid(notificationId)) {
+    throw new ApiError(400, 'Invalid notification ID format');
+  }
+
+  const result = await Notification.findOneAndDelete({
+    _id: notificationId,
+    userId: new mongoose.Types.ObjectId(userId)
+  });
+
+  if (!result) {
+    throw new ApiError(404, 'Notification not found or access denied');
+  }
+
+  return { deleted: true };
 };
 
 /**
@@ -153,46 +333,18 @@ export const updatePreferences = async (userId, prefs) => {
   return user.notificationPrefs;
 };
 
+/**
+ * Retrieve unread notification counts aggregated by module and navigation routes
+ * @param {string|import('mongoose').Types.ObjectId} userId 
+ * @returns {Promise<{ totalUnread: number, byModule: Record<string, number>, byRoute: Record<string, number> }>}
+ */
+export const getModuleNotificationCounts = async (userId) => {
+  return getModuleUnreadCounts(userId);
+};
 
 /**
- * Retrieve unread notification count grouped by module type and navigational links
- * @param {string|import('mongoose').Types.ObjectId} userId 
- * @returns {Promise<{ totalUnread: number, byType: Record<string, number>, byLink: Record<string, number> }>}
+ * Legacy alias for unread summary
  */
 export const getUnreadSummaryByModule = async (userId) => {
-  const userObjectId = new mongoose.Types.ObjectId(userId);
-
-  const [aggregateResult, totalUnread] = await Promise.all([
-    Notification.aggregate([
-      { $match: { userId: userObjectId, isRead: false } },
-      {
-        $group: {
-          _id: '$type',
-          count: { $sum: 1 },
-          links: { $push: '$link' }
-        }
-      }
-    ]),
-    Notification.countDocuments({ userId: userObjectId, isRead: false })
-  ]);
-
-  const byType = {};
-  const byLink = {};
-
-  for (const group of aggregateResult) {
-    byType[group._id] = group.count;
-    if (Array.isArray(group.links)) {
-      for (const link of group.links) {
-        if (link) {
-          byLink[link] = (byLink[link] || 0) + 1;
-        }
-      }
-    }
-  }
-
-  return {
-    totalUnread,
-    byType,
-    byLink
-  };
+  return getModuleUnreadCounts(userId);
 };

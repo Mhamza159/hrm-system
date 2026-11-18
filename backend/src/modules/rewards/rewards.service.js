@@ -23,6 +23,7 @@ import { Department } from '../../models/department.model.js';
 import { AuditLog } from '../../models/auditLog.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { getIO } from '../../services/socket.service.js';
+import { notify } from '../../services/notify.service.js';
 import { env } from '../../config/env.js';
 
 /**
@@ -310,8 +311,22 @@ export const announceWinner = async (user, awardId, data) => {
   await award.save();
 
   const populated = await Award.findById(award._id)
-    .populate('winnerId', 'name designation avatar departmentId')
+    .populate('winnerId', 'name designation avatar departmentId userId')
     .lean();
+
+  if (populated?.winnerId?.userId) {
+    try {
+      await notify(populated.winnerId.userId, {
+        module: 'rewards',
+        priority: 'high',
+        title: 'Award Conferred!',
+        body: `Congratulations! You have been awarded "${award.title}".`,
+        link: '/rewards/awards'
+      });
+    } catch (notifErr) {
+      console.warn(`[rewards.service] Failed to send award winner notification: ${notifErr.message}`);
+    }
+  }
 
   const io = getIO();
   if (io) {
@@ -394,6 +409,20 @@ export const createKudos = async (user, data) => {
     .populate('senderId', 'name email avatar')
     .populate('receiverId', 'name designation avatar departmentId')
     .lean();
+
+  if (receiver.userId) {
+    try {
+      await notify(receiver.userId, {
+        module: 'rewards',
+        priority: 'normal',
+        title: 'New Appreciation Kudos',
+        body: `${user.name || 'A colleague'} sent you a "${data.badge || 'star'}" recognition badge: "${(data.message || '').slice(0, 80)}"`,
+        link: '/rewards/kudos'
+      });
+    } catch (notifErr) {
+      console.warn(`[rewards.service] Failed to send kudos notification: ${notifErr.message}`);
+    }
+  }
 
   const io = getIO();
   if (io) {

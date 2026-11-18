@@ -23,7 +23,6 @@ import {
   Users,
   Clock,
   Calendar,
-  CalendarDays,
   BadgeDollarSign,
   Shield,
   Settings,
@@ -59,7 +58,6 @@ import { useAuth } from '../../hooks/useAuth.js';
 import { usePermission } from '../../hooks/usePermission.js';
 import { logout } from '../../features/auth/authSlice.js';
 import { useLogoutMutation } from '../../features/auth/authApi.js';
-import { useGetNotificationsQuery } from '../../features/notifications/notificationsApi.js';
 import { useModuleNotificationCounts } from '../../features/notifications/hooks/useModuleNotificationCounts.js';
 import { RoleBadge } from '../common/RoleBadge.jsx';
 import { getUserDisplayName } from '../../lib/formatters.js';
@@ -73,7 +71,7 @@ export function Sidebar({ isOpen = false, onClose }) {
   const location = useLocation();
   const [logoutApi] = useLogoutMutation();
 
-  const { totalUnread, groupCounts, getRouteCount } = useModuleNotificationCounts();
+  const { totalUnread, groupCounts, moduleCounts = {}, getRouteCount } = useModuleNotificationCounts();
   const unreadCount = totalUnread;
 
   const userName = getUserDisplayName(user);
@@ -95,7 +93,7 @@ export function Sidebar({ isOpen = false, onClose }) {
     { type: 'link', name: 'My Profile', path: '/me', icon: User },
     { type: 'link', name: 'Org Chart', path: '/org-chart', icon: Network, permission: 'org.view' },
     { type: 'link', name: 'My Team', path: '/teams/my', icon: UserCheck, permission: 'org.view', managerOnly: true },
-    { type: 'link', name: 'Employees', path: '/employees', icon: Users, permission: 'employee.view', managerOnly: true },
+    { type: 'link', name: 'Employees', path: '/employees', icon: Users, permission: 'employee.view', managerOnly: true, badge: (moduleCounts.employees || 0) > 0 ? moduleCounts.employees : undefined },
     {
       type: 'group',
       name: 'Attendance',
@@ -246,11 +244,11 @@ export function Sidebar({ isOpen = false, onClose }) {
         { name: 'Inquiry Committee', path: '/feedback/committee', permission: 'grievance.committee' }
       ]
     },
-        { type: 'link', name: 'Internal Chat', path: '/chat', icon: MessageSquare, permission: 'chat.access' },
-    { type: 'link', name: 'Attrition Prediction', path: '/attrition', icon: TrendingDown, permission: 'attrition.view' },
-    { type: 'link', name: 'Reports', path: '/reports', icon: BarChart3, permission: 'report.view', managerOnly: true },
-    { type: 'link', name: 'Company Policies', path: '/policies', icon: BookOpen, permission: 'policy.view' },
-    { type: 'link', name: 'Announcements', path: '/announcements', icon: Megaphone, permission: 'announcement.view' },
+        { type: 'link', name: 'Internal Chat', path: '/chat', icon: MessageSquare, permission: 'chat.access', badge: (moduleCounts.chat || 0) > 0 ? moduleCounts.chat : undefined },
+    { type: 'link', name: 'Attrition Prediction', path: '/attrition', icon: TrendingDown, permission: 'attrition.view', badge: (moduleCounts.attrition || 0) > 0 ? moduleCounts.attrition : undefined },
+    { type: 'link', name: 'Reports', path: '/reports', icon: BarChart3, permission: 'report.view', managerOnly: true, badge: (moduleCounts.reports || 0) > 0 ? moduleCounts.reports : undefined },
+    { type: 'link', name: 'Company Policies', path: '/policies', icon: BookOpen, permission: 'policy.view', badge: (moduleCounts.policies || 0) > 0 ? moduleCounts.policies : undefined },
+    { type: 'link', name: 'Announcements', path: '/announcements', icon: Megaphone, permission: 'announcement.view', badge: (moduleCounts.announcements || 0) > 0 ? moduleCounts.announcements : undefined },
     { type: 'link', name: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount > 0 ? unreadCount : undefined },
     { type: 'link', name: 'Login History', path: '/login-history', icon: History, permission: 'login.history' }
   ];
