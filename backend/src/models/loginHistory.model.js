@@ -53,6 +53,12 @@ const loginHistorySchema = new mongoose.Schema(
       trim: true
     },
 
+    avatar: {
+      type: String,
+      default: null,
+      trim: true
+    },
+
     // Email address used in authentication attempt
     email: {
       type: String,

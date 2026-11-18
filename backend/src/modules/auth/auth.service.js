@@ -49,6 +49,7 @@ async function recordLoginHistory({
     let employeeCode = null;
     let department = null;
     let role = null;
+    let avatar = null;
 
     let targetUser = userDoc;
     if (!targetUser && userId) {
@@ -88,9 +89,11 @@ async function recordLoginHistory({
         employeeName = employee.name;
         employeeCode = employee.employeeCode;
         department = employee.departmentId?.name || employee.department?.name || null;
+        avatar = employee.avatar || targetUser.avatar || null;
       } else {
         const username = targetUser.email.split('@')[0];
         employeeName = username.charAt(0).toUpperCase() + username.slice(1);
+        avatar = targetUser.avatar || null;
       }
     } else {
       employeeName = 'Unregistered Account';
@@ -103,6 +106,7 @@ async function recordLoginHistory({
       employeeCode,
       role,
       department,
+      avatar,
       email: (email || targetUser?.email || '').toLowerCase().trim(),
       ipAddress: normalizedIp,
       location: 'Local / Private Network',
@@ -125,7 +129,7 @@ async function recordLoginHistory({
  */
 async function enrichLoginRecord(doc) {
   if (!doc) return doc;
-  if (doc.role && doc.employeeName && doc.employeeName !== 'Unregistered Account' && doc.department) {
+  if (doc.role && doc.employeeName && doc.employeeName !== 'Unregistered Account' && doc.department && doc.avatar) {
     return doc;
   }
   if (!doc.email && !doc.userId) return doc;
@@ -159,6 +163,8 @@ async function enrichLoginRecord(doc) {
       employee = await Employee.findOne({ email: targetUser.email.toLowerCase().trim() }).populate('departmentId');
     }
 
+    const avatar = employee?.avatar || targetUser.avatar || doc.avatar || null;
+
     return {
       ...doc,
       userId: doc.userId || targetUser._id,
@@ -166,7 +172,8 @@ async function enrichLoginRecord(doc) {
       employeeName: employee?.name || (doc.employeeName && doc.employeeName !== 'Unregistered Account' ? doc.employeeName : targetUser.email.split('@')[0]),
       employeeCode: employee?.employeeCode || doc.employeeCode || null,
       department: employee?.departmentId?.name || employee?.department?.name || doc.department || null,
-      role: role || doc.role || null
+      role: role || doc.role || null,
+      avatar
     };
   } catch {
     return doc;

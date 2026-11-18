@@ -25,6 +25,7 @@ import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { DataTable } from '../../../components/common/DataTable.jsx';
 import { StatusBadge } from '../../../components/common/StatusBadge.jsx';
 import { RoleBadge } from '../../../components/common/RoleBadge.jsx';
+import { PersonAvatar } from '../../../components/common/Person.jsx';
 import { useGetLoginHistoryQuery, useGetLoginHistoryStatsQuery } from '../authApi.js';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { usePermission } from '../../../hooks/usePermission.js';
@@ -197,13 +198,10 @@ export default function LoginHistoryPage() {
             : row.email
             ? row.email.split('@')[0]
             : 'Unregistered Account';
-        const initial = (resolvedName || 'U').charAt(0).toUpperCase();
 
         return (
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-xs font-bold text-[#00C471] shrink-0">
-              {initial}
-            </div>
+            <PersonAvatar name={resolvedName} src={row.avatar} size="sm" />
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="font-semibold text-slate-800 dark:text-slate-100 text-xs truncate">

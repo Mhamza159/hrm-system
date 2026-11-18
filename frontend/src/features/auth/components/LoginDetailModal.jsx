@@ -24,6 +24,7 @@ import {
 import { useGetLoginHistoryDetailQuery } from '../authApi.js';
 import { StatusBadge } from '../../../components/common/StatusBadge.jsx';
 import { RoleBadge } from '../../../components/common/RoleBadge.jsx';
+import { PersonAvatar } from '../../../components/common/Person.jsx';
 
 export function LoginDetailModal({ isOpen, onClose, recordId, initialRecord = null }) {
   const [copiedIp, setCopiedIp] = useState(false);
@@ -185,26 +186,39 @@ export function LoginDetailModal({ isOpen, onClose, recordId, initialRecord = nu
                   <User className="w-3.5 h-3.5" />
                   <span>Account Identity</span>
                 </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <span className="text-[11px] text-slate-400 block">Employee Name</span>
-                    <span className="font-semibold text-slate-900 dark:text-white">
-                      {record?.employeeName && record.employeeName !== 'Unregistered Account' && record.employeeName !== 'Unregistered / Unknown'
+                <div className="flex items-center gap-3.5 pb-3 border-b border-slate-200/60 dark:border-[#1A3125]/60">
+                  <PersonAvatar
+                    name={
+                      record?.employeeName && record.employeeName !== 'Unregistered Account' && record.employeeName !== 'Unregistered / Unknown'
                         ? record.employeeName
-                        : (record?.email ? record.email.split('@')[0] : 'Unregistered / Unknown')}
-                    </span>
-                    {record?.employeeCode && (
-                      <span className="ml-2 text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-[#1A3125] text-slate-600 dark:text-slate-300">
-                        {record.employeeCode}
+                        : record?.email
+                        ? record.email.split('@')[0]
+                        : 'User'
+                    }
+                    src={record?.avatar}
+                    size="lg"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-slate-900 dark:text-white text-sm">
+                        {record?.employeeName && record.employeeName !== 'Unregistered Account' && record.employeeName !== 'Unregistered / Unknown'
+                          ? record.employeeName
+                          : record?.email
+                          ? record.email.split('@')[0]
+                          : 'Unregistered / Unknown'}
                       </span>
-                    )}
-                  </div>
-                  <div>
-                    <span className="text-[11px] text-slate-400 block">Email Identifier</span>
-                    <span className="font-mono text-slate-900 dark:text-white break-all">
+                      {record?.employeeCode && (
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-[#1A3125] text-slate-600 dark:text-slate-300">
+                          {record.employeeCode}
+                        </span>
+                      )}
+                    </div>
+                    <span className="font-mono text-slate-500 dark:text-slate-400 text-xs block truncate mt-0.5">
                       {record?.email || '—'}
                     </span>
                   </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   <div>
                     <span className="text-[11px] text-slate-400 block">Assigned Role</span>
                     {record?.role && record.role !== 'None' ? (
