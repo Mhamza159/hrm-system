@@ -49,6 +49,20 @@ const designationSchema = new mongoose.Schema(
       type: Boolean,
       default: true
     },
+    isArchived: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+    archivedAt: {
+      type: Date,
+      default: null
+    },
+    archivedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    },
     isDeleted: {
       type: Boolean,
       default: false
@@ -71,5 +85,8 @@ designationSchema.index({ code: 1, departmentId: 1, isDeleted: 1 });
 designationSchema.index({ departmentId: 1, isDeleted: 1 });
 designationSchema.index({ grade: 1, isDeleted: 1 });
 designationSchema.index({ isActive: 1, isDeleted: 1 });
+designationSchema.index({ isArchived: 1, isDeleted: 1 });
+designationSchema.index({ departmentId: 1, isArchived: 1 });
+designationSchema.index({ code: 1, departmentId: 1, isArchived: 1 });
 
 export const Designation = mongoose.model('Designation', designationSchema);

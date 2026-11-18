@@ -831,10 +831,173 @@ export const deleteDepartment = async (id, actor) => {
 };
 
 /**
+ * Retrieve comprehensive designation analytics & workforce distribution metrics
+ * @returns {Object} Live workforce analytics, distributions, and grade/department breakdowns
+ */
+export const getDesignationAnalytics = async () => {
+  const [totalDesignations, activeDesignations, archivedDesignations] = await Promise.all([
+    Designation.countDocuments({ isDeleted: false }),
+    Designation.countDocuments({ isArchived: { $ne: true }, isDeleted: false }),
+    Designation.countDocuments({ isArchived: true, isDeleted: false })
+  ]);
+
+  // Retrieve active designations with populated department info
+  const activeDesigs = await Designation.find({ isArchived: { $ne: true }, isDeleted: false })
+    .select('_id title code grade departmentId isActive createdAt')
+    .populate('departmentId', 'name code')
+    .lean();
+
+  const activeIds = activeDesigs.map((d) => d._id);
+
+  // Group employee counts by designation
+  const employeeCounts = await Employee.aggregate([
+    { $match: { designationId: { $in: activeIds }, isDeleted: false } },
+    { $group: { _id: '$designationId', count: { $sum: 1 } } }
+  ]);
+
+  const countMap = new Map();
+  employeeCounts.forEach((c) => countMap.set(c._id.toString(), c.count));
+
+  let totalAssignedEmployees = 0;
+  let staffedDesignations = 0;
+  let emptyDesignations = 0;
+  const uniqueDeptIds = new Set();
+
+  const gradeCounts = {
+    Junior: { count: 0, headcount: 0 },
+    Mid: { count: 0, headcount: 0 },
+    Senior: { count: 0, headcount: 0 },
+    Lead: { count: 0, headcount: 0 },
+    Executive: { count: 0, headcount: 0 }
+  };
+
+  const departmentMap = new Map();
+
+  const designationBreakdown = activeDesigs.map((desig) => {
+    const headcount = countMap.get(desig._id.toString()) || 0;
+    totalAssignedEmployees += headcount;
+
+    if (headcount > 0) {
+      staffedDesignations += 1;
+    } else {
+      emptyDesignations += 1;
+    }
+
+    if (desig.departmentId?._id) {
+      uniqueDeptIds.add(desig.departmentId._id.toString());
+    }
+
+    // Grade breakdown
+    if (gradeCounts[desig.grade]) {
+      gradeCounts[desig.grade].count += 1;
+      gradeCounts[desig.grade].headcount += headcount;
+    }
+
+    // Department grouping
+    const deptIdStr = desig.departmentId?._id ? desig.departmentId._id.toString() : 'unassigned';
+    const deptName = desig.departmentId?.name || 'Unassigned';
+    if (!departmentMap.has(deptIdStr)) {
+      departmentMap.set(deptIdStr, {
+        departmentId: desig.departmentId?._id || null,
+        name: deptName,
+        code: desig.departmentId?.code || '—',
+        designationCount: 0,
+        headcount: 0
+      });
+    }
+    const deptEntry = departmentMap.get(deptIdStr);
+    deptEntry.designationCount += 1;
+    deptEntry.headcount += headcount;
+
+    return {
+      _id: desig._id,
+      title: desig.title,
+      code: desig.code,
+      grade: desig.grade,
+      departmentId: desig.departmentId?._id || null,
+      departmentName: desig.departmentId?.name || 'Unassigned',
+      departmentCode: desig.departmentId?.code || '—',
+      headcount,
+      isActive: desig.isActive
+    };
+  });
+
+  // Attach percentage of workforce to each designation
+  const formattedBreakdown = designationBreakdown.map((item) => ({
+    ...item,
+    percentage: totalAssignedEmployees > 0 ? Number(((item.headcount / totalAssignedEmployees) * 100).toFixed(1)) : 0
+  })).sort((a, b) => b.headcount - a.headcount);
+
+  const topDesignation = formattedBreakdown.length > 0 && formattedBreakdown[0].headcount > 0 ? formattedBreakdown[0] : null;
+  const staffedList = formattedBreakdown.filter((d) => d.headcount > 0);
+  const lowestDesignation = staffedList.length > 0 ? staffedList[staffedList.length - 1] : null;
+
+  // Grade breakdown array
+  const gradeBreakdown = Object.entries(gradeCounts).map(([grade, data]) => ({
+    grade,
+    count: data.count,
+    headcount: data.headcount,
+    percentage: totalAssignedEmployees > 0 ? Number(((data.headcount / totalAssignedEmployees) * 100).toFixed(1)) : 0
+  }));
+
+  // Department distribution array
+  const departmentDistribution = Array.from(departmentMap.values()).map((dept) => ({
+    ...dept,
+    percentage: totalAssignedEmployees > 0 ? Number(((dept.headcount / totalAssignedEmployees) * 100).toFixed(1)) : 0
+  })).sort((a, b) => b.headcount - a.headcount);
+
+  return {
+    summary: {
+      totalDesignations,
+      activeDesignations,
+      archivedDesignations,
+      totalAssignedEmployees,
+      staffedDesignations,
+      emptyDesignations,
+      uniqueDepartmentsCount: uniqueDeptIds.size
+    },
+    gradeBreakdown,
+    departmentDistribution,
+    designationBreakdown: formattedBreakdown,
+    topDesignation,
+    lowestDesignation
+  };
+};
+
+/**
+ * Retrieve 7-metric KPI statistics for designation dashboard cards
+ * @returns {Object} Total, active, archived, assigned staff, staffed, empty, and departments count
+ */
+export const getDesignationStats = async () => {
+  const analytics = await getDesignationAnalytics();
+  return {
+    total: analytics.summary.totalDesignations,
+    active: analytics.summary.activeDesignations,
+    archived: analytics.summary.archivedDesignations,
+    totalAssignedEmployees: analytics.summary.totalAssignedEmployees,
+    withEmployees: analytics.summary.staffedDesignations,
+    withoutEmployees: analytics.summary.emptyDesignations,
+    departmentsCount: analytics.summary.uniqueDepartmentsCount
+  };
+};
+
+/**
  * 4.3: Retrieve list of designations
  */
-export const getAllDesignations = async ({ departmentId, grade, isActive, page, limit, search = '' } = {}) => {
+export const getAllDesignations = async ({ departmentId, grade, isActive, page, limit, search = '', isArchived } = {}) => {
+  // Idempotent background normalization: ensure legacy documents have isArchived: false
+  Designation.updateMany({ isArchived: { $exists: false } }, { $set: { isArchived: false } }).catch(() => {});
+
   const query = { isDeleted: false };
+
+  // By default, only retrieve active (non-archived) designations
+  if (isArchived === 'true' || isArchived === true) {
+    query.isArchived = true;
+  } else if (isArchived === 'all') {
+    // allow all
+  } else {
+    query.isArchived = { $ne: true };
+  }
 
   if (departmentId) {
     query.departmentId = departmentId;
@@ -902,19 +1065,113 @@ export const getAllDesignations = async ({ departmentId, grade, isActive, page, 
 };
 
 /**
- * 4.3: Retrieve single designation by ID
+ * Retrieve paginated archived designations with archive actor and headcount
+ */
+export const getArchivedDesignations = async ({
+  search = '',
+  departmentId = null,
+  grade = null,
+  page = 1,
+  limit = 10,
+  sortBy = 'archivedAt',
+  sortOrder = 'desc'
+} = {}) => {
+  const query = { isArchived: true, isDeleted: false };
+
+  if (departmentId) {
+    query.departmentId = departmentId;
+  }
+  if (grade) {
+    query.grade = grade;
+  }
+  if (search && typeof search === 'string' && search.trim()) {
+    const term = escapeRegex(search.trim());
+    if (term) {
+      query.$or = [
+        { title: { $regex: term, $options: 'i' } },
+        { code: { $regex: term, $options: 'i' } }
+      ];
+    }
+  }
+
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const limitNum = Math.max(1, parseInt(limit, 10) || 10);
+  const skip = (pageNum - 1) * limitNum;
+
+  const sortObj = {};
+  const allowedSortFields = ['title', 'code', 'grade', 'archivedAt', 'createdAt'];
+  const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'archivedAt';
+  sortObj[sortField] = sortOrder === 'asc' ? 1 : -1;
+
+  const [total, designations] = await Promise.all([
+    Designation.countDocuments(query),
+    Designation.find(query)
+      .populate('departmentId', 'name code')
+      .populate('archivedBy', 'email name')
+      .sort(sortObj)
+      .skip(skip)
+      .limit(limitNum)
+      .lean()
+  ]);
+
+  const desigIds = designations.map((d) => d._id);
+  const employeeCounts = await Employee.aggregate([
+    { $match: { designationId: { $in: desigIds }, isDeleted: false } },
+    { $group: { _id: '$designationId', count: { $sum: 1 } } }
+  ]);
+
+  const countMap = new Map();
+  employeeCounts.forEach((c) => countMap.set(c._id.toString(), c.count));
+
+  const enriched = designations.map((d) => ({
+    ...d,
+    archivedByName: d.archivedBy?.name || d.archivedBy?.email || 'Administrator',
+    headcount: countMap.get(d._id.toString()) || 0
+  }));
+
+  return {
+    docs: enriched,
+    designations: enriched,
+    total,
+    page: pageNum,
+    limit: limitNum,
+    totalPages: Math.ceil(total / limitNum) || 1
+  };
+};
+
+/**
+ * 4.3: Retrieve single designation by ID enriched with assigned staff roster
  */
 export const getDesignationById = async (id) => {
   const designation = await Designation.findOne({ _id: id, isDeleted: false })
-    .populate('departmentId', 'name code')
+    .populate('departmentId', 'name code description')
+    .populate('archivedBy', 'name email')
     .lean();
 
   if (!designation) {
     throw new ApiError(404, 'Designation not found');
   }
 
-  const headcount = await Employee.countDocuments({ designationId: id, isDeleted: false });
-  return { ...designation, headcount };
+  const employees = await Employee.find({ designationId: id, isDeleted: false })
+    .select('name employeeCode email departmentId status joiningDate avatar')
+    .populate('departmentId', 'name code')
+    .sort({ name: 1 })
+    .lean();
+
+  return {
+    ...designation,
+    headcount: employees.length,
+    employees: employees.map((emp) => ({
+      _id: emp._id,
+      name: emp.name,
+      employeeCode: emp.employeeCode || '—',
+      email: emp.email,
+      departmentName: emp.departmentId?.name || 'Unassigned',
+      status: emp.status || 'Active',
+      joiningDate: emp.joiningDate,
+      avatar: emp.avatar || null
+    }))
+  };
 };
 
 /**
@@ -1056,6 +1313,126 @@ export const deleteDesignation = async (id, actor) => {
   });
 
   return { message: `Designation '${designation.title}' successfully deleted` };
+};
+
+/**
+ * Move designation to archive (cold storage)
+ */
+export const archiveDesignation = async (id, actor) => {
+  const designation = await Designation.findOne({ _id: id, isDeleted: false });
+  if (!designation) {
+    throw new ApiError(404, 'Designation not found');
+  }
+
+  if (designation.isArchived) {
+    throw new ApiError(400, `Designation '${designation.title}' is already archived`);
+  }
+
+  const beforeState = designation.toObject();
+  designation.isArchived = true;
+  designation.archivedAt = new Date();
+  designation.archivedBy = actor?._id || null;
+  await designation.save();
+
+  await recordAuditLog({
+    userId: actor?._id,
+    actor,
+    action: 'designation.archive',
+    entity: 'Designation',
+    entityId: designation._id,
+    before: beforeState,
+    after: designation.toObject(),
+    ip: actor?.ip,
+    details: { title: designation.title, code: designation.code }
+  });
+
+  return designation;
+};
+
+/**
+ * Restore archived designation to active directory
+ */
+export const restoreDesignation = async (id, actor) => {
+  const designation = await Designation.findOne({ _id: id, isDeleted: false });
+  if (!designation) {
+    throw new ApiError(404, 'Designation not found');
+  }
+
+  if (!designation.isArchived) {
+    throw new ApiError(400, `Designation '${designation.title}' is not archived`);
+  }
+
+  // Active Code Uniqueness Guard within department
+  const existingActive = await Designation.findOne({
+    _id: { $ne: id },
+    code: designation.code,
+    departmentId: designation.departmentId,
+    isArchived: { $ne: true },
+    isDeleted: false
+  });
+  if (existingActive) {
+    throw new ApiError(
+      400,
+      `Cannot restore designation: An active designation with code '${designation.code}' already exists in this department.`
+    );
+  }
+
+  const beforeState = designation.toObject();
+  designation.isArchived = false;
+  designation.archivedAt = null;
+  designation.archivedBy = null;
+  designation.isActive = true;
+  await designation.save();
+
+  await recordAuditLog({
+    userId: actor?._id,
+    actor,
+    action: 'designation.restore',
+    entity: 'Designation',
+    entityId: designation._id,
+    before: beforeState,
+    after: designation.toObject(),
+    ip: actor?.ip,
+    details: { title: designation.title, code: designation.code }
+  });
+
+  return designation;
+};
+
+/**
+ * Permanently purge designation from database
+ * MANDATORY GUARD: A designation must NOT be permanently deleted as long as one or more employees are assigned to it.
+ */
+export const permanentDeleteDesignation = async (id, actor) => {
+  const designation = await Designation.findById(id);
+  if (!designation || designation.isDeleted) {
+    throw new ApiError(404, 'Designation not found');
+  }
+
+  // CRITICAL MANDATORY BUSINESS RULE: Check employee assignment
+  const assignedCount = await Employee.countDocuments({ designationId: id });
+  if (assignedCount > 0) {
+    throw new ApiError(
+      400,
+      `This designation cannot be permanently deleted because ${assignedCount} employee(s) are still assigned to it. Please reassign all employees to another designation before proceeding.`
+    );
+  }
+
+  const beforeState = designation.toObject();
+  await Designation.deleteOne({ _id: id });
+
+  await recordAuditLog({
+    userId: actor?._id,
+    actor,
+    action: 'designation.permanent_delete',
+    entity: 'Designation',
+    entityId: id,
+    before: beforeState,
+    ip: actor?.ip,
+    details: { title: designation.title, code: designation.code }
+  });
+
+  return { message: `Designation '${designation.title}' permanently deleted.` };
 };
 
 /**

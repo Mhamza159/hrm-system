@@ -924,14 +924,14 @@ Plans:
 
 Plans:
 
-- [ ] **Plan 26-01: Backend Schema Expansion, Archival Lifecycle & Cross-Module Assignment Guard** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-01-PLAN.md`)
-- [ ] **Plan 26-02: Backend Analytics Aggregation, KPI Statistics & Single Designation Roster Enriched API** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-02-PLAN.md`)
-- [ ] **Plan 26-03: Dashboard Analytics, 7 KPI Summary Cards & Visual Distribution Charts** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-03-PLAN.md`)
-- [ ] **Plan 26-04: Designation Directory Overhaul, Dual View Switcher (Table & Card Grid) & Multi-Dimensional Filtering** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-04-PLAN.md`)
-- [ ] **Plan 26-05: Redesigned Create & Edit Modal with Department Selector & Archival Safeguards** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-05-PLAN.md`)
-- [ ] **Plan 26-06: Deep Inspection Details Modal with Assigned Staff Roster & Search** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-06-PLAN.md`)
-- [ ] **Plan 26-07: Archive Management Console, Revert/Restore & Permanent Delete with Mandatory Employee Guard** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-07-PLAN.md`)
-- [ ] **Plan 26-08: Cross-Module Integration Audit & Comprehensive End-to-End Vitest Test Suite** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-08-PLAN.md`)
+- [x] **Plan 26-01: Backend Schema Expansion, Archival Lifecycle & Cross-Module Assignment Guard** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-01-PLAN.md`)
+- [x] **Plan 26-02: Backend Analytics Aggregation, KPI Statistics & Single Designation Roster Enriched API** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-02-PLAN.md`)
+- [x] **Plan 26-03: Dashboard Analytics, 7 KPI Summary Cards & Visual Distribution Charts** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-03-PLAN.md`)
+- [x] **Plan 26-04: Designation Directory Overhaul, Dual View Switcher (Table & Card Grid) & Multi-Dimensional Filtering** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-04-PLAN.md`)
+- [x] **Plan 26-05: Redesigned Create & Edit Modal with Department Selector & Archival Safeguards** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-05-PLAN.md`)
+- [x] **Plan 26-06: Deep Inspection Details Modal with Assigned Staff Roster & Search** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-06-PLAN.md`)
+- [x] **Plan 26-07: Archive Management Console, Revert/Restore & Permanent Delete with Mandatory Employee Guard** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-07-PLAN.md`)
+- [x] **Plan 26-08: Cross-Module Integration Audit & Comprehensive End-to-End Vitest Test Suite** (`.planning/phases/26-designation-module-complete-ui-overhaul-system-wide-integration-audit-rbac-pbac-compliance-analytics-error-fixing/26-08-PLAN.md`)
 
 ---
 

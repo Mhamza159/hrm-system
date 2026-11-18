@@ -195,13 +195,42 @@ export const departmentsApi = baseApi.injectEndpoints({
       providesTags: (result, error, id) => [{ type: 'Designations', id }]
     }),
 
+    getDesignationStats: builder.query({
+      query: () => '/designations/stats',
+      providesTags: ['DesignationStats']
+    }),
+
+    getDesignationAnalytics: builder.query({
+      query: () => '/designations/analytics',
+      providesTags: ['DesignationAnalytics', 'DesignationStats']
+    }),
+
+    getArchivedDesignations: builder.query({
+      query: (params) => ({
+        url: '/designations/archived',
+        params
+      }),
+      providesTags: (result) =>
+        result?.data?.docs
+          ? [
+              ...result.data.docs.map(({ _id }) => ({ type: 'ArchivedDesignations', id: _id })),
+              { type: 'ArchivedDesignations', id: 'LIST' }
+            ]
+          : [{ type: 'ArchivedDesignations', id: 'LIST' }]
+    }),
+
     createDesignation: builder.mutation({
       query: (data) => ({
         url: '/designations',
         method: 'POST',
         body: data
       }),
-      invalidatesTags: [{ type: 'Designations', id: 'LIST' }, 'OrgChart']
+      invalidatesTags: [
+        { type: 'Designations', id: 'LIST' },
+        'DesignationStats',
+        'DesignationAnalytics',
+        'OrgChart'
+      ]
     }),
 
     updateDesignation: builder.mutation({
@@ -213,6 +242,50 @@ export const departmentsApi = baseApi.injectEndpoints({
       invalidatesTags: (result, error, { id }) => [
         { type: 'Designations', id },
         { type: 'Designations', id: 'LIST' },
+        'DesignationStats',
+        'DesignationAnalytics',
+        'OrgChart'
+      ]
+    }),
+
+    archiveDesignation: builder.mutation({
+      query: (id) => ({
+        url: `/designations/${id}/archive`,
+        method: 'PATCH'
+      }),
+      invalidatesTags: [
+        { type: 'Designations', id: 'LIST' },
+        { type: 'ArchivedDesignations', id: 'LIST' },
+        'DesignationStats',
+        'DesignationAnalytics',
+        'OrgChart'
+      ]
+    }),
+
+    restoreDesignation: builder.mutation({
+      query: (id) => ({
+        url: `/designations/${id}/restore`,
+        method: 'PATCH'
+      }),
+      invalidatesTags: [
+        { type: 'Designations', id: 'LIST' },
+        { type: 'ArchivedDesignations', id: 'LIST' },
+        'DesignationStats',
+        'DesignationAnalytics',
+        'OrgChart'
+      ]
+    }),
+
+    permanentDeleteDesignation: builder.mutation({
+      query: (id) => ({
+        url: `/designations/${id}/permanent`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: [
+        { type: 'Designations', id: 'LIST' },
+        { type: 'ArchivedDesignations', id: 'LIST' },
+        'DesignationStats',
+        'DesignationAnalytics',
         'OrgChart'
       ]
     }),
@@ -222,7 +295,12 @@ export const departmentsApi = baseApi.injectEndpoints({
         url: `/designations/${id}`,
         method: 'DELETE'
       }),
-      invalidatesTags: [{ type: 'Designations', id: 'LIST' }, 'OrgChart']
+      invalidatesTags: [
+        { type: 'Designations', id: 'LIST' },
+        'DesignationStats',
+        'DesignationAnalytics',
+        'OrgChart'
+      ]
     }),
 
     // 4.4: Shifts Endpoints
@@ -304,8 +382,14 @@ export const {
   useDeleteDepartmentMutation,
   useGetDesignationsQuery,
   useGetDesignationByIdQuery,
+  useGetDesignationStatsQuery,
+  useGetDesignationAnalyticsQuery,
+  useGetArchivedDesignationsQuery,
   useCreateDesignationMutation,
   useUpdateDesignationMutation,
+  useArchiveDesignationMutation,
+  useRestoreDesignationMutation,
+  usePermanentDeleteDesignationMutation,
   useDeleteDesignationMutation,
   useGetShiftsQuery,
   useGetShiftByIdQuery,

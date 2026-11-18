@@ -288,6 +288,104 @@ export const deleteDesignation = asyncHandler(async (req, res) => {
 });
 
 /**
+ * GET /api/v1/designations/stats
+ * Retrieve 7-metric KPI statistics for designation dashboard cards
+ */
+export const getDesignationStats = asyncHandler(async (req, res) => {
+  const stats = await departmentService.getDesignationStats();
+  return res.status(200).json(
+    apiResponse(200, stats, 'Designation statistics retrieved successfully.')
+  );
+});
+
+/**
+ * GET /api/v1/designations/analytics
+ * Retrieve rich workforce analytics & designation distribution metrics for dashboard visualizations
+ */
+export const getDesignationAnalytics = asyncHandler(async (req, res) => {
+  const analytics = await departmentService.getDesignationAnalytics();
+  return res.status(200).json(
+    apiResponse(200, analytics, 'Designation analytics retrieved successfully.')
+  );
+});
+
+/**
+ * GET /api/v1/designations/archived
+ * Retrieve paginated archived designations with archive actor and headcount
+ */
+export const getArchivedDesignations = asyncHandler(async (req, res) => {
+  const { search, departmentId, grade, page, limit, sortBy, sortOrder } = req.query;
+  const result = await departmentService.getArchivedDesignations({
+    search,
+    departmentId,
+    grade,
+    page,
+    limit,
+    sortBy,
+    sortOrder
+  });
+  return res.status(200).json(
+    apiResponse(200, result, 'Archived designations retrieved successfully.', {
+      page: result.page,
+      limit: result.limit,
+      total: result.total,
+      totalPages: result.totalPages
+    })
+  );
+});
+
+/**
+ * PATCH /api/v1/designations/:id/archive
+ * Move designation to archive (cold storage)
+ */
+export const archiveDesignation = asyncHandler(async (req, res) => {
+  const actor = {
+    _id: req.user?._id,
+    email: req.user?.email,
+    roles: req.user?.roles,
+    ip: req.ip
+  };
+  const designation = await departmentService.archiveDesignation(req.params.id, actor);
+  return res.status(200).json(
+    apiResponse(200, designation, `Designation '${designation.title}' successfully archived.`)
+  );
+});
+
+/**
+ * PATCH /api/v1/designations/:id/restore
+ * Restore archived designation to active directory
+ */
+export const restoreDesignation = asyncHandler(async (req, res) => {
+  const actor = {
+    _id: req.user?._id,
+    email: req.user?.email,
+    roles: req.user?.roles,
+    ip: req.ip
+  };
+  const designation = await departmentService.restoreDesignation(req.params.id, actor);
+  return res.status(200).json(
+    apiResponse(200, designation, `Designation '${designation.title}' successfully restored.`)
+  );
+});
+
+/**
+ * DELETE /api/v1/designations/:id/permanent
+ * Permanently purge designation (guarded against assigned employees)
+ */
+export const permanentDeleteDesignation = asyncHandler(async (req, res) => {
+  const actor = {
+    _id: req.user?._id,
+    email: req.user?.email,
+    roles: req.user?.roles,
+    ip: req.ip
+  };
+  const result = await departmentService.permanentDeleteDesignation(req.params.id, actor);
+  return res.status(200).json(
+    apiResponse(200, null, result.message)
+  );
+});
+
+/**
  * GET /api/v1/shifts
  * 4.4: Retrieve list of shifts
  */

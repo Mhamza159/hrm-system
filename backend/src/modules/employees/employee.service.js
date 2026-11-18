@@ -142,6 +142,17 @@ export const createEmployee = async (payload, actor) => {
     }
   }
 
+  // Designation validity & archival guard
+  if (payload.designationId) {
+    const desig = await Designation.findOne({ _id: payload.designationId, isDeleted: false });
+    if (!desig) {
+      throw new ApiError(404, 'Specified designation does not exist');
+    }
+    if (desig.isArchived) {
+      throw new ApiError(400, `Cannot assign employee to designation '${desig.title}' because it is archived.`);
+    }
+  }
+
   // 3. Encrypt sensitive fields
   const employeeData = { ...payload };
   if (employeeData.cnic) {
@@ -538,6 +549,17 @@ export const updateEmployee = async (id, payload, actor) => {
     }
     if (dept.isArchived) {
       throw new ApiError(400, `Cannot assign employee to department '${dept.name}' because it is archived.`);
+    }
+  }
+
+  // Designation validity & archival guard
+  if (payload.designationId && String(payload.designationId) !== String(employee.designationId)) {
+    const desig = await Designation.findOne({ _id: payload.designationId, isDeleted: false });
+    if (!desig) {
+      throw new ApiError(404, 'Specified designation does not exist');
+    }
+    if (desig.isArchived) {
+      throw new ApiError(400, `Cannot assign employee to designation '${desig.title}' because it is archived.`);
     }
   }
 
@@ -1026,6 +1048,28 @@ export const recordJobHistory = async (employeeId, payload, actor) => {
   const employee = await Employee.findOne({ _id: employeeId, isDeleted: false });
   if (!employee) {
     throw new ApiError(404, 'Employee record not found');
+  }
+
+  // Department validity & archival guard on promotion/transfer
+  if (payload.newDepartmentId) {
+    const dept = await Department.findOne({ _id: payload.newDepartmentId, isDeleted: false });
+    if (!dept) {
+      throw new ApiError(404, 'Specified destination department does not exist');
+    }
+    if (dept.isArchived) {
+      throw new ApiError(400, `Cannot transfer/promote employee to department '${dept.name}' because it is archived.`);
+    }
+  }
+
+  // Designation validity & archival guard on promotion/transfer
+  if (payload.newDesignationId) {
+    const desig = await Designation.findOne({ _id: payload.newDesignationId, isDeleted: false });
+    if (!desig) {
+      throw new ApiError(404, 'Specified destination designation does not exist');
+    }
+    if (desig.isArchived) {
+      throw new ApiError(400, `Cannot promote/assign employee to designation '${desig.title}' because it is archived.`);
+    }
   }
 
   const history = await EmployeeHistory.create({

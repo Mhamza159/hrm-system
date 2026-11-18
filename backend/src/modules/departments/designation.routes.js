@@ -32,6 +32,24 @@ router.get(
 );
 
 router.get(
+  '/stats',
+  checkPermission('org.view'),
+  departmentController.getDesignationStats
+);
+
+router.get(
+  '/analytics',
+  checkPermission('org.view'),
+  departmentController.getDesignationAnalytics
+);
+
+router.get(
+  '/archived',
+  checkPermission('org.view'),
+  departmentController.getArchivedDesignations
+);
+
+router.get(
   '/:id',
   checkPermission('org.view'),
   departmentController.getDesignationById
@@ -45,10 +63,28 @@ router.post(
 );
 
 router.patch(
+  '/:id/archive',
+  checkPermission('org.manage'),
+  departmentController.archiveDesignation
+);
+
+router.patch(
+  '/:id/restore',
+  checkPermission('org.manage'),
+  departmentController.restoreDesignation
+);
+
+router.patch(
   '/:id',
   checkPermission('org.manage'),
   validate(updateDesignationSchema),
   departmentController.updateDesignation
+);
+
+router.delete(
+  '/:id/permanent',
+  checkPermission('org.manage'),
+  departmentController.permanentDeleteDesignation
 );
 
 router.delete(
