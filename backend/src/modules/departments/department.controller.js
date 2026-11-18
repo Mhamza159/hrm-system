@@ -390,10 +390,49 @@ export const permanentDeleteDesignation = asyncHandler(async (req, res) => {
  * 4.4: Retrieve list of shifts
  */
 export const getShifts = asyncHandler(async (req, res) => {
-  const { type, isActive, isCrossMidnight, page, limit, search } = req.query;
-  const result = await departmentService.getAllShifts({ type, isActive, isCrossMidnight, page, limit, search });
+  const { type, isActive, isCrossMidnight, departmentId, page, limit, search, isArchived } = req.query;
+  const result = await departmentService.getAllShifts({ type, isActive, isCrossMidnight, departmentId, page, limit, search, isArchived });
   return res.status(200).json(
     apiResponse(200, result.shifts, 'Shifts retrieved successfully.', result.pagination)
+  );
+});
+
+/**
+ * GET /api/v1/shifts/archived
+ * 4.4: Retrieve list of archived shifts
+ */
+export const getArchivedShifts = asyncHandler(async (req, res) => {
+  const { search, type, departmentId, page, limit } = req.query;
+  const result = await departmentService.getArchivedShifts({ search, type, departmentId, page, limit });
+  return res.status(200).json(
+    apiResponse(200, result.shifts, 'Archived shifts retrieved successfully.', {
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages
+    })
+  );
+});
+
+/**
+ * GET /api/v1/shifts/stats
+ * 4.4: Retrieve live KPI stats for shifts
+ */
+export const getShiftStats = asyncHandler(async (req, res) => {
+  const stats = await departmentService.getShiftStats();
+  return res.status(200).json(
+    apiResponse(200, stats, 'Shift statistics retrieved successfully.')
+  );
+});
+
+/**
+ * GET /api/v1/shifts/analytics
+ * 4.4: Retrieve shift analytics and workforce distributions
+ */
+export const getShiftAnalytics = asyncHandler(async (req, res) => {
+  const analytics = await departmentService.getShiftAnalytics();
+  return res.status(200).json(
+    apiResponse(200, analytics, 'Shift analytics retrieved successfully.')
   );
 });
 
@@ -405,6 +444,40 @@ export const getShiftById = asyncHandler(async (req, res) => {
   const shift = await departmentService.getShiftById(req.params.id);
   return res.status(200).json(
     apiResponse(200, shift, 'Shift details retrieved successfully.')
+  );
+});
+
+/**
+ * GET /api/v1/shifts/:id/employees
+ * 4.4: Retrieve assigned employees for a shift
+ */
+export const getShiftEmployees = asyncHandler(async (req, res) => {
+  const { page, limit, search } = req.query;
+  const result = await departmentService.getShiftEmployees(req.params.id, { page, limit, search });
+  return res.status(200).json(
+    apiResponse(200, result.employees, 'Shift employees retrieved successfully.', {
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages
+    })
+  );
+});
+
+/**
+ * POST /api/v1/shifts/:id/assign
+ * 4.4: Assign or reassign employees to a shift
+ */
+export const assignEmployeesToShift = asyncHandler(async (req, res) => {
+  const actor = {
+    _id: req.user?._id,
+    email: req.user?.email,
+    roles: req.user?.roles,
+    ip: req.ip
+  };
+  const result = await departmentService.assignEmployeesToShift(req.params.id, req.body, actor);
+  return res.status(200).json(
+    apiResponse(200, result, result.message)
   );
 });
 
@@ -439,6 +512,57 @@ export const updateShift = asyncHandler(async (req, res) => {
   const shift = await departmentService.updateShift(req.params.id, req.body, actor);
   return res.status(200).json(
     apiResponse(200, shift, 'Shift updated successfully.')
+  );
+});
+
+/**
+ * PATCH /api/v1/shifts/:id/archive
+ * 4.4: Soft-archive a shift
+ */
+export const archiveShift = asyncHandler(async (req, res) => {
+  const actor = {
+    _id: req.user?._id,
+    email: req.user?.email,
+    roles: req.user?.roles,
+    ip: req.ip
+  };
+  const shift = await departmentService.archiveShift(req.params.id, actor);
+  return res.status(200).json(
+    apiResponse(200, shift, `Shift '${shift.name}' archived successfully.`)
+  );
+});
+
+/**
+ * PATCH /api/v1/shifts/:id/restore
+ * 4.4: Restore an archived shift
+ */
+export const restoreShift = asyncHandler(async (req, res) => {
+  const actor = {
+    _id: req.user?._id,
+    email: req.user?.email,
+    roles: req.user?.roles,
+    ip: req.ip
+  };
+  const shift = await departmentService.restoreShift(req.params.id, actor);
+  return res.status(200).json(
+    apiResponse(200, shift, `Shift '${shift.name}' restored successfully.`)
+  );
+});
+
+/**
+ * DELETE /api/v1/shifts/:id/permanent
+ * 4.4: Permanently purge shift (guarded against assigned active employees)
+ */
+export const permanentDeleteShift = asyncHandler(async (req, res) => {
+  const actor = {
+    _id: req.user?._id,
+    email: req.user?.email,
+    roles: req.user?.roles,
+    ip: req.ip
+  };
+  const result = await departmentService.permanentDeleteShift(req.params.id, actor);
+  return res.status(200).json(
+    apiResponse(200, null, result.message)
   );
 });
 

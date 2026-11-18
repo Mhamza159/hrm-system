@@ -1,15 +1,23 @@
 /**
  * @file ShiftsPage.jsx
- * @description Master Work Shifts & Cross-Midnight Rosters page.
+ * @description Master Work Shifts & Cross-Midnight Rosters enterprise page.
  * 
  * SPECIFICATION & FEATURES:
  * - BUILD-GUIDE ID 4.4: Shifts Master & Cross-Midnight Night Shift Support
- * - 24-hour schedules with Moon indicator for overnight shifts
- * - Real-time duration calculations & active employee deletion guard
+ * - 7-metric live KPI statistics header (ShiftStatsCards.jsx)
+ * - Interactive visual analytics: Horizontal progress bars & SVG Donut chart (ShiftAnalyticsSection.jsx)
+ * - Dual View Switcher: High-density Table View vs. Visual Card Grid View (ShiftCardView.jsx)
+ * - Comprehensive multi-dimensional filtering toolbar (ShiftFilterBar.jsx)
+ * - Dual View Tabs: Active Shifts vs. Archived Shifts with live counts
+ * - Full suite of modals: Create/Edit (ShiftModal), Deep Inspection (ShiftDetailModal),
+ *   Roster Assignment (ShiftAssignModal), Archive (ShiftArchiveModal),
+ *   Restore (ShiftRestoreModal), and Permanent Delete (ShiftPermanentDeleteModal)
+ * - Strict Non-Negotiable Guard: Permanent delete is locked while ≥1 employee is assigned
  * - CASL Protected: Can I="org.manage" a="Organization"
+ * - Styled in the Forest & Emerald Enterprise theme (#061A14, #111D17, #1A3125, #00C471)
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Clock,
   Plus,
@@ -17,174 +25,469 @@ import {
   Trash2,
   Users,
   Moon,
-  Sun,
-  Calendar,
-  CheckCircle2,
-  AlertCircle
+  Archive,
+  RotateCcw,
+  Eye,
+  UserPlus,
+  BarChart2
 } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
-import { StatCard } from '../../../components/common/StatCard.jsx';
 import { DataTable } from '../../../components/common/DataTable.jsx';
 import { StatusBadge } from '../../../components/common/StatusBadge.jsx';
-import { ConfirmDialog } from '../../../components/common/ConfirmDialog.jsx';
 import { Can } from '../../../components/common/Can.jsx';
 import {
   useGetShiftsQuery,
-  useDeleteShiftMutation
+  useGetArchivedShiftsQuery,
+  useGetShiftStatsQuery,
+  useGetShiftAnalyticsQuery,
+  useGetDepartmentsQuery
 } from '../departmentsApi.js';
+
+// Subcomponents
+import { ShiftStatsCards } from '../components/ShiftStatsCards.jsx';
+import { ShiftAnalyticsSection } from '../components/ShiftAnalyticsSection.jsx';
+import { ShiftFilterBar } from '../components/ShiftFilterBar.jsx';
+import { ShiftCardView } from '../components/ShiftCardView.jsx';
 import { ShiftModal } from '../components/ShiftModal.jsx';
+import { ShiftDetailModal } from '../components/ShiftDetailModal.jsx';
+import { ShiftAssignModal } from '../components/ShiftAssignModal.jsx';
+import { ShiftArchiveModal } from '../components/ShiftArchiveModal.jsx';
+import { ShiftRestoreModal } from '../components/ShiftRestoreModal.jsx';
+import { ShiftPermanentDeleteModal } from '../components/ShiftPermanentDeleteModal.jsx';
 
 export function ShiftsPage() {
-  const [typeFilter, setTypeFilter] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedShift, setSelectedShift] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [feedback, setFeedback] = useState({ type: '', message: '' });
+  const [activeTab, setActiveTab] = useState('ACTIVE'); // 'ACTIVE' | 'ARCHIVED'
+  const [viewMode, setViewMode] = useState('table'); // 'table' | 'cards'
+  const [showAnalytics, setShowAnalytics] = useState(true);
 
-  const { data: response, isLoading } = useGetShiftsQuery({
-    type: typeFilter || undefined
+  // Filter States
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('ALL');
+  const [departmentFilter, setDepartmentFilter] = useState('ALL');
+  const [overnightFilter, setOvernightFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+
+  // Archive Pagination
+  const [archivePage, setArchivePage] = useState(1);
+  const archiveLimit = 10;
+
+  // Active Shifts Pagination
+  const [activePage, setActivePage] = useState(1);
+  const activeLimit = 20;
+
+  // Modals state
+  const [isCreateEditModalOpen, setIsCreateEditModalOpen] = useState(false);
+  const [selectedShiftForEdit, setSelectedShiftForEdit] = useState(null);
+
+  const [inspectShiftId, setInspectShiftId] = useState(null);
+  const [isInspectModalOpen, setIsInspectModalOpen] = useState(false);
+
+  const [assignShift, setAssignShift] = useState(null);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+
+  const [archiveTargetShift, setArchiveTargetShift] = useState(null);
+  const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+
+  const [restoreTargetShift, setRestoreTargetShift] = useState(null);
+  const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
+
+  const [deleteTargetShift, setDeleteTargetShift] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  // Queries
+  const { data: statsResponse, isLoading: isStatsLoading } = useGetShiftStatsQuery();
+  const stats = statsResponse?.data || {};
+
+  const { data: analyticsResponse, isLoading: isAnalyticsLoading } = useGetShiftAnalyticsQuery();
+  const analytics = analyticsResponse?.data || {};
+
+  const { data: deptsResponse } = useGetDepartmentsQuery({ limit: 100 });
+  const departmentOptions = deptsResponse?.data || [];
+
+  // Active Shifts Query
+  const {
+    data: activeResponse,
+    isLoading: isActiveLoading,
+    isFetching: isActiveFetching
+  } = useGetShiftsQuery({
+    search: search.trim() || undefined,
+    type: typeFilter !== 'ALL' ? typeFilter : undefined,
+    departmentId: departmentFilter !== 'ALL' ? departmentFilter : undefined,
+    isActive: statusFilter === 'ACTIVE' ? true : statusFilter === 'INACTIVE' ? false : undefined,
+    isCrossMidnight: overnightFilter === 'overnight' ? true : overnightFilter === 'day' ? false : undefined,
+    page: activePage,
+    limit: activeLimit
   });
-  const shifts = response?.data || [];
 
-  const [deleteShift, { isLoading: isDeleting }] = useDeleteShiftMutation();
-
-  // Summary stats
-  const totalShifts = shifts.length;
-  const nightShiftsCount = shifts.filter((s) => s.isCrossMidnight || s.type === 'night').length;
-  const totalAssignedStaff = shifts.reduce((acc, curr) => acc + (curr.headcount || 0), 0);
-
-  const handleCreate = () => {
-    setSelectedShift(null);
-    setIsModalOpen(true);
+  const activeShiftsRaw = activeResponse?.data || [];
+  const activePagination = activeResponse?.pagination || {
+    page: 1,
+    limit: activeLimit,
+    total: activeShiftsRaw.length,
+    totalPages: 1
   };
 
-  const handleEdit = (shift) => {
-    setSelectedShift(shift);
-    setIsModalOpen(true);
-  };
+  // Client-side guard for overnight filter if needed
+  const activeShifts = useMemo(() => {
+    if (overnightFilter === 'overnight') {
+      return activeShiftsRaw.filter((s) => s.isCrossMidnight || s.type === 'night');
+    }
+    if (overnightFilter === 'day') {
+      return activeShiftsRaw.filter((s) => !s.isCrossMidnight && s.type !== 'night');
+    }
+    return activeShiftsRaw;
+  }, [activeShiftsRaw, overnightFilter]);
 
-  const handleDeletePrompt = (shift) => {
-    setFeedback({ type: '', message: '' });
-    setDeleteTarget(shift);
-  };
+  // Archived Shifts Query
+  const {
+    data: archivedResponse,
+    isLoading: isArchivedLoading,
+    isFetching: isArchivedFetching
+  } = useGetArchivedShiftsQuery(
+    {
+      page: archivePage,
+      limit: archiveLimit,
+      search: search.trim() || undefined,
+      type: typeFilter !== 'ALL' ? typeFilter : undefined,
+      departmentId: departmentFilter !== 'ALL' ? departmentFilter : undefined
+    },
+    { skip: activeTab !== 'ARCHIVED' }
+  );
 
-  const confirmDelete = async () => {
-    if (!deleteTarget) return;
+  const archivedShifts = archivedResponse?.data || [];
+  const archivedTotal = archivedResponse?.meta?.total ?? archivedShifts.length;
+  const archivedPages = (archivedResponse?.meta?.totalPages ?? Math.ceil(archivedTotal / archiveLimit)) || 1;
 
-    try {
-      await deleteShift(deleteTarget._id || deleteTarget.id).unwrap();
-      setDeleteTarget(null);
-      setFeedback({
-        type: 'success',
-        message: `Shift '${deleteTarget.name}' successfully deleted.`
-      });
-    } catch (err) {
-      setDeleteTarget(null);
-      setFeedback({
-        type: 'error',
-        message:
-          err?.data?.message ||
-          err?.message ||
-          `Failed to delete shift '${deleteTarget.name}'. Ensure no active staff are currently rostered to it.`
-      });
+  // KPI card click filter handler
+  const handleStatCardClick = (cardId) => {
+    if (cardId === 'ARCHIVED') {
+      setActiveTab('ARCHIVED');
+    } else if (cardId === 'ACTIVE') {
+      setActiveTab('ACTIVE');
+      setStatusFilter('ACTIVE');
+    } else if (cardId === 'NIGHT') {
+      setActiveTab('ACTIVE');
+      setOvernightFilter('overnight');
+    } else if (cardId === 'TOTAL') {
+      setActiveTab('ACTIVE');
+      handleResetFilters();
     }
   };
 
-  const columns = [
+  const handleResetFilters = () => {
+    setSearch('');
+    setTypeFilter('ALL');
+    setDepartmentFilter('ALL');
+    setOvernightFilter('ALL');
+    setStatusFilter('ALL');
+    setActivePage(1);
+    setArchivePage(1);
+  };
+
+  // Modal Triggers
+  const handleOpenCreate = () => {
+    setSelectedShiftForEdit(null);
+    setIsCreateEditModalOpen(true);
+  };
+
+  const handleOpenEdit = (shift) => {
+    setSelectedShiftForEdit(shift);
+    setIsCreateEditModalOpen(true);
+  };
+
+  const handleOpenInspect = (shift) => {
+    setInspectShiftId(shift._id || shift.id);
+    setIsInspectModalOpen(true);
+  };
+
+  const handleOpenAssign = (shift) => {
+    setAssignShift(shift);
+    setIsAssignModalOpen(true);
+  };
+
+  const handleOpenArchive = (shift) => {
+    setArchiveTargetShift(shift);
+    setIsArchiveModalOpen(true);
+  };
+
+  const handleOpenRestore = (shift) => {
+    setRestoreTargetShift(shift);
+    setIsRestoreModalOpen(true);
+  };
+
+  const handleOpenDelete = (shift) => {
+    setDeleteTargetShift(shift);
+    setIsDeleteModalOpen(true);
+  };
+
+  // Format timestamps
+  const formatDateTime = (ts) => {
+    if (!ts) return '—';
+    try {
+      const d = new Date(ts);
+      if (isNaN(d.getTime())) return '—';
+      return d.toLocaleString('en-GB', {
+        timeZone: 'Asia/Karachi',
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch {
+      return String(ts);
+    }
+  };
+
+  // Table Columns: Active Shifts
+  const activeColumns = [
     {
-      header: 'Shift Name',
+      header: 'Shift Name & Code',
       accessor: 'name',
-      cell: (row) => (
-        <div className="flex items-center gap-3">
-          <div
-            className={`p-2 rounded-xl ${
-              row.isCrossMidnight
-                ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300'
-                : 'bg-slate-100 text-slate-700 dark:bg-[#1A3125] dark:text-emerald-400'
-            }`}
-          >
-            {row.isCrossMidnight ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-          </div>
-          <div>
-            <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-              <span>{row.name}</span>
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-medium tracking-wide bg-slate-100 dark:bg-[#1A3125] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-[#234232]">
-                {row.code}
+      cell: (row) => {
+        const isOvernight = row.isCrossMidnight || row.type === 'night';
+        return (
+          <div className="flex items-center gap-3">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border"
+              style={{
+                backgroundColor: `${row.color || '#00C471'}15`,
+                borderColor: `${row.color || '#00C471'}30`,
+                color: row.color || '#00C471'
+              }}
+            >
+              {isOvernight ? <Moon className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+            </div>
+            <div>
+              <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span
+                  onClick={() => handleOpenInspect(row)}
+                  className="hover:text-[#00C471] cursor-pointer transition-colors"
+                >
+                  {row.name}
+                </span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold tracking-wide bg-slate-100 dark:bg-[#1A3125] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-[#234232]">
+                  {row.code}
+                </span>
+              </div>
+              <span className="text-[11px] text-slate-400 font-medium">
+                {row.departmentId?.name || 'All Departments'}
               </span>
             </div>
-            <span className="text-[11px] capitalize text-slate-400 font-medium">
-              {row.type} Schedule
+          </div>
+        );
+      }
+    },
+    {
+      header: 'Type',
+      accessor: 'type',
+      cell: (row) => {
+        const isOvernight = row.isCrossMidnight || row.type === 'night';
+        return (
+          <div className="flex flex-col gap-1">
+            <span
+              className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border w-fit ${
+                row.type === 'night'
+                  ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-400 border-indigo-200/60'
+                  : row.type === 'flexible'
+                  ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200/60'
+                  : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200/60'
+              }`}
+            >
+              {isOvernight && <Moon className="w-3 h-3 text-indigo-400" />}
+              <span className="capitalize">{row.type}</span>
             </span>
           </div>
-        </div>
-      )
+        );
+      }
     },
     {
-      header: 'Timings & Window',
+      header: 'Operational Hours',
       accessor: 'startTime',
-      cell: (row) => (
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-1.5 font-mono text-xs font-semibold text-slate-800 dark:text-slate-200">
-            <span>{row.startTime}</span>
-            <span className="text-slate-400">→</span>
-            <span>{row.endTime}</span>
-            {row.isCrossMidnight && (
-              <span className="px-1 py-0.2 rounded text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 font-sans">
-                +1 Day
-              </span>
-            )}
+      cell: (row) => {
+        const netHours = Math.floor(row.durationMinutes / 60);
+        const netMins = row.durationMinutes % 60;
+        return (
+          <div>
+            <div className="font-mono font-semibold text-slate-800 dark:text-slate-100 text-xs">
+              {row.startTime} → {row.endTime}
+            </div>
+            <div className="text-[11px] text-slate-400 flex items-center gap-1.5">
+              <span>{netHours}h {netMins > 0 ? `${netMins}m` : ''} net</span>
+              <span>•</span>
+              <span>{row.breakMinutes}m break</span>
+            </div>
           </div>
-          <div className="text-[11px] text-slate-400">
-            Net Duration: {Math.floor((row.durationMinutes || 0) / 60)}h{' '}
-            {(row.durationMinutes || 0) % 60 > 0 ? `${(row.durationMinutes || 0) % 60}m` : ''}
-          </div>
-        </div>
-      )
+        );
+      }
     },
     {
-      header: 'Grace & Break',
+      header: 'Grace',
       accessor: 'graceMinutes',
       cell: (row) => (
-        <div className="text-xs text-slate-600 dark:text-slate-300">
-          <div>Grace: {row.graceMinutes || 0} mins</div>
-          <div className="text-slate-400 text-[11px]">Break: {row.breakMinutes || 0} mins</div>
-        </div>
+        <span className="text-xs font-mono font-medium text-slate-600 dark:text-slate-300">
+          {row.graceMinutes}m
+        </span>
       )
     },
     {
       header: 'Work Days',
       accessor: 'workDays',
-      cell: (row) => (
-        <div className="flex flex-wrap gap-1 max-w-[180px]">
-          {row.workDays?.map((d) => (
-            <span
-              key={d}
-              className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
-            >
-              {d.slice(0, 3)}
-            </span>
-          ))}
-        </div>
-      )
+      cell: (row) => {
+        const days = row.workDays || [];
+        const isStandard = days.length === 5 && !days.includes('Saturday') && !days.includes('Sunday');
+        return (
+          <span className="text-xs text-slate-600 dark:text-slate-300">
+            {isStandard ? 'Mon – Fri' : `${days.length} days / wk`}
+          </span>
+        );
+      }
     },
     {
-      header: 'Staff Count',
+      header: 'Rostered Staff',
       accessor: 'headcount',
-      cell: (row) => (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-[#00C471] dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-800/60">
-          <Users className="w-3 h-3" />
-          {row.headcount || 0} staff
-        </span>
-      )
+      cell: (row) => {
+        const staff = row.headcount || 0;
+        const cap = row.capacity || 0;
+        return (
+          <button
+            type="button"
+            onClick={() => handleOpenAssign(row)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-[#00C471] dark:bg-emerald-950/40 dark:text-[#00C471] border border-emerald-200/50 dark:border-emerald-800/40 hover:bg-emerald-100 transition-colors text-xs font-semibold cursor-pointer"
+            title="Manage assigned personnel"
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>{staff}</span>
+            {cap > 0 && <span className="text-[10px] text-slate-400 font-normal">/ {cap}</span>}
+          </button>
+        );
+      }
     },
     {
       header: 'Status',
       accessor: 'isActive',
+      cell: (row) => <StatusBadge status={row.isActive ? 'Active' : 'Inactive'} size="sm" />
+    },
+    {
+      header: 'Actions',
+      accessor: '_id',
       cell: (row) => (
-        <StatusBadge
-          status={row.isActive ? 'active' : 'inactive'}
-          label={row.isActive ? 'Active' : 'Inactive'}
-        />
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => handleOpenInspect(row)}
+            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+            title="Inspect Shift"
+          >
+            <Eye className="w-3.5 h-3.5" />
+          </button>
+
+          <Can I="org.manage" a="Organization">
+            <button
+              type="button"
+              onClick={() => handleOpenAssign(row)}
+              className="p-1.5 text-[#00C471] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition-colors cursor-pointer"
+              title="Assign Staff"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleOpenEdit(row)}
+              className="p-1.5 text-slate-400 hover:text-[#00C471] hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+              title="Edit Shift"
+            >
+              <Edit2 className="w-3.5 h-3.5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleOpenArchive(row)}
+              className="p-1.5 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40 rounded-lg transition-colors cursor-pointer"
+              title="Archive Shift"
+            >
+              <Archive className="w-3.5 h-3.5" />
+            </button>
+          </Can>
+        </div>
+      )
+    }
+  ];
+
+  // Table Columns: Archived Shifts
+  const archivedColumns = [
+    {
+      header: 'Shift Name & Code',
+      accessor: 'name',
+      cell: (row) => (
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
+            <Archive className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span onClick={() => handleOpenInspect(row)} className="hover:text-[#00C471] cursor-pointer">
+                {row.name}
+              </span>
+              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-[#1A3125] text-slate-600 dark:text-slate-400 font-semibold uppercase">
+                {row.code}
+              </span>
+            </div>
+            <span className="text-[11px] text-slate-400">
+              {row.departmentId?.name || 'All Departments'}
+            </span>
+          </div>
+        </div>
+      )
+    },
+    {
+      header: 'Type & Hours',
+      accessor: 'type',
+      cell: (row) => (
+        <div>
+          <span className="text-xs font-semibold capitalize text-slate-700 dark:text-slate-200">
+            {row.type} Schedule
+          </span>
+          <p className="text-[11px] text-slate-400 font-mono">
+            {row.startTime} → {row.endTime}
+          </p>
+        </div>
+      )
+    },
+    {
+      header: 'Archived Date',
+      accessor: 'archivedAt',
+      cell: (row) => (
+        <span className="text-xs text-slate-600 dark:text-slate-300">
+          {formatDateTime(row.archivedAt)}
+        </span>
+      )
+    },
+    {
+      header: 'Archived By',
+      accessor: 'archivedBy',
+      cell: (row) => (
+        <span className="text-xs text-slate-600 dark:text-slate-300">
+          {row.archivedBy?.name || 'System Admin'}
+        </span>
+      )
+    },
+    {
+      header: 'Assigned Staff',
+      accessor: 'headcount',
+      cell: (row) => (
+        <span
+          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+            (row.headcount || 0) > 0
+              ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border-amber-200/60'
+              : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200'
+          }`}
+        >
+          <Users className="w-3 h-3" />
+          <span>{row.headcount || 0}</span>
+        </span>
       )
     },
     {
@@ -192,20 +495,33 @@ export function ShiftsPage() {
       accessor: '_id',
       cell: (row) => (
         <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => handleOpenInspect(row)}
+            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+            title="Inspect Archived Shift"
+          >
+            <Eye className="w-3.5 h-3.5" />
+          </button>
+
           <Can I="org.manage" a="Organization">
             <button
-              onClick={() => handleEdit(row)}
-              className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-[#1A3125] transition-colors cursor-pointer"
-              title="Edit Shift"
+              type="button"
+              onClick={() => handleOpenRestore(row)}
+              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 rounded-lg transition-colors cursor-pointer border border-emerald-200/50"
+              title="Restore to Active"
             >
-              <Edit2 className="w-4 h-4" />
+              <RotateCcw className="w-3 h-3" />
+              <span>Restore</span>
             </button>
+
             <button
-              onClick={() => handleDeletePrompt(row)}
-              className="p-1.5 text-rose-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-              title="Delete Shift"
+              type="button"
+              onClick={() => handleOpenDelete(row)}
+              className="p-1.5 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
+              title="Permanently Delete Shift"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           </Can>
         </div>
@@ -214,119 +530,254 @@ export function ShiftsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen pb-12">
+      {/* Page Header */}
       <PageHeader
-        title="Work Shifts & Operational Rosters"
-        subtitle="Manage daily shifts, overnight cross-midnight schedules, grace periods, and weekly work days."
-        actions={
-          <Can I="org.manage" a="Organization">
-            <button
-              onClick={handleCreate}
-              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-xl text-white bg-[#00C471] hover:bg-[#00B064] shadow-sm transition-all cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Shift</span>
-            </button>
-          </Can>
-        }
+        title="Work Shifts & Rosters"
+        subtitle="Configure shift timings, overnight cross-midnight rosters, grace rules, and employee assignments."
+      >
+        <Can I="org.manage" a="Organization">
+          <button
+            type="button"
+            onClick={handleOpenCreate}
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-[#00C471] hover:bg-[#00B065] rounded-xl transition-all shadow-sm hover:shadow-emerald-950/10 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create Shift</span>
+          </button>
+        </Can>
+      </PageHeader>
+
+      {/* KPI Stats Header (7 Cards) */}
+      <ShiftStatsCards
+        stats={stats}
+        isLoading={isStatsLoading}
+        onFilterClick={handleStatCardClick}
+        activeTab={activeTab.toLowerCase()}
       />
 
-      {feedback.message && (
-        <div
-          className={`flex items-center gap-3 p-4 rounded-2xl border text-xs ${
-            feedback.type === 'error'
-              ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/60'
-              : 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/60'
-          }`}
-        >
-          {feedback.type === 'error' ? (
-            <AlertCircle className="w-4 h-4 shrink-0" />
-          ) : (
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-          )}
-          <span className="flex-1 font-medium">{feedback.message}</span>
+      {/* Visual Analytics Section (Collapsible) */}
+      {showAnalytics && (
+        <ShiftAnalyticsSection
+          analytics={analytics}
+          isLoading={isAnalyticsLoading}
+        />
+      )}
+
+      {/* Tab Switcher & Secondary Actions Toolbar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+        {/* Left: Tab Switcher (Active vs Archived) */}
+        <div className="inline-flex items-center p-1 rounded-2xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17]">
           <button
-            onClick={() => setFeedback({ type: '', message: '' })}
-            className="text-slate-400 hover:text-slate-700 dark:hover:text-white"
+            type="button"
+            onClick={() => { setActiveTab('ACTIVE'); setActivePage(1); }}
+            className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+              activeTab === 'ACTIVE'
+                ? 'bg-emerald-500/10 text-[#00C471] border border-emerald-500/20 shadow-xs'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            }`}
           >
-            ×
+            <Clock className="w-3.5 h-3.5" />
+            <span>Active Shifts</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                activeTab === 'ACTIVE'
+                  ? 'bg-[#00C471] text-white'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              {stats.active || activeShifts.length}
+            </span>
           </button>
+
+          <button
+            type="button"
+            onClick={() => { setActiveTab('ARCHIVED'); setArchivePage(1); }}
+            className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+              activeTab === 'ARCHIVED'
+                ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20 shadow-xs'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            }`}
+          >
+            <Archive className="w-3.5 h-3.5" />
+            <span>Archived Shifts</span>
+            <span
+              className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                activeTab === 'ARCHIVED'
+                  ? 'bg-amber-500 text-white'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              {stats.archived || 0}
+            </span>
+          </button>
+        </div>
+
+        {/* Right: Analytics Toggle */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowAnalytics(!showAnalytics)}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] transition-colors cursor-pointer ${
+              showAnalytics
+                ? 'text-[#00C471] border-emerald-500/30'
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
+            }`}
+            title="Toggle Visual Analytics"
+          >
+            <BarChart2 className="w-3.5 h-3.5" />
+            <span>{showAnalytics ? 'Hide Analytics' : 'Show Analytics'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Multi-Dimensional Filter Bar */}
+      <ShiftFilterBar
+        search={search}
+        onSearchChange={setSearch}
+        typeFilter={typeFilter}
+        onTypeChange={setTypeFilter}
+        departmentFilter={departmentFilter}
+        onDepartmentChange={setDepartmentFilter}
+        statusFilter={statusFilter}
+        onStatusChange={setStatusFilter}
+        overnightFilter={overnightFilter}
+        onOvernightChange={setOvernightFilter}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        departmentOptions={departmentOptions}
+        onReset={handleResetFilters}
+        showStatusFilter={activeTab === 'ACTIVE'}
+      />
+
+      {/* Tab 1: Active Shifts Content */}
+      {activeTab === 'ACTIVE' && (
+        <>
+          {viewMode === 'table' ? (
+            <div className="rounded-2xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] shadow-xs overflow-hidden">
+              <DataTable
+                columns={activeColumns}
+                data={activeShifts}
+                isLoading={isActiveLoading}
+                emptyTitle="No shifts registered"
+                emptyMessage="No active shifts match your current search and filter settings. Click '+ Create Shift' to add one."
+              />
+
+              {activePagination.totalPages > 1 && (
+                <div className="px-5 py-3 border-t border-slate-100 dark:border-[#1A3125] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                  <span>
+                    Page {activePagination.page} of {activePagination.totalPages} ({activePagination.total} shifts total)
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      disabled={activePagination.page <= 1 || isActiveFetching}
+                      onClick={() => setActivePage((p) => Math.max(1, p - 1))}
+                      className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-[#1A3125] hover:bg-slate-100 dark:hover:bg-[#15241C] disabled:opacity-40"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      type="button"
+                      disabled={activePagination.page >= activePagination.totalPages || isActiveFetching}
+                      onClick={() => setActivePage((p) => p + 1)}
+                      className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-[#1A3125] hover:bg-slate-100 dark:hover:bg-[#15241C] disabled:opacity-40"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <ShiftCardView
+              shifts={activeShifts}
+              onInspect={handleOpenInspect}
+              onEdit={handleOpenEdit}
+              onAssign={handleOpenAssign}
+              onArchive={handleOpenArchive}
+            />
+          )}
+        </>
+      )}
+
+      {/* Tab 2: Archived Shifts Content */}
+      {activeTab === 'ARCHIVED' && (
+        <div className="rounded-2xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] shadow-xs overflow-hidden">
+          <DataTable
+            columns={archivedColumns}
+            data={archivedShifts}
+            isLoading={isArchivedLoading}
+            emptyTitle="Archive is empty"
+            emptyMessage="There are currently no work shifts in cold storage."
+          />
+
+          {archivedPages > 1 && (
+            <div className="px-5 py-3 border-t border-slate-100 dark:border-[#1A3125] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+              <span>
+                Page {archivePage} of {archivedPages} ({archivedTotal} total archived)
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={archivePage <= 1 || isArchivedFetching}
+                  onClick={() => setArchivePage((p) => Math.max(1, p - 1))}
+                  className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-[#1A3125] hover:bg-slate-100 dark:hover:bg-[#15241C] disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  disabled={archivePage >= archivedPages || isArchivedFetching}
+                  onClick={() => setArchivePage((p) => p + 1)}
+                  className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-[#1A3125] hover:bg-slate-100 dark:hover:bg-[#15241C] disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Overview Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard
-          title="Total Shifts"
-          value={totalShifts}
-          icon={Clock}
-          description="Operational schedules configured"
-        />
-        <StatCard
-          title="Night / Cross-Midnight"
-          value={nightShiftsCount}
-          icon={Moon}
-          description="Overnight attendance windows"
-        />
-        <StatCard
-          title="Assigned Personnel"
-          value={totalAssignedStaff}
-          icon={Users}
-          description="Total employees assigned to shifts"
-        />
-      </div>
-
-      {/* Filter Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-4 shadow-sm">
-        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1">Shift Type:</span>
-        {[
-          { label: 'All Shifts', value: '' },
-          { label: 'Fixed Hours', value: 'fixed' },
-          { label: 'Flexible Window', value: 'flexible' },
-          { label: 'Night Shift', value: 'night' }
-        ].map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setTypeFilter(tab.value)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-              typeFilter === tab.value
-                ? 'bg-[#00C471] text-white shadow-xs'
-                : 'bg-slate-100 dark:bg-[#1A3125] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Shifts Table */}
-      <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-6 shadow-sm">
-        <DataTable
-          columns={columns}
-          data={shifts}
-          isLoading={isLoading}
-          searchPlaceholder="Search shifts by name or code..."
-          searchField="name"
-          emptyMessage="No shifts found. Create your first work shift to schedule employee rosters."
-        />
-      </div>
-
-      {/* Create / Edit Modal */}
+      {/* Modals Suite */}
       <ShiftModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        shift={selectedShift}
+        isOpen={isCreateEditModalOpen}
+        onClose={() => setIsCreateEditModalOpen(false)}
+        shift={selectedShiftForEdit}
       />
 
-      {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        isOpen={!!deleteTarget}
-        title={`Delete Shift '${deleteTarget?.name}'?`}
-        message={`Are you sure you want to delete '${deleteTarget?.name}' (${deleteTarget?.code})? This action will be blocked if active employees are currently assigned to this shift.`}
-        confirmText={isDeleting ? 'Deleting...' : 'Delete Shift'}
-        isDestructive={true}
-        onConfirm={confirmDelete}
-        onCancel={() => setDeleteTarget(null)}
+      <ShiftDetailModal
+        isOpen={isInspectModalOpen}
+        onClose={() => setIsInspectModalOpen(false)}
+        shiftId={inspectShiftId}
+        onEdit={handleOpenEdit}
+        onAssign={handleOpenAssign}
+      />
+
+      <ShiftAssignModal
+        isOpen={isAssignModalOpen}
+        onClose={() => setIsAssignModalOpen(false)}
+        shift={assignShift}
+      />
+
+      <ShiftArchiveModal
+        isOpen={isArchiveModalOpen}
+        onClose={() => setIsArchiveModalOpen(false)}
+        shift={archiveTargetShift}
+      />
+
+      <ShiftRestoreModal
+        isOpen={isRestoreModalOpen}
+        onClose={() => setIsRestoreModalOpen(false)}
+        shift={restoreTargetShift}
+      />
+
+      <ShiftPermanentDeleteModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        shift={deleteTargetShift}
+        onOpenAssign={handleOpenAssign}
       />
     </div>
   );

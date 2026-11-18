@@ -323,13 +323,65 @@ export const departmentsApi = baseApi.injectEndpoints({
       providesTags: (result, error, id) => [{ type: 'Shifts', id }]
     }),
 
+    getShiftStats: builder.query({
+      query: () => '/shifts/stats',
+      providesTags: [{ type: 'Shifts', id: 'STATS' }]
+    }),
+
+    getShiftAnalytics: builder.query({
+      query: () => '/shifts/analytics',
+      providesTags: [{ type: 'Shifts', id: 'ANALYTICS' }]
+    }),
+
+    getArchivedShifts: builder.query({
+      query: (params) => ({
+        url: '/shifts/archived',
+        params
+      }),
+      providesTags: (result) =>
+        result?.data
+          ? [
+              ...result.data.map(({ _id }) => ({ type: 'Shifts', id: `ARCHIVED_${_id}` })),
+              { type: 'Shifts', id: 'ARCHIVED' }
+            ]
+          : [{ type: 'Shifts', id: 'ARCHIVED' }]
+    }),
+
+    getShiftEmployees: builder.query({
+      query: ({ id, params }) => ({
+        url: `/shifts/${id}/employees`,
+        params
+      }),
+      providesTags: (result, error, { id }) => [{ type: 'Shifts', id: `STAFF_${id}` }]
+    }),
+
+    assignEmployeesToShift: builder.mutation({
+      query: ({ id, employeeIds, action = 'add' }) => ({
+        url: `/shifts/${id}/assign`,
+        method: 'POST',
+        body: { employeeIds, action }
+      }),
+      invalidatesTags: (result, error, { id }) => [
+        { type: 'Shifts', id },
+        { type: 'Shifts', id: 'LIST' },
+        { type: 'Shifts', id: 'STATS' },
+        { type: 'Shifts', id: 'ANALYTICS' },
+        { type: 'Shifts', id: `STAFF_${id}` },
+        'Employees'
+      ]
+    }),
+
     createShift: builder.mutation({
       query: (data) => ({
         url: '/shifts',
         method: 'POST',
         body: data
       }),
-      invalidatesTags: [{ type: 'Shifts', id: 'LIST' }]
+      invalidatesTags: [
+        { type: 'Shifts', id: 'LIST' },
+        { type: 'Shifts', id: 'STATS' },
+        { type: 'Shifts', id: 'ANALYTICS' }
+      ]
     }),
 
     updateShift: builder.mutation({
@@ -340,7 +392,48 @@ export const departmentsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (result, error, { id }) => [
         { type: 'Shifts', id },
-        { type: 'Shifts', id: 'LIST' }
+        { type: 'Shifts', id: 'LIST' },
+        { type: 'Shifts', id: 'STATS' },
+        { type: 'Shifts', id: 'ANALYTICS' }
+      ]
+    }),
+
+    archiveShift: builder.mutation({
+      query: (id) => ({
+        url: `/shifts/${id}/archive`,
+        method: 'PATCH'
+      }),
+      invalidatesTags: [
+        { type: 'Shifts', id: 'LIST' },
+        { type: 'Shifts', id: 'ARCHIVED' },
+        { type: 'Shifts', id: 'STATS' },
+        { type: 'Shifts', id: 'ANALYTICS' }
+      ]
+    }),
+
+    restoreShift: builder.mutation({
+      query: (id) => ({
+        url: `/shifts/${id}/restore`,
+        method: 'PATCH'
+      }),
+      invalidatesTags: [
+        { type: 'Shifts', id: 'LIST' },
+        { type: 'Shifts', id: 'ARCHIVED' },
+        { type: 'Shifts', id: 'STATS' },
+        { type: 'Shifts', id: 'ANALYTICS' }
+      ]
+    }),
+
+    permanentDeleteShift: builder.mutation({
+      query: (id) => ({
+        url: `/shifts/${id}/permanent`,
+        method: 'DELETE'
+      }),
+      invalidatesTags: [
+        { type: 'Shifts', id: 'LIST' },
+        { type: 'Shifts', id: 'ARCHIVED' },
+        { type: 'Shifts', id: 'STATS' },
+        { type: 'Shifts', id: 'ANALYTICS' }
       ]
     }),
 
@@ -349,7 +442,11 @@ export const departmentsApi = baseApi.injectEndpoints({
         url: `/shifts/${id}`,
         method: 'DELETE'
       }),
-      invalidatesTags: [{ type: 'Shifts', id: 'LIST' }]
+      invalidatesTags: [
+        { type: 'Shifts', id: 'LIST' },
+        { type: 'Shifts', id: 'STATS' },
+        { type: 'Shifts', id: 'ANALYTICS' }
+      ]
     }),
 
     // 4.5 & 4.7: Org Chart Endpoint
@@ -393,8 +490,16 @@ export const {
   useDeleteDesignationMutation,
   useGetShiftsQuery,
   useGetShiftByIdQuery,
+  useGetShiftStatsQuery,
+  useGetShiftAnalyticsQuery,
+  useGetArchivedShiftsQuery,
+  useGetShiftEmployeesQuery,
+  useAssignEmployeesToShiftMutation,
   useCreateShiftMutation,
   useUpdateShiftMutation,
+  useArchiveShiftMutation,
+  useRestoreShiftMutation,
+  usePermanentDeleteShiftMutation,
   useDeleteShiftMutation,
   useGetOrgChartQuery,
   useGetMyTeamQuery

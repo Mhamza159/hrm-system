@@ -971,14 +971,14 @@ Plans:
 
 Plans:
 
-- [ ] **Plan 27-01: Backend Schema Expansion, Archival Lifecycle & Employee Assignment Restriction Guard** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-01-PLAN.md`)
-- [ ] **Plan 27-02: Backend Analytics Aggregation, KPI Statistics, Staff Roster API & Employee Bulk Assignment Endpoint** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-02-PLAN.md`)
-- [ ] **Plan 27-03: Dashboard Analytics, 7 KPI Summary Cards & Visual Distribution Charts** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-03-PLAN.md`)
-- [ ] **Plan 27-04: Shift Directory Overhaul, Dual View Switcher (Table & Card Grid) & Multi-Dimensional Filtering Toolbar** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-04-PLAN.md`)
-- [ ] **Plan 27-05: Redesigned Create & Edit Shift Modal with Real-Time Timing Calculations, Overnight Detection & Department Associations** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-05-PLAN.md`)
-- [ ] **Plan 27-06: Employee Shift Assignment Modal & Shift Roster Scheduling** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-06-PLAN.md`)
-- [ ] **Plan 27-07: Deep Inspection Details Modal with Assigned Staff Roster & Timing Breakdown** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-07-PLAN.md`)
-- [ ] **Plan 27-08: Archive Management Console, Revert/Restore & Permanent Delete with Mandatory Guard & Comprehensive Vitest E2E Suite** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-08-PLAN.md`)
+- [x] **Plan 27-01: Backend Schema Expansion, Archival Lifecycle & Employee Assignment Restriction Guard** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-01-PLAN.md`)
+- [x] **Plan 27-02: Backend Analytics Aggregation, KPI Statistics, Staff Roster API & Employee Bulk Assignment Endpoint** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-02-PLAN.md`)
+- [x] **Plan 27-03: Dashboard Analytics, 7 KPI Summary Cards & Visual Distribution Charts** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-03-PLAN.md`)
+- [x] **Plan 27-04: Shift Directory Overhaul, Dual View Switcher (Table & Card Grid) & Multi-Dimensional Filtering Toolbar** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-04-PLAN.md`)
+- [x] **Plan 27-05: Redesigned Create & Edit Shift Modal with Real-Time Timing Calculations, Overnight Detection & Department Associations** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-05-PLAN.md`)
+- [x] **Plan 27-06: Employee Shift Assignment Modal & Shift Roster Scheduling** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-06-PLAN.md`)
+- [x] **Plan 27-07: Deep Inspection Details Modal with Assigned Staff Roster & Timing Breakdown** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-07-PLAN.md`)
+- [x] **Plan 27-08: Archive Management Console, Revert/Restore & Permanent Delete with Mandatory Guard & Comprehensive Vitest E2E Suite** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-08-PLAN.md`)
 
 ---
 

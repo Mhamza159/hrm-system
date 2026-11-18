@@ -117,6 +117,10 @@ export const createShiftSchema = z.object({
         'Thursday',
         'Friday'
       ]),
+      departmentId: objectIdSchema.optional().nullable(),
+      capacity: z.number().int().min(0).optional().default(0),
+      description: z.string().max(500).optional().default(''),
+      color: z.string().optional().default('#00C471'),
       isActive: z.boolean().optional().default(true)
     })
     .refine(
@@ -151,6 +155,20 @@ export const updateShiftSchema = z.object({
     breakMinutes: z.number().int().min(0).max(240).optional(),
     halfDayMinutes: z.number().int().min(0).max(480).optional(),
     workDays: z.array(z.string()).min(1).optional(),
+    departmentId: objectIdSchema.optional().nullable(),
+    capacity: z.number().int().min(0).optional(),
+    description: z.string().max(500).optional(),
+    color: z.string().optional(),
     isActive: z.boolean().optional()
+  })
+});
+
+export const assignShiftEmployeesSchema = z.object({
+  params: z.object({
+    id: objectIdSchema
+  }),
+  body: z.object({
+    employeeIds: z.array(objectIdSchema).optional().default([]),
+    action: z.enum(['add', 'set', 'remove', 'clear']).default('add')
   })
 });

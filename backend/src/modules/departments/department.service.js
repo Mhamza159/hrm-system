@@ -1477,12 +1477,27 @@ export const calculateShiftTiming = (startTime, endTime, breakMinutes = 0, type 
 /**
  * 4.4: Retrieve list of shifts
  */
-export const getAllShifts = async ({ type, isActive, isCrossMidnight, page, limit, search = '' } = {}) => {
+export const getAllShifts = async ({ type, isActive, isCrossMidnight, departmentId, page, limit, search = '', isArchived } = {}) => {
+  // Idempotent background normalization: ensure legacy documents have isArchived: false
+  Shift.updateMany({ isArchived: { $exists: false } }, { $set: { isArchived: false } }).catch(() => {});
+
   const query = { isDeleted: false };
+
+  // By default, only retrieve active (non-archived) shifts
+  if (isArchived === 'true' || isArchived === true) {
+    query.isArchived = true;
+  } else if (isArchived === 'all') {
+    // allow all
+  } else {
+    query.isArchived = { $ne: true };
+  }
 
   if (type) query.type = type;
   if (isActive !== undefined) query.isActive = isActive === 'true' || isActive === true;
   if (isCrossMidnight !== undefined) query.isCrossMidnight = isCrossMidnight === 'true' || isCrossMidnight === true;
+  if (departmentId && mongoose.Types.ObjectId.isValid(departmentId)) {
+    query.departmentId = departmentId;
+  }
   if (search && typeof search === 'string' && search.trim()) {
     const term = escapeRegex(search.trim());
     if (term) {
@@ -1493,7 +1508,10 @@ export const getAllShifts = async ({ type, isActive, isCrossMidnight, page, limi
     }
   }
 
-  let dbQuery = Shift.find(query).sort({ type: 1, startTime: 1 });
+  let dbQuery = Shift.find(query)
+    .populate('departmentId', 'name code')
+    .populate('createdBy', 'name email')
+    .sort({ type: 1, startTime: 1 });
 
   let total = 0;
   let pagination = null;
@@ -1510,7 +1528,7 @@ export const getAllShifts = async ({ type, isActive, isCrossMidnight, page, limi
       page: pageNum,
       limit: limitNum,
       total,
-      totalPages: Math.ceil(total / limitNum)
+      totalPages: Math.ceil(total / limitNum) || 1
     };
   }
 
@@ -1538,16 +1556,470 @@ export const getAllShifts = async ({ type, isActive, isCrossMidnight, page, limi
 };
 
 /**
+ * 4.4: Retrieve list of archived shifts
+ */
+export const getArchivedShifts = async ({ search = '', type, departmentId, page = 1, limit = 10 } = {}) => {
+  const query = { isArchived: true, isDeleted: false };
+
+  if (type) query.type = type;
+  if (departmentId && mongoose.Types.ObjectId.isValid(departmentId)) {
+    query.departmentId = departmentId;
+  }
+  if (search && typeof search === 'string' && search.trim()) {
+    const term = escapeRegex(search.trim());
+    if (term) {
+      query.$or = [
+        { name: { $regex: term, $options: 'i' } },
+        { code: { $regex: term, $options: 'i' } }
+      ];
+    }
+  }
+
+  const pageNum = Math.max(1, parseInt(page, 10));
+  const limitNum = Math.max(1, parseInt(limit, 10));
+  const skip = (pageNum - 1) * limitNum;
+
+  const total = await Shift.countDocuments(query);
+  const shifts = await Shift.find(query)
+    .populate('departmentId', 'name code')
+    .populate('archivedBy', 'name email')
+    .populate('createdBy', 'name email')
+    .sort({ archivedAt: -1, updatedAt: -1 })
+    .skip(skip)
+    .limit(limitNum)
+    .lean();
+
+  const shiftIds = shifts.map((s) => s._id);
+  const employeeCounts = await Employee.aggregate([
+    { $match: { shiftId: { $in: shiftIds }, isDeleted: false } },
+    { $group: { _id: '$shiftId', count: { $sum: 1 } } }
+  ]);
+  const countMap = new Map();
+  employeeCounts.forEach((c) => countMap.set(c._id.toString(), c.count));
+
+  const enriched = shifts.map((s) => ({
+    ...s,
+    headcount: countMap.get(s._id.toString()) || 0
+  }));
+
+  return {
+    shifts: enriched,
+    total,
+    page: pageNum,
+    limit: limitNum,
+    totalPages: Math.ceil(total / limitNum) || 1
+  };
+};
+
+/**
+ * 4.4: Work shifts analytics and distribution aggregation
+ */
+export const getShiftAnalytics = async () => {
+  const [totalShifts, activeShifts, archivedShifts, nightShifts, totalEmployees, assignedEmployees] = await Promise.all([
+    Shift.countDocuments({ isDeleted: false }),
+    Shift.countDocuments({ isArchived: { $ne: true }, isDeleted: false, isActive: true }),
+    Shift.countDocuments({ isArchived: true, isDeleted: false }),
+    Shift.countDocuments({
+      isArchived: { $ne: true },
+      isDeleted: false,
+      $or: [{ isCrossMidnight: true }, { type: 'night' }]
+    }),
+    Employee.countDocuments({ isDeleted: false }),
+    Employee.countDocuments({ shiftId: { $ne: null }, isDeleted: false })
+  ]);
+
+  const activeShiftsList = await Shift.find({ isArchived: { $ne: true }, isDeleted: false })
+    .populate('departmentId', 'name code')
+    .lean();
+
+  const shiftIds = activeShiftsList.map((s) => s._id);
+  const employeeCounts = await Employee.aggregate([
+    { $match: { shiftId: { $in: shiftIds }, isDeleted: false } },
+    { $group: { _id: '$shiftId', count: { $sum: 1 } } }
+  ]);
+  const countMap = new Map();
+  employeeCounts.forEach((c) => countMap.set(c._id.toString(), c.count));
+
+  let staffedShifts = 0;
+  let emptyShifts = 0;
+  let fixedCount = 0;
+  let flexibleCount = 0;
+  let nightCount = 0;
+  let fixedStaff = 0;
+  let flexibleStaff = 0;
+  let nightStaff = 0;
+  let dayShiftsCount = 0;
+  let dayShiftsStaff = 0;
+
+  const shiftHeadcounts = activeShiftsList.map((s) => {
+    const headcount = countMap.get(s._id.toString()) || 0;
+    if (headcount > 0) staffedShifts += 1;
+    else emptyShifts += 1;
+
+    if (s.type === 'night' || s.isCrossMidnight) {
+      nightCount += 1;
+      nightStaff += headcount;
+    } else if (s.type === 'flexible') {
+      flexibleCount += 1;
+      flexibleStaff += headcount;
+      dayShiftsCount += 1;
+      dayShiftsStaff += headcount;
+    } else {
+      fixedCount += 1;
+      fixedStaff += headcount;
+      dayShiftsCount += 1;
+      dayShiftsStaff += headcount;
+    }
+
+    return {
+      _id: s._id,
+      name: s.name,
+      code: s.code,
+      type: s.type,
+      startTime: s.startTime,
+      endTime: s.endTime,
+      isCrossMidnight: s.isCrossMidnight,
+      durationMinutes: s.durationMinutes,
+      capacity: s.capacity || 0,
+      headcount,
+      departmentName: s.departmentId?.name || 'All Departments',
+      color: s.color || '#00C471'
+    };
+  });
+
+  shiftHeadcounts.sort((a, b) => b.headcount - a.headcount);
+
+  const typeDistribution = [
+    { type: 'fixed', label: 'Fixed Schedule', shiftCount: fixedCount, staffCount: fixedStaff, color: '#00C471' },
+    { type: 'flexible', label: 'Flexible Hours', shiftCount: flexibleCount, staffCount: flexibleStaff, color: '#F59E0B' },
+    { type: 'night', label: 'Night / Rotational', shiftCount: nightCount, staffCount: nightStaff, color: '#818CF8' }
+  ];
+
+  const dayNightRatio = {
+    day: { shiftCount: dayShiftsCount, staffCount: dayShiftsStaff, label: 'Day Shifts' },
+    night: { shiftCount: nightCount, staffCount: nightStaff, label: 'Night / Overnight' }
+  };
+
+  const deptMap = new Map();
+  activeShiftsList.forEach((s) => {
+    if (s.departmentId) {
+      const dId = s.departmentId._id.toString();
+      if (!deptMap.has(dId)) {
+        deptMap.set(dId, { name: s.departmentId.name, code: s.departmentId.code, shiftCount: 0 });
+      }
+      deptMap.get(dId).shiftCount += 1;
+    }
+  });
+
+  const departmentBreakdown = Array.from(deptMap.values());
+
+  const summary = {
+    totalShifts,
+    activeShifts,
+    archivedShifts,
+    nightShifts,
+    totalAssignedEmployees: assignedEmployees,
+    unassignedEmployees: Math.max(0, totalEmployees - assignedEmployees),
+    totalEmployees,
+    staffedShifts,
+    emptyShifts,
+    departmentsCount: departmentBreakdown.length
+  };
+
+  return {
+    summary,
+    typeDistribution,
+    shiftHeadcounts,
+    departmentBreakdown,
+    dayNightRatio
+  };
+};
+
+/**
+ * 4.4: Retrieve 7 live KPI statistics for shifts
+ */
+export const getShiftStats = async () => {
+  const analytics = await getShiftAnalytics();
+  return {
+    total: analytics.summary.totalShifts,
+    active: analytics.summary.activeShifts,
+    archived: analytics.summary.archivedShifts,
+    totalAssignedEmployees: analytics.summary.totalAssignedEmployees,
+    unassignedEmployees: analytics.summary.unassignedEmployees,
+    withEmployees: analytics.summary.staffedShifts,
+    withoutEmployees: analytics.summary.emptyShifts,
+    nightShifts: analytics.summary.nightShifts,
+    departmentsCount: analytics.summary.departmentsCount
+  };
+};
+
+/**
  * 4.4: Retrieve single shift by ID
  */
 export const getShiftById = async (id) => {
-  const shift = await Shift.findOne({ _id: id, isDeleted: false }).lean();
+  const shift = await Shift.findOne({ _id: id, isDeleted: false })
+    .populate('departmentId', 'name code')
+    .populate('createdBy', 'name email')
+    .populate('archivedBy', 'name email')
+    .lean();
   if (!shift) {
     throw new ApiError(404, 'Shift not found');
   }
 
   const headcount = await Employee.countDocuments({ shiftId: id, isDeleted: false });
   return { ...shift, headcount };
+};
+
+/**
+ * 4.4: Retrieve assigned employee roster for a shift
+ */
+export const getShiftEmployees = async (id, { page = 1, limit = 10, search = '' } = {}) => {
+  const shift = await Shift.findOne({ _id: id, isDeleted: false });
+  if (!shift) {
+    throw new ApiError(404, 'Shift not found');
+  }
+
+  const query = { shiftId: id, isDeleted: false };
+  if (search && typeof search === 'string' && search.trim()) {
+    const term = escapeRegex(search.trim());
+    if (term) {
+      query.$or = [
+        { name: { $regex: term, $options: 'i' } },
+        { employeeCode: { $regex: term, $options: 'i' } },
+        { email: { $regex: term, $options: 'i' } }
+      ];
+    }
+  }
+
+  const pageNum = Math.max(1, parseInt(page, 10));
+  const limitNum = Math.max(1, parseInt(limit, 10));
+  const skip = (pageNum - 1) * limitNum;
+
+  const total = await Employee.countDocuments(query);
+  const employees = await Employee.find(query)
+    .select('name employeeCode email phone avatar departmentId designationId status joiningDate')
+    .populate('departmentId', 'name code')
+    .populate('designationId', 'title grade')
+    .sort({ name: 1 })
+    .skip(skip)
+    .limit(limitNum)
+    .lean();
+
+  return {
+    employees,
+    total,
+    page: pageNum,
+    limit: limitNum,
+    totalPages: Math.ceil(total / limitNum) || 1
+  };
+};
+
+/**
+ * 4.4: Assign or reassign employees to a shift
+ */
+export const assignEmployeesToShift = async (shiftId, { employeeIds = [], action = 'add' } = {}, actor) => {
+  const shift = await Shift.findOne({ _id: shiftId, isDeleted: false });
+  if (!shift) {
+    throw new ApiError(404, 'Shift not found');
+  }
+
+  if (shift.isArchived) {
+    throw new ApiError(400, `Cannot assign employees to shift '${shift.name}' because it is archived.`);
+  }
+
+  const validIds = employeeIds.filter((id) => mongoose.Types.ObjectId.isValid(id));
+  if (validIds.length === 0 && action !== 'clear') {
+    throw new ApiError(400, 'No valid employee IDs provided');
+  }
+
+  let modifiedCount = 0;
+
+  if (action === 'remove') {
+    const res = await Employee.updateMany(
+      { _id: { $in: validIds }, shiftId: shiftId, isDeleted: false },
+      { $set: { shiftId: null } }
+    );
+    modifiedCount = res.modifiedCount;
+  } else if (action === 'set') {
+    if (shift.capacity > 0 && validIds.length > shift.capacity) {
+      throw new ApiError(400, `Cannot assign ${validIds.length} employees. Shift capacity is ${shift.capacity}.`);
+    }
+    await Employee.updateMany(
+      { shiftId: shiftId, isDeleted: false },
+      { $set: { shiftId: null } }
+    );
+    const res = await Employee.updateMany(
+      { _id: { $in: validIds }, isDeleted: false },
+      { $set: { shiftId: shift._id } }
+    );
+    modifiedCount = res.modifiedCount;
+  } else {
+    // action == 'add'
+    if (shift.capacity > 0) {
+      const currentCount = await Employee.countDocuments({ shiftId: shift._id, isDeleted: false });
+      const newAssignmentsCount = await Employee.countDocuments({
+        _id: { $in: validIds },
+        shiftId: { $ne: shift._id },
+        isDeleted: false
+      });
+      if (currentCount + newAssignmentsCount > shift.capacity) {
+        throw new ApiError(
+          400,
+          `Cannot add ${newAssignmentsCount} employees. Total will exceed shift capacity of ${shift.capacity} (Current: ${currentCount}).`
+        );
+      }
+    }
+    const res = await Employee.updateMany(
+      { _id: { $in: validIds }, isDeleted: false },
+      { $set: { shiftId: shift._id } }
+    );
+    modifiedCount = res.modifiedCount;
+  }
+
+  await recordAuditLog({
+    userId: actor?._id,
+    actor,
+    action: 'shift.assign_employees',
+    entity: 'Shift',
+    entityId: shift._id,
+    ip: actor?.ip,
+    details: { shiftName: shift.name, action, employeeCount: validIds.length, modifiedCount }
+  });
+
+  const updatedHeadcount = await Employee.countDocuments({ shiftId: shift._id, isDeleted: false });
+
+  return {
+    message: `Successfully updated shift assignments for '${shift.name}'.`,
+    modifiedCount,
+    headcount: updatedHeadcount
+  };
+};
+
+/**
+ * 4.4: Soft-archive a shift
+ */
+export const archiveShift = async (id, actor) => {
+  const shift = await Shift.findOne({ _id: id, isDeleted: false });
+  if (!shift) {
+    throw new ApiError(404, 'Shift not found');
+  }
+
+  if (shift.isArchived) {
+    throw new ApiError(400, `Shift '${shift.name}' is already archived`);
+  }
+
+  const beforeState = shift.toObject();
+  shift.isArchived = true;
+  shift.archivedAt = new Date();
+  shift.archivedBy = actor?._id || null;
+  await shift.save();
+
+  await recordAuditLog({
+    userId: actor?._id,
+    actor,
+    action: 'shift.archive',
+    entity: 'Shift',
+    entityId: shift._id,
+    before: beforeState,
+    after: shift.toObject(),
+    ip: actor?.ip,
+    details: { name: shift.name, code: shift.code }
+  });
+
+  return shift;
+};
+
+/**
+ * 4.4: Restore an archived shift
+ */
+export const restoreShift = async (id, actor) => {
+  const shift = await Shift.findOne({ _id: id, isDeleted: false });
+  if (!shift) {
+    throw new ApiError(404, 'Shift not found');
+  }
+
+  if (!shift.isArchived) {
+    throw new ApiError(400, `Shift '${shift.name}' is not archived`);
+  }
+
+  // Active Code Uniqueness Guard
+  const existingActive = await Shift.findOne({
+    _id: { $ne: id },
+    code: shift.code,
+    isArchived: { $ne: true },
+    isDeleted: false
+  });
+  if (existingActive) {
+    throw new ApiError(
+      400,
+      `Cannot restore shift: An active shift with code '${shift.code}' already exists.`
+    );
+  }
+
+  // If department association exists, verify department is not deleted
+  if (shift.departmentId) {
+    const dept = await Department.findOne({ _id: shift.departmentId, isDeleted: false });
+    if (!dept) {
+      shift.departmentId = null; // Unlink deleted department gracefully
+    }
+  }
+
+  const beforeState = shift.toObject();
+  shift.isArchived = false;
+  shift.archivedAt = null;
+  shift.archivedBy = null;
+  shift.isActive = true;
+  await shift.save();
+
+  await recordAuditLog({
+    userId: actor?._id,
+    actor,
+    action: 'shift.restore',
+    entity: 'Shift',
+    entityId: shift._id,
+    before: beforeState,
+    after: shift.toObject(),
+    ip: actor?.ip,
+    details: { name: shift.name, code: shift.code }
+  });
+
+  return shift;
+};
+
+/**
+ * 4.4: Permanently purge shift from database
+ * MANDATORY GUARD: A shift must NOT be permanently deleted as long as one or more employees are assigned to it.
+ */
+export const permanentDeleteShift = async (id, actor) => {
+  const shift = await Shift.findById(id);
+  if (!shift || shift.isDeleted) {
+    throw new ApiError(404, 'Shift not found');
+  }
+
+  // CRITICAL MANDATORY BUSINESS RULE: Check employee assignment
+  const assignedCount = await Employee.countDocuments({ shiftId: id, isDeleted: false });
+  if (assignedCount > 0) {
+    throw new ApiError(
+      400,
+      `This shift cannot be permanently deleted because ${assignedCount} employee(s) are currently assigned to it. Please reassign all employees to another shift before proceeding.`
+    );
+  }
+
+  const beforeState = shift.toObject();
+  await Shift.deleteOne({ _id: id });
+
+  await recordAuditLog({
+    userId: actor?._id,
+    actor,
+    action: 'shift.permanent_delete',
+    entity: 'Shift',
+    entityId: id,
+    before: beforeState,
+    ip: actor?.ip,
+    details: { name: shift.name, code: shift.code }
+  });
+
+  return { message: `Shift '${shift.name}' permanently deleted.` };
 };
 
 /**
@@ -1564,12 +2036,26 @@ export const createShift = async (payload, actor) => {
     breakMinutes = 60,
     halfDayMinutes = 240,
     workDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+    departmentId = null,
+    capacity = 0,
+    description = '',
+    color = '#00C471',
     isActive = true
   } = payload;
 
   const existingCode = await Shift.findOne({ code: code.toUpperCase(), isDeleted: false });
   if (existingCode) {
     throw new ApiError(400, `Shift with code '${code.toUpperCase()}' already exists`);
+  }
+
+  if (departmentId) {
+    const dept = await Department.findOne({ _id: departmentId, isDeleted: false });
+    if (!dept) {
+      throw new ApiError(404, 'Associated department not found');
+    }
+    if (dept.isArchived) {
+      throw new ApiError(400, `Cannot associate shift with department '${dept.name}' because it is archived.`);
+    }
   }
 
   const { isCrossMidnight, durationMinutes } = calculateShiftTiming(startTime, endTime, breakMinutes, type);
@@ -1584,6 +2070,10 @@ export const createShift = async (payload, actor) => {
     breakMinutes,
     halfDayMinutes,
     workDays,
+    departmentId: departmentId || null,
+    capacity: Math.max(0, Number(capacity) || 0),
+    description: description || '',
+    color: color || '#00C471',
     isCrossMidnight,
     durationMinutes,
     isActive,
@@ -1627,6 +2117,24 @@ export const updateShift = async (id, payload, actor) => {
     shift.code = payload.code.toUpperCase();
   }
 
+  if (payload.departmentId !== undefined) {
+    if (payload.departmentId) {
+      const dept = await Department.findOne({ _id: payload.departmentId, isDeleted: false });
+      if (!dept) {
+        throw new ApiError(404, 'Associated department not found');
+      }
+      if (dept.isArchived) {
+        throw new ApiError(400, `Cannot associate shift with department '${dept.name}' because it is archived.`);
+      }
+      shift.departmentId = payload.departmentId;
+    } else {
+      shift.departmentId = null;
+    }
+  }
+
+  if (payload.capacity !== undefined) shift.capacity = Math.max(0, Number(payload.capacity) || 0);
+  if (payload.description !== undefined) shift.description = payload.description;
+  if (payload.color !== undefined) shift.color = payload.color;
   if (payload.name) shift.name = payload.name;
   if (payload.type) shift.type = payload.type;
   if (payload.startTime) shift.startTime = payload.startTime;

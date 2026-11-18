@@ -153,6 +153,17 @@ export const createEmployee = async (payload, actor) => {
     }
   }
 
+  // Shift validity & archival guard
+  if (payload.shiftId) {
+    const shift = await Shift.findOne({ _id: payload.shiftId, isDeleted: false });
+    if (!shift) {
+      throw new ApiError(404, 'Specified work shift does not exist');
+    }
+    if (shift.isArchived) {
+      throw new ApiError(400, `Cannot assign employee to shift '${shift.name}' because it is archived.`);
+    }
+  }
+
   // 3. Encrypt sensitive fields
   const employeeData = { ...payload };
   if (employeeData.cnic) {
@@ -560,6 +571,17 @@ export const updateEmployee = async (id, payload, actor) => {
     }
     if (desig.isArchived) {
       throw new ApiError(400, `Cannot assign employee to designation '${desig.title}' because it is archived.`);
+    }
+  }
+
+  // Shift validity & archival guard
+  if (payload.shiftId && String(payload.shiftId) !== String(employee.shiftId)) {
+    const shift = await Shift.findOne({ _id: payload.shiftId, isDeleted: false });
+    if (!shift) {
+      throw new ApiError(404, 'Specified work shift does not exist');
+    }
+    if (shift.isArchived) {
+      throw new ApiError(400, `Cannot assign employee to shift '${shift.name}' because it is archived.`);
     }
   }
 

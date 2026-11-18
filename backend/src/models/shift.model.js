@@ -79,6 +79,41 @@ const shiftSchema = new mongoose.Schema(
       type: Boolean,
       default: true
     },
+    isArchived: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+    archivedAt: {
+      type: Date,
+      default: null
+    },
+    archivedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
+    },
+    departmentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Department',
+      default: null
+    },
+    capacity: {
+      type: Number,
+      default: 0, // 0 = unlimited capacity
+      min: 0
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: [500, 'Description cannot exceed 500 characters'],
+      default: ''
+    },
+    color: {
+      type: String,
+      trim: true,
+      default: '#00C471'
+    },
     isDeleted: {
       type: Boolean,
       default: false
@@ -100,5 +135,9 @@ const shiftSchema = new mongoose.Schema(
 shiftSchema.index({ type: 1, isDeleted: 1 });
 shiftSchema.index({ isActive: 1, isDeleted: 1 });
 shiftSchema.index({ isCrossMidnight: 1, isDeleted: 1 });
+shiftSchema.index({ isArchived: 1, isDeleted: 1 });
+shiftSchema.index({ type: 1, isArchived: 1 });
+shiftSchema.index({ departmentId: 1, isArchived: 1 });
+shiftSchema.index({ code: 1, isArchived: 1, isDeleted: 1 });
 
 export const Shift = mongoose.model('Shift', shiftSchema);
