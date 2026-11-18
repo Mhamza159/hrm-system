@@ -112,7 +112,12 @@ export const departmentsApi = baseApi.injectEndpoints({
         method: 'POST',
         body: data
       }),
-      invalidatesTags: [{ type: 'Departments', id: 'LIST' }, 'OrgChart']
+      invalidatesTags: [
+        { type: 'Departments', id: 'LIST' },
+        'DepartmentStats',
+        'DepartmentAnalytics',
+        'OrgChart'
+      ]
     }),
 
     // 4.1: Update department
@@ -125,6 +130,8 @@ export const departmentsApi = baseApi.injectEndpoints({
       invalidatesTags: (result, error, { id }) => [
         { type: 'Departments', id },
         { type: 'Departments', id: 'LIST' },
+        'DepartmentStats',
+        'DepartmentAnalytics',
         'OrgChart'
       ]
     }),
@@ -139,6 +146,8 @@ export const departmentsApi = baseApi.injectEndpoints({
       invalidatesTags: (result, error, { id }) => [
         { type: 'Departments', id },
         { type: 'Departments', id: 'LIST' },
+        'DepartmentStats',
+        'DepartmentAnalytics',
         'OrgChart'
       ]
     }),
@@ -158,7 +167,12 @@ export const departmentsApi = baseApi.injectEndpoints({
         url: `/departments/${id}`,
         method: 'DELETE'
       }),
-      invalidatesTags: [{ type: 'Departments', id: 'LIST' }, 'OrgChart']
+      invalidatesTags: [
+        { type: 'Departments', id: 'LIST' },
+        'DepartmentStats',
+        'DepartmentAnalytics',
+        'OrgChart'
+      ]
     }),
 
     // 4.3: Designations Endpoints

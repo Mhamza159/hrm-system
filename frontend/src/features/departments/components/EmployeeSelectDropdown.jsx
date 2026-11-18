@@ -26,6 +26,8 @@ export function EmployeeSelectDropdown({
 
   const candidates = candidatesResponse?.data || [];
 
+  const [cachedCandidate, setCachedCandidate] = useState(null);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -44,11 +46,23 @@ export function EmployeeSelectDropdown({
     }
   }, [isOpen]);
 
-  // Find currently selected candidate
+  // Cache selected candidate to prevent trigger button flicker during remote search
+  useEffect(() => {
+    if (value && candidates.length > 0) {
+      const match = candidates.find((c) => String(c._id) === String(value));
+      if (match) {
+        setCachedCandidate(match);
+      }
+    } else if (!value) {
+      setCachedCandidate(null);
+    }
+  }, [candidates, value]);
+
+  // Find currently selected candidate with fallback to cached candidate
   const selectedCandidate = useMemo(() => {
     if (!value) return null;
-    return candidates.find((c) => String(c._id) === String(value));
-  }, [candidates, value]);
+    return candidates.find((c) => String(c._id) === String(value)) || cachedCandidate;
+  }, [candidates, value, cachedCandidate]);
 
   const handleSelect = (candId) => {
     onChange(candId);
@@ -59,6 +73,7 @@ export function EmployeeSelectDropdown({
   const handleClear = (e) => {
     e.stopPropagation();
     onChange('');
+    setCachedCandidate(null);
     setSearchTerm('');
   };
 

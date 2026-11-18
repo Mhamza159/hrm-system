@@ -49,7 +49,8 @@ export function DepartmentAnalyticsSection({ analytics = {}, isLoading = false }
   const circumference = 2 * Math.PI * radius;
 
   let cumulativePercent = 0;
-  const donutSlices = workforceDistribution.map((item, idx) => {
+  const activeDistribution = workforceDistribution.filter((item) => (item.count || 0) > 0);
+  const donutSlices = activeDistribution.map((item, idx) => {
     const pct = item.percentage || 0;
     const strokeDasharray = `${(pct / 100) * circumference} ${circumference}`;
     const strokeDashoffset = -((cumulativePercent / 100) * circumference);

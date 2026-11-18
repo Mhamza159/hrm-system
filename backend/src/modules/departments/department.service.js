@@ -9,6 +9,7 @@
  *   integrity guards, and audit snapshots occur strictly inside this service.
  */
 
+import mongoose from 'mongoose';
 import { Department } from '../../models/department.model.js';
 import { Designation } from '../../models/designation.model.js';
 import { Shift } from '../../models/shift.model.js';
@@ -87,7 +88,11 @@ export const getAllDepartments = async ({ search = '', parentId, isActive, isArc
   }
 
   if (parentId !== undefined) {
-    query.parentId = parentId === 'null' || parentId === null ? null : parentId;
+    if (parentId === 'null' || parentId === null) {
+      query.parentId = null;
+    } else if (mongoose.Types.ObjectId.isValid(parentId)) {
+      query.parentId = parentId;
+    }
   }
 
   if (isActive !== undefined) {
