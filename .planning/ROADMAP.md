@@ -935,6 +935,53 @@ Plans:
 
 ---
 
+## Phase 27: Work Shifts Module — Complete UI Overhaul, Shift Scheduling, System-Wide Integration, RBAC/PBAC Compliance & Error Fixing
+
+**Goal:** Transform the Work Shifts Module into an enterprise-grade schedule management and workforce roster command center. Implement a 7-KPI live analytics dashboard with interactive visual distributions (horizontal staff-per-shift flex-bars and SVG Donut chart for shift types), dual view switcher (high-density Enterprise Table View vs Shift Cards Grid View), and multi-dimensional filtering (search, shift type, status, department). Redesign all modals (Create, Edit, Deep Inspection Details, Employee Assignment with searchable dropdown, Archive, Restore, and Permanent Delete) with live cross-midnight calculations, break deduction previews, working days multi-select, and strict enforcement of the non-negotiable **Employee Assignment Restriction Guard** (a shift cannot be permanently deleted while $\ge 1$ employee is assigned). Audit and verify cross-module integrations with Attendance (`attendance.service.js`), Employees (`shiftId`), Departments, and Payroll, ensuring attendance check-in/out evaluations and historical punch records are fully preserved. Verify complete functionality through an automated Vitest E2E test suite, 0 oxlint errors, and a clean Vite production build.
+
+**Requirements**:
+- **1. Backend Schema Expansion, Archival Lifecycle & Employee Assignment Restriction Guard (`shift.model.js`, `department.service.js`, `shift.routes.js`, `employee.service.js`)**:
+  - Add `isArchived`, `archivedAt`, `archivedBy`, `departmentId`, `capacity`, `description`, and `color` fields and compound indexes to `Shift` schema.
+  - Implement soft archive (`PATCH /api/v1/shifts/:id/archive`), restore (`PATCH /api/v1/shifts/:id/restore`), and permanent delete (`DELETE /api/v1/shifts/:id/permanent`).
+  - Strict Employee Assignment Restriction Guard: Permanent deletion is blocked if $\ge 1$ employee is assigned.
+  - Guard `createEmployee` and `updateEmployee` to prevent assigning archived shifts.
+- **2. Backend Analytics Aggregation, KPI Statistics, Staff Roster API & Employee Bulk Assignment Endpoint (`department.service.js`, `department.controller.js`, `shift.routes.js`)**:
+  - `GET /api/v1/shifts/stats`: 7 aggregated KPIs (Total, Active, Archived, Assigned Staff, Staffed, Empty, Night Shifts).
+  - `GET /api/v1/shifts/analytics`: Shift type distribution, day/night ratios, and headcount per shift.
+  - `GET /api/v1/shifts/:id/employees`: Paginated, searchable list of employees assigned to a shift.
+  - `POST /api/v1/shifts/:id/assign`: Bulk assignment of employees with capacity enforcement.
+- **3. Dashboard Analytics, 7 KPI Summary Cards & Visual Distribution Charts (`ShiftStatsCards.jsx`, `ShiftAnalyticsSection.jsx`)**:
+  - 7 KPI summary cards matching Forest & Emerald Enterprise theme (`#061A14`, `#111D17`, `#1A3125`, `#00C471`).
+  - Interactive horizontal distribution bar chart and native SVG Donut chart for Fixed vs Flexible vs Night schedules.
+- **4. Shift Directory Overhaul, Dual View Switcher (Table & Card Grid) & Multi-Dimensional Filtering Toolbar (`ShiftsPage.jsx`, `ShiftFilterBar.jsx`, `ShiftCardView.jsx`)**:
+  - Dual view switcher: Enterprise Table View vs interactive Shift Cards Grid View.
+  - Multi-dimensional filter toolbar with instant search, shift type filter, status filter, and department selector.
+- **5. Redesigned Create & Edit Shift Modal with Real-Time Timing Calculations, Overnight Detection & Department Associations (`ShiftModal.jsx`)**:
+  - Start/end time pickers with live duration calculation, break deduction, overnight moon indicator, and work days selector.
+- **6. Employee Shift Assignment Modal & Shift Roster Scheduling (`ShiftAssignModal.jsx`)**:
+  - Dedicated assignment modal with searchable employee dropdown, capacity bar, and roster management.
+- **7. Deep Inspection Details Modal with Assigned Staff Roster & Timing Breakdown (`ShiftDetailModal.jsx`)**:
+  - Full schedule inspection with timing timeline, work days chips, archival notice, and assigned employee sub-table.
+- **8. Archive Management Console, Revert/Restore & Permanent Delete with Mandatory Guard & Comprehensive Vitest E2E Suite (`ArchivedShiftList.jsx`, `ShiftArchiveModal.jsx`, `ShiftRestoreModal.jsx`, `ShiftPermanentDeleteModal.jsx`, `shifts.overhaul.e2e.test.js`)**:
+  - Dedicated Archive Tab with restore and guarded permanent delete.
+  - Comprehensive Vitest test suite with 100% green tests, 0 oxlint errors, and clean Vite production build.
+
+**Depends on:** Phase 26  
+**Plans:** 8 plans  
+
+Plans:
+
+- [ ] **Plan 27-01: Backend Schema Expansion, Archival Lifecycle & Employee Assignment Restriction Guard** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-01-PLAN.md`)
+- [ ] **Plan 27-02: Backend Analytics Aggregation, KPI Statistics, Staff Roster API & Employee Bulk Assignment Endpoint** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-02-PLAN.md`)
+- [ ] **Plan 27-03: Dashboard Analytics, 7 KPI Summary Cards & Visual Distribution Charts** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-03-PLAN.md`)
+- [ ] **Plan 27-04: Shift Directory Overhaul, Dual View Switcher (Table & Card Grid) & Multi-Dimensional Filtering Toolbar** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-04-PLAN.md`)
+- [ ] **Plan 27-05: Redesigned Create & Edit Shift Modal with Real-Time Timing Calculations, Overnight Detection & Department Associations** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-05-PLAN.md`)
+- [ ] **Plan 27-06: Employee Shift Assignment Modal & Shift Roster Scheduling** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-06-PLAN.md`)
+- [ ] **Plan 27-07: Deep Inspection Details Modal with Assigned Staff Roster & Timing Breakdown** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-07-PLAN.md`)
+- [ ] **Plan 27-08: Archive Management Console, Revert/Restore & Permanent Delete with Mandatory Guard & Comprehensive Vitest E2E Suite** (`.planning/phases/27-work-shifts-module-complete-ui-overhaul-shift-scheduling-system-wide-integration-rbac-pbac-compliance-error-fixing/27-08-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features
@@ -942,4 +989,4 @@ Plans:
 - **Phase 3 (AI Features):** 3 modules · 27 features
 - **Phase 4 (Engagement & Polish):** 5 modules · 31 features
 - **Phase 5 (Release & Handover):** 3 deployment milestones
-- **Total Vertical Slice Features:** **273 features** across 26 modules + 2 cross-cutting quality gates (X1, X2) + 3 deployment milestones.
+- **Total Vertical Slice Features:** **281 features** across 27 modules + 2 cross-cutting quality gates (X1, X2) + 3 deployment milestones.
