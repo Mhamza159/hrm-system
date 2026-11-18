@@ -845,42 +845,39 @@ Plans:
 
 ---
 
-## Phase 25: Department Module — Complete Audit, Implementation, Archive Management & UI/UX Refinement
+## Phase 25: Department Module — Critical Regression Fix, Complete Audit, RBAC/PBAC Compliance & UI/UX Refinement
 
-**Goal:** Deliver a complete, robust, and secure **Department & Organizational Hierarchy System** across the HRMS. Implement full lifecycle management with an **Archive Tab**, **Restore/Revert Modal**, **Permanent Deletion Modal**, dynamic KPI dashboard cards (`GET /api/v1/departments/stats`), and strict enforcement of the non-negotiable **Employee Assignment Restriction Guard** (a department cannot be permanently deleted as long as one or more employees are assigned to it). Guard employee onboarding and profiles against assignment to archived departments, detect and prevent circular reporting hierarchies, maintain code uniqueness, and modernize all modals and tables in accordance with the Forest & Emerald Enterprise design system.
+**Goal:** Diagnose and resolve the critical regression where departments stopped displaying in the Department listing (resolving MongoDB BSON field omission via `{ isArchived: { $ne: true } }` and data normalization). Conduct an exhaustive audit across backend models, services, controllers, routes, RBAC/PBAC permissions (`org.view`, `org.manage`), and frontend state. Implement full lifecycle management with an **Archive Tab**, **Restore/Revert Modal**, **Permanent Deletion Modal**, dynamic KPI dashboard cards (`GET /api/v1/departments/stats`), and strict enforcement of the non-negotiable **Employee Assignment Restriction Guard** (a department cannot be permanently deleted as long as one or more employees are assigned to it). Guard employee onboarding and profiles against assignment to archived departments, detect and prevent circular reporting hierarchies, maintain code uniqueness, and modernize all modals and tables in accordance with `DESIGN.md` and `docs/UI-REFERENCE.md` in the Forest & Emerald Enterprise design system.
 
 **Requirements**:
-- **1. Backend Schema Expansion, Archival Lifecycle & Employee Assignment Restriction Guard (`department.model.js`, `department.service.js`, `department.validation.js`)**:
-  - Add archival tracking fields (`isArchived`, `archivedAt`, `archivedBy`) and query indexes.
-  - Implement service methods: `archiveDepartment`, `restoreDepartment`, `permanentDeleteDepartment`.
-  - Enforce **Employee Assignment Restriction Guard**: reject permanent deletion with HTTP 400 if $\ge 1$ employee is currently assigned.
-  - Sub-department hierarchy guard: block archiving or permanent deletion if active child departments report to it.
-- **2. Department Stats Aggregation, Archive Query Endpoints & Employee Guard Integration (`department.controller.js`, `department.routes.js`, `employee.service.js`, `departmentsApi.js`)**:
-  - `GET /api/v1/departments/stats`: Aggregated live metrics (Total, Active, Archived, With Staff, Without Staff).
-  - `GET /api/v1/departments/archived`: Paginated query with search, hierarchy, metadata, and assigned headcount.
-  - Endpoints for `PATCH /:id/archive`, `PATCH /:id/restore`, `DELETE /:id/permanent`.
-  - In `employee.service.js`, reject assigning new or updated employees to an archived department.
-  - RTK Query mutations and queries with automatic cache invalidation.
-- **3. Frontend Dashboard, Tabs (Active vs Archived), Filter Toolbar & Modernized Data Table (`DepartmentsPage.jsx`, `DepartmentStatsCards.jsx`, `DepartmentFilterBar.jsx`)**:
-  - Segmented tab navigation: **Active Departments (N)** vs **Archived Departments (N)**.
-  - KPI Stat Cards showing live database counts and status indicators.
-  - Unified filter toolbar with instant search, parent division dropdown, status filter, and reset/refresh controls.
-  - High-density responsive tables for both active and archived views, highlighting staff headcount and archive metadata.
-- **4. Complete Modals Suite & End-to-End Testing Verification (`DepartmentModal.jsx`, `DepartmentDetailModal.jsx`, `DepartmentArchiveModal.jsx`, `DepartmentRestoreModal.jsx`, `DepartmentPermanentDeleteModal.jsx`, `tests/departments.archive-lifecycle.e2e.test.js`)**:
-  - Professional modal suite: Create/Edit, Detailed Inspection (with staff roster), Archive Confirmation, and Restore Confirmation.
-  - Permanent Delete Modal with strict Employee Guard: displays assigned headcount and locks deletion button with guidance if headcount > 0.
-  - Comprehensive Vitest E2E test suite covering creation, circular prevention, archiving, restore, employee assignment blocking, and permanent deletion guards.
-  - 0 Oxlint warnings, 100% test pass rate, clean Vite production build.
+- **1. Critical Regression Fix & Schema Normalization (`department.service.js`, `department.model.js`)**:
+  - Fix `getAllDepartments` and `getDepartmentStats` to query `{ isArchived: { $ne: true } }` to match all legacy MongoDB documents.
+  - Run database normalization to populate `isArchived: false` on documents where the key is missing.
+- **2. RBAC/PBAC Authorization Compliance & Backend API Audit (`department.routes.js`, `department.controller.js`, `checkPermission.js`)**:
+  - Enforce `org.view` for read operations and `org.manage` for mutations.
+  - Guarantee route parameter order (`/stats` and `/archived` before `/:id`).
+  - Enforce strict employee onboarding guard against archived departments.
+- **3. Active Department Listing, Data Table & Filter Modernization (`DepartmentsPage.jsx`, `DepartmentStatsCards.jsx`, `DepartmentFilterBar.jsx`)**:
+  - Live KPI Stat Cards backed by real-time aggregation.
+  - High-density responsive tables with monospace code badges, tabular headcounts, and semantic status pills.
+  - Unified filter toolbar with instant search, division selector, and status filter.
+- **4. Archive Tab, Modals Redesign Suite & Mandatory Employee Deletion Guard (`DepartmentModal.jsx`, `DepartmentDetailModal.jsx`, `DepartmentArchiveModal.jsx`, `DepartmentRestoreModal.jsx`, `DepartmentPermanentDeleteModal.jsx`)**:
+  - Dual Tab Switcher: **Active Departments (N)** vs **Archived Departments (N)**.
+  - Complete modal suite matching Forest & Emerald theme.
+  - Strict Employee Guard: Lock permanent deletion if assigned headcount > 0 with authoritative guidance message.
+- **5. Comprehensive Regression & E2E Testing Suite (`tests/departments.archive-lifecycle.e2e.test.js`)**:
+  - 10/10 automated tests covering all 20 regression requirements, 0 oxlint errors, clean production build.
 
 **Depends on:** Phase 24
-**Plans:** 4 plans
+**Plans:** 5 plans
 
 Plans:
 
-- [x] **Plan 25-01: Backend Schema Expansion, Archival Lifecycle & Employee Assignment Restriction Guard** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-01-PLAN.md`)
-- [x] **Plan 25-02: Department Stats Aggregation, Archive Query Endpoints & Employee Guard Integration** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-02-PLAN.md`)
-- [x] **Plan 25-03: Department Dashboard, Tabs (Active vs Archived), Filter Toolbar & Modernized Data Table** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-03-PLAN.md`)
-- [x] **Plan 25-04: Complete Modals Suite (Detail, Archive, Restore, and Permanent Delete with Employee Guard) & End-to-End Verification** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-04-PLAN.md`)
+- [ ] **Plan 25-01: Critical Regression Fix — Department Listing Restoration & Schema Normalization** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-01-PLAN.md`)
+- [ ] **Plan 25-02: RBAC & PBAC Compliance, Authorization Audit & Backend API Verification** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-02-PLAN.md`)
+- [ ] **Plan 25-03: Active Department Listing, Data Table & Filter Modernization per DESIGN.md & UI-REFERENCE.md** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-03-PLAN.md`)
+- [ ] **Plan 25-04: Archive Tab, Modals Redesign Suite & Mandatory Employee Deletion Guard** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-04-PLAN.md`)
+- [ ] **Plan 25-05: Comprehensive Regression & End-to-End Testing Suite** (`.planning/phases/25-department-module-complete-audit-implementation-archive-management-ui-ux-refinement/25-05-PLAN.md`)
 
 ---
 
