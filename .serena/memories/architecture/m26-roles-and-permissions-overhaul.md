@@ -1,4 +1,4 @@
-# Module M26: Roles & Permissions Complete System-Wide RBAC/PBAC Overhaul
+# Module M26: Roles & Permissions Complete System-Wide RBAC/PBAC Overhaul & Phase 29 Studio Redesign
 
 ## 1. System Architecture & Catalogue
 - **Permission Catalogue (`backend/src/shared/permissions.js`)**:
@@ -29,22 +29,25 @@
 - **Field-Level Masking (`backend/src/utils/fieldFilter.js`)**:
   - Sensitive attributes (`baseSalary`, `cnic`, `bankAccount`, `pan`, `emergencyContacts`) masked as '—' unless actor holds specific read permissions.
 
-## 4. Frontend Command Center & Visual Studio
+## 4. Phase 29: Edit Role Studio & Visual Permission Matrix Redesign
 - **Design System**: Elvara Forest & Emerald Enterprise theme (`#061A14`, `#111D17`, `#1A3125`, `#00C471`).
-- **Dashboard Analytics**:
-  - 8-KPI live database-backed cards: Total Roles, Active Roles, System Core, Custom Roles, Assigned Staff, Total Permissions, Avg Perms/Role, Active Delegations.
-  - SVG Zero-Dependency Visualizations:
-    - `RoleDistributionChart.jsx`: Horizontal flex-bars showing headcount and workforce percentage.
-    - `ModulePermissionDonut.jsx`: Native SVG Donut chart displaying permission density across categories.
-- **Directory & Dual View Switcher**:
-  - High-density table view with avatar stacks and permission progress bars.
-  - Visual card grid view (`RoleCardView.jsx`) with localStorage persistence.
-  - Multi-dimensional filter toolbar (`RoleFilterBar.jsx`) with search, role type, status, and headcount filters.
-- **Guarded Modal Suite**:
-  - `RoleDetailModal.jsx`: Deep inspection with tabs for permissions, assigned staff roster, and audit history.
-  - `RoleCloneModal.jsx`: Clone existing role into new custom role.
-  - `RoleDeleteModal.jsx`: Guarded deletion with system role and active user locks.
-  - `UserRoleAssignModal.jsx`: Multi-role assignment with privilege escalation guard.
-- **Visual Matrix Studio**:
-  - `PermissionMatrix.jsx` with category jump-nav, tri-state checkboxes, bulk module scope setting, and auto-granting view dependencies.
-  - `PermissionDiffModal.jsx`: Pre-save side-by-side differential review.
+- **Role Specifications Studio Card (`RoleFormPage.jsx`)**:
+  - Breadcrumb navigation (`Roles & Permissions` -> `Edit Role: [Role Name]`).
+  - Active/Inactive toggle switch (disabled with lock for core system roles).
+  - Gold Crown (`Crown`) badge for immutable system roles.
+  - Monospace slug preview badge (`#identifier`).
+  - Auto-growing description textarea with character counter (`0/200`).
+  - Offline mode detector with save prevention banner (`WifiOff`).
+  - Browser departure guard (`beforeunload`) protecting uncommitted work.
+- **Visual Matrix Component Hierarchy**:
+  - `MatrixCategoryNav.jsx`: Sticky 5-category jump ribbon with density counts (`active/total`).
+  - `ModulePermissionCard.jsx`: Collapsible card with module icon, tri-state checkbox (checked, indeterminate, unchecked), bulk scope selector, and counter badge.
+  - `PermissionActionRow.jsx`: Memoized action row with primary emerald toggle, granular scope selector (`all`, `department`, `team`, `own`), and numerical approval limit input.
+  - `PermissionMatrix.jsx`: Integrated matrix controller featuring debounced search filter, "Show Enabled Only" switch, "Expand/Collapse All", and automated prerequisite resolution (e.g. granting `.approve` or `.edit` automatically grants module `.view`).
+- **Pre-Save Safety & Diff Review**:
+  - `PermissionDiffModal.jsx`: Pre-save modal itemizing added permissions (+), modified scopes (~), modified limits (~), and revoked permissions (-).
+  - Sticky bottom action bar displaying live delta count with quick "Discard" and "Review & Save" triggers.
+- **Automated Verification**:
+  - Vitest suite `backend/tests/roles.matrix.audit.test.js` (6/6 passing).
+  - 0 Oxlint errors across all roles components.
+  - Clean Vite production build.

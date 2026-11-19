@@ -92,6 +92,13 @@ router.patch(
   roleController.updateRole
 );
 
+router.put(
+  '/:id',
+  validate(updateRoleSchema),
+  checkPermission('role.manage'),
+  roleController.updateRole
+);
+
 router.delete(
   '/:id',
   validate(roleIdParamSchema),

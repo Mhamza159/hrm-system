@@ -14,10 +14,8 @@ import {
   MinusCircle,
   Sliders,
   Loader2,
-  Save,
   Check
 } from 'lucide-react';
-import { cn } from '../../../lib/utils.js';
 
 export function PermissionDiffModal({
   isOpen,

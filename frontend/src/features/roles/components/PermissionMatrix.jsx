@@ -1,37 +1,26 @@
 /**
  * @file PermissionMatrix.jsx
- * @description High-Performance Enterprise Visual Permission Matrix with Sticky Toolbar,
- * Module Navigator, Tri-State Brand Checkboxes, Scope Explanation Popovers, and Live Stats.
+ * @description High-Performance Visual Permission Matrix Studio for Roles & Access Governance.
+ * Features Sticky Command Toolbar, Category Quick-Jump Ribbon, Module Permission Cards with Tri-State Checkboxes,
+ * Fine-Grained Action Grid with Scopes and Approval Limits, and Dependency Auto-Granting.
  * 
- * SPECIFICATION & FEATURES:
- * - Module: M26 Roles & Permissions (BUILD-GUIDE Section 5 · Rows 26.8 & 26.9)
- * - Design System: Elvara Forest & Emerald Enterprise Craft (DESIGN.md)
- * - Hard Constraints: Strictly primary green checkboxes (#00C471), light & dark mode support,
- *   accessible keyboard navigation, memoized rendering for 100+ permissions without lag.
+ * Follows Elvara Forest & Emerald Enterprise theme (#061A14, #111D17, #1A3125, #00C471).
  */
 
-import React, { useState, useMemo, useCallback, memo, useRef } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
-  ChevronDown,
-  ChevronRight,
   Shield,
   Search,
-  Check,
-  Minus,
-  Info,
   Filter,
-  Maximize2,
-  Minimize2,
-  CheckSquare,
-  Square,
   HelpCircle,
-  Sliders,
+  Info,
   AlertCircle
 } from 'lucide-react';
 import { useGetPermissionsQuery } from '../rolesApi.js';
-import { cn } from '../../../lib/utils.js';
+import { MatrixCategoryNav, MATRIX_CATEGORIES } from './MatrixCategoryNav.jsx';
+import { ModulePermissionCard } from './ModulePermissionCard.jsx';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
-import { Checkbox } from '../../../components/common/Checkbox.jsx';
+import { cn } from '../../../lib/utils.js';
 
 // Scope Descriptions for the Info Popover
 const SCOPE_DEFINITIONS = {
@@ -53,116 +42,6 @@ const SCOPE_DEFINITIONS = {
   }
 };
 
-/**
- * Memoized Permission Row Component for high-performance updates
- */
-const PermissionRow = memo(function PermissionRow({
-  moduleItem,
-  actionItem,
-  rule,
-  readOnly,
-  onToggle,
-  onScopeChange,
-  onLimitChange
-}) {
-  const isChecked = Boolean(rule);
-  const currentScope = rule?.scope || actionItem.defaultScope || actionItem.allowedScopes[0] || 'all';
-  const currentLimit = rule?.limit;
-
-  return (
-    <div
-      className={cn(
-        'p-3 px-4 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs transition-colors duration-150',
-        isChecked
-          ? 'bg-emerald-50/25 dark:bg-emerald-950/15'
-          : 'hover:bg-slate-50/80 dark:hover:bg-white/[0.02]'
-      )}
-    >
-      {/* Checkbox and Action Identity */}
-      <div className="flex items-start gap-3 flex-1">
-        <Checkbox
-          id={`perm-${actionItem.action}`}
-          checked={isChecked}
-          disabled={readOnly}
-          onChange={() => onToggle(moduleItem, actionItem)}
-          aria-label={`Toggle permission for ${actionItem.label}`}
-          className="mt-0.5"
-        />
-
-        <div className="flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <label
-              htmlFor={`perm-${actionItem.action}`}
-              className={cn(
-                'font-semibold cursor-pointer select-none',
-                isChecked ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'
-              )}
-            >
-              {actionItem.label}
-            </label>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60">
-              {actionItem.action}
-            </span>
-          </div>
-          {actionItem.description && (
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
-              {actionItem.description}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Scopes & Limit Selectors */}
-      <div className="flex items-center gap-3 pl-7 md:pl-0 shrink-0">
-        {/* Scope Selector with Accessible Disabled Styling */}
-        <div className="flex items-center gap-1.5" title={!isChecked ? 'Enable permission to modify scope' : undefined}>
-          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Scope:</span>
-          <select
-            value={currentScope}
-            disabled={!isChecked || readOnly}
-            onChange={(e) => onScopeChange(actionItem.action, e.target.value)}
-            className={cn(
-              'px-2.5 py-1 text-xs rounded-lg border transition-all shadow-2xs font-medium cursor-pointer',
-              isChecked
-                ? 'border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand'
-                : 'border-slate-200/50 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 text-slate-400 dark:text-slate-600 cursor-not-allowed opacity-60'
-            )}
-          >
-            {actionItem.allowedScopes.map((sc) => (
-              <option key={sc} value={sc}>
-                {sc.charAt(0).toUpperCase() + sc.slice(1)}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Approval Threshold Limit (Slice 26.9) */}
-        {(actionItem.action.includes('approve') ||
-          actionItem.action.includes('expense') ||
-          actionItem.hasLimit) && (
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Limit:</span>
-            <input
-              type="number"
-              min="0"
-              placeholder="No cap"
-              value={currentLimit !== undefined ? currentLimit : ''}
-              disabled={!isChecked || readOnly}
-              onChange={(e) => onLimitChange(actionItem.action, e.target.value)}
-              className={cn(
-                'w-20 px-2 py-1 text-xs rounded-lg border font-mono transition-all shadow-2xs',
-                isChecked
-                  ? 'border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand'
-                  : 'border-slate-200/50 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 text-slate-400 cursor-not-allowed opacity-60'
-              )}
-            />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-});
-
 export function PermissionMatrix({
   value = [],
   onChange,
@@ -170,18 +49,18 @@ export function PermissionMatrix({
   className = ''
 }) {
   const { data: catalogueResponse, isLoading, isError, refetch } = useGetPermissionsQuery();
-  const catalogue = catalogueResponse?.data || [];
+  const catalogue = useMemo(() => catalogueResponse?.data || [], [catalogueResponse]);
 
   // Local UI Filter & Search States
   const [searchQuery, setSearchQuery] = useState('');
   const [onlyEnabled, setOnlyEnabled] = useState(false);
-  const [activeModuleFilter, setActiveModuleFilter] = useState('ALL');
+  const [activeCategory, setActiveCategory] = useState('ALL');
   const [showScopeInfo, setShowScopeInfo] = useState(false);
 
   // Accordion state (all expanded by default)
   const [expandedModules, setExpandedModules] = useState({});
 
-  // Helper map for fast rule lookups O(1)
+  // Fast O(1) rule lookup map
   const ruleMap = useMemo(() => {
     const map = new Map();
     value.forEach((r) => map.set(r.action, r));
@@ -216,19 +95,25 @@ export function PermissionMatrix({
       const newRule = {
         action: actionItem.action,
         subject: moduleItem.subject,
-        scope: actionItem.defaultScope || actionItem.allowedScopes[0] || 'all',
+        scope: actionItem.defaultScope || actionItem.allowedScopes?.[0] || 'all',
         fields: [],
         limit: undefined
       };
 
       // Dependency validation: if granting mutation/approval, ensure module's view action is also granted
       const newRules = [newRule];
-      const viewAction = moduleItem.actions.find((a) => a.action.endsWith('.view') || a.action.endsWith('.read'));
-      if (viewAction && viewAction.action !== actionItem.action && !ruleMap.has(viewAction.action)) {
+      const viewAction = (moduleItem.actions || []).find(
+        (a) => a.action.endsWith('.view') || a.action.endsWith('.read')
+      );
+      if (
+        viewAction &&
+        viewAction.action !== actionItem.action &&
+        !ruleMap.has(viewAction.action)
+      ) {
         newRules.push({
           action: viewAction.action,
           subject: moduleItem.subject,
-          scope: viewAction.defaultScope || viewAction.allowedScopes[0] || 'all',
+          scope: viewAction.defaultScope || viewAction.allowedScopes?.[0] || 'all',
           fields: [],
           limit: undefined
         });
@@ -266,7 +151,7 @@ export function PermissionMatrix({
   // Select all or deselect all for a single module
   const handleSelectAllModule = useCallback((moduleItem, isSelected) => {
     if (readOnly) return;
-    const moduleActionNames = new Set(moduleItem.actions.map((a) => a.action));
+    const moduleActionNames = new Set((moduleItem.actions || []).map((a) => a.action));
 
     if (isSelected) {
       // Deselect all
@@ -275,13 +160,13 @@ export function PermissionMatrix({
     } else {
       // Select all
       const otherRules = value.filter((r) => !moduleActionNames.has(r.action));
-      const newModuleRules = moduleItem.actions.map((a) => {
+      const newModuleRules = (moduleItem.actions || []).map((a) => {
         const existing = ruleMap.get(a.action);
         return (
           existing || {
             action: a.action,
             subject: moduleItem.subject,
-            scope: a.defaultScope || a.allowedScopes[0] || 'all',
+            scope: a.defaultScope || a.allowedScopes?.[0] || 'all',
             fields: [],
             limit: undefined
           }
@@ -294,7 +179,7 @@ export function PermissionMatrix({
   // Bulk set scope for all enabled actions in a module
   const handleBulkModuleScope = useCallback((moduleItem, newScope) => {
     if (readOnly) return;
-    const moduleActionNames = new Set(moduleItem.actions.map((a) => a.action));
+    const moduleActionNames = new Set((moduleItem.actions || []).map((a) => a.action));
     const updated = value.map((r) => {
       if (moduleActionNames.has(r.action)) {
         return { ...r, scope: newScope };
@@ -304,18 +189,18 @@ export function PermissionMatrix({
     onChange?.(updated);
   }, [readOnly, value, onChange]);
 
-  // Bulk Grant All / Revoke All across visible / entire catalogue
+  // Bulk Grant All / Revoke All across entire catalogue
   const handleBulkGrantAll = useCallback(() => {
     if (readOnly) return;
     const allRules = [];
     catalogue.forEach((mod) => {
-      mod.actions.forEach((act) => {
+      (mod.actions || []).forEach((act) => {
         const existing = ruleMap.get(act.action);
         allRules.push(
           existing || {
             action: act.action,
             subject: mod.subject,
-            scope: act.defaultScope || act.allowedScopes[0] || 'all',
+            scope: act.defaultScope || act.allowedScopes?.[0] || 'all',
             fields: [],
             limit: undefined
           }
@@ -330,24 +215,45 @@ export function PermissionMatrix({
     onChange?.([]);
   }, [readOnly, onChange]);
 
-  // Filter catalogue by search query, enabled flag, and active module tab
+  // Compute category statistics for the ribbon
+  const categoryStats = useMemo(() => {
+    const stats = {};
+    MATRIX_CATEGORIES.forEach((cat) => {
+      if (cat.key === 'ALL') return;
+      let total = 0;
+      let active = 0;
+      catalogue.forEach((mod) => {
+        if (cat.modules.includes(mod.module)) {
+          total += mod.actions?.length || 0;
+          (mod.actions || []).forEach((act) => {
+            if (ruleMap.has(act.action)) active++;
+          });
+        }
+      });
+      stats[cat.key] = { active, total };
+    });
+    return stats;
+  }, [catalogue, ruleMap]);
+
+  // Filter catalogue by search query, enabled flag, and active category tab
   const filteredCatalogue = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
+    const currentCatObj = MATRIX_CATEGORIES.find((c) => c.key === activeCategory);
 
     return catalogue
       .filter((moduleItem) => {
-        if (activeModuleFilter !== 'ALL' && moduleItem.module !== activeModuleFilter) {
-          return false;
+        if (activeCategory !== 'ALL' && currentCatObj) {
+          if (!currentCatObj.modules.includes(moduleItem.module)) {
+            return false;
+          }
         }
         return true;
       })
       .map((moduleItem) => {
-        const matchingActions = moduleItem.actions.filter((act) => {
-          // If onlyEnabled is on, rule must be present
+        const matchingActions = (moduleItem.actions || []).filter((act) => {
           if (onlyEnabled && !ruleMap.has(act.action)) {
             return false;
           }
-          // Search query check (name or action key)
           if (q) {
             const matchName = act.label?.toLowerCase().includes(q);
             const matchKey = act.action?.toLowerCase().includes(q);
@@ -364,32 +270,18 @@ export function PermissionMatrix({
         };
       })
       .filter((moduleItem) => moduleItem.actions.length > 0);
-  }, [catalogue, searchQuery, onlyEnabled, activeModuleFilter, ruleMap]);
-
-  // Module summaries for the sticky module navigator
-  const moduleNavItems = useMemo(() => {
-    return catalogue.map((m) => {
-      const total = m.actions.length;
-      const active = m.actions.filter((a) => ruleMap.has(a.action)).length;
-      return {
-        key: m.module,
-        label: m.label,
-        total,
-        active
-      };
-    });
-  }, [catalogue, ruleMap]);
+  }, [catalogue, searchQuery, onlyEnabled, activeCategory, ruleMap]);
 
   const totalPossiblePermissions = useMemo(() => {
-    return catalogue.reduce((sum, m) => sum + m.actions.length, 0);
+    return catalogue.reduce((sum, m) => sum + (m.actions?.length || 0), 0) || 127;
   }, [catalogue]);
 
   if (isLoading) {
     return (
       <ScreenSkeleton
         variant="matrix"
-        title="Security & RBAC Matrix"
-        message="Loading permission catalogue taxonomy and authorization scopes..."
+        title="Security & RBAC Matrix Studio"
+        message="Loading master permission catalogue and CASL authorization bindings..."
       />
     );
   }
@@ -414,13 +306,13 @@ export function PermissionMatrix({
 
   return (
     <div className={cn('space-y-4', className)}>
-      {/* 1. Matrix Header & Live Stats */}
+      {/* 1. Matrix Studio Header & Live Stats */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-[#1A3125]">
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Shield className="w-4 h-4 text-brand" />
-              Permission Matrix & CASL Governance
+              Permission Matrix & CASL Policy Studio
             </h3>
             <button
               type="button"
@@ -432,7 +324,7 @@ export function PermissionMatrix({
             </button>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Configure granular operations, data bounds, and approval thresholds.
+            Configure fine-grained module capabilities, data boundary filters, and approval limits.
           </p>
         </div>
 
@@ -464,7 +356,10 @@ export function PermissionMatrix({
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
             {Object.entries(SCOPE_DEFINITIONS).map(([key, def]) => (
-              <div key={key} className="p-2.5 rounded-lg bg-white dark:bg-[#111D17] border border-slate-200/80 dark:border-slate-800">
+              <div
+                key={key}
+                className="p-2.5 rounded-lg bg-white dark:bg-[#111D17] border border-slate-200/80 dark:border-slate-800"
+              >
                 <span className="font-semibold text-slate-900 dark:text-white capitalize mr-1.5">
                   {def.label}:
                 </span>
@@ -477,7 +372,7 @@ export function PermissionMatrix({
         </div>
       )}
 
-      {/* 2. Sticky Toolbar Above Matrix */}
+      {/* 2. Sticky Command Toolbar Above Matrix */}
       <div className="sticky top-0 z-20 bg-white/95 dark:bg-[#111D17]/95 backdrop-blur-md p-3 rounded-2xl border border-slate-200 dark:border-[#1A3125] shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         {/* Search Input */}
         <div className="relative flex-1 max-w-sm">
@@ -486,7 +381,7 @@ export function PermissionMatrix({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search permissions by name or key (e.g. role.manage)..."
+            placeholder="Search permissions by name or key (e.g. attendance.approve)..."
             className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#13221B] text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand shadow-2xs"
           />
         </div>
@@ -553,51 +448,16 @@ export function PermissionMatrix({
         </div>
       </div>
 
-      {/* 3. Horizontal Module Navigator Bar */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
-        <button
-          type="button"
-          onClick={() => setActiveModuleFilter('ALL')}
-          className={cn(
-            'px-3 py-1.5 rounded-xl font-semibold whitespace-nowrap transition-all cursor-pointer shadow-2xs',
-            activeModuleFilter === 'ALL'
-              ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
-              : 'bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          )}
-        >
-          All Modules ({catalogue.length})
-        </button>
+      {/* 3. Category Quick-Jump Ribbon */}
+      <MatrixCategoryNav
+        activeCategory={activeCategory}
+        onSelectCategory={setActiveCategory}
+        categoryStats={categoryStats}
+        totalActive={value.length}
+        totalPossible={totalPossiblePermissions}
+      />
 
-        {moduleNavItems.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            onClick={() => setActiveModuleFilter(item.key)}
-            className={cn(
-              'px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs',
-              activeModuleFilter === item.key
-                ? 'bg-brand text-white font-bold'
-                : 'bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            )}
-          >
-            <span>{item.label}</span>
-            <span
-              className={cn(
-                'text-[10px] px-1.5 py-0.2 rounded-full tabular-nums font-semibold',
-                activeModuleFilter === item.key
-                  ? 'bg-black/20 text-white'
-                  : item.active > 0
-                  ? 'bg-emerald-50 dark:bg-emerald-950/50 text-brand'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
-              )}
-            >
-              {item.active}/{item.total}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* 4. Filtered Accordion Groups */}
+      {/* 4. Filtered Module Cards List */}
       <div className="space-y-3">
         {filteredCatalogue.length === 0 ? (
           <div className="p-12 text-center rounded-2xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17]">
@@ -613,7 +473,7 @@ export function PermissionMatrix({
               onClick={() => {
                 setSearchQuery('');
                 setOnlyEnabled(false);
-                setActiveModuleFilter('ALL');
+                setActiveCategory('ALL');
               }}
               className="mt-3 px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-200 cursor-pointer"
             >
@@ -623,116 +483,21 @@ export function PermissionMatrix({
         ) : (
           filteredCatalogue.map((moduleItem) => {
             const isExpanded = expandedModules[moduleItem.module] !== false;
-            const moduleActionCount = moduleItem.actions.length;
-            const selectedActionCount = moduleItem.actions.filter((a) =>
-              ruleMap.has(a.action)
-            ).length;
-            const isAllSelected = selectedActionCount === moduleActionCount && moduleActionCount > 0;
-            const isIndeterminate =
-              selectedActionCount > 0 && selectedActionCount < moduleActionCount;
 
             return (
-              <div
+              <ModulePermissionCard
                 key={moduleItem.module}
-                className="border border-slate-200 dark:border-[#1A3125] rounded-xl overflow-hidden bg-white dark:bg-[#111D17] transition-all shadow-2xs"
-              >
-                {/* Group Accordion Header */}
-                <div
-                  className="px-4 py-3 bg-slate-50/80 dark:bg-[#0E1A14] flex items-center justify-between cursor-pointer select-none border-b border-slate-200/80 dark:border-[#1A3125]/80 hover:bg-slate-100/60 dark:hover:bg-[#14261D] transition-colors"
-                  onClick={() => toggleModuleAccordion(moduleItem.module)}
-                >
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-none cursor-pointer"
-                      aria-label={isExpanded ? 'Collapse module' : 'Expand module'}
-                    >
-                      {isExpanded ? (
-                        <ChevronDown className="w-4 h-4 text-slate-500" />
-                      ) : (
-                        <ChevronRight className="w-4 h-4 text-slate-500" />
-                      )}
-                    </button>
-
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-900 dark:text-white">
-                          {moduleItem.label}
-                        </span>
-                        <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                          {moduleItem.subject}
-                        </span>
-                      </div>
-                      {moduleItem.description && (
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                          {moduleItem.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Tri-state Module Checkbox, Bulk Scope & Counter */}
-                  <div className="flex items-center gap-3.5" onClick={(e) => e.stopPropagation()}>
-                    {/* Bulk Module Scope Dropdown */}
-                    {!readOnly && selectedActionCount > 0 && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">Set scope:</span>
-                        <select
-                          defaultValue=""
-                          onChange={(e) => {
-                            if (e.target.value) {
-                              handleBulkModuleScope(moduleItem, e.target.value);
-                              e.target.value = '';
-                            }
-                          }}
-                          className="px-2 py-0.5 text-[10px] rounded-lg border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-700 dark:text-slate-300 font-medium cursor-pointer"
-                        >
-                          <option value="" disabled>Batch Scope...</option>
-                          <option value="all">All Records</option>
-                          <option value="department">Department</option>
-                          <option value="team">Direct Team</option>
-                          <option value="own">Self Only</option>
-                        </select>
-                      </div>
-                    )}
-
-                    <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold tabular-nums">
-                      {selectedActionCount} of {moduleActionCount}
-                    </span>
-
-                    {!readOnly && (
-                      <Checkbox
-                        checked={isAllSelected}
-                        indeterminate={isIndeterminate}
-                        disabled={readOnly}
-                        onChange={() => handleSelectAllModule(moduleItem, isAllSelected)}
-                        aria-label={`Select all permissions in ${moduleItem.label}`}
-                      />
-                    )}
-                  </div>
-                </div>
-
-                {/* Module Action Rows */}
-                {isExpanded && (
-                  <div className="divide-y divide-slate-100 dark:divide-[#1A3125]/60">
-                    {moduleItem.actions.map((act) => {
-                      const rule = ruleMap.get(act.action);
-                      return (
-                        <PermissionRow
-                          key={act.action}
-                          moduleItem={moduleItem}
-                          actionItem={act}
-                          rule={rule}
-                          readOnly={readOnly}
-                          onToggle={handleToggleAction}
-                          onScopeChange={handleScopeChange}
-                          onLimitChange={handleLimitChange}
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+                moduleItem={moduleItem}
+                isExpanded={isExpanded}
+                onToggleExpand={toggleModuleAccordion}
+                ruleMap={ruleMap}
+                readOnly={readOnly}
+                onToggleAction={handleToggleAction}
+                onScopeChange={handleScopeChange}
+                onLimitChange={handleLimitChange}
+                onSelectAllModule={handleSelectAllModule}
+                onBulkModuleScope={handleBulkModuleScope}
+              />
             );
           })
         )}

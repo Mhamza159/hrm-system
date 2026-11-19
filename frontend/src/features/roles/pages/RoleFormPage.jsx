@@ -6,8 +6,9 @@
  * SPECIFICATION & FEATURES:
  * - Module: M26 Roles & Permissions (BUILD-GUIDE Section 5 · Rows 26.7, 26.8, 26.9, 26.13)
  * - Design System: Elvara Forest & Emerald Enterprise Craft (DESIGN.md)
- * - UX Overhaul: Clear locked styling, auto-growing description with char counter,
- *   pre-save diff summary modal, unsaved changes bottom bar, offline status banner.
+ * - Studio UI: Breadcrumb header, locked system badges (Crown), monospace slug,
+ *   auto-counting description (0/200), active status toggle, pre-save diff modal,
+ *   sticky bottom unsaved bar, and beforeunload departure guards.
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -19,19 +20,14 @@ import {
   Lock,
   Loader2,
   AlertCircle,
-  RotateCcw,
   WifiOff,
-  Check,
-  AlertTriangle,
-  FileDiff,
-  PlusCircle,
-  MinusCircle,
-  Sliders,
-  Sparkles
+  Crown,
+  Hash
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { PermissionMatrix } from '../components/PermissionMatrix.jsx';
+import { PermissionDiffModal } from '../components/PermissionDiffModal.jsx';
 import { ConfirmDialog } from '../../../components/common/ConfirmDialog.jsx';
 import { usePermission } from '../../../hooks/usePermission.js';
 import {
@@ -51,12 +47,14 @@ export default function RoleFormPage() {
   // Form Field States
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [isActive, setIsActive] = useState(true);
   const [permissions, setPermissions] = useState([]);
 
   // Original snapshot to detect dirty state and build diff
   const [originalSnapshot, setOriginalSnapshot] = useState({
     name: '',
     description: '',
+    isActive: true,
     permissions: []
   });
 
@@ -94,14 +92,17 @@ export default function RoleFormPage() {
     if (roleData) {
       const initialName = roleData.name || '';
       const initialDesc = roleData.description || '';
+      const initialActive = roleData.isActive !== false;
       const initialPerms = roleData.permissions || [];
 
       setName(initialName);
       setDescription(initialDesc);
+      setIsActive(initialActive);
       setPermissions(initialPerms);
       setOriginalSnapshot({
         name: initialName,
         description: initialDesc,
+        isActive: initialActive,
         permissions: initialPerms
       });
     }
@@ -121,7 +122,8 @@ export default function RoleFormPage() {
 
     const added = [];
     const removed = [];
-    const modified = [];
+    const modifiedScope = [];
+    const modifiedLimit = [];
 
     // Check for added or modified
     permissions.forEach((curr) => {
@@ -129,13 +131,18 @@ export default function RoleFormPage() {
         added.push(curr);
       } else {
         const orig = origMap.get(curr.action);
-        if (orig.scope !== curr.scope || orig.limit !== curr.limit) {
-          modified.push({
+        if (orig.scope !== curr.scope) {
+          modifiedScope.push({
             action: curr.action,
-            oldScope: orig.scope,
-            newScope: curr.scope,
-            oldLimit: orig.limit,
-            newLimit: curr.limit
+            from: orig.scope,
+            to: curr.scope
+          });
+        }
+        if (orig.limit !== curr.limit) {
+          modifiedLimit.push({
+            action: curr.action,
+            from: orig.limit,
+            to: curr.limit
           });
         }
       }
@@ -148,26 +155,52 @@ export default function RoleFormPage() {
       }
     });
 
-    const isNameChanged = name.trim() !== originalSnapshot.name.trim();
-    const isDescChanged = description.trim() !== originalSnapshot.description.trim();
-    const isPermsChanged = added.length > 0 || removed.length > 0 || modified.length > 0;
-    const isDirty = isNameChanged || isDescChanged || isPermsChanged;
+    const isNameChanged = name.trim() !== (originalSnapshot.name || '').trim();
+    const isDescChanged = description.trim() !== (originalSnapshot.description || '').trim();
+    const isStatusChanged = isActive !== originalSnapshot.isActive;
+    const totalChanges = added.length + removed.length + modifiedScope.length + modifiedLimit.length;
+    const isDirty = isNameChanged || isDescChanged || isStatusChanged || totalChanges > 0;
 
     return {
       added,
       removed,
-      modified,
-      totalChanges: added.length + removed.length + modified.length,
+      modifiedScope,
+      modifiedLimit,
+      totalChanges,
       isNameChanged,
       isDescChanged,
+      isStatusChanged,
       isDirty
     };
-  }, [originalSnapshot, name, description, permissions]);
+  }, [originalSnapshot, name, description, isActive, permissions]);
+
+  // Warn on uncommitted browser reload/navigation
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (diffSummary.isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [diffSummary.isDirty]);
+
+  // Derived slug for display
+  const computedSlug = useMemo(() => {
+    if (roleData?.slug) return roleData.slug;
+    return name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+  }, [roleData?.slug, name]);
 
   // Discard all changes
   const handleDiscardChanges = useCallback(() => {
     setName(originalSnapshot.name);
     setDescription(originalSnapshot.description);
+    setIsActive(originalSnapshot.isActive);
     setPermissions(originalSnapshot.permissions);
     setShowDiscardConfirm(false);
     toast.info('Changes discarded.');
@@ -209,6 +242,7 @@ export default function RoleFormPage() {
         const res = await createRole({
           name: name.trim(),
           description: description.trim(),
+          isActive,
           permissions
         }).unwrap();
         toast.success(`Custom role '${res?.data?.name || name}' created successfully.`);
@@ -218,6 +252,7 @@ export default function RoleFormPage() {
           id,
           name: isSystem ? undefined : name.trim(),
           description: description.trim(),
+          isActive: isSystem ? undefined : isActive,
           permissions
         }).unwrap();
         toast.success(`Role '${roleData?.name || name}' updated successfully.`);
@@ -266,16 +301,42 @@ export default function RoleFormPage() {
   }
 
   return (
-    <form onSubmit={handleSaveClick} className="space-y-6 max-w-5xl pb-24">
+    <form onSubmit={handleSaveClick} className="space-y-6 max-w-5xl pb-28">
+      {/* 0. Breadcrumb Navigation Ribbon */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+        <button
+          type="button"
+          onClick={handleCancelClick}
+          className="hover:text-brand transition-colors cursor-pointer flex items-center gap-1.5 font-medium"
+        >
+          <Shield className="w-3.5 h-3.5 text-brand" />
+          <span>Roles & Permissions</span>
+        </button>
+        <span className="text-slate-300 dark:text-slate-700">/</span>
+        <span className="font-semibold text-slate-800 dark:text-slate-200">
+          {isNew ? 'Create Custom Role' : (roleData?.name || name)}
+        </span>
+      </nav>
+
       {/* 1. Header with Status & Save Controls */}
       <PageHeader
-        title={isNew ? 'Create Custom Role' : `Edit Role: ${roleData?.name || name}`}
+        title={
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span>{isNew ? 'Create Custom Role' : `Edit Role: ${roleData?.name || name}`}</span>
+            {isSystem && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/80 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/60 shadow-2xs">
+                <Crown className="w-3 h-3 text-amber-500" />
+                <span>Core System Role</span>
+              </span>
+            )}
+          </div>
+        }
         description={
           isNew
             ? 'Define a new security role with customized action grants and operational scopes.'
             : isSystem
-            ? 'System Core Role: Permission rules can be tuned; name and identity remain locked.'
-            : 'Modify role metadata, permissions, and departmental authorization limits.'
+            ? 'System Core Role: Permission matrix can be customized; role name and identity remain locked.'
+            : 'Modify role metadata, permissions matrix, and departmental authorization limits.'
         }
         compactClock={true}
         actions={
@@ -348,12 +409,48 @@ export default function RoleFormPage() {
         </div>
       )}
 
-      {/* 2. Role Metadata Card with Styled Locked Fields & Textarea Counter */}
+      {/* 2. Role Metadata Card with Styled Locked Fields, Status Switch & Textarea Counter */}
       <div className="p-6 rounded-2xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] shadow-sm space-y-4">
-        <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <Shield className="w-4 h-4 text-brand" />
-          Role Specifications & Identity
-        </h3>
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#1A3125] pb-3">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Shield className="w-4 h-4 text-brand" />
+            Role Specifications & Identity
+          </h3>
+          {/* Active / Inactive Status Toggle */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1.5 cursor-pointer">
+              <span>Status:</span>
+              <button
+                type="button"
+                disabled={isSystem || !canManageRoles}
+                onClick={() => setIsActive((prev) => !prev)}
+                className={cn(
+                  'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand/20',
+                  isActive ? 'bg-brand' : 'bg-slate-300 dark:bg-slate-700',
+                  (isSystem || !canManageRoles) && 'opacity-60 cursor-not-allowed'
+                )}
+                role="switch"
+                aria-checked={isActive}
+              >
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out',
+                    isActive ? 'translate-x-5' : 'translate-x-0'
+                  )}
+                />
+              </button>
+              <span className={cn(
+                'text-xs font-bold px-2 py-0.5 rounded-md uppercase tracking-wider',
+                isActive
+                  ? 'text-brand bg-emerald-50 dark:bg-emerald-950/40'
+                  : 'text-slate-500 bg-slate-100 dark:bg-slate-800'
+              )}>
+                {isActive ? 'Active' : 'Inactive'}
+              </span>
+            </label>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Role Name Field */}
@@ -389,11 +486,15 @@ export default function RoleFormPage() {
                 <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               )}
             </div>
-            {isSystem && (
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-                System role names are mapped to native PBAC policies and cannot be modified.
-              </p>
-            )}
+
+            {/* Slug Monospace Pill */}
+            <div className="flex items-center gap-1.5 mt-2 text-[11px] text-slate-400 dark:text-slate-500">
+              <Hash className="w-3 h-3 text-slate-400" />
+              <span>Identifier Slug:</span>
+              <span className="font-mono text-[11px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#061A14] text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-[#1A3125]">
+                {computedSlug || 'untitled-role'}
+              </span>
+            </div>
           </div>
 
           {/* Description Multi-line Textarea with Char Counter */}
@@ -403,13 +504,13 @@ export default function RoleFormPage() {
                 Description
               </label>
               <span className="text-[10px] font-mono text-slate-400">
-                {description.length}/300
+                {description.length}/200
               </span>
             </div>
 
             <textarea
               rows={2}
-              maxLength={300}
+              maxLength={200}
               disabled={!canManageRoles || isSystemSuperAdmin}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -435,7 +536,9 @@ export default function RoleFormPage() {
           <div className="flex items-center gap-2.5">
             <span className="w-2 h-2 rounded-full bg-brand animate-pulse" />
             <span className="text-xs font-semibold">
-              {diffSummary.totalChanges} {diffSummary.totalChanges === 1 ? 'permission change' : 'permission changes'} pending
+              {diffSummary.totalChanges > 0
+                ? `${diffSummary.totalChanges} permission change${diffSummary.totalChanges === 1 ? '' : 's'} pending`
+                : 'Metadata changes pending'}
             </span>
           </div>
 
@@ -460,7 +563,7 @@ export default function RoleFormPage() {
               ) : (
                 <>
                   <Save className="w-3.5 h-3.5" />
-                  <span>Save Changes</span>
+                  <span>{diffSummary.totalChanges > 0 && !isNew ? 'Review & Save' : 'Save Changes'}</span>
                 </>
               )}
             </button>
@@ -469,126 +572,17 @@ export default function RoleFormPage() {
       )}
 
       {/* 5. Pre-Save Diff Summary Modal */}
-      {showDiffModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="w-full max-w-lg bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
-            {/* Modal Header */}
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-emerald-50 text-brand border border-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60">
-                <FileDiff className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Review Permission Changes
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Inspect the differential impact before committing modifications to '{name}'.
-                </p>
-              </div>
-            </div>
+      <PermissionDiffModal
+        isOpen={showDiffModal}
+        onClose={() => setShowDiffModal(false)}
+        onConfirm={executeSave}
+        diffSummary={diffSummary}
+        isSystem={isSystem}
+        roleName={roleData?.name || name}
+        isSubmitting={isSubmitting}
+      />
 
-            {/* Warning if System Role */}
-            {isSystem && (
-              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs flex items-start gap-2.5">
-                <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                <span>
-                  <strong>System Core Warning:</strong> Modifying permissions on a core system role
-                  directly updates authorization bounds for all current users inheriting this role.
-                </span>
-              </div>
-            )}
-
-            {/* Diff Lists Container */}
-            <div className="flex-1 overflow-y-auto space-y-3 pr-1 py-1 text-xs">
-              {/* Added Rules */}
-              {diffSummary.added.length > 0 && (
-                <div className="space-y-1.5">
-                  <div className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-                    <PlusCircle className="w-3.5 h-3.5" />
-                    <span>Granted Permissions (+{diffSummary.added.length})</span>
-                  </div>
-                  <div className="space-y-1 pl-5">
-                    {diffSummary.added.map((r) => (
-                      <div key={r.action} className="flex items-center justify-between text-slate-700 dark:text-slate-300 bg-emerald-50/40 dark:bg-emerald-950/20 p-1.5 rounded-lg border border-emerald-200/40">
-                        <span className="font-mono text-[11px]">{r.action}</span>
-                        <span className="text-[10px] uppercase font-bold text-brand bg-white dark:bg-black/30 px-1.5 py-0.5 rounded">
-                          {r.scope}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Modified Rules */}
-              {diffSummary.modified.length > 0 && (
-                <div className="space-y-1.5">
-                  <div className="text-[11px] font-bold text-blue-700 dark:text-blue-400 flex items-center gap-1.5">
-                    <Sliders className="w-3.5 h-3.5" />
-                    <span>Scope / Limit Adjusted ({diffSummary.modified.length})</span>
-                  </div>
-                  <div className="space-y-1 pl-5">
-                    {diffSummary.modified.map((m) => (
-                      <div key={m.action} className="text-slate-700 dark:text-slate-300 bg-blue-50/40 dark:bg-blue-950/20 p-1.5 rounded-lg border border-blue-200/40">
-                        <div className="font-mono text-[11px]">{m.action}</div>
-                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                          Scope: <span className="line-through">{m.oldScope}</span> $\rightarrow$ <span className="font-bold text-blue-600 dark:text-blue-400">{m.newScope}</span>
-                          {m.oldLimit !== m.newLimit && (
-                            <span className="ml-2">
-                              Limit: {m.oldLimit ?? 'None'} $\rightarrow$ {m.newLimit ?? 'None'}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Removed Rules */}
-              {diffSummary.removed.length > 0 && (
-                <div className="space-y-1.5">
-                  <div className="text-[11px] font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
-                    <MinusCircle className="w-3.5 h-3.5" />
-                    <span>Revoked Permissions (-{diffSummary.removed.length})</span>
-                  </div>
-                  <div className="space-y-1 pl-5">
-                    {diffSummary.removed.map((r) => (
-                      <div key={r.action} className="flex items-center justify-between text-slate-700 dark:text-slate-300 bg-rose-50/40 dark:bg-rose-950/20 p-1.5 rounded-lg border border-rose-200/40">
-                        <span className="font-mono text-[11px]">{r.action}</span>
-                        <span className="text-[10px] uppercase text-rose-600 bg-white dark:bg-black/30 px-1.5 py-0.5 rounded">
-                          Revoked
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-200 dark:border-[#1A3125]">
-              <button
-                type="button"
-                onClick={() => setShowDiffModal(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-[#14261D] transition-colors cursor-pointer"
-              >
-                Back to Editing
-              </button>
-              <button
-                type="button"
-                onClick={executeSave}
-                disabled={isSubmitting}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand hover:bg-[#049856] text-white text-xs font-semibold shadow-sm transition-all disabled:opacity-50 cursor-pointer"
-              >
-                {isSubmitting ? 'Saving...' : 'Confirm & Save Changes'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Discard Confirmation Modal */}
+      {/* 6. Discard Confirmation Modal */}
       <ConfirmDialog
         isOpen={showDiscardConfirm}
         title="Discard Unsaved Changes?"

@@ -276,7 +276,7 @@ export const getRoleById = async (roleId) => {
  * @returns {Object} Created role
  */
 export const createRole = async (roleData, actor, ip) => {
-  const { name, description = '', permissions = [] } = roleData;
+  const { name, description = '', isActive = true, permissions = [] } = roleData;
 
   // Check unique name constraint defensively
   const existing = await Role.findOne({ name: name.trim() });
@@ -287,6 +287,7 @@ export const createRole = async (roleData, actor, ip) => {
   const newRole = await Role.create({
     name: name.trim(),
     description: description.trim(),
+    isActive: Boolean(isActive),
     isSystem: false,
     permissions
   });
