@@ -78,10 +78,12 @@ export const getUsers = async (query = {}, actor = null) => {
     }
   }
 
+  const andClauses = [];
+
   // 3. Status Filters (Active, Inactive, Locked)
   if (query.status === 'active') {
     filter.isActive = true;
-    filter.$or = [{ lockUntil: null }, { lockUntil: { $lte: now } }];
+    andClauses.push({ $or: [{ lockUntil: null }, { lockUntil: { $lte: now } }] });
   } else if (query.status === 'inactive') {
     filter.isActive = false;
   } else if (query.status === 'locked') {
@@ -97,7 +99,7 @@ export const getUsers = async (query = {}, actor = null) => {
   if (query.accessStatus === 'assigned') {
     filter.roles = { $exists: true, $not: { $size: 0 } };
   } else if (query.accessStatus === 'unassigned') {
-    filter.$or = [{ roles: { $exists: false } }, { roles: { $size: 0 } }];
+    andClauses.push({ $or: [{ roles: { $exists: false } }, { roles: { $size: 0 } }] });
   }
 
   // 6. 2FA Enforced Filter
@@ -129,12 +131,11 @@ export const getUsers = async (query = {}, actor = null) => {
       searchConditions.push({ _id: { $in: matchedUserIds } });
     }
 
-    if (filter.$or) {
-      filter.$and = [{ $or: filter.$or }, { $or: searchConditions }];
-      delete filter.$or;
-    } else {
-      filter.$or = searchConditions;
-    }
+    andClauses.push({ $or: searchConditions });
+  }
+
+  if (andClauses.length > 0) {
+    filter.$and = andClauses;
   }
 
   // Sorting

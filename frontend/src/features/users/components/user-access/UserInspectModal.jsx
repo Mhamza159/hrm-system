@@ -360,7 +360,7 @@ export function UserInspectModal({
                               {p.action}
                             </span>
                             <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-[#00C471] dark:border-emerald-800/60 shrink-0">
-                              Scope: {p.scope || 'all'}
+                              Scope: {p.scope || p.conditions?.scope || 'all'}
                             </span>
                           </div>
                         ))}

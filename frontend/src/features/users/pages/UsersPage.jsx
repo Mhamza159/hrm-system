@@ -146,7 +146,8 @@ export default function UsersPage() {
 
   const handleToggleStatus = useCallback((targetUser, nextStatus) => {
     setStatusActionUser(targetUser);
-    setStatusActionNext(nextStatus);
+    const resolvedNextStatus = typeof nextStatus === 'boolean' ? nextStatus : !targetUser.isActive;
+    setStatusActionNext(resolvedNextStatus);
   }, []);
 
   const handleUnlockAccount = useCallback((targetUser) => {
