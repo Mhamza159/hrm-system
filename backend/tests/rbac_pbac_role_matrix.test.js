@@ -22,12 +22,113 @@ describe('M6 Multi-Role PBAC & RBAC Enforcement Matrix', () => {
 
   beforeAll(async () => {
     await connectDB();
-    const [empUser, mgrUser, hrUser, adminUser] = await Promise.all([
-      User.findOne({ email: 'employee@hrm.company.pk' }),
-      User.findOne({ email: 'manager@hrm.company.pk' }),
-      User.findOne({ email: 'hr@hrm.company.pk' }),
-      User.findOne({ email: 'mhamzaofficial159@gmail.com' })
-    ]);
+    const { Role } = await import('../src/models/role.model.js');
+
+    // Resolve or bootstrap roles
+    let adminRole = await Role.findOne({ name: 'Super Admin', isDeleted: { $ne: true } });
+    if (!adminRole) {
+      adminRole = await Role.create({
+        name: 'Super Admin',
+        isSystem: true,
+        permissions: [{ action: 'manage', subject: 'all', scope: 'all' }]
+      });
+    }
+
+    let hrRole = await Role.findOne({ name: 'HR Manager', isDeleted: { $ne: true } });
+    if (!hrRole) {
+      hrRole = await Role.create({
+        name: 'HR Manager',
+        isSystem: true,
+        permissions: [
+          { action: 'leave.view', subject: 'Leave', scope: 'all' },
+          { action: 'leave.approve', subject: 'Leave', scope: 'all' },
+          { action: 'leave.settings', subject: 'Leave', scope: 'all' },
+          { action: 'report.view', subject: 'Report', scope: 'all' },
+          { action: 'report.export', subject: 'Report', scope: 'all' }
+        ]
+      });
+    }
+
+    let mgrRole = await Role.findOne({ name: 'Department Manager', isDeleted: { $ne: true } });
+    if (!mgrRole) {
+      mgrRole = await Role.create({
+        name: 'Department Manager',
+        isSystem: true,
+        permissions: [
+          { action: 'leave.view', subject: 'Leave', scope: 'team' },
+          { action: 'leave.approve', subject: 'Leave', scope: 'team', limit: 3 }
+        ]
+      });
+    }
+
+    let empRole = await Role.findOne({ name: 'Employee', isDeleted: { $ne: true } });
+    if (!empRole) {
+      empRole = await Role.create({
+        name: 'Employee',
+        isSystem: true,
+        permissions: [
+          { action: 'leave.view', subject: 'Leave', scope: 'own' },
+          { action: 'leave.apply', subject: 'Leave', scope: 'own' }
+        ]
+      });
+    }
+
+    // Resolve or bootstrap test users
+    let adminUser = await User.findOne({ email: 'mhamzaofficial159@gmail.com' });
+    if (!adminUser) {
+      adminUser = await User.create({
+        email: 'mhamzaofficial159@gmail.com',
+        passwordHash: 'dummy_hash',
+        roles: [adminRole._id],
+        isActive: true
+      });
+    }
+
+    let hrUser = await User.findOne({ email: 'hr@hrm.company.pk' });
+    if (!hrUser) {
+      hrUser = await User.create({
+        email: 'hr@hrm.company.pk',
+        passwordHash: 'dummy_hash',
+        roles: [hrRole._id],
+        isActive: true
+      });
+    }
+
+    let mgrUser = await User.findOne({ email: 'manager@hrm.company.pk' });
+    if (!mgrUser) {
+      mgrUser = await User.create({
+        email: 'manager@hrm.company.pk',
+        passwordHash: 'dummy_hash',
+        roles: [mgrRole._id],
+        isActive: true
+      });
+    }
+
+    let empUser = await User.findOne({ email: 'employee@hrm.company.pk' });
+    if (!empUser) {
+      empUser = await User.create({
+        email: 'employee@hrm.company.pk',
+        passwordHash: 'dummy_hash',
+        roles: [empRole._id],
+        isActive: true
+      });
+    }
+
+    // Ensure Employee profile exists for leave balance resolution
+    const { Employee } = await import('../src/models/employee.model.js');
+    let empDoc = await Employee.findOne({ userId: empUser._id });
+    if (!empDoc) {
+      await Employee.create({
+        employeeCode: 'EMP-PBAC-TEST',
+        userId: empUser._id,
+        name: 'PBAC Test Employee',
+        email: empUser.email,
+        status: 'Active',
+        employmentType: 'Permanent',
+        joiningDate: new Date('2024-01-01'),
+        isDeleted: false
+      });
+    }
 
     employeeToken = makeToken(empUser);
     managerToken = makeToken(mgrUser);

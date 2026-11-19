@@ -76,4 +76,53 @@ describe('Permissions Catalogue API (Slice 26.1-TEST)', () => {
     expect(actionNames).toContain('role.manage');
     expect(actionNames).toContain('role.assign');
   });
+
+  it('should ensure the permissions catalogue has zero duplicate modules or actions and valid schemas', async () => {
+    const {
+      PERMISSIONS_CATALOGUE,
+      ALL_ACTION_IDS,
+      ALL_ACTIONS_LIST,
+      ACTIONS_BY_MODULE_MAP,
+      ACTION_METADATA_MAP,
+      GET_DEFAULT_SCOPES_MAP,
+      MODULE_CATEGORIES
+    } = await import('../src/shared/permissions.js');
+
+    // 1. Verify zero duplicate modules
+    const moduleNames = PERMISSIONS_CATALOGUE.map((m) => m.module);
+    const uniqueModules = new Set(moduleNames);
+    expect(moduleNames.length).toBe(uniqueModules.size);
+
+    // 2. Verify zero duplicate action identifiers
+    const uniqueActions = new Set(ALL_ACTION_IDS);
+    expect(ALL_ACTION_IDS.length).toBe(uniqueActions.size);
+    expect(ALL_ACTION_IDS.length).toBeGreaterThan(100);
+
+    // 3. Verify valid scope values across all actions
+    const validScopes = ['own', 'team', 'department', 'all'];
+    for (const act of ALL_ACTIONS_LIST) {
+      expect(typeof act.action).toBe('string');
+      expect(act.action.trim()).toBeTruthy();
+      expect(typeof act.label).toBe('string');
+      expect(typeof act.description).toBe('string');
+      expect(Array.isArray(act.allowedScopes)).toBe(true);
+      expect(act.allowedScopes.length).toBeGreaterThan(0);
+      for (const sc of act.allowedScopes) {
+        expect(validScopes).toContain(sc);
+      }
+      expect(validScopes).toContain(act.defaultScope);
+      expect(act.allowedScopes).toContain(act.defaultScope);
+    }
+
+    // 4. Verify category coverage
+    const categorizedModules = MODULE_CATEGORIES.flatMap((c) => c.modules);
+    for (const modName of uniqueModules) {
+      expect(categorizedModules).toContain(modName);
+    }
+
+    // 5. Verify lookup dictionaries
+    expect(Object.keys(ACTIONS_BY_MODULE_MAP).length).toBe(uniqueModules.size);
+    expect(Object.keys(ACTION_METADATA_MAP).length).toBe(uniqueActions.size);
+    expect(Object.keys(GET_DEFAULT_SCOPES_MAP).length).toBe(uniqueActions.size);
+  });
 });

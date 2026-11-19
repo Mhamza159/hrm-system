@@ -449,28 +449,6 @@ export const PERMISSIONS_CATALOGUE = [
     ]
   },
   {
-    module: 'reports',
-    label: 'Reports & Analytics',
-    subject: 'Report',
-    description: 'Multi-axis organizational compliance reports and export engines.',
-    actions: [
-      {
-        action: 'report.view',
-        label: 'View Reports',
-        description: 'Access attendance, leave, payroll, headcount, and turnover reports.',
-        allowedScopes: ['team', 'all'],
-        defaultScope: 'team'
-      },
-      {
-        action: 'report.export',
-        label: 'Export Reports (Excel/PDF)',
-        description: 'Export report data to styled Microsoft Excel or PDF documents.',
-        allowedScopes: ['team', 'all'],
-        defaultScope: 'team'
-      }
-    ]
-  },
-  {
     module: 'audit',
     label: 'Audit & Compliance Logging',
     subject: 'AuditLog',
@@ -1146,8 +1124,85 @@ export const PERMISSIONS_CATALOGUE = [
 ];
 
 /**
+ * Module Categories taxonomy for high-level organization
+ */
+export const MODULE_CATEGORIES = [
+  {
+    id: 'core_hr',
+    label: 'Core HR & Organization',
+    modules: ['auth', 'roles', 'employees', 'organization', 'settings']
+  },
+  {
+    id: 'time_attendance',
+    label: 'Time & Attendance',
+    modules: ['attendance', 'leaves']
+  },
+  {
+    id: 'payroll_finance',
+    label: 'Payroll & Finance',
+    modules: ['payroll', 'loans', 'expenses']
+  },
+  {
+    id: 'talent_ops',
+    label: 'Talent & Operations',
+    modules: [
+      'assets',
+      'onboarding',
+      'performance',
+      'projects',
+      'recruitment',
+      'rewards',
+      'feedback',
+      'attrition',
+      'chatbot'
+    ]
+  },
+  {
+    id: 'governance_comms',
+    label: 'Governance & Communications',
+    modules: ['chat', 'notifications', 'policies', 'reports', 'dashboard', 'audit']
+  }
+];
+
+/**
  * Helper to retrieve flattened list of all valid action identifiers
  */
 export const ALL_ACTION_IDS = PERMISSIONS_CATALOGUE.flatMap((mod) =>
   mod.actions.map((act) => act.action)
+);
+
+/**
+ * Complete flattened array of all action objects enriched with parent module and subject
+ */
+export const ALL_ACTIONS_LIST = PERMISSIONS_CATALOGUE.flatMap((mod) =>
+  mod.actions.map((act) => ({
+    ...act,
+    module: mod.module,
+    moduleLabel: mod.label,
+    subject: mod.subject
+  }))
+);
+
+/**
+ * Map of module names to their respective action identifiers
+ */
+export const ACTIONS_BY_MODULE_MAP = Object.fromEntries(
+  PERMISSIONS_CATALOGUE.map((mod) => [
+    mod.module,
+    mod.actions.map((act) => act.action)
+  ])
+);
+
+/**
+ * Fast O(1) lookup dictionary of action identifier to its complete metadata
+ */
+export const ACTION_METADATA_MAP = Object.fromEntries(
+  ALL_ACTIONS_LIST.map((act) => [act.action, act])
+);
+
+/**
+ * Fast O(1) lookup dictionary of action identifier to its default data scope
+ */
+export const GET_DEFAULT_SCOPES_MAP = Object.fromEntries(
+  ALL_ACTIONS_LIST.map((act) => [act.action, act.defaultScope || act.allowedScopes?.[0] || 'all'])
 );

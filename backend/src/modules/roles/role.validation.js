@@ -64,6 +64,15 @@ export const cloneRoleSchema = z.object({
 });
 
 /**
+ * Parameter validation schema for single role ID operations
+ */
+export const roleIdParamSchema = z.object({
+  params: z.object({
+    id: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid role ObjectId format')
+  })
+});
+
+/**
  * 26.11: Schema for assigning roles to a user
  */
 export const assignRolesSchema = z.object({

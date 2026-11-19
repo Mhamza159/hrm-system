@@ -25,23 +25,43 @@ export const getPermissionsCatalogue = async () => {
 };
 
 /**
- * 26.7: Retrieve paginated list of system and custom roles
- * @param {Object} queryOptions - Pagination and search filters
+ * 26.7: Retrieve paginated list of system and custom roles with multi-filtering
+ * @param {Object} queryOptions - Pagination, type, status, headcount and search filters
  * @returns {Object} List of roles and metadata
  */
-export const getAllRoles = async ({ page = 1, limit = 20, search = '' } = {}) => {
+export const getAllRoles = async ({
+  page = 1,
+  limit = 20,
+  search = '',
+  type = 'all',
+  status = 'all',
+  headcount = 'all'
+} = {}) => {
   const query = { isDeleted: { $ne: true } };
 
   if (search.trim()) {
-    query.name = { $regex: search.trim(), $options: 'i' };
+    query.$or = [
+      { name: { $regex: search.trim(), $options: 'i' } },
+      { slug: { $regex: search.trim(), $options: 'i' } },
+      { description: { $regex: search.trim(), $options: 'i' } }
+    ];
   }
 
-  const skip = (Number(page) - 1) * Number(limit);
-  const total = await Role.countDocuments(query);
+  if (type === 'system') {
+    query.isSystem = true;
+  } else if (type === 'custom') {
+    query.isSystem = false;
+  }
+
+  if (status === 'active') {
+    query.isActive = true;
+  } else if (status === 'inactive') {
+    query.isActive = false;
+  }
+
+  // Fetch all matching roles
   const roles = await Role.find(query)
     .sort({ isSystem: -1, createdAt: 1 })
-    .skip(skip)
-    .limit(Number(limit))
     .lean();
 
   // Aggregate active user counts per role
@@ -54,13 +74,24 @@ export const getAllRoles = async ({ page = 1, limit = 20, search = '' } = {}) =>
   ]);
   const userCountMap = new Map(userAgg.map((u) => [u._id.toString(), u.count]));
 
-  const enrichedRoles = roles.map((r) => ({
+  let enrichedRoles = roles.map((r) => ({
     ...r,
     userCount: userCountMap.get(r._id.toString()) || 0
   }));
 
+  // Headcount filtering
+  if (headcount === 'staffed') {
+    enrichedRoles = enrichedRoles.filter((r) => r.userCount > 0);
+  } else if (headcount === 'empty') {
+    enrichedRoles = enrichedRoles.filter((r) => r.userCount === 0);
+  }
+
+  const total = enrichedRoles.length;
+  const skip = (Number(page) - 1) * Number(limit);
+  const paginatedRoles = enrichedRoles.slice(skip, skip + Number(limit));
+
   return {
-    roles: enrichedRoles,
+    roles: paginatedRoles,
     meta: {
       page: Number(page),
       limit: Number(limit),
@@ -71,16 +102,170 @@ export const getAllRoles = async ({ page = 1, limit = 20, search = '' } = {}) =>
 };
 
 /**
- * 26.7: Retrieve single role detail by ObjectId
+ * Live KPI Statistics for Roles & Permissions Dashboard
+ * @returns {Object} 8 aggregated KPI metrics
+ */
+export const getRoleStats = async () => {
+  const activeRolesCount = await Role.countDocuments({ isDeleted: { $ne: true }, isActive: { $ne: false } });
+  const totalRolesCount = await Role.countDocuments({ isDeleted: { $ne: true } });
+  const systemRolesCount = await Role.countDocuments({ isDeleted: { $ne: true }, isSystem: true });
+  const customRolesCount = await Role.countDocuments({ isDeleted: { $ne: true }, isSystem: false });
+
+  // Count distinct active users with roles
+  const distinctUsers = await User.distinct('_id', {
+    roles: { $exists: true, $not: { $size: 0 } },
+    isDeleted: { $ne: true }
+  });
+
+  // Calculate average permissions per role
+  const allRoles = await Role.find({ isDeleted: { $ne: true } }).select('permissions').lean();
+  const totalPermsAssigned = allRoles.reduce((sum, r) => sum + (r.permissions?.length || 0), 0);
+  const averagePermissionsPerRole = allRoles.length ? Math.round(totalPermsAssigned / allRoles.length) : 0;
+
+  // Active delegations count
+  let activeDelegations = 0;
+  try {
+    const { Delegation } = await import('../../models/delegation.model.js');
+    const now = new Date();
+    activeDelegations = await Delegation.countDocuments({
+      status: 'ACTIVE',
+      endDate: { $gte: now }
+    });
+  } catch (err) {
+    // fallback if collection not initialized
+  }
+
+  const totalRegisteredPermissions = PERMISSIONS_CATALOGUE.reduce(
+    (acc, m) => acc + (m.actions?.length || 0),
+    0
+  );
+
+  return {
+    totalRoles: totalRolesCount,
+    activeRoles: activeRolesCount,
+    systemRoles: systemRolesCount,
+    customRoles: customRolesCount,
+    totalUsersWithRoles: distinctUsers.length,
+    totalRegisteredPermissions,
+    averagePermissionsPerRole,
+    activeDelegations
+  };
+};
+
+/**
+ * Visual Analytics for Role Distribution & Module Coverage
+ * @returns {Object} Analytics dataset
+ */
+export const getRoleAnalytics = async () => {
+  const roles = await Role.find({ isDeleted: { $ne: true } }).lean();
+  const roleIds = roles.map((r) => r._id);
+
+  // User distribution per role
+  const userAgg = await User.aggregate([
+    { $match: { roles: { $in: roleIds }, isDeleted: { $ne: true } } },
+    { $unwind: '$roles' },
+    { $match: { roles: { $in: roleIds } } },
+    { $group: { _id: '$roles', count: { $sum: 1 } } }
+  ]);
+  const userCountMap = new Map(userAgg.map((u) => [u._id.toString(), u.count]));
+
+  const userDistribution = roles
+    .map((r) => ({
+      roleId: r._id,
+      name: r.name,
+      slug: r.slug || r.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      isSystem: r.isSystem,
+      permissionCount: r.permissions?.length || 0,
+      count: userCountMap.get(r._id.toString()) || 0
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  // Module coverage breakdown
+  const moduleCoverageMap = {};
+  for (const mod of PERMISSIONS_CATALOGUE) {
+    moduleCoverageMap[mod.module] = {
+      module: mod.module,
+      label: mod.label,
+      totalActions: mod.actions.length,
+      assignedInRoles: 0
+    };
+  }
+
+  for (const role of roles) {
+    if (role.name === 'Super Admin') continue;
+    for (const p of role.permissions || []) {
+      const parts = p.action.split('.');
+      const modKey = parts[0];
+      if (moduleCoverageMap[modKey]) {
+        moduleCoverageMap[modKey].assignedInRoles++;
+      }
+    }
+  }
+
+  return {
+    userDistribution,
+    moduleCoverage: Object.values(moduleCoverageMap),
+    systemVsCustom: {
+      systemRolesCount: roles.filter((r) => r.isSystem).length,
+      customRolesCount: roles.filter((r) => !r.isSystem).length
+    }
+  };
+};
+
+/**
+ * 26.7: Retrieve single role detail by ObjectId with assigned staff roster
  * @param {string} roleId - Role ObjectId
- * @returns {Object} Populated role document
+ * @returns {Object} Populated role document with assigned users
  */
 export const getRoleById = async (roleId) => {
   const role = await Role.findOne({ _id: roleId, isDeleted: { $ne: true } }).lean();
   if (!role) {
     throw new ApiError(404, 'Role not found or has been deleted.');
   }
-  return role;
+
+  // Find users assigned to this role
+  const assignedUsers = await User.find({
+    roles: roleId,
+    isDeleted: { $ne: true }
+  })
+    .select('email isActive createdAt lastLoginAt')
+    .lean();
+
+  // Find linked employees for rich profile rendering
+  const userIds = assignedUsers.map((u) => u._id);
+  const { Employee } = await import('../../models/employee.model.js');
+  const employees = await Employee.find({
+    userId: { $in: userIds },
+    isDeleted: { $ne: true }
+  })
+    .select('name employeeCode email departmentId designationId avatar status userId')
+    .populate('departmentId', 'name code')
+    .populate('designationId', 'title code')
+    .lean();
+
+  const empMap = new Map(employees.map((e) => [e.userId.toString(), e]));
+
+  const enrichedUsers = assignedUsers.map((u) => {
+    const emp = empMap.get(u._id.toString());
+    return {
+      _id: u._id,
+      email: u.email,
+      isActive: u.isActive,
+      name: emp?.name || u.email.split('@')[0],
+      employeeCode: emp?.employeeCode || 'N/A',
+      department: emp?.departmentId?.name || 'Unassigned',
+      designation: emp?.designationId?.title || 'Unassigned',
+      avatar: emp?.avatar || null,
+      status: emp?.status || (u.isActive ? 'Active' : 'Inactive'),
+      lastLoginAt: u.lastLoginAt
+    };
+  });
+
+  return {
+    ...role,
+    userCount: assignedUsers.length,
+    assignedUsers: enrichedUsers
+  };
 };
 
 /**
@@ -139,7 +324,15 @@ export const updateRole = async (roleId, updateData, actor, ip) => {
     throw new ApiError(400, 'System default roles cannot be renamed.');
   }
 
+  if (role.isSystem && updateData.isActive === false) {
+    throw new ApiError(400, 'System default roles cannot be deactivated.');
+  }
+
   const beforeSnapshot = role.toObject();
+
+  if (typeof updateData.isActive === 'boolean' && !role.isSystem) {
+    role.isActive = updateData.isActive;
+  }
 
   if (updateData.name && !role.isSystem) {
     // Check name collision with another role

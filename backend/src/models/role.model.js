@@ -20,6 +20,13 @@ const roleSchema = new mongoose.Schema(
       trim: true
     },
 
+    // Monospace slug identifier for programmatic checks
+    slug: {
+      type: String,
+      trim: true,
+      lowercase: true
+    },
+
     // Human-readable description of responsibilities
     description: {
       type: String,
@@ -30,6 +37,12 @@ const roleSchema = new mongoose.Schema(
     isSystem: {
       type: Boolean,
       default: false
+    },
+
+    // Active status flag
+    isActive: {
+      type: Boolean,
+      default: true
     },
 
     // Granular permissions array containing CASL action-subject-scope rules (M26)
@@ -54,6 +67,18 @@ const roleSchema = new mongoose.Schema(
   }
 );
 
-roleSchema.index({ isSystem: 1, isDeleted: 1 });
+// Auto-derive slug if missing before saving
+roleSchema.pre('save', function (next) {
+  if (!this.slug && this.name) {
+    this.slug = this.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+  }
+  next();
+});
+
+roleSchema.index({ isSystem: 1, isDeleted: 1, isActive: 1 });
+roleSchema.index({ slug: 1, isDeleted: 1 });
 
 export const Role = mongoose.models.Role || mongoose.model('Role', roleSchema);

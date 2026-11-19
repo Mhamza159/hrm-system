@@ -300,6 +300,8 @@ export const seedRolesAndAdmin = async () => {
         $set: {
           description: roleDef.description,
           isSystem: roleDef.isSystem,
+          isActive: true,
+          slug: roleDef.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
           permissions: roleDef.permissions,
           isDeleted: false
         }

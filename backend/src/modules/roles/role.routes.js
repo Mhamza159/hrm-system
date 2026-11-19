@@ -14,7 +14,8 @@ import { validate } from '../../middlewares/validate.js';
 import {
   createRoleSchema,
   updateRoleSchema,
-  cloneRoleSchema
+  cloneRoleSchema,
+  roleIdParamSchema
 } from './role.validation.js';
 import * as roleController from './role.controller.js';
 
@@ -31,6 +32,21 @@ router.get(
   '/permissions',
   checkPermission('role.view'),
   roleController.getPermissions
+);
+
+/**
+ * Live KPI Statistics & Visual Distribution Analytics
+ */
+router.get(
+  '/stats',
+  checkPermission('role.view'),
+  roleController.getRoleStats
+);
+
+router.get(
+  '/analytics',
+  checkPermission('role.view'),
+  roleController.getRoleAnalytics
 );
 
 /**
@@ -64,6 +80,7 @@ router.post(
  */
 router.get(
   '/:id',
+  validate(roleIdParamSchema),
   checkPermission('role.view'),
   roleController.getRoleById
 );
@@ -77,6 +94,7 @@ router.patch(
 
 router.delete(
   '/:id',
+  validate(roleIdParamSchema),
   checkPermission('role.manage'),
   roleController.deleteRole
 );

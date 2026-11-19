@@ -26,13 +26,35 @@ export const getPermissions = asyncHandler(async (req, res) => {
 
 /**
  * GET /api/v1/roles
- * 26.7: Get paginated list of all active roles
+ * 26.7: Get paginated list of all active roles with multi-dimensional filtering
  */
 export const getRoles = asyncHandler(async (req, res) => {
-  const { page, limit, search } = req.query;
-  const result = await roleService.getAllRoles({ page, limit, search });
+  const { page, limit, search, type, status, headcount } = req.query;
+  const result = await roleService.getAllRoles({ page, limit, search, type, status, headcount });
   return res.status(200).json(
     apiResponse(200, result.roles, 'Roles retrieved successfully.', result.meta)
+  );
+});
+
+/**
+ * GET /api/v1/roles/stats
+ * Live KPI Statistics for Roles Dashboard
+ */
+export const getRoleStats = asyncHandler(async (req, res) => {
+  const stats = await roleService.getRoleStats();
+  return res.status(200).json(
+    apiResponse(200, stats, 'Role statistics retrieved successfully.')
+  );
+});
+
+/**
+ * GET /api/v1/roles/analytics
+ * Visual distribution analytics for Roles & Permissions
+ */
+export const getRoleAnalytics = asyncHandler(async (req, res) => {
+  const analytics = await roleService.getRoleAnalytics();
+  return res.status(200).json(
+    apiResponse(200, analytics, 'Role analytics retrieved successfully.')
   );
 });
 
