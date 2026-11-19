@@ -36,9 +36,9 @@ export const AuditStatsCards = ({ stats = {}, isLoading = false }) => {
       badge: 'Live'
     },
     {
-      title: '7-Day Activity',
+      title: '7-Day Throughput',
       value: stats.thisWeekEvents?.toLocaleString() || '0',
-      description: 'Last 7 days throughput',
+      description: 'Weekly event volume',
       icon: Calendar,
       color: 'indigo',
       badge: 'Weekly'
@@ -86,14 +86,14 @@ export const AuditStatsCards = ({ stats = {}, isLoading = false }) => {
   ];
 
   const colorStyles = {
-    emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-    blue: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-    indigo: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
-    rose: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
-    amber: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-    purple: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
-    cyan: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
-    slate: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20'
+    emerald: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20',
+    blue: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20',
+    indigo: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-500/10 dark:text-indigo-400 dark:border-indigo-500/20',
+    rose: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20',
+    amber: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20',
+    purple: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20',
+    cyan: 'bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-400 dark:border-cyan-500/20',
+    slate: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
   };
 
   return (
@@ -103,14 +103,14 @@ export const AuditStatsCards = ({ stats = {}, isLoading = false }) => {
         return (
           <div
             key={idx}
-            className="bg-card border border-border/80 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between"
+            className="bg-card border border-border/80 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#00C471]/30 transition-all duration-200 flex flex-col justify-between group"
           >
             <div className="flex items-center justify-between gap-2 mb-3">
-              <div className="flex items-center gap-2">
-                <div className={cn('p-2 rounded-xl border', colorStyles[card.color])}>
+              <div className="flex items-center gap-2.5">
+                <div className={cn('p-2 rounded-xl border transition-transform group-hover:scale-105', colorStyles[card.color])}>
                   <Icon className="w-4 h-4" />
                 </div>
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                   {card.title}
                 </span>
               </div>
@@ -127,7 +127,7 @@ export const AuditStatsCards = ({ stats = {}, isLoading = false }) => {
             <div>
               <div className="text-2xl font-bold tracking-tight text-foreground">
                 {isLoading ? (
-                  <span className="inline-block w-16 h-7 bg-muted animate-pulse rounded" />
+                  <span className="inline-block w-16 h-7 bg-muted animate-pulse rounded-lg" />
                 ) : (
                   card.value
                 )}

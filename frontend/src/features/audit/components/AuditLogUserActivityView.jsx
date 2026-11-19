@@ -1,11 +1,18 @@
 /**
  * @file AuditLogUserActivityView.jsx
  * @description Actor-centric Grouped User Activity View for System Audit Logs.
+ * Features full Actor credentials, designation, department, and activity health.
  */
 
 import React from 'react';
-import { User, Eye, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
+import { Eye, Bot, User, Clock, ChevronRight } from 'lucide-react';
 import { formatDate } from '../../../lib/formatters.js';
+import { cn } from '../../../lib/utils.js';
+import {
+  getStatusBadgeClass,
+  getSeverityBadgeClass,
+  AUDIT_BUTTON_STYLES
+} from '../utils/auditTheme.js';
 
 export const AuditLogUserActivityView = ({ items = [], onInspect }) => {
   if (items.length === 0) {
@@ -16,124 +23,166 @@ export const AuditLogUserActivityView = ({ items = [], onInspect }) => {
     );
   }
 
-  // Group events by actorEmail
+  // Group events by actor email or fallback key
   const userGroups = items.reduce((acc, log) => {
-    const actor = log.actorEmail || 'System';
-    if (!acc[actor]) {
-      acc[actor] = {
-        email: actor,
-        role: log.actorRole || 'SYSTEM',
+    const actor = log.actor || {
+      name: log.actorEmail?.split('@')[0] || 'System',
+      avatar: null,
+      employeeCode: 'N/A',
+      email: log.actorEmail || 'system',
+      role: log.actorRole || 'SYSTEM',
+      department: 'General',
+      designation: 'Staff',
+      accountStatus: 'Active',
+      isSystem: !log.actorEmail || log.actorEmail === 'system'
+    };
+
+    const groupKey = actor.email || log.actorEmail || 'system';
+
+    if (!acc[groupKey]) {
+      acc[groupKey] = {
+        actor,
         events: []
       };
     }
-    acc[actor].events.push(log);
+    acc[groupKey].events.push(log);
     return acc;
   }, {});
 
   return (
-    <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-      {Object.values(userGroups).map((user) => {
-        const total = user.events.length;
-        const successes = user.events.filter((e) => e.status === 'SUCCESS').length;
+    <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-2 gap-5">
+      {Object.values(userGroups).map(({ actor, events }) => {
+        const total = events.length;
+        const successes = events.filter((e) => e.status === 'SUCCESS').length;
         const failures = total - successes;
         const successRate = total > 0 ? Math.round((successes / total) * 100) : 100;
-        const latestEvent = user.events[0];
+        const recentEvents = events.slice(0, 3);
+
+        const actorInitials = (actor.name || actor.email || 'S')
+          .split(' ')
+          .map((w) => w[0])
+          .join('')
+          .slice(0, 2)
+          .toUpperCase();
 
         return (
           <div
-            key={user.email}
-            className="bg-card border border-border/80 rounded-2xl p-5 shadow-sm space-y-4 flex flex-col justify-between"
+            key={actor.email}
+            className="bg-card border border-border/80 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#00C471]/30 transition-all duration-200 space-y-4 flex flex-col justify-between"
           >
             {/* User Profile Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-bold text-sm border border-primary/20">
-                  {user.email[0].toUpperCase()}
-                </div>
+                {actor.avatar ? (
+                  <img
+                    src={actor.avatar}
+                    alt={actor.name}
+                    className="w-12 h-12 rounded-2xl object-cover border border-border shadow-xs shrink-0"
+                  />
+                ) : actor.isSystem ? (
+                  <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 border border-border">
+                    <Bot className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                ) : (
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 flex items-center justify-center font-bold text-sm shrink-0">
+                    {actorInitials}
+                  </div>
+                )}
+
                 <div>
-                  <h4 className="font-bold text-sm text-foreground truncate max-w-[200px]" title={user.email}>
-                    {user.email}
-                  </h4>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[10px] uppercase font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
-                      {user.role}
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-bold text-sm text-foreground truncate max-w-[220px]" title={actor.name}>
+                      {actor.name}
+                    </h4>
+                    {actor.employeeCode && actor.employeeCode !== 'N/A' && (
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-muted text-muted-foreground border border-border">
+                        {actor.employeeCode}
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-muted-foreground font-mono truncate" title={actor.email}>
+                    {actor.email}
+                  </p>
+
+                  <div className="flex items-center gap-2 mt-1 text-[11px]">
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                      {actor.role}
                     </span>
-                    <span className="text-[11px] text-muted-foreground font-mono">
-                      {total} activities
+                    <span>•</span>
+                    <span className="text-muted-foreground">
+                      {actor.designation} ({actor.department})
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Health pill */}
-              <div className="text-right">
-                <span className="text-xs font-bold text-foreground">{successRate}%</span>
-                <div className="text-[10px] text-muted-foreground">Success Rate</div>
+              {/* Activity Health Pill */}
+              <div className="text-right shrink-0">
+                <span className="text-sm font-bold text-foreground">{successRate}%</span>
+                <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+                  Success Rate
+                </div>
               </div>
             </div>
 
-            {/* Quick Metrics */}
-            <div className="grid grid-cols-3 gap-2 py-2 px-3 bg-muted/30 rounded-xl text-center text-xs">
+            {/* Quick Metrics Strip */}
+            <div className="grid grid-cols-3 gap-2 py-2.5 px-3 bg-muted/40 rounded-xl text-center text-xs border border-border/60">
               <div>
-                <span className="font-bold text-foreground">{total}</span>
-                <p className="text-[10px] text-muted-foreground">Operations</p>
+                <span className="font-bold text-foreground text-sm">{total}</span>
+                <p className="text-[10px] text-muted-foreground uppercase font-medium">Operations</p>
               </div>
               <div>
-                <span className="font-bold text-emerald-500">{successes}</span>
-                <p className="text-[10px] text-muted-foreground">Succeeded</p>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400 text-sm">{successes}</span>
+                <p className="text-[10px] text-muted-foreground uppercase font-medium">Succeeded</p>
               </div>
               <div>
-                <span className="font-bold text-rose-500">{failures}</span>
-                <p className="text-[10px] text-muted-foreground">Failed</p>
+                <span className="font-bold text-rose-600 dark:text-rose-400 text-sm">{failures}</span>
+                <p className="text-[10px] text-muted-foreground uppercase font-medium">Failed</p>
               </div>
             </div>
 
-            {/* Recent Actions List */}
+            {/* Recent Activity List Inside User Card */}
             <div className="space-y-2">
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Recent Actions
+              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
+                Recent Operations
               </span>
-              <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
-                {user.events.slice(0, 5).map((ev) => (
+              <div className="divide-y divide-border/60 border border-border/60 rounded-xl overflow-hidden bg-card">
+                {recentEvents.map((ev) => (
                   <div
                     key={ev._id}
-                    className="flex items-center justify-between p-2 rounded-lg bg-muted/20 hover:bg-muted/40 transition text-xs"
+                    className="p-2.5 flex items-center justify-between text-xs hover:bg-muted/40 transition-colors"
                   >
-                    <div className="flex items-center gap-2 truncate pr-2">
-                      {ev.status === 'SUCCESS' ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                      ) : (
-                        <AlertTriangle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                      )}
-                      <span className="font-mono font-medium truncate text-[11px]">
+                    <div className="truncate max-w-[240px]">
+                      <div className="font-mono font-semibold text-foreground text-[11px] truncate">
                         {ev.action}
-                      </span>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground truncate">
+                        {formatDate(ev.createdAt, 'DD MMM, HH:mm')} · {ev.module}
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[10px] text-muted-foreground font-mono">
-                        {formatDate(ev.createdAt, 'HH:mm')}
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          'text-[9px] font-bold px-1.5 py-0.2 rounded-full border uppercase',
+                          getStatusBadgeClass(ev.status)
+                        )}
+                      >
+                        {ev.status}
                       </span>
                       <button
                         type="button"
                         onClick={() => onInspect(ev)}
-                        className="text-primary hover:text-primary/80"
-                        title="Inspect Record"
+                        className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition"
+                        title="Inspect event details"
                       >
-                        <Eye className="w-3.5 h-3.5" />
+                        <ChevronRight className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* Footer */}
-            <div className="pt-2 border-t border-border/50 text-[11px] text-muted-foreground flex items-center justify-between">
-              <span className="flex items-center gap-1 font-mono">
-                <Clock className="w-3 h-3" /> Last Active: {formatDate(latestEvent?.createdAt, 'DD MMM HH:mm')}
-              </span>
-              <span>IP: {latestEvent?.ipAddress || 'Internal'}</span>
             </div>
           </div>
         );

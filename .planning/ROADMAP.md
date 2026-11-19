@@ -1150,6 +1150,42 @@ Plans:
 
 ---
 
+## Phase 32: Audit Log Module — UI Refinement Phase 2 | Complete Visual Polish, Actor Details Enhancement & Modal Redesign
+
+**Goal:** Execute a comprehensive second-stage UI/UX refinement across the Audit Log Module. Deeply populate and format complete Actor credentials (User -> Employee -> Department, Designation, Roles, Avatar, Code, Status) on backend and frontend; harmonize button and semantic pill color tokens according to `docs/UI-REFERENCE.md`; completely redesign the Inspect Details (Forensic Diff) modal with rich actor cards and visual Before/After state comparison; completely redesign the Retention modal with Pakistan statutory labor compliance status cards and a guarded two-step archival flow; polish Table, Timeline, User Activity, and Export views; and verify 100% test pass rates and production build cleanliness.
+
+**Requirements**:
+- **1. Deep Backend Actor Enrichment & Historical Attribution Pipeline (`Plan 32-01`)**:
+  - Two-level deep population in `backend/src/modules/audit/audit.service.js` resolving User -> Employee, Roles, Department, and Designation.
+  - Fail-safe actor normalization utility providing complete attributes for employees, standalone admins, and automated system crons.
+- **2. Universal Design System Tokens, Button & Pill Palette Harmonization (`Plan 32-02`)**:
+  - Centralized token utility `auditTheme.js` mapping all statuses, severities, categories, and button variants to subtle tinted classes and icons.
+  - Refined 8-card metric grid and SVG charts in Elvara Forest & Emerald Enterprise styling.
+- **3. Actor Identity Presentation Across All Audit Explorer Views (`Plan 32-03`)**:
+  - Rich actor identification cards (avatar, name, employee code, role pill, department) in Table, Timeline, and User Activity views.
+  - Filter toolbar with active filter removal chips and smooth search input.
+- **4. Complete Inspect Details (Forensic Diff) Modal Overhaul (`Plan 32-04`)**:
+  - Comprehensive actor identity profile section, execution context and device diagnostics grid.
+  - Dual-mode Before/After mutation inspector (Visual Field Comparison with color-coded changes + Raw JSON).
+- **5. Statutory Retention & Archival Modal Complete Overhaul (`Plan 32-05`)**:
+  - Statutory 365-day compliance policy overview and live active/archived metric cards.
+  - Guarded two-step soft-archival flow preventing accidental record changes.
+- **6. Export Modal Refinement, Comprehensive Verification, Testing & Polish (`Plan 32-06`)**:
+  - Redux access token integration in export modal, full automated test suites execution, 0 Oxlint errors, and clean Vite build.
+
+**Depends on:** Phase 31  
+**Plans:** 6 plans
+
+Plans:
+- [x] **Plan 32-01: Deep Backend Actor Enrichment & Historical Attribution Pipeline** (`.planning/phases/32-audit-log-module-ui-refinement-phase-2-complete-visual-polish-actor-details-enhancement-modal-redesign/32-01-PLAN.md`)
+- [x] **Plan 32-02: Universal Design System Tokens, Button & Pill Palette Harmonization** (`.planning/phases/32-audit-log-module-ui-refinement-phase-2-complete-visual-polish-actor-details-enhancement-modal-redesign/32-02-PLAN.md`)
+- [x] **Plan 32-03: Actor Identity Presentation Across All Audit Explorer Views (Table, Timeline, User Activity)** (`.planning/phases/32-audit-log-module-ui-refinement-phase-2-complete-visual-polish-actor-details-enhancement-modal-redesign/32-03-PLAN.md`)
+- [x] **Plan 32-04: Complete Inspect Details (Forensic Diff) Modal Overhaul** (`.planning/phases/32-audit-log-module-ui-refinement-phase-2-complete-visual-polish-actor-details-enhancement-modal-redesign/32-04-PLAN.md`)
+- [x] **Plan 32-05: Statutory Retention & Archival Modal Complete Overhaul** (`.planning/phases/32-audit-log-module-ui-refinement-phase-2-complete-visual-polish-actor-details-enhancement-modal-redesign/32-05-PLAN.md`)
+- [x] **Plan 32-06: Export Modal Refinement, Comprehensive Verification, Testing & Polish** (`.planning/phases/32-audit-log-module-ui-refinement-phase-2-complete-visual-polish-actor-details-enhancement-modal-redesign/32-06-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features

@@ -62,7 +62,7 @@ export const AuditAnalyticsSection = ({
               className={cn(
                 'px-3 py-1 text-xs font-semibold rounded-lg transition-all',
                 timeRange === opt.value
-                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  ? 'bg-[#00C471] text-white shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               )}
             >

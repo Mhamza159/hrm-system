@@ -1,15 +1,19 @@
 /**
  * @file AuditExportModal.jsx
  * @description Enterprise Modal for Exporting Forensic Audit Logs (CSV / Excel).
+ * Uses Redux authentication token, active filter summary, and Elvara theme tokens.
  */
 
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import { X, Download, FileSpreadsheet, ShieldAlert, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { AUDIT_BUTTON_STYLES } from '../utils/auditTheme.js';
 
 export const AuditExportModal = ({ isOpen, onClose, filters = {} }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [format, setFormat] = useState('csv');
+  const token = useSelector((state) => state.auth?.accessToken);
 
   if (!isOpen) return null;
 
@@ -26,11 +30,14 @@ export const AuditExportModal = ({ isOpen, onClose, filters = {} }) => {
       if (filters.endDate) params.append('endDate', filters.endDate);
       if (filters.search) params.append('search', filters.search);
 
-      const token = localStorage.getItem('token');
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`/api/v1/audit-logs/export?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers,
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -57,38 +64,38 @@ export const AuditExportModal = ({ isOpen, onClose, filters = {} }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl overflow-hidden space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl overflow-hidden space-y-0">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-border bg-muted/40">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-primary/10 text-primary rounded-xl border border-primary/20">
+        <div className="flex items-center justify-between p-5 border-b border-border bg-slate-50/50 dark:bg-slate-900/40">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 rounded-2xl border border-emerald-200 dark:border-emerald-500/20">
               <Download className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-foreground">
+              <h3 className="font-bold text-base text-foreground tracking-tight">
                 Export Audit Records
               </h3>
               <p className="text-xs text-muted-foreground">
-                Download compliance-ready audit trail
+                Download compliance-ready forensic audit trail
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition"
+            className="p-2 rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground transition cursor-pointer"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-5 space-y-4 text-xs">
-          <div className="p-3 bg-muted/30 border border-border rounded-xl space-y-1">
-            <span className="font-bold text-foreground">Export Scope:</span>
-            <p className="text-muted-foreground">
-              Current active filters (Module: {filters.module || 'All'}, Category: {filters.category || 'All'}, Status: {filters.status || 'All'}) will be applied. Maximum 10,000 records.
+        <div className="p-5 sm:p-6 space-y-4 text-xs">
+          <div className="p-3.5 bg-muted/40 border border-border rounded-2xl space-y-1">
+            <span className="font-bold text-foreground block">Active Filter Scope:</span>
+            <p className="text-muted-foreground leading-relaxed">
+              Filtered records (Module: {filters.module || 'All'}, Category: {filters.category || 'All'}, Status: {filters.status || 'All'}, Time Window: {filters.startDate ? `${filters.startDate} to ${filters.endDate || 'now'}` : 'All time'}) will be streamed.
             </p>
           </div>
 
@@ -98,42 +105,42 @@ export const AuditExportModal = ({ isOpen, onClose, filters = {} }) => {
               <button
                 type="button"
                 onClick={() => setFormat('csv')}
-                className={`p-3 border rounded-xl flex items-center gap-2 font-medium transition ${
+                className={`p-3 border rounded-xl flex items-center justify-center gap-2 font-medium transition cursor-pointer ${
                   format === 'csv'
-                    ? 'border-primary bg-primary/10 text-primary font-bold'
+                    ? 'border-[#00C471] bg-emerald-50/50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold'
                     : 'border-border text-muted-foreground hover:bg-muted'
                 }`}
               >
                 <FileSpreadsheet className="w-4 h-4" />
-                <span>CSV Spreadsheet</span>
+                <span>CSV Stream</span>
               </button>
               <button
                 type="button"
                 onClick={() => setFormat('excel')}
-                className={`p-3 border rounded-xl flex items-center gap-2 font-medium transition ${
+                className={`p-3 border rounded-xl flex items-center justify-center gap-2 font-medium transition cursor-pointer ${
                   format === 'excel'
-                    ? 'border-primary bg-primary/10 text-primary font-bold'
+                    ? 'border-[#00C471] bg-emerald-50/50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-bold'
                     : 'border-border text-muted-foreground hover:bg-muted'
                 }`}
               >
                 <FileSpreadsheet className="w-4 h-4" />
-                <span>Excel Compatible</span>
+                <span>Excel Spreadsheet</span>
               </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 p-2.5 bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 rounded-xl text-[11px]">
-            <ShieldAlert className="w-4 h-4 shrink-0" />
-            <span>This export action will be permanently recorded in the immutable audit log.</span>
+          <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 text-amber-800 dark:text-amber-300 rounded-xl text-[11px]">
+            <ShieldAlert className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <span>This export action will be permanently recorded in the immutable audit log for compliance.</span>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="p-4 border-t border-border bg-muted/20 flex items-center justify-end gap-2 text-xs">
+        <div className="p-4 sm:p-5 border-t border-border bg-slate-50/50 dark:bg-slate-900/40 flex items-center justify-end gap-2.5 text-xs">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-border text-muted-foreground hover:text-foreground rounded-xl transition"
+            className={AUDIT_BUTTON_STYLES.secondary}
           >
             Cancel
           </button>
@@ -141,9 +148,9 @@ export const AuditExportModal = ({ isOpen, onClose, filters = {} }) => {
             type="button"
             disabled={isExporting}
             onClick={handleExport}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground font-semibold rounded-xl hover:bg-primary/90 transition shadow-sm disabled:opacity-50"
+            className={AUDIT_BUTTON_STYLES.primary}
           >
-            {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
             <span>{isExporting ? 'Generating Export...' : 'Download Export'}</span>
           </button>
         </div>

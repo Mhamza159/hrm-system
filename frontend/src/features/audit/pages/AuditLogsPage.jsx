@@ -37,6 +37,7 @@ import { AuditLogUserActivityView } from '../components/AuditLogUserActivityView
 import { AuditLogDiffModal } from '../components/AuditLogDiffModal.jsx';
 import { AuditExportModal } from '../components/AuditExportModal.jsx';
 import { AuditRetentionModal } from '../components/AuditRetentionModal.jsx';
+import { AUDIT_BUTTON_STYLES } from '../utils/auditTheme.js';
 import { cn } from '../../../lib/utils.js';
 
 export const AuditLogsPage = () => {
@@ -156,7 +157,7 @@ export const AuditLogsPage = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <RefreshButton onRefresh={handleRefreshAll} isFetching={logsFetching} />
 
           {/* Export Button (Permission Guarded) */}
@@ -164,10 +165,10 @@ export const AuditLogsPage = () => {
             <button
               type="button"
               onClick={() => setExportModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-card hover:bg-muted border border-border text-xs font-semibold text-foreground rounded-xl transition shadow-sm cursor-pointer"
+              className={AUDIT_BUTTON_STYLES.secondary}
             >
-              <Download className="w-3.5 h-3.5 text-primary" />
-              <span>Export</span>
+              <Download className="w-3.5 h-3.5 text-[#00C471]" />
+              <span>Export Records</span>
             </button>
           )}
 
@@ -175,13 +176,13 @@ export const AuditLogsPage = () => {
           <button
             type="button"
             onClick={() => setRetentionModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-card hover:bg-muted border border-border text-xs font-semibold text-foreground rounded-xl transition shadow-sm cursor-pointer"
+            className={AUDIT_BUTTON_STYLES.secondary}
           >
             <Archive className="w-3.5 h-3.5 text-indigo-500" />
-            <span>Retention</span>
+            <span>Retention Policy</span>
           </button>
 
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-500/20">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-200 dark:border-emerald-500/20 shadow-xs">
             <Activity className="w-3.5 h-3.5" />
             <span>Immutable Ledger</span>
           </span>
@@ -219,13 +220,13 @@ export const AuditLogsPage = () => {
                 type="button"
                 onClick={() => setViewMode('table')}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-lg transition',
+                  'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer',
                   viewMode === 'table'
-                    ? 'bg-card text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'bg-card text-foreground shadow-xs border border-border/80'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
                 )}
               >
-                <Table className="w-3.5 h-3.5" />
+                <Table className="w-3.5 h-3.5 text-[#00C471]" />
                 <span>Table</span>
               </button>
 
@@ -233,13 +234,13 @@ export const AuditLogsPage = () => {
                 type="button"
                 onClick={() => setViewMode('timeline')}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-lg transition',
+                  'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer',
                   viewMode === 'timeline'
-                    ? 'bg-card text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'bg-card text-foreground shadow-xs border border-border/80'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
                 )}
               >
-                <Clock className="w-3.5 h-3.5" />
+                <Clock className="w-3.5 h-3.5 text-blue-500" />
                 <span>Timeline</span>
               </button>
 
@@ -247,13 +248,13 @@ export const AuditLogsPage = () => {
                 type="button"
                 onClick={() => setViewMode('user')}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-lg transition',
+                  'flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer',
                   viewMode === 'user'
-                    ? 'bg-card text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'bg-card text-foreground shadow-xs border border-border/80'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
                 )}
               >
-                <Users className="w-3.5 h-3.5" />
+                <Users className="w-3.5 h-3.5 text-purple-500" />
                 <span>User Activity</span>
               </button>
             </div>

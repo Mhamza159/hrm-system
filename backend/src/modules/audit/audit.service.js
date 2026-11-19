@@ -4,9 +4,96 @@
  */
 
 import { AuditLog } from '../../models/auditLog.model.js';
+import '../../models/user.model.js';
+import '../../models/employee.model.js';
+import '../../models/department.model.js';
+import '../../models/designation.model.js';
+import '../../models/role.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { AuditService } from '../../services/audit.service.js';
 import dayjs from 'dayjs';
+
+/**
+ * Safely format and enrich actor identity attributes across employees, admins, and automated system daemons.
+ * @param {Object} log
+ * @returns {Object} Enriched actor object
+ */
+export const formatAuditActor = (log) => {
+  if (!log) {
+    return {
+      name: 'System Automation Engine',
+      avatar: null,
+      employeeCode: 'SYS-CRON',
+      email: 'system',
+      role: 'SYSTEM',
+      designation: 'Background Daemon',
+      department: 'Kernel & Infrastructure',
+      accountStatus: 'Active',
+      employmentStatus: 'Active',
+      isSystem: true
+    };
+  }
+
+  const actorUser = log.actorId && typeof log.actorId === 'object' ? log.actorId : null;
+  const employee = actorUser?.employeeId && typeof actorUser.employeeId === 'object' ? actorUser.employeeId : null;
+  const roleObj = actorUser?.roles?.[0] && typeof actorUser.roles[0] === 'object' ? actorUser.roles[0] : null;
+
+  // 1. Employee linked account
+  if (employee) {
+    const departmentName = employee.departmentId?.name || 'General';
+    const designationTitle = employee.designationId?.title || 'Staff';
+    const roleName = roleObj?.name || (typeof actorUser?.roles?.[0] === 'string' ? actorUser.roles[0] : log.actorRole || 'Employee');
+    const avatar = employee.avatar || actorUser?.avatar || null;
+
+    return {
+      name: employee.name || actorUser.email?.split('@')[0] || log.actorEmail || 'Staff Member',
+      avatar,
+      employeeCode: employee.employeeCode || 'N/A',
+      email: actorUser.email || log.actorEmail || 'unknown@system.local',
+      role: roleName,
+      designation: designationTitle,
+      department: departmentName,
+      accountStatus: actorUser.isActive === false ? 'Inactive' : 'Active',
+      employmentStatus: employee.status || 'Active',
+      isSystem: false
+    };
+  }
+
+  // 2. Standalone Administrative account (User without Employee record)
+  if (actorUser) {
+    const roleName = roleObj?.name || (typeof actorUser.roles?.[0] === 'string' ? actorUser.roles[0] : log.actorRole || 'Administrator');
+    const fallbackName = actorUser.email ? actorUser.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'System Admin';
+
+    return {
+      name: fallbackName,
+      avatar: actorUser.avatar || null,
+      employeeCode: 'N/A',
+      email: actorUser.email || log.actorEmail,
+      role: roleName,
+      designation: roleName,
+      department: 'Administration',
+      accountStatus: actorUser.isActive === false ? 'Inactive' : 'Active',
+      employmentStatus: 'Active',
+      isSystem: false
+    };
+  }
+
+  // 3. Automated Cron / System Process or Historical Snapshot
+  const isSystemActor = !log.actorEmail || log.actorEmail === 'system' || (log.actorRole && log.actorRole.toUpperCase() === 'SYSTEM');
+
+  return {
+    name: isSystemActor ? 'System Automation Engine' : (log.actorEmail?.split('@')[0] || 'Historical User'),
+    avatar: null,
+    employeeCode: isSystemActor ? 'SYS-CRON' : 'N/A',
+    email: log.actorEmail || 'system',
+    role: log.actorRole || 'SYSTEM',
+    designation: isSystemActor ? 'Background Daemon' : 'Historical Account',
+    department: isSystemActor ? 'Kernel & Infrastructure' : 'Archived',
+    accountStatus: 'Active',
+    employmentStatus: 'Active',
+    isSystem: isSystemActor
+  };
+};
 
 /**
  * Build Mongoose query from filters
@@ -99,13 +186,32 @@ export const queryAuditLogs = async (filters = {}, pagination = {}) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .populate('actorId', 'email firstName lastName profilePicture')
+      .populate({
+        path: 'actorId',
+        select: 'email avatar isActive roles employeeId',
+        populate: [
+          { path: 'roles', select: 'name label' },
+          {
+            path: 'employeeId',
+            select: 'name employeeCode avatar departmentId designationId status',
+            populate: [
+              { path: 'departmentId', select: 'name code' },
+              { path: 'designationId', select: 'title titleUrdu grade' }
+            ]
+          }
+        ]
+      })
       .lean(),
     AuditLog.countDocuments(query)
   ]);
 
+  const enrichedItems = items.map((item) => ({
+    ...item,
+    actor: formatAuditActor(item)
+  }));
+
   return {
-    items,
+    items: enrichedItems,
     total,
     page,
     limit,
@@ -120,14 +226,31 @@ export const queryAuditLogs = async (filters = {}, pagination = {}) => {
  */
 export const getAuditLogById = async (id) => {
   const log = await AuditLog.findById(id)
-    .populate('actorId', 'email firstName lastName profilePicture')
+    .populate({
+      path: 'actorId',
+      select: 'email avatar isActive roles employeeId',
+      populate: [
+        { path: 'roles', select: 'name label' },
+        {
+          path: 'employeeId',
+          select: 'name employeeCode avatar departmentId designationId status',
+          populate: [
+            { path: 'departmentId', select: 'name code' },
+            { path: 'designationId', select: 'title titleUrdu grade' }
+          ]
+        }
+      ]
+    })
     .lean();
 
   if (!log) {
     throw new ApiError(404, 'Audit log entry not found');
   }
 
-  return log;
+  return {
+    ...log,
+    actor: formatAuditActor(log)
+  };
 };
 
 /**
