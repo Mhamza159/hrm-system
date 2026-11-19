@@ -23,6 +23,18 @@ export const rolesApi = baseApi.injectEndpoints({
       providesTags: ['Permissions']
     }),
 
+    // Live KPI Statistics for Roles Dashboard
+    getRoleStats: builder.query({
+      query: () => '/roles/stats',
+      providesTags: ['RoleStats']
+    }),
+
+    // Visual Distribution Analytics
+    getRoleAnalytics: builder.query({
+      query: () => '/roles/analytics',
+      providesTags: ['RoleAnalytics']
+    }),
+
     // 26.7: Retrieve paginated roles list
     getRoles: builder.query({
       query: (params) => ({
@@ -45,7 +57,7 @@ export const rolesApi = baseApi.injectEndpoints({
         method: 'POST',
         body: data
       }),
-      invalidatesTags: ['Roles']
+      invalidatesTags: ['Roles', 'RoleStats', 'RoleAnalytics']
     }),
 
     // 26.7 & 26.8: Update role metadata & permissions matrix
@@ -58,6 +70,8 @@ export const rolesApi = baseApi.injectEndpoints({
       invalidatesTags: (result, error, { id }) => [
         'Roles',
         { type: 'Roles', id },
+        'RoleStats',
+        'RoleAnalytics',
         'Auth'
       ]
     }),
@@ -68,7 +82,7 @@ export const rolesApi = baseApi.injectEndpoints({
         url: `/roles/${id}`,
         method: 'DELETE'
       }),
-      invalidatesTags: ['Roles']
+      invalidatesTags: ['Roles', 'RoleStats', 'RoleAnalytics']
     }),
 
     // 26.10: Clone existing role
@@ -78,7 +92,7 @@ export const rolesApi = baseApi.injectEndpoints({
         method: 'POST',
         body: { newName }
       }),
-      invalidatesTags: ['Roles']
+      invalidatesTags: ['Roles', 'RoleStats', 'RoleAnalytics']
     }),
 
     // 26.11: Assign roles to user
@@ -88,7 +102,7 @@ export const rolesApi = baseApi.injectEndpoints({
         method: 'PATCH',
         body: { roleIds }
       }),
-      invalidatesTags: ['Users', 'Auth']
+      invalidatesTags: ['Users', 'Auth', 'Roles', 'RoleStats', 'RoleAnalytics']
     }),
 
     // 26.14: Delegations
@@ -124,6 +138,8 @@ export const rolesApi = baseApi.injectEndpoints({
 
 export const {
   useGetPermissionsQuery,
+  useGetRoleStatsQuery,
+  useGetRoleAnalyticsQuery,
   useGetRolesQuery,
   useGetRoleByIdQuery,
   useCreateRoleMutation,

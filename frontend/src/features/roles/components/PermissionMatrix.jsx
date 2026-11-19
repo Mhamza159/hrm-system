@@ -204,7 +204,7 @@ export function PermissionMatrix({
     setExpandedModules(newState);
   }, [catalogue]);
 
-  // Toggle single action rule
+  // Toggle single action rule with dependency auto-grant
   const handleToggleAction = useCallback((moduleItem, actionItem) => {
     if (readOnly) return;
     const existing = ruleMap.get(actionItem.action);
@@ -220,7 +220,21 @@ export function PermissionMatrix({
         fields: [],
         limit: undefined
       };
-      onChange?.([...value, newRule]);
+
+      // Dependency validation: if granting mutation/approval, ensure module's view action is also granted
+      const newRules = [newRule];
+      const viewAction = moduleItem.actions.find((a) => a.action.endsWith('.view') || a.action.endsWith('.read'));
+      if (viewAction && viewAction.action !== actionItem.action && !ruleMap.has(viewAction.action)) {
+        newRules.push({
+          action: viewAction.action,
+          subject: moduleItem.subject,
+          scope: viewAction.defaultScope || viewAction.allowedScopes[0] || 'all',
+          fields: [],
+          limit: undefined
+        });
+      }
+
+      onChange?.([...value, ...newRules]);
     }
   }, [readOnly, ruleMap, value, onChange]);
 
@@ -276,6 +290,19 @@ export function PermissionMatrix({
       onChange?.([...otherRules, ...newModuleRules]);
     }
   }, [readOnly, ruleMap, value, onChange]);
+
+  // Bulk set scope for all enabled actions in a module
+  const handleBulkModuleScope = useCallback((moduleItem, newScope) => {
+    if (readOnly) return;
+    const moduleActionNames = new Set(moduleItem.actions.map((a) => a.action));
+    const updated = value.map((r) => {
+      if (moduleActionNames.has(r.action)) {
+        return { ...r, scope: newScope };
+      }
+      return r;
+    });
+    onChange?.(updated);
+  }, [readOnly, value, onChange]);
 
   // Bulk Grant All / Revoke All across visible / entire catalogue
   const handleBulkGrantAll = useCallback(() => {
@@ -644,8 +671,31 @@ export function PermissionMatrix({
                     </div>
                   </div>
 
-                  {/* Tri-state Module Checkbox & Counter */}
+                  {/* Tri-state Module Checkbox, Bulk Scope & Counter */}
                   <div className="flex items-center gap-3.5" onClick={(e) => e.stopPropagation()}>
+                    {/* Bulk Module Scope Dropdown */}
+                    {!readOnly && selectedActionCount > 0 && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">Set scope:</span>
+                        <select
+                          defaultValue=""
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              handleBulkModuleScope(moduleItem, e.target.value);
+                              e.target.value = '';
+                            }
+                          }}
+                          className="px-2 py-0.5 text-[10px] rounded-lg border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-700 dark:text-slate-300 font-medium cursor-pointer"
+                        >
+                          <option value="" disabled>Batch Scope...</option>
+                          <option value="all">All Records</option>
+                          <option value="department">Department</option>
+                          <option value="team">Direct Team</option>
+                          <option value="own">Self Only</option>
+                        </select>
+                      </div>
+                    )}
+
                     <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold tabular-nums">
                       {selectedActionCount} of {moduleActionCount}
                     </span>
