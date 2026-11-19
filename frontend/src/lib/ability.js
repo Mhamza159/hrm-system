@@ -33,8 +33,14 @@ export const buildAbilityFromRules = (permissions = [], user = null) => {
     return build();
   }
 
-  // Compile all permission rules from passed permissions and populated user.roles
+  // Compile all permission rules from passed permissions, user.permissions, and populated user.roles
   const rules = [...(Array.isArray(permissions) ? permissions : [])];
+  if (Array.isArray(user?.permissions)) {
+    rules.push(...user.permissions);
+  }
+  if (Array.isArray(user?.effectivePermissions)) {
+    rules.push(...user.effectivePermissions);
+  }
   for (const role of roles) {
     if (typeof role === 'object' && Array.isArray(role?.permissions)) {
       rules.push(...role.permissions);

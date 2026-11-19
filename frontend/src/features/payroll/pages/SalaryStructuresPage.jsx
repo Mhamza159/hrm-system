@@ -33,11 +33,13 @@ import { SalaryFormModal } from '../components/SalaryFormModal.jsx';
 import { SalaryRevisionModal } from '../components/SalaryRevisionModal.jsx';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
+import { usePermission } from '../../../hooks/usePermission.js';
 import { RoleBadge } from '../../../components/common/RoleBadge.jsx';
 import { DesignationBadge } from '../../../components/common/DesignationBadge.jsx';
 import { cn } from '../../../lib/utils.js';
 
 export function SalaryStructuresPage() {
+  const { can, isSuperAdmin } = usePermission();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('active');
@@ -89,14 +91,16 @@ export function SalaryStructuresPage() {
 
         <div className="flex items-center gap-2.5">
           <RefreshButton onRefresh={refetch} isFetching={isFetching} />
-          <button
-            type="button"
-            onClick={() => setIsAssignModalOpen(true)}
-            className="h-9 px-4 inline-flex items-center gap-2 bg-[#00C471] hover:bg-[#049856] text-white rounded-xl text-xs font-semibold shadow-xs shadow-emerald-600/20 active:scale-[0.98] transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Assign Salary Structure</span>
-          </button>
+          {(isSuperAdmin || can('payroll.manage')) && (
+            <button
+              type="button"
+              onClick={() => setIsAssignModalOpen(true)}
+              className="h-9 px-4 inline-flex items-center gap-2 bg-[#00C471] hover:bg-[#049856] text-white rounded-xl text-xs font-semibold shadow-xs shadow-emerald-600/20 active:scale-[0.98] transition-all cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Assign Salary Structure</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -278,15 +282,17 @@ export function SalaryStructuresPage() {
 
                       <td className="px-5 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedForRevision(s)}
-                            title="Revise / Increment Salary"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/50 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors shadow-2xs cursor-pointer active:scale-95"
-                          >
-                            <TrendingUp className="w-3.5 h-3.5 text-[#00C471]" />
-                            <span>Revise</span>
-                          </button>
+                          {(isSuperAdmin || can('payroll.manage')) && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedForRevision(s)}
+                              title="Revise / Increment Salary"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/50 rounded-xl hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors shadow-2xs cursor-pointer active:scale-95"
+                            >
+                              <TrendingUp className="w-3.5 h-3.5 text-[#00C471]" />
+                              <span>Revise</span>
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => setSelectedForHistoryId(emp._id)}

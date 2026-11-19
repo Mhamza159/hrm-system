@@ -1106,12 +1106,12 @@ Plans:
 **Plans:** 6 plans
 
 Plans:
-- [ ] **Plan 30-01: Centralized Permission Primitives, Real-Time Revocation & Auth Sync Engine** (`.planning/phases/30-complete-rbac-pbac-frontend-permission-visibility-audit-all-roles-all-modules/30-01-PLAN.md`)
-- [ ] **Plan 30-02: Core HR, Organization & Dashboard Frontend Visibility Audit** (`.planning/phases/30-complete-rbac-pbac-frontend-permission-visibility-audit-all-roles-all-modules/30-02-PLAN.md`)
-- [ ] **Plan 30-03: Time, Attendance, Shifts & Leaves Frontend Visibility Audit** (`.planning/phases/30-complete-rbac-pbac-frontend-permission-visibility-audit-all-roles-all-modules/30-03-PLAN.md`)
-- [ ] **Plan 30-04: Payroll, Loans, Expenses & Finance Frontend Visibility Audit** (`.planning/phases/30-complete-rbac-pbac-frontend-permission-visibility-audit-all-roles-all-modules/30-04-PLAN.md`)
-- [ ] **Plan 30-05: Talent, Recruitment, Performance, Assets & Governance Visibility Audit** (`.planning/phases/30-complete-rbac-pbac-frontend-permission-visibility-audit-all-roles-all-modules/30-05-PLAN.md`)
-- [ ] **Plan 30-06: End-to-End Multi-Role Automated Testing, Visibility Matrix & Verification Report** (`.planning/phases/30-complete-rbac-pbac-frontend-permission-visibility-audit-all-roles-all-modules/30-06-PLAN.md`)
+- [x] **Plan 30-01: Centralized Permission Primitives, Real-Time Revocation & Auth Sync Engine** (`.planning/phases/30-complete-rbac-pbac-frontend-permission-visibility-audit-all-roles-all-modules/30-01-PLAN.md`)
+- [x] **Plan 30-02: Core HR, Organization & Dashboard Frontend Visibility Audit** (`.planning/phases/30-complete-rbac-pbac-frontend-permission-visibility-audit-all-roles-all-modules/30-02-PLAN.md`)
+- [x] **Plan 30-03: Time, Attendance, Shifts & Leaves Frontend Visibility Audit** (`.planning/phases/30-complete-rbac-pbac-frontend-permission-visibility-audit-all-roles-all-modules/30-03-PLAN.md`)
+- [x] **Plan 30-04: Payroll, Loans, Expenses & Finance Frontend Visibility Audit** (`.planning/phases/30-complete-rbac-pbac-frontend-permission-visibility-audit-all-roles-all-modules/30-04-PLAN.md`)
+- [x] **Plan 30-05: Talent, Recruitment, Performance, Assets & Governance Visibility Audit** (`.planning/phases/30-complete-rbac-pbac-frontend-permission-visibility-audit-all-roles-all-modules/30-05-PLAN.md`)
+- [x] **Plan 30-06: End-to-End Multi-Role Automated Testing, Visibility Matrix & Verification Report** (`.planning/phases/30-complete-rbac-pbac-frontend-permission-visibility-audit-all-roles-all-modules/30-06-PLAN.md`)
 
 ---
 

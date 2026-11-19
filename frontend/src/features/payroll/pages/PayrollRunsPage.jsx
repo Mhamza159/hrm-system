@@ -46,9 +46,11 @@ import { Can } from '../../../components/common/Can.jsx';
 import { toast } from 'sonner';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
+import { usePermission } from '../../../hooks/usePermission.js';
 import { cn } from '../../../lib/utils.js';
 
 export function PayrollRunsPage() {
+  const { can, isSuperAdmin } = usePermission();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('active'); // 'active' | 'archived'
   const [page, setPage] = useState(1);
@@ -219,14 +221,16 @@ export function PayrollRunsPage() {
         <div className="flex items-center gap-2.5">
           <RefreshButton onRefresh={refetch} isFetching={isFetching} />
 
-          <button
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            className="h-9 px-4 inline-flex items-center gap-2 bg-[#00C471] hover:bg-[#049856] text-white rounded-xl text-xs font-semibold shadow-xs shadow-emerald-600/20 active:scale-[0.98] transition-all cursor-pointer"
-          >
-            <Play className="w-3.5 h-3.5 fill-white" />
-            <span>Generate Payroll Run</span>
-          </button>
+          {(isSuperAdmin || can('payroll.run')) && (
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="h-9 px-4 inline-flex items-center gap-2 bg-[#00C471] hover:bg-[#049856] text-white rounded-xl text-xs font-semibold shadow-xs shadow-emerald-600/20 active:scale-[0.98] transition-all cursor-pointer"
+            >
+              <Play className="w-3.5 h-3.5 fill-white" />
+              <span>Generate Payroll Run</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -484,36 +488,42 @@ export function PayrollRunsPage() {
                                 <Eye className="w-3.5 h-3.5 text-slate-500" />
                                 <span>Details</span>
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => setArchiveTarget(run)}
-                                className="h-8 px-2.5 inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 border border-rose-200/60 dark:border-rose-800/40 rounded-lg transition-colors cursor-pointer"
-                                title="Move to Archive"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                                <span>Archive</span>
-                              </button>
+                              {(isSuperAdmin || can('payroll.manage')) && (
+                                <button
+                                  type="button"
+                                  onClick={() => setArchiveTarget(run)}
+                                  className="h-8 px-2.5 inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 border border-rose-200/60 dark:border-rose-800/40 rounded-lg transition-colors cursor-pointer"
+                                  title="Move to Archive"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>Archive</span>
+                                </button>
+                              )}
                             </>
                           ) : (
                             <>
-                              <button
-                                type="button"
-                                onClick={() => setRevertTarget(run)}
-                                className="h-8 px-2.5 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200/60 dark:border-emerald-800/40 rounded-lg transition-colors cursor-pointer"
-                                title="Restore to Active Policies"
-                              >
-                                <RotateCcw className="w-3.5 h-3.5" />
-                                <span>Revert</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setPermanentDeleteTarget(run)}
-                                className="h-8 px-2.5 inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 border border-rose-200/60 dark:border-rose-800/40 rounded-lg transition-colors cursor-pointer"
-                                title="Permanently Delete Run"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                                <span>Delete</span>
-                              </button>
+                              {(isSuperAdmin || can('payroll.manage')) && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => setRevertTarget(run)}
+                                    className="h-8 px-2.5 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 border border-emerald-200/60 dark:border-emerald-800/40 rounded-lg transition-colors cursor-pointer"
+                                    title="Restore to Active Policies"
+                                  >
+                                    <RotateCcw className="w-3.5 h-3.5" />
+                                    <span>Revert</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setPermanentDeleteTarget(run)}
+                                    className="h-8 px-2.5 inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 border border-rose-200/60 dark:border-rose-800/40 rounded-lg transition-colors cursor-pointer"
+                                    title="Permanently Delete Run"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <span>Delete</span>
+                                  </button>
+                                </>
+                              )}
                             </>
                           )}
                         </div>

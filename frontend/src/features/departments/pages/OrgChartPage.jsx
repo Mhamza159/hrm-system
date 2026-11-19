@@ -25,7 +25,6 @@ import {
   Crosshair,
   Building,
   Users,
-  ShieldCheck,
   Layers,
   X,
   Briefcase,
@@ -42,9 +41,11 @@ import { OrgChartNode } from '../components/OrgChartNode.jsx';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { StatCard } from '../../../components/common/StatCard.jsx';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
+import { usePermission } from '../../../hooks/usePermission.js';
 
 export const OrgChartPage = () => {
   const navigate = useNavigate();
+  const { can, isSuperAdmin } = usePermission();
   const { data, isLoading, isFetching, isError, refetch } = useGetOrgChartQuery();
   const [zoom, setZoom] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
@@ -541,20 +542,22 @@ export const OrgChartPage = () => {
                 Focus in Tree
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  if (selectedEmployee.isMe) {
-                    navigate('/me');
-                  } else {
-                    navigate(`/employees/${selectedEmployee.id}`);
-                  }
-                }}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-[#00C471] hover:bg-[#049856] text-white font-semibold transition-all shadow-xs cursor-pointer"
-              >
-                <span>View Full Profile</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </button>
+              {(selectedEmployee.isMe || can('employee.view') || isSuperAdmin) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedEmployee.isMe) {
+                      navigate('/me');
+                    } else {
+                      navigate(`/employees/${selectedEmployee.id}`);
+                    }
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-[#00C471] hover:bg-[#049856] text-white font-semibold transition-all shadow-xs cursor-pointer"
+                >
+                  <span>View Full Profile</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
         </div>

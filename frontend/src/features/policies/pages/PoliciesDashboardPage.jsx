@@ -29,6 +29,7 @@ import {
   useSubmitPolicyForApprovalMutation
 } from '../policyApi.js';
 import { useAuth } from '../../../hooks/useAuth.js';
+import { usePermission } from '../../../hooks/usePermission.js';
 import PolicyCard from '../components/PolicyCard.jsx';
 import PolicyTable from '../components/PolicyTable.jsx';
 import PolicyFormModal from '../components/PolicyFormModal.jsx';
@@ -42,8 +43,9 @@ import PolicyAcknowledgementRosterModal from '../components/PolicyAcknowledgemen
 export const PoliciesDashboardPage = () => {
   const navigate = useNavigate();
   const { isHR, isSuperAdmin, isDeptManager } = useAuth();
-  const canManage = isHR || isSuperAdmin;
-  const canApprove = isHR || isSuperAdmin || isDeptManager;
+  const { can } = usePermission();
+  const canManage = isSuperAdmin || can('policy.manage') || can('policy.create') || isHR;
+  const canApprove = isSuperAdmin || can('policy.approve') || isHR || isDeptManager;
 
   // Filter States
   const [search, setSearch] = useState('');

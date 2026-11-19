@@ -12,6 +12,7 @@ import { CalendarCheck2, Clock, Calendar, Wallet, FileText, AlertCircle, ArrowRi
 import { useGetEmployeeDashboardQuery } from '../dashboardApi.js';
 import { useDashboardLiveRefresh, EMPLOYEE_EVENTS, makeEmployeeAccept } from '../hooks/useDashboardLiveRefresh.js';
 import { useAuth } from '../../../hooks/useAuth.js';
+import { usePermission } from '../../../hooks/usePermission.js';
 import { PinnedNoticeBoard } from '../../announcements/components/PinnedNoticeBoard.jsx';
 import { StatCard } from './widgets/StatCard.jsx';
 import { DashboardCard } from './widgets/DashboardCard.jsx';
@@ -44,6 +45,10 @@ const TILE = 'rounded-xl border border-slate-100 bg-slate-50 p-3 dark:border-[#1
 
 export function EmployeeDashboard() {
   const { user } = useAuth();
+  const { can, isSuperAdmin } = usePermission();
+  const canViewPayroll = isSuperAdmin || can('payroll.view') || can('employee.salary.view');
+  const canViewLeaves = isSuperAdmin || can('leave.view') || can('leave.apply');
+
   const { data: response, isLoading, error, refetch } = useGetEmployeeDashboardQuery(undefined, { pollingInterval: 60000 });
   useDashboardLiveRefresh({ events: EMPLOYEE_EVENTS, accept: makeEmployeeAccept(user) });
   const data = response?.data;
@@ -103,18 +108,22 @@ export function EmployeeDashboard() {
           sub={attendance.onBreak ? 'On break' : 'Hours worked'}
           icon={Clock}
         />
-        <StatCard label="Leave Available" value={leaveAvailable} sub="days, all types" icon={Calendar} />
-        <StatCard
-          label="Last Net Pay"
-          value={latestPayslip ? `PKR ${(latestPayslip.netPayablePkr || 0).toLocaleString()}` : '—'}
-          sub={latestPayslip ? `${latestPayslip.month} · ${latestPayslip.status}` : undefined}
-          icon={Wallet}
-        />
+        {canViewLeaves && (
+          <StatCard label="Leave Available" value={leaveAvailable} sub="days, all types" icon={Calendar} />
+        )}
+        {canViewPayroll && (
+          <StatCard
+            label="Last Net Pay"
+            value={latestPayslip ? `PKR ${(latestPayslip.netPayablePkr || 0).toLocaleString()}` : '—'}
+            sub={latestPayslip ? `${latestPayslip.month} · ${latestPayslip.status}` : undefined}
+            icon={Wallet}
+          />
+        )}
       </div>
 
       {/* Row 2: today's punch card, latest payslip */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <DashboardCard title="Today's Punch" live className="lg:col-span-2">
+      <div className={`grid grid-cols-1 gap-6 ${canViewPayroll ? 'lg:grid-cols-3' : 'lg:grid-cols-1'}`}>
+        <DashboardCard title="Today's Punch" live className={canViewPayroll ? 'lg:col-span-2' : 'lg:col-span-1'}>
           <div className="flex items-center justify-between gap-3">
             <h4 className="text-base font-semibold text-slate-900 dark:text-white">
               {attendance.status === 'present'
@@ -158,70 +167,74 @@ export function EmployeeDashboard() {
           </div>
         </DashboardCard>
 
-        <DashboardCard title="Latest Payslip" className="flex flex-col justify-between">
-          <div>
-            {latestPayslip ? (
-              <div className="space-y-1">
-                <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                  <FileText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-                  Net Disbursement ({latestPayslip.month})
-                </span>
-                <p className="break-words font-mono text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
-                  PKR {(latestPayslip.netPayablePkr || 0).toLocaleString()}
+        {canViewPayroll && (
+          <DashboardCard title="Latest Payslip" className="flex flex-col justify-between">
+            <div>
+              {latestPayslip ? (
+                <div className="space-y-1">
+                  <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    <FileText className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                    Net Disbursement ({latestPayslip.month})
+                  </span>
+                  <p className="break-words font-mono text-2xl font-semibold tabular-nums text-slate-900 dark:text-white">
+                    PKR {(latestPayslip.netPayablePkr || 0).toLocaleString()}
+                  </p>
+                  <span className="mt-1 inline-block rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-400">
+                    Status: {latestPayslip.status}
+                  </span>
+                </div>
+              ) : (
+                <p className="py-6 text-center text-xs text-slate-500 dark:text-slate-400">
+                  No finalized payslips generated for your account yet.
                 </p>
-                <span className="mt-1 inline-block rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-400">
-                  Status: {latestPayslip.status}
-                </span>
-              </div>
-            ) : (
-              <p className="py-6 text-center text-xs text-slate-500 dark:text-slate-400">
-                No finalized payslips generated for your account yet.
-              </p>
-            )}
-          </div>
-          <div className="mt-4 border-t border-slate-100 pt-4 dark:border-[#1A3125]">
-            <Link
-              to="/payroll/my-payslips"
-              className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-800 transition-colors hover:bg-slate-200 dark:bg-[#162820] dark:text-slate-200 dark:hover:bg-[#1A3125]"
-            >
-              My Payslips & Tax Certificate <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden="true" />
-            </Link>
-          </div>
-        </DashboardCard>
+              )}
+            </div>
+            <div className="mt-4 border-t border-slate-100 pt-4 dark:border-[#1A3125]">
+              <Link
+                to="/payroll/my-payslips"
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-800 transition-colors hover:bg-slate-200 dark:bg-[#162820] dark:text-slate-200 dark:hover:bg-[#1A3125]"
+              >
+                My Payslips & Tax Certificate <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden="true" />
+              </Link>
+            </div>
+          </DashboardCard>
+        )}
       </div>
 
       {/* Row 3: leave balances, notice board */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <DashboardCard title="Leave Balances" action={{ label: 'Apply Leave & History', to: '/leaves' }} className="lg:col-span-2">
-          {leaveBalances.length === 0 ? (
-            <p className="py-4 text-center text-xs text-slate-500 dark:text-slate-400">
-              No leave quotas allocated for the active calendar year.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {leaveBalances.map((bal) => (
-                <div key={bal._id} className={`${TILE} space-y-2 p-4`}>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-900 dark:text-white">{bal.leaveType}</span>
-                    <span className="text-[10px] font-bold text-slate-400">{bal.code}</span>
+      <div className={`grid grid-cols-1 gap-6 ${canViewLeaves ? 'lg:grid-cols-3' : 'lg:grid-cols-1'}`}>
+        {canViewLeaves && (
+          <DashboardCard title="Leave Balances" action={{ label: 'Apply Leave & History', to: '/leaves' }} className="lg:col-span-2">
+            {leaveBalances.length === 0 ? (
+              <p className="py-4 text-center text-xs text-slate-500 dark:text-slate-400">
+                No leave quotas allocated for the active calendar year.
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {leaveBalances.map((bal) => (
+                  <div key={bal._id} className={`${TILE} space-y-2 p-4`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-900 dark:text-white">{bal.leaveType}</span>
+                      <span className="text-[10px] font-bold text-slate-400">{bal.code}</span>
+                    </div>
+                    <div className="flex items-baseline justify-between">
+                      <span className="font-mono text-2xl font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{bal.available}</span>
+                      <span className="text-xs text-slate-400">/ {bal.allocated} days</span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-[#1A3125]">
+                      <div
+                        className="h-full rounded-full bg-[#00C471] transition-all"
+                        style={{
+                          width: `${Math.min(100, Math.round(((bal.allocated - bal.available) / (bal.allocated || 1)) * 100))}%`,
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-baseline justify-between">
-                    <span className="font-mono text-2xl font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{bal.available}</span>
-                    <span className="text-xs text-slate-400">/ {bal.allocated} days</span>
-                  </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-[#1A3125]">
-                    <div
-                      className="h-full rounded-full bg-[#00C471] transition-all"
-                      style={{
-                        width: `${Math.min(100, Math.round(((bal.allocated - bal.available) / (bal.allocated || 1)) * 100))}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </DashboardCard>
+                ))}
+              </div>
+            )}
+          </DashboardCard>
+        )}
 
         {/* PinnedNoticeBoard renders its own card chrome and title; wrapping it would double-card. */}
         <PinnedNoticeBoard />

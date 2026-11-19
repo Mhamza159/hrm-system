@@ -34,6 +34,7 @@ import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { LeaveDecideModal } from '../components/LeaveDecideModal.jsx';
 import { useGetPendingApprovalsQuery } from '../leavesApi.js';
+import { usePermission } from '../../../hooks/usePermission.js';
 import { cn } from '../../../lib/utils.js';
 import { openSecureFile } from '../../../utils/fileHelper.js';
 
@@ -69,10 +70,12 @@ const STATUS_BADGES = {
 };
 
 export function LeaveApprovalsPage() {
+  const { can } = usePermission();
   const user = useSelector((state) => state.auth?.user);
   const userRoles = (user?.roles || []).map((r) => (typeof r === 'string' ? r : r?.name));
   const isSuperAdmin = userRoles.includes('Super Admin');
   const isHR = userRoles.includes('HR Manager');
+  const canApproveLeaves = isSuperAdmin || can('leave.approve');
 
   const [activeTab, setActiveTab] = useState('pending');
   const [searchTerm, setSearchTerm] = useState('');
@@ -401,7 +404,7 @@ export function LeaveApprovalsPage() {
                                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                                 <span>In HR Phase</span>
                               </span>
-                            ) : (
+                            ) : canApproveLeaves ? (
                               <>
                                 <button
                                   type="button"
@@ -422,6 +425,16 @@ export function LeaveApprovalsPage() {
                                   <span>Reject</span>
                                 </button>
                               </>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenDecision(leave, 'approve')}
+                                className="h-8 px-3.5 text-xs font-semibold rounded-xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
+                                title="Inspect Attendance & Leave Audit Dossier"
+                              >
+                                <BarChart3 className="w-3.5 h-3.5 text-slate-500" />
+                                <span>Inspect</span>
+                              </button>
                             )
                           ) : (
                             <button

@@ -81,19 +81,35 @@ export function EmployeeDetailModal({
 
   const employee = detailRes?.data || initialEmployee;
 
-  if (!isOpen || !employee) return null;
+  const isOwn = Boolean(
+    employee &&
+    (String(employee.userId?._id || employee.userId) === String(user?._id) ||
+     String(employee._id) === String(user?.employeeId))
+  );
 
-  const isOwn =
-    String(employee.userId?._id || employee.userId) === String(user?._id) ||
-    String(employee._id) === String(user?.employeeId);
+  const canViewFinancials =
+    isSuperAdmin || isHR || isOwn || can('employee.salary.view', 'Employee');
+
+  const visibleTabs = useMemo(() => {
+    return TABS.filter((t) => {
+      if (t.id === 'financials') return canViewFinancials;
+      return true;
+    });
+  }, [canViewFinancials]);
+
+  // Fallback to overview if activeTab is hidden
+  useEffect(() => {
+    if (activeTab === 'financials' && !canViewFinancials) {
+      setActiveTab('overview');
+    }
+  }, [activeTab, canViewFinancials]);
+
+  if (!isOpen || !employee) return null;
 
   const isRowSuperAdmin =
     employee.employeeCode === 'EMP-000' ||
     employee.email === 'admin@hrm.company.pk' ||
     employee.email === 'mhamzaofficial159@gmail.com';
-
-  const canViewFinancials =
-    isSuperAdmin || isHR || isOwn || can('employee.salary.view', 'Employee');
 
   const initials = employee.name
     ? employee.name
@@ -175,7 +191,7 @@ export function EmployeeDetailModal({
 
           {/* Navigation Tab Bar */}
           <div className="flex items-center gap-1 overflow-x-auto pt-6 border-t border-white/10 mt-4 -mb-2 scrollbar-none">
-            {TABS.map((tab) => {
+            {visibleTabs.map((tab) => {
               const TabIcon = tab.icon;
               return (
                 <button
@@ -587,17 +603,12 @@ export function EmployeeDetailModal({
           )}
 
           {/* 9. FINANCIALS TAB */}
-          {activeTab === 'financials' && (
+          {canViewFinancials && activeTab === 'financials' && (
             <div className="p-4 rounded-2xl border border-slate-200 dark:border-[#1A3125] space-y-3">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#1A3125] pb-2">
                 <span className="font-bold text-slate-900 dark:text-white">
                   Payroll Coordinates
                 </span>
-                {!canViewFinancials && (
-                  <span className="text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-900/40">
-                    PBAC Masked
-                  </span>
-                )}
               </div>
 
               <div className="space-y-2">

@@ -13,6 +13,7 @@
  */
 
 import { baseApi } from '../../lib/baseApi.js';
+import { updateUser } from './authSlice.js';
 
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -76,10 +77,21 @@ export const authApi = baseApi.injectEndpoints({
       }
     }),
 
-    // GET /api/v1/auth/me
+    // GET /api/v1/auth/me - Rehydrates profile & effective permissions in real-time
     getMe: builder.query({
       query: () => '/auth/me',
-      providesTags: ['Auth']
+      providesTags: ['Auth'],
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          const payload = data?.data;
+          if (payload) {
+            dispatch(updateUser(payload));
+          }
+        } catch {
+          // ignore background re-auth errors
+        }
+      }
     }),
 
     // POST /api/v1/auth/forgot-password

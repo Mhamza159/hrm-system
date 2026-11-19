@@ -260,7 +260,7 @@ export const AssetsPage = () => {
 
         <div className="flex items-center gap-2.5">
           <RefreshButton onRefresh={refetch} isFetching={isFetching} />
-          <Can I="create" a="Asset">
+          <Can I={['asset.create', 'create']} a="Asset">
             <button
               onClick={() => {
                 setEditingAsset(null);

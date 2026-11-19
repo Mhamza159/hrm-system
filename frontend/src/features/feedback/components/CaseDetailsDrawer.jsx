@@ -18,10 +18,13 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAddCaseNoteMutation, useGetFeedbackByIdQuery } from '../feedbackApi.js';
+import { usePermission } from '../../../hooks/usePermission.js';
 import StatusChangeModal from './StatusChangeModal.jsx';
 import EscalateModal from './EscalateModal.jsx';
 
 export default function CaseDetailsDrawer({ isOpen, onClose, caseId }) {
+  const { can, isSuperAdmin } = usePermission();
+  const canManage = isSuperAdmin || can('feedback.manage');
   const { data: resData, isLoading, refetch } = useGetFeedbackByIdQuery(caseId, {
     skip: !caseId || !isOpen
   });
@@ -256,62 +259,69 @@ export default function CaseDetailsDrawer({ isOpen, onClose, caseId }) {
                   </div>
 
                   {/* Add note input box */}
-                  <form onSubmit={handleAddNote} className="space-y-2 p-3.5 rounded-xl bg-slate-50 dark:bg-[#0A110D] border border-slate-200 dark:border-[#1A3125]">
-                    <textarea
-                      rows={3}
-                      value={newNote}
-                      onChange={(e) => setNewNote(e.target.value)}
-                      placeholder="Record an investigation update, witness interview finding, or status remark..."
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-900 dark:text-[#F8FAFC] text-xs focus:outline-none focus:border-[#00C471] focus:ring-1 focus:ring-[#00C471] resize-y placeholder:text-slate-400 dark:placeholder:text-[#4E6E5D]"
-                    />
+                  {canManage && (
+                    <form onSubmit={handleAddNote} className="space-y-2 p-3.5 rounded-xl bg-slate-50 dark:bg-[#0A110D] border border-slate-200 dark:border-[#1A3125]">
+                      <textarea
+                        rows={3}
+                        value={newNote}
+                        onChange={(e) => setNewNote(e.target.value)}
+                        placeholder="Record an investigation update, witness interview finding, or status remark..."
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-slate-900 dark:text-[#F8FAFC] text-xs focus:outline-none focus:border-[#00C471] focus:ring-1 focus:ring-[#00C471] resize-y placeholder:text-slate-400 dark:placeholder:text-[#4E6E5D]"
+                      />
 
-                    <div className="flex items-center justify-between">
-                      <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-[#7E9E8F] cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={isPublicNote}
-                          onChange={(e) => setIsPublicNote(e.target.checked)}
-                          className="rounded border-slate-300 dark:border-[#1A3125] text-[#00C471] focus:ring-[#00C471]/20"
-                        />
-                        <span>Visible to complainant on tracking portal</span>
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-[#7E9E8F] cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={isPublicNote}
+                            onChange={(e) => setIsPublicNote(e.target.checked)}
+                            className="rounded border-slate-300 dark:border-[#1A3125] text-[#00C471] focus:ring-[#00C471]/20"
+                          />
+                          <span>Visible to complainant on tracking portal</span>
+                        </label>
 
-                      <button
-                        type="submit"
-                        disabled={isAddingNote || !newNote.trim()}
-                        className="px-3.5 py-1.5 rounded-xl bg-[#00C471] hover:bg-[#00B064] text-white text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        <span>{isAddingNote ? 'Saving...' : 'Post Note'}</span>
-                      </button>
-                    </div>
-                  </form>
+                        <button
+                          type="submit"
+                          disabled={isAddingNote || !newNote.trim()}
+                          className="px-3.5 py-1.5 rounded-xl bg-[#00C471] hover:bg-[#00B064] text-white text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                          <span>{isAddingNote ? 'Saving...' : 'Post Note'}</span>
+                        </button>
+                      </div>
+                    </form>
+                  )}
                 </div>
               </>
             )}
           </div>
 
           {/* Drawer Footer Actions */}
-          <div className="p-4 border-t border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] flex items-center justify-between gap-3">
-            <button
-              type="button"
-              disabled={caseItem?.isEscalated}
-              onClick={() => setIsEscalateModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 text-xs font-semibold flex items-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ArrowUpRight className="w-3.5 h-3.5" />
-              <span>{caseItem?.isEscalated ? 'Already Escalated' : 'Escalate to Super Admin'}</span>
-            </button>
+          {((isSuperAdmin || can('feedback.escalate') || can('feedback.manage')) && !caseItem?.isEscalated || canManage) && (
+            <div className="p-4 border-t border-slate-200 dark:border-[#1A3125] bg-slate-50 dark:bg-[#0A110D] flex items-center justify-between gap-3">
+              {(isSuperAdmin || can('feedback.escalate') || can('feedback.manage')) && !caseItem?.isEscalated ? (
+                <button
+                  type="button"
+                  onClick={() => setIsEscalateModalOpen(true)}
+                  className="px-3.5 py-2 rounded-xl border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                  <span>Escalate to Super Admin</span>
+                </button>
+              ) : <div />}
 
-            <button
-              type="button"
-              onClick={() => setIsStatusModalOpen(true)}
-              className="px-4 py-2 rounded-xl bg-[#00C471] hover:bg-[#00B064] text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
-            >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Change Case Status</span>
-            </button>
-          </div>
+              {canManage && (
+                <button
+                  type="button"
+                  onClick={() => setIsStatusModalOpen(true)}
+                  className="px-4 py-2 rounded-xl bg-[#00C471] hover:bg-[#00B064] text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Change Case Status</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

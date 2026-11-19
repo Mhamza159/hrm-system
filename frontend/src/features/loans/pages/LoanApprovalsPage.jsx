@@ -16,6 +16,7 @@ import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { useGetLoansQuery } from '../loansApi.js';
 import { useAuth } from '../../../hooks/useAuth.js';
+import { usePermission } from '../../../hooks/usePermission.js';
 import { formatDate } from '../../../lib/formatters.js';
 import { LoanDecisionModal } from '../components/LoanDecisionModal.jsx';
 import { LoanScheduleDrawer } from '../components/LoanScheduleDrawer.jsx';
@@ -58,6 +59,8 @@ function CellLabel({ children }) {
 
 export function LoanApprovalsPage() {
   const { isSuperAdmin, isHR } = useAuth();
+  const { can } = usePermission();
+  const canActOnLoans = isSuperAdmin || can('loan.recommend') || can('loan.approve');
   const [activeTab, setActiveTab] = useState('pending_me');
   const [selectedLoan, setSelectedLoan] = useState(null);
   const [detailLoanId, setDetailLoanId] = useState(null);
@@ -257,7 +260,7 @@ export function LoanApprovalsPage() {
 
                     {/* Actions */}
                     <div className="flex items-center justify-start gap-2 lg:justify-end">
-                      {isPending ? (
+                      {isPending && canActOnLoans ? (
                         <button
                           type="button"
                           onClick={(e) => {

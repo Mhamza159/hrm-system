@@ -297,11 +297,7 @@ export const PunchCardWidget = ({ onActionSuccess }) => {
         {/* Right: Primary Action Buttons */}
         <div className="flex flex-col items-end gap-2">
           <div className="flex items-center gap-3">
-            {!can('attendance.mark') ? (
-              <div className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-500 font-medium text-xs">
-                Punch Actions Disabled
-              </div>
-            ) : !isClockedIn ? (
+            {(!can('attendance.mark') && !isSuperAdmin) ? null : !isClockedIn ? (
               <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 w-full sm:w-auto">
                 {todayLeave && (
                   <div className="w-full sm:w-auto p-2.5 px-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-between gap-3 text-xs">

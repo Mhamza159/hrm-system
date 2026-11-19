@@ -7,8 +7,10 @@ import React, { useState, useEffect } from 'react';
 import { Building2, Upload, Globe, Phone, Mail, FileText, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUploadLogoMutation, useUpdateSettingMutation } from '../settingsApi.js';
+import { usePermission } from '../../../hooks/usePermission.js';
 
 export function CompanyForm({ initialData = {}, onSaved }) {
+  const { can, isSuperAdmin } = usePermission();
   const [formData, setFormData] = useState({
     name: initialData.name || '',
     address: initialData.address || '',
@@ -285,15 +287,17 @@ export function CompanyForm({ initialData = {}, onSaved }) {
       </div>
 
       {/* Save Button */}
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={isSaving || isUploading}
-          className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#00C471] hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
-        >
-          {isSaving ? 'Saving Changes...' : 'Save Company Profile'}
-        </button>
-      </div>
+      {(isSuperAdmin || can('settings.manage')) && (
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={isSaving || isUploading}
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#00C471] hover:bg-emerald-600 text-white rounded-xl text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
+          >
+            {isSaving ? 'Saving Changes...' : 'Save Company Profile'}
+          </button>
+        </div>
+      )}
     </form>
   );
 }

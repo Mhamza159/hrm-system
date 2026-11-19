@@ -49,9 +49,11 @@ import { Can } from '../../../components/common/Can.jsx';
 import { toast } from 'sonner';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
+import { usePermission } from '../../../hooks/usePermission.js';
 import { cn } from '../../../lib/utils.js';
 
 export function PayrollRunDetailPage() {
+  const { can, isSuperAdmin } = usePermission();
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -205,14 +207,16 @@ export function PayrollRunDetailPage() {
           <RefreshButton onRefresh={refetch} isFetching={isFetching} />
 
           {/* Export Bank Advice */}
-          <button
-            type="button"
-            onClick={() => setIsBankAdviceModalOpen(true)}
-            className="h-9 px-3.5 inline-flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] hover:bg-slate-50 dark:hover:bg-[#1A3125] rounded-xl shadow-xs transition-colors cursor-pointer"
-          >
-            <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Export Bank Advice</span>
-          </button>
+          {(isSuperAdmin || can('payroll.export')) && (
+            <button
+              type="button"
+              onClick={() => setIsBankAdviceModalOpen(true)}
+              className="h-9 px-3.5 inline-flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] hover:bg-slate-50 dark:hover:bg-[#1A3125] rounded-xl shadow-xs transition-colors cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Export Bank Advice</span>
+            </button>
+          )}
 
           {/* Approve & Freeze Run */}
           {(run.status === 'draft' || run.status === 'review') && (
@@ -245,16 +249,18 @@ export function PayrollRunDetailPage() {
           )}
 
           {/* Delete / Archive Run */}
-          <button
-            type="button"
-            onClick={() => setIsDeleteDialogOpen(true)}
-            disabled={isDeleting}
-            className="h-9 px-3.5 inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 border border-rose-200/60 dark:border-rose-800/40 rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
-            title="Archive this payroll run"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Delete Run</span>
-          </button>
+          {(isSuperAdmin || can('payroll.manage')) && (
+            <button
+              type="button"
+              onClick={() => setIsDeleteDialogOpen(true)}
+              disabled={isDeleting}
+              className="h-9 px-3.5 inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 border border-rose-200/60 dark:border-rose-800/40 rounded-xl shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+              title="Archive this payroll run"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete Run</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -442,7 +448,7 @@ export function PayrollRunDetailPage() {
                     <td className="py-3.5 px-6 text-center">
                       <div className="flex items-center justify-center gap-2">
                         {/* Adjust Line-Item Button */}
-                        {!isLocked && (
+                        {!isLocked && (isSuperAdmin || can('payroll.manage')) && (
                           <button
                             type="button"
                             onClick={() => setSelectedPayslipForAdjustment(slip)}

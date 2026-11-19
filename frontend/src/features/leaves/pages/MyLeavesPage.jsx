@@ -236,7 +236,7 @@ export function MyLeavesPage() {
                 <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 <span>Exempt from Quotas</span>
               </div>
-            ) : (
+            ) : (can('leave.apply') || isSuperAdmin) ? (
               <button
                 onClick={() => setIsApplyModalOpen(true)}
                 className="inline-flex items-center gap-2 px-4 h-9 rounded-xl bg-[#00C471] hover:bg-[#049856] text-white text-xs font-bold shadow-sm shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
@@ -244,7 +244,7 @@ export function MyLeavesPage() {
                 <Plus className="w-4 h-4" />
                 <span>Apply for Leave</span>
               </button>
-            )}
+            ) : null}
           </div>
         }
       />

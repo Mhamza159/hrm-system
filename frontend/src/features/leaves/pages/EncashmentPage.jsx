@@ -199,7 +199,7 @@ export function EncashmentPage() {
               <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin text-emerald-500' : ''}`} />
               <span>{isFetching ? 'Refreshing...' : 'Refresh'}</span>
             </button>
-            {!isSuperAdmin && (
+            {!isSuperAdmin && (can('leave.apply') || can('leave.encash')) && (
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs hover:shadow-sm transition-all cursor-pointer"

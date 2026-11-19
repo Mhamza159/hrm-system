@@ -28,10 +28,26 @@ export const Can = ({
     return fallback;
   }
 
-  const isAllowed =
-    ability.can('manage', 'all') ||
-    ability.can(action, subject, field) ||
-    ability.can(action, 'all', field);
+  if (ability.can('manage', 'all')) {
+    return <>{children}</>;
+  }
+
+  if (!action) {
+    return fallback;
+  }
+
+  let isAllowed = false;
+  if (Array.isArray(action)) {
+    isAllowed = action.some(
+      (act) =>
+        ability.can(act, subject, field) ||
+        ability.can(act, 'all', field)
+    );
+  } else {
+    isAllowed =
+      ability.can(action, subject, field) ||
+      ability.can(action, 'all', field);
+  }
 
   return isAllowed ? <>{children}</> : fallback;
 };

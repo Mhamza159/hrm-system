@@ -15,6 +15,7 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
   user: null,             // Current authenticated user object { id, email, roles, employeeId, mustChangePassword }
+  permissions: [],        // Effective CASL permissions array
   accessToken: null,      // Short-lived in-memory JWT access token (15 mins)
   isAuthenticated: false, // Boolean auth status
   isInitialized: false,   // Flag indicating whether the initial session check has settled
@@ -29,8 +30,9 @@ const authSlice = createSlice({
      * Set active user session and in-memory access token (called after login, verify-otp, or refresh)
      */
     setCredentials: (state, action) => {
-      const { user, accessToken } = action.payload;
+      const { user, accessToken, permissions } = action.payload;
       state.user = user;
+      state.permissions = permissions || user?.permissions || [];
       state.accessToken = accessToken;
       state.isAuthenticated = Boolean(user && accessToken);
       state.isInitialized = true;
@@ -49,11 +51,14 @@ const authSlice = createSlice({
     },
 
     /**
-     * Patch user attributes (e.g. after password change or profile update)
+     * Patch user attributes (e.g. after password change, profile update, or permission sync)
      */
     updateUser: (state, action) => {
       if (state.user) {
         state.user = { ...state.user, ...action.payload };
+      }
+      if (action.payload?.permissions || action.payload?.effectivePermissions) {
+        state.permissions = action.payload.permissions || action.payload.effectivePermissions;
       }
     },
 

@@ -17,6 +17,7 @@ import {
   RotateCcw,
   Wrench,
   Clock,
+  Shield,
   ShieldCheck,
   Calendar,
   AlertTriangle,

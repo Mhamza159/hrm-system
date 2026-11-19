@@ -19,11 +19,28 @@ export const usePermission = () => {
 
   const can = (action, subject = 'all', field = undefined) => {
     if (!ability) return false;
+    if (ability.can('manage', 'all')) return true;
+    if (!action) return false;
+
+    if (Array.isArray(action)) {
+      return action.some(
+        (act) =>
+          ability.can(act, subject, field) ||
+          ability.can(act, 'all', field)
+      );
+    }
+
     return (
-      ability.can('manage', 'all') ||
       ability.can(action, subject, field) ||
       ability.can(action, 'all', field)
     );
+  };
+
+  const canAll = (actions = [], subject = 'all', field = undefined) => {
+    if (!ability) return false;
+    if (ability.can('manage', 'all')) return true;
+    if (!Array.isArray(actions) || actions.length === 0) return false;
+    return actions.every((act) => can(act, subject, field));
   };
 
   const cannot = (action, subject = 'all', field = undefined) => {
@@ -33,6 +50,7 @@ export const usePermission = () => {
   return {
     ability,
     can,
+    canAll,
     cannot,
     isSuperAdmin
   };

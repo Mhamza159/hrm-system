@@ -102,7 +102,7 @@ import { ChatPage } from './features/chat/pages/ChatPage.jsx';
 import { ChatbotWidget } from './features/chatbot/components/ChatbotWidget.jsx';
 import { ProtectedRoute } from './components/ProtectedRoute.jsx';
 import { AppLayout } from './components/layout/AppLayout.jsx';
-import { useRefreshTokenMutation } from './features/auth/authApi.js';
+import { useRefreshTokenMutation, useGetMeQuery } from './features/auth/authApi.js';
 import { setCredentials, setInitialized } from './features/auth/authSlice.js';
 import { useAuth } from './hooks/useAuth.js';
 
@@ -113,8 +113,11 @@ const PoliciesIndexRoute = () => {
 
 export default function App() {
   const dispatch = useDispatch();
-  const { isInitialized } = useAuth();
+  const { isInitialized, isAuthenticated } = useAuth();
   const [triggerRefresh] = useRefreshTokenMutation();
+
+  // Real-time permission revocation & profile rehydration listener (Plan 30-01)
+  useGetMeQuery(undefined, { skip: !isAuthenticated });
 
   // Automatic session hydration on app mount (Slice 1.6)
   useEffect(() => {
