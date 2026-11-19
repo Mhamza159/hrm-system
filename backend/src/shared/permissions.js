@@ -460,6 +460,20 @@ export const PERMISSIONS_CATALOGUE = [
         description: 'Access the system audit log screen and inspect state changes.',
         allowedScopes: ['all'],
         defaultScope: 'all'
+      },
+      {
+        action: 'audit.analytics',
+        label: 'View Audit Analytics',
+        description: 'Inspect real-time audit statistics, throughput trends, and security metrics.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
+      },
+      {
+        action: 'audit.export',
+        label: 'Export Audit Records',
+        description: 'Download CSV and Excel compliance audit trails.',
+        allowedScopes: ['all'],
+        defaultScope: 'all'
       }
     ]
   },

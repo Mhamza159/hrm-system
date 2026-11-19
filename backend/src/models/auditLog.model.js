@@ -3,7 +3,7 @@
  * @description Mongoose Schema for immutable system audit logging.
  * 
  * COMPLIANCE & ARCHITECTURAL MANDATE:
- * - Module: M0 Foundation (BUILD-GUIDE Section 3 · Row 0.8) / X1 Security (BUILD-GUIDE Section 14)
+ * - Module: M0 Foundation (BUILD-GUIDE Section 3 · Row 0.8) / X1 Security (BUILD-GUIDE Section 14) / Phase 31 Audit Overhaul
  * - Strict Invariant: Every create, update, delete, authentication, or sensitive data access
  *   MUST produce an immutable audit log record.
  * - Sensitive Fields: Never store plain CNIC, bank credentials, or raw passwords in details.
@@ -47,6 +47,36 @@ const auditLogSchema = new mongoose.Schema(
       index: true
     },
 
+    // Operation outcome: SUCCESS or FAILURE
+    status: {
+      type: String,
+      enum: ['SUCCESS', 'FAILURE'],
+      default: 'SUCCESS',
+      index: true
+    },
+
+    // Severity level for forensic triage
+    severity: {
+      type: String,
+      enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
+      default: 'LOW',
+      index: true
+    },
+
+    // High-level event category
+    category: {
+      type: String,
+      enum: ['AUTHENTICATION', 'DATA_CHANGE', 'SECURITY', 'ADMINISTRATIVE', 'SYSTEM'],
+      default: 'DATA_CHANGE',
+      index: true
+    },
+
+    // Human-readable synopsis of what happened
+    description: {
+      type: String,
+      default: null
+    },
+
     // ID of the target document being modified
     targetId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -71,6 +101,25 @@ const auditLogSchema = new mongoose.Schema(
       default: null
     },
 
+    // Parsed client device diagnostics
+    device: {
+      browser: { type: String, default: null },
+      os: { type: String, default: null },
+      deviceType: { type: String, default: null } // 'Desktop', 'Mobile', 'Tablet', 'Unknown'
+    },
+
+    // Archival flags for retention management
+    isArchived: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+
+    archivedAt: {
+      type: Date,
+      default: null
+    },
+
     // Structured metadata capturing before/after state diffs (excluding sensitive secrets)
     details: {
       type: mongoose.Schema.Types.Mixed,
@@ -86,5 +135,9 @@ const auditLogSchema = new mongoose.Schema(
 auditLogSchema.index({ module: 1, createdAt: -1 });
 auditLogSchema.index({ actorId: 1, createdAt: -1 });
 auditLogSchema.index({ targetId: 1 });
+auditLogSchema.index({ category: 1, createdAt: -1 });
+auditLogSchema.index({ severity: 1, createdAt: -1 });
+auditLogSchema.index({ status: 1, createdAt: -1 });
+auditLogSchema.index({ isArchived: 1, createdAt: -1 });
 
 export const AuditLog = mongoose.model('AuditLog', auditLogSchema);

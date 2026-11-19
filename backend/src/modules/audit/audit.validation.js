@@ -1,19 +1,56 @@
 /**
  * @file audit.validation.js
- * @description Zod validation schema for Audit Log queries and forensic filtering.
+ * @description Zod validation schema for Audit Log queries, statistics, and forensic filtering.
  */
 
 import { z } from 'zod';
 
-export const auditQuerySchema = z
+export const auditQueryObjectSchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(200).default(20),
+  module: z.string().max(50).regex(/^[a-zA-Z0-9_-]+$/, 'Invalid module format').optional(),
+  action: z.string().max(80).regex(/^[a-zA-Z0-9_.-]+$/, 'Invalid action format').optional(),
+  actorId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid actor ID').optional(),
+  actorRole: z.string().max(50).optional(),
+  status: z.enum(['SUCCESS', 'FAILURE']).optional(),
+  severity: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).optional(),
+  category: z.enum(['AUTHENTICATION', 'DATA_CHANGE', 'SECURITY', 'ADMINISTRATIVE', 'SYSTEM']).optional(),
+  isArchived: z
+    .string()
+    .optional()
+    .transform((val) => (val === undefined ? undefined : val === 'true')),
+  targetId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid target ID').optional(),
+  targetModel: z.string().max(50).regex(/^[a-zA-Z0-9_]+$/, 'Invalid target model format').optional(),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Start date must be in YYYY-MM-DD format')
+    .optional(),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'End date must be in YYYY-MM-DD format')
+    .optional(),
+  search: z.string().max(100).optional()
+});
+
+export const auditQuerySchema = auditQueryObjectSchema.refine(
+  (data) => {
+    if (data.startDate && data.endDate) {
+      return data.startDate <= data.endDate;
+    }
+    return true;
+  },
+  {
+    message: "'startDate' must be earlier than or equal to 'endDate'",
+    path: ['startDate']
+  }
+);
+
+export const auditStatsQuerySchema = auditQueryObjectSchema.partial();
+
+export const auditAnalyticsQuerySchema = z
   .object({
-    page: z.coerce.number().int().min(1).default(1),
-    limit: z.coerce.number().int().min(1).max(200).default(20),
-    module: z.string().max(50).regex(/^[a-zA-Z0-9_-]+$/, 'Invalid module format').optional(),
-    action: z.string().max(80).regex(/^[a-zA-Z0-9_.-]+$/, 'Invalid action format').optional(),
-    actorId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid actor ID').optional(),
-    targetId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid target ID').optional(),
-    targetModel: z.string().max(50).regex(/^[a-zA-Z0-9_]+$/, 'Invalid target model format').optional(),
+    timeRange: z.enum(['24h', '7d', '30d', '90d', 'custom']).default('7d'),
+    module: z.string().max(50).optional(),
     startDate: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, 'Start date must be in YYYY-MM-DD format')
@@ -21,18 +58,20 @@ export const auditQuerySchema = z
     endDate: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, 'End date must be in YYYY-MM-DD format')
-      .optional(),
-    search: z.string().max(100).optional()
+      .optional()
   })
   .refine(
     (data) => {
+      if (data.timeRange === 'custom' && (!data.startDate || !data.endDate)) {
+        return false;
+      }
       if (data.startDate && data.endDate) {
         return data.startDate <= data.endDate;
       }
       return true;
     },
     {
-      message: "'startDate' must be earlier than or equal to 'endDate'",
+      message: "Custom timeRange requires valid 'startDate' and 'endDate' where startDate <= endDate",
       path: ['startDate']
     }
   );

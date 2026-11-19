@@ -3,8 +3,8 @@
  * @description Express Router for immutable audit logging APIs.
  * 
  * SECURITY & PBAC:
- * - Module: X1 Security & Quality Gate (BUILD-GUIDE Section 14 · Row X1.1)
- * - Required Permission: audit.view (Scope: 'all')
+ * - Module: X1 Security & Quality Gate / Phase 31 Audit Overhaul
+ * - Required Permissions: audit.view, audit.analytics, audit.export
  * - Protected: Unauthenticated or non-admin access returns 401/403.
  */
 
@@ -17,6 +17,13 @@ const router = Router();
 
 // Universal JWT Authentication for all audit routes
 router.use(authenticate);
+
+// Specific sub-resource routes must precede /:id
+router.get('/stats', checkPermission('audit.view', 'all'), auditController.getAuditStats);
+router.get('/analytics', checkPermission('audit.view', 'all'), auditController.getAuditAnalytics);
+router.get('/export', checkPermission('audit.export', 'all'), auditController.exportAuditLogs);
+router.get('/retention', checkPermission('audit.view', 'all'), auditController.getRetentionSummary);
+router.post('/archive', checkPermission('audit.view', 'all'), auditController.archiveAuditLogs);
 
 // GET /api/v1/audit-logs - Query audit entries with filters
 router.get('/', checkPermission('audit.view', 'all'), auditController.getAuditLogs);

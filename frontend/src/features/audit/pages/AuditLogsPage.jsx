@@ -1,28 +1,58 @@
 /**
  * @file AuditLogsPage.jsx
- * @description Master Audit Trail & Compliance Inspection Console.
+ * @description Master Audit Trail & Forensic Monitoring Console.
  * 
  * SPECIFICATION:
- * - Module: X1 Security, Audit & Quality Gate (BUILD-GUIDE Section 14 · Row X1.1)
- * - CASL Permission: audit.view (Scope: 'all')
+ * - Module: X1 Security / Phase 31 Audit Log Overhaul
+ * - CASL Permissions: audit.view, audit.analytics, audit.export
  */
 
 import React, { useState } from 'react';
-import { ShieldCheck, Eye, Activity, Database, AlertCircle } from 'lucide-react';
-import { useGetAuditLogsQuery } from '../auditApi.js';
+import {
+  ShieldCheck,
+  Activity,
+  Download,
+  Archive,
+  Table,
+  Clock,
+  Users,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-react';
+import {
+  useGetAuditLogsQuery,
+  useGetAuditStatsQuery,
+  useGetAuditAnalyticsQuery
+} from '../auditApi.js';
+import { usePermission } from '../../../hooks/usePermission.js';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
+import { AuditStatsCards } from '../components/AuditStatsCards.jsx';
+import { AuditAnalyticsSection } from '../components/AuditAnalyticsSection.jsx';
 import { AuditLogFilterToolbar } from '../components/AuditLogFilterToolbar.jsx';
+import { AuditLogTableView } from '../components/AuditLogTableView.jsx';
+import { AuditLogTimelineView } from '../components/AuditLogTimelineView.jsx';
+import { AuditLogUserActivityView } from '../components/AuditLogUserActivityView.jsx';
 import { AuditLogDiffModal } from '../components/AuditLogDiffModal.jsx';
-import { DataTable } from '../../../components/common/DataTable.jsx';
-import { formatDate } from '../../../lib/formatters.js';
+import { AuditExportModal } from '../components/AuditExportModal.jsx';
+import { AuditRetentionModal } from '../components/AuditRetentionModal.jsx';
+import { cn } from '../../../lib/utils.js';
 
 export const AuditLogsPage = () => {
+  const { can } = usePermission();
+
+  const [viewMode, setViewMode] = useState('table'); // 'table' | 'timeline' | 'user'
+  const [analyticsTimeRange, setAnalyticsTimeRange] = useState('7d');
+
   const [filters, setFilters] = useState({
     page: 1,
     limit: 20,
     module: '',
     action: '',
+    status: '',
+    severity: '',
+    category: '',
     startDate: '',
     endDate: '',
     search: ''
@@ -30,8 +60,36 @@ export const AuditLogsPage = () => {
 
   const [selectedLog, setSelectedLog] = useState(null);
   const [diffModalOpen, setDiffModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [retentionModalOpen, setRetentionModalOpen] = useState(false);
 
-  const { data: response, isLoading, isFetching, isError, refetch } = useGetAuditLogsQuery(filters);
+  // Queries
+  const {
+    data: logsResponse,
+    isLoading: logsLoading,
+    isFetching: logsFetching,
+    isError: logsError,
+    refetch: refetchLogs
+  } = useGetAuditLogsQuery(filters);
+
+  const {
+    data: statsResponse,
+    isLoading: statsLoading,
+    refetch: refetchStats
+  } = useGetAuditStatsQuery({
+    module: filters.module || undefined,
+    startDate: filters.startDate || undefined,
+    endDate: filters.endDate || undefined
+  });
+
+  const {
+    data: analyticsResponse,
+    isLoading: analyticsLoading,
+    refetch: refetchAnalytics
+  } = useGetAuditAnalyticsQuery({
+    timeRange: analyticsTimeRange,
+    module: filters.module || undefined
+  });
 
   const handleFilterChange = (newFilters) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
@@ -43,6 +101,9 @@ export const AuditLogsPage = () => {
       limit: 20,
       module: '',
       action: '',
+      status: '',
+      severity: '',
+      category: '',
       startDate: '',
       endDate: '',
       search: ''
@@ -54,99 +115,35 @@ export const AuditLogsPage = () => {
     setDiffModalOpen(true);
   };
 
-  const auditItems = response?.data || [];
+  const handleRefreshAll = () => {
+    refetchLogs();
+    refetchStats();
+    refetchAnalytics();
+  };
 
-  if (isLoading && !response) {
+  const auditItems = logsResponse?.data || [];
+  const meta = logsResponse?.meta || { total: 0, page: 1, limit: 20, totalPages: 1 };
+  const stats = statsResponse?.data || {};
+  const analytics = analyticsResponse?.data || {};
+
+  if (logsLoading && !logsResponse) {
     return (
       <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
         <ScreenSkeleton variant="table" />
       </div>
     );
   }
-  const meta = response?.meta || { total: 0, page: 1, limit: 20, totalPages: 1 };
 
-  const columns = [
-    {
-      header: 'Timestamp (PKT)',
-      key: 'createdAt',
-      render: (row) => (
-        <div>
-          <div className="font-medium text-foreground text-xs">
-            {formatDate(row.createdAt, 'DD MMM YYYY')}
-          </div>
-          <div className="text-[11px] text-muted-foreground">
-            {formatDate(row.createdAt, 'HH:mm:ss')}
-          </div>
-        </div>
-      )
-    },
-    {
-      header: 'Actor',
-      key: 'actorEmail',
-      render: (row) => (
-        <div>
-          <div className="font-medium text-foreground text-xs truncate max-w-[180px]">
-            {row.actorEmail}
-          </div>
-          <div className="text-[10px] uppercase font-semibold text-primary">
-            {row.actorRole}
-          </div>
-        </div>
-      )
-    },
-    {
-      header: 'Action',
-      key: 'action',
-      render: (row) => (
-        <span className="font-mono text-xs px-2 py-0.5 bg-muted border border-border rounded text-foreground">
-          {row.action}
-        </span>
-      )
-    },
-    {
-      header: 'Module / Target',
-      key: 'module',
-      render: (row) => (
-        <div>
-          <span className="text-xs font-semibold capitalize text-foreground">{row.module}</span>
-          {row.targetModel && (
-            <span className="text-[11px] text-muted-foreground ml-1.5 font-mono">
-              ({row.targetModel})
-            </span>
-          )}
-        </div>
-      )
-    },
-    {
-      header: 'Client IP',
-      key: 'ipAddress',
-      render: (row) => (
-        <span className="text-xs font-mono text-muted-foreground">
-          {row.ipAddress || 'Internal'}
-        </span>
-      )
-    },
-    {
-      header: 'State Diff',
-      key: 'diff',
-      render: (row) => (
-        <button
-          onClick={() => handleViewDiff(row)}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 rounded-md transition cursor-pointer"
-        >
-          <Eye className="w-3.5 h-3.5" />
-          <span>Inspect</span>
-        </button>
-      )
-    }
-  ];
+  // Permission checks
+  const canExport = can('manage', 'all') || can('audit.export', 'AuditLog') || can('audit.export', 'all');
+  const canViewAnalytics = can('manage', 'all') || can('audit.analytics', 'AuditLog') || can('audit.view', 'all');
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-primary/10 text-primary rounded-xl">
+          <div className="p-2.5 bg-primary/10 text-primary rounded-2xl border border-primary/20">
             <ShieldCheck className="w-7 h-7" />
           </div>
           <div>
@@ -158,14 +155,51 @@ export const AuditLogsPage = () => {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <RefreshButton onRefresh={refetch} isFetching={isFetching} />
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-500 text-xs font-semibold rounded-full border border-emerald-500/20">
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <RefreshButton onRefresh={handleRefreshAll} isFetching={logsFetching} />
+
+          {/* Export Button (Permission Guarded) */}
+          {canExport && (
+            <button
+              type="button"
+              onClick={() => setExportModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-card hover:bg-muted border border-border text-xs font-semibold text-foreground rounded-xl transition shadow-sm cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-primary" />
+              <span>Export</span>
+            </button>
+          )}
+
+          {/* Retention Policy Button */}
+          <button
+            type="button"
+            onClick={() => setRetentionModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-card hover:bg-muted border border-border text-xs font-semibold text-foreground rounded-xl transition shadow-sm cursor-pointer"
+          >
+            <Archive className="w-3.5 h-3.5 text-indigo-500" />
+            <span>Retention</span>
+          </button>
+
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-xl border border-emerald-500/20">
             <Activity className="w-3.5 h-3.5" />
             <span>Immutable Ledger</span>
           </span>
         </div>
       </div>
+
+      {/* 8-Card Metric Grid */}
+      <AuditStatsCards stats={stats} isLoading={statsLoading} />
+
+      {/* Analytics Visualizer (Guarded) */}
+      {canViewAnalytics && (
+        <AuditAnalyticsSection
+          analytics={analytics}
+          timeRange={analyticsTimeRange}
+          onTimeRangeChange={setAnalyticsTimeRange}
+          isLoading={analyticsLoading}
+        />
+      )}
 
       {/* Filter Toolbar */}
       <AuditLogFilterToolbar
@@ -174,43 +208,126 @@ export const AuditLogsPage = () => {
         onReset={handleResetFilters}
       />
 
-      {/* Main Table */}
-      <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
-        {isLoading ? (
+      {/* Multi-View Header & Container */}
+      <div className="bg-card border border-border/80 rounded-2xl shadow-sm overflow-hidden">
+        {/* View Switcher Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border-b border-border bg-muted/20">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-foreground">Explorer View:</span>
+            <div className="flex items-center gap-1 bg-muted p-1 rounded-xl border border-border">
+              <button
+                type="button"
+                onClick={() => setViewMode('table')}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-lg transition',
+                  viewMode === 'table'
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Table className="w-3.5 h-3.5" />
+                <span>Table</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setViewMode('timeline')}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-lg transition',
+                  viewMode === 'timeline'
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span>Timeline</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setViewMode('user')}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-lg transition',
+                  viewMode === 'user'
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>User Activity</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="text-xs text-muted-foreground font-mono">
+            Showing {auditItems.length} of {meta.total.toLocaleString()} records
+          </div>
+        </div>
+
+        {/* View Content */}
+        {logsLoading ? (
           <div className="p-12 text-center text-muted-foreground space-y-3">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             <p className="text-xs">Streaming audit log records from database...</p>
           </div>
-        ) : isError ? (
+        ) : logsError ? (
           <div className="p-8 text-center text-destructive space-y-2">
             <AlertCircle className="w-8 h-8 mx-auto" />
             <p className="font-semibold text-sm">Failed to retrieve audit records.</p>
             <button
-              onClick={() => refetch()}
+              onClick={() => refetchLogs()}
               className="text-xs underline text-muted-foreground hover:text-foreground"
             >
               Try Again
             </button>
           </div>
+        ) : auditItems.length === 0 ? (
+          <div className="p-12 text-center text-xs text-muted-foreground">
+            No audit log records match the selected filters.
+          </div>
         ) : (
-          <div className="p-2 sm:p-4">
-            <DataTable
-              columns={columns}
-              data={auditItems}
-              pagination={{
-                page: meta.page || 1,
-                limit: meta.limit || 20,
-                totalDocs: meta.total || 0,
-                totalPages: meta.totalPages || 1,
-                onPageChange: (newPage) => handleFilterChange({ page: newPage })
-              }}
-              emptyMessage="No audit log records match the selected filters."
-            />
+          <div>
+            {viewMode === 'table' && (
+              <AuditLogTableView items={auditItems} onInspect={handleViewDiff} />
+            )}
+            {viewMode === 'timeline' && (
+              <AuditLogTimelineView items={auditItems} onInspect={handleViewDiff} />
+            )}
+            {viewMode === 'user' && (
+              <AuditLogUserActivityView items={auditItems} onInspect={handleViewDiff} />
+            )}
+
+            {/* Pagination Controls */}
+            {meta.totalPages > 1 && (
+              <div className="flex items-center justify-between p-4 border-t border-border bg-muted/10 text-xs">
+                <span className="text-muted-foreground font-mono">
+                  Page {meta.page} of {meta.totalPages} ({meta.total} total)
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={meta.page <= 1}
+                    onClick={() => handleFilterChange({ page: meta.page - 1 })}
+                    className="p-1.5 rounded-lg border border-border text-foreground hover:bg-muted disabled:opacity-40 transition"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={meta.page >= meta.totalPages}
+                    onClick={() => handleFilterChange({ page: meta.page + 1 })}
+                    className="p-1.5 rounded-lg border border-border text-foreground hover:bg-muted disabled:opacity-40 transition"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Diff Modal */}
+      {/* Forensics Diff Modal */}
       <AuditLogDiffModal
         log={selectedLog}
         isOpen={diffModalOpen}
@@ -218,6 +335,19 @@ export const AuditLogsPage = () => {
           setDiffModalOpen(false);
           setSelectedLog(null);
         }}
+      />
+
+      {/* Export Modal */}
+      <AuditExportModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        filters={filters}
+      />
+
+      {/* Retention Modal */}
+      <AuditRetentionModal
+        isOpen={retentionModalOpen}
+        onClose={() => setRetentionModalOpen(false)}
       />
     </div>
   );

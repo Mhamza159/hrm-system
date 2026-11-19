@@ -1141,12 +1141,12 @@ Plans:
 **Plans:** 6 plans
 
 Plans:
-- [ ] **Plan 31-01: Enhanced Audit Log Data Model, Enriched Logging Engine & Cross-Module Event Attribution** (`.planning/phases/31-audit-log-module-complete-enterprise-level-ui-overhaul-audit-trail-architecture-system-wide-activity-tracking-rbac-pbac-compliance-security-audit/31-01-PLAN.md`)
-- [ ] **Plan 31-02: Audit Analytics, Aggregation Pipelines & Statistics Backend APIs** (`.planning/phases/31-audit-log-module-complete-enterprise-level-ui-overhaul-audit-trail-architecture-system-wide-activity-tracking-rbac-pbac-compliance-security-audit/31-02-PLAN.md`)
-- [ ] **Plan 31-03: Audit Export Engine, Retention Policies & Forensic Compliance APIs** (`.planning/phases/31-audit-log-module-complete-enterprise-level-ui-overhaul-audit-trail-architecture-system-wide-activity-tracking-rbac-pbac-compliance-security-audit/31-03-PLAN.md`)
-- [ ] **Plan 31-04: Audit Log Dashboard, Hero Metrics & Real-Time Analytics UI** (`.planning/phases/31-audit-log-module-complete-enterprise-level-ui-overhaul-audit-trail-architecture-system-wide-activity-tracking-rbac-pbac-compliance-security-audit/31-04-PLAN.md`)
-- [ ] **Plan 31-05: Enterprise Audit Explorer, Multi-View Suite & Forensic Details Modal** (`.planning/phases/31-audit-log-module-complete-enterprise-level-ui-overhaul-audit-trail-architecture-system-wide-activity-tracking-rbac-pbac-compliance-security-audit/31-05-PLAN.md`)
-- [ ] **Plan 31-06: RBAC/PBAC Enforcement, Zero UI Leakage, System-Wide Vitest Test Suite & Master Audit Documentation** (`.planning/phases/31-audit-log-module-complete-enterprise-level-ui-overhaul-audit-trail-architecture-system-wide-activity-tracking-rbac-pbac-compliance-security-audit/31-06-PLAN.md`)
+- [x] **Plan 31-01: Enhanced Audit Log Data Model, Enriched Logging Engine & Cross-Module Event Attribution** (`.planning/phases/31-audit-log-module-complete-enterprise-level-ui-overhaul-audit-trail-architecture-system-wide-activity-tracking-rbac-pbac-compliance-security-audit/31-01-PLAN.md`)
+- [x] **Plan 31-02: Audit Analytics, Aggregation Pipelines & Statistics Backend APIs** (`.planning/phases/31-audit-log-module-complete-enterprise-level-ui-overhaul-audit-trail-architecture-system-wide-activity-tracking-rbac-pbac-compliance-security-audit/31-02-PLAN.md`)
+- [x] **Plan 31-03: Audit Export Engine, Retention Policies & Forensic Compliance APIs** (`.planning/phases/31-audit-log-module-complete-enterprise-level-ui-overhaul-audit-trail-architecture-system-wide-activity-tracking-rbac-pbac-compliance-security-audit/31-03-PLAN.md`)
+- [x] **Plan 31-04: Audit Log Dashboard, Hero Metrics & Real-Time Analytics UI** (`.planning/phases/31-audit-log-module-complete-enterprise-level-ui-overhaul-audit-trail-architecture-system-wide-activity-tracking-rbac-pbac-compliance-security-audit/31-04-PLAN.md`)
+- [x] **Plan 31-05: Enterprise Audit Explorer, Multi-View Suite & Forensic Details Modal** (`.planning/phases/31-audit-log-module-complete-enterprise-level-ui-overhaul-audit-trail-architecture-system-wide-activity-tracking-rbac-pbac-compliance-security-audit/31-05-PLAN.md`)
+- [x] **Plan 31-06: RBAC/PBAC Enforcement, Zero UI Leakage, System-Wide Vitest Test Suite & Master Audit Documentation** (`.planning/phases/31-audit-log-module-complete-enterprise-level-ui-overhaul-audit-trail-architecture-system-wide-activity-tracking-rbac-pbac-compliance-security-audit/31-06-PLAN.md`)
 
 ---
 
