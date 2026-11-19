@@ -50,7 +50,11 @@ export default function RolesListPage() {
   const [status, setStatus] = useState('all'); // 'all' | 'active' | 'inactive'
   const [headcount, setHeadcount] = useState('all'); // 'all' | 'staffed' | 'empty'
   const [viewMode, setViewMode] = useState(() => {
-    return localStorage.getItem('roles_view_mode') || 'table';
+    try {
+      return localStorage.getItem('roles_view_mode') || 'table';
+    } catch {
+      return 'table';
+    }
   });
 
   // Active modal management
@@ -62,7 +66,11 @@ export default function RolesListPage() {
   // Update localStorage when viewMode changes
   const handleViewModeChange = (mode) => {
     setViewMode(mode);
-    localStorage.setItem('roles_view_mode', mode);
+    try {
+      localStorage.setItem('roles_view_mode', mode);
+    } catch {
+      // Graceful fallback if storage restricted
+    }
   };
 
   // Reset to page 1 whenever filters change
