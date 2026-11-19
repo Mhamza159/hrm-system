@@ -31,11 +31,11 @@ import { UserStatusActionModal } from '../components/user-access/UserStatusActio
 import { UserSecurityActionsModal } from '../components/user-access/UserSecurityActionsModal.jsx';
 
 export default function UsersPage() {
-  const { user: currentUser, can, isSuperAdmin } = useAuth();
+  const { user: currentUser, isSuperAdmin, isHR } = useAuth();
 
   // Permission guards
-  const canManageUsers = isSuperAdmin || can('user.manage') || can('user', 'manage');
-  const canAssignRoles = isSuperAdmin || can('role.assign') || can('role', 'assign');
+  const canManageUsers = isSuperAdmin || isHR;
+  const canAssignRoles = isSuperAdmin || isHR;
 
   // Filter State
   const [search, setSearch] = useState('');
