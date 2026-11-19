@@ -1064,12 +1064,54 @@ Plans:
 **Plans:** 6 plans
 
 Plans:
-- [ ] **Plan 29-01: Edit Role Studio Layout & Role Metadata Card Overhaul** (`.planning/phases/29-roles-permissions-module-edit-role-permission-matrix-ui-redesign-complete-functional-audit/29-01-PLAN.md`)
-- [ ] **Plan 29-02: Permission Matrix Category Jump-Nav, Search & Sticky Toolbar** (`.planning/phases/29-roles-permissions-module-edit-role-permission-matrix-ui-redesign-complete-functional-audit/29-02-PLAN.md`)
-- [ ] **Plan 29-03: Module Permission Cards, Tri-State Controls & Batch Scope Operations** (`.planning/phases/29-roles-permissions-module-edit-role-permission-matrix-ui-redesign-complete-functional-audit/29-03-PLAN.md`)
-- [ ] **Plan 29-04: Action Row Grid, Fine-Grained Data Scopes & Approval Limits** (`.planning/phases/29-roles-permissions-module-edit-role-permission-matrix-ui-redesign-complete-functional-audit/29-04-PLAN.md`)
-- [ ] **Plan 29-05: Safety Guards, Dependency Auto-Granting & Pre-Save Diff Modal Integration** (`.planning/phases/29-roles-permissions-module-edit-role-permission-matrix-ui-redesign-complete-functional-audit/29-05-PLAN.md`)
-- [ ] **Plan 29-06: End-to-End Functional Audit, Vitest Verification & Static Analysis** (`.planning/phases/29-roles-permissions-module-edit-role-permission-matrix-ui-redesign-complete-functional-audit/29-06-PLAN.md`)
+- [x] **Plan 29-01: Edit Role Studio Layout & Role Metadata Card Overhaul** (`.planning/phases/29-roles-permissions-module-edit-role-permission-matrix-ui-redesign-complete-functional-audit/29-01-PLAN.md`)
+- [x] **Plan 29-02: Permission Matrix Category Jump-Nav, Search & Sticky Toolbar** (`.planning/phases/29-roles-permissions-module-edit-role-permission-matrix-ui-redesign-complete-functional-audit/29-02-PLAN.md`)
+- [x] **Plan 29-03: Module Permission Cards, Tri-State Controls & Batch Scope Operations** (`.planning/phases/29-roles-permissions-module-edit-role-permission-matrix-ui-redesign-complete-functional-audit/29-03-PLAN.md`)
+- [x] **Plan 29-04: Action Row Grid, Fine-Grained Data Scopes & Approval Limits** (`.planning/phases/29-roles-permissions-module-edit-role-permission-matrix-ui-redesign-complete-functional-audit/29-04-PLAN.md`)
+- [x] **Plan 29-05: Safety Guards, Dependency Auto-Granting & Pre-Save Diff Modal Integration** (`.planning/phases/29-roles-permissions-module-edit-role-permission-matrix-ui-redesign-complete-functional-audit/29-05-PLAN.md`)
+- [x] **Plan 29-06: End-to-End Functional Audit, Vitest Verification & Static Analysis** (`.planning/phases/29-roles-permissions-module-edit-role-permission-matrix-ui-redesign-complete-functional-audit/29-06-PLAN.md`)
+
+---
+
+## Phase 30: Complete RBAC & PBAC Frontend Permission Visibility Audit — All Roles & All Modules
+
+**Goal:** Perform an end-to-end, project-wide audit and enforcement of permission-based frontend visibility across every module and role in the HRMS. Strictly eliminate unauthorized UI rendering (no disabled or greyed-out controls; unauthorized features must NOT render at all), enforce real-time permission revocation synchronization without manual re-login, verify independent backend API authorization (HTTP 403), preserve unrestricted Admin authority (`manage:all`), and author a comprehensive Role-Permission Visibility Matrix with automated multi-role Vitest test coverage.
+
+**Requirements**:
+- **1. Centralized Permission Primitives, Real-Time Revocation & Auth Sync Engine (`Plan 30-01`)**:
+  - Rehydrate user permissions in real-time on `'Auth'` cache tag invalidation via `getMe` and `App.jsx`.
+  - Ensure immediate CASL ability re-computation when permissions or roles are modified in the backend.
+  - Optimize `<Can />`, `usePermission()`, and `ProtectedRoute.jsx` for zero DOM leakage and strict Admin exemption.
+- **2. Core HR, Organization & Executive Dashboard Visibility Audit (`Plan 30-02`)**:
+  - Filter executive metric widgets and quick actions on `DashboardPage.jsx`.
+  - Conditionally render Onboard, Ingest, Export, Edit, Delete, and Compensation tabs across Employee pages and modals.
+  - Hide Add Department, Add Designation, Edit, and Archive controls across Organization pages.
+- **3. Time, Attendance, Shifts & Leaves Frontend Visibility Audit (`Plan 30-03`)**:
+  - Guard PunchCardWidget, field check-ins, WFH requests, punch corrections, and kiosk terminal management.
+  - Hide attendance lock controls, punch approval actions, shift creations/assignments, and leave approval/encashment buttons.
+- **4. Payroll, Loans, Expenses & Finance Visibility Audit (`Plan 30-04`)**:
+  - Hide Run Payroll, Approve Run, Adjust Payslip, Bank Advice Export, and Salary Structure controls.
+  - Hide Apply Loan, Recommend, Approve, Disburse, and Foreclose controls.
+  - Hide Submit Expense, Approve, Reject, Reimburse, and Expense Category settings.
+- **5. Talent, Recruitment, Performance, Assets & Governance Visibility Audit (`Plan 30-05`)**:
+  - Hide Job Post, Pipeline Stage Move, Candidate Hire, and Interview Scheduling actions.
+  - Hide Appraisal Cycle Launch, Review Calibration, Asset Allocation/Disposal, Policy Publishing, and Role Management controls.
+  - Hide Company Settings modifications and Grievance committee investigations.
+- **6. End-to-End Multi-Role Testing, Visibility Matrix & Verification Report (`Plan 30-06`)**:
+  - Execute automated Vitest multi-role test suite (`backend/tests/rbac.pbac.visibility.audit.test.js`) across 9 personas.
+  - Publish master `docs/ROLE-PERMISSION-VISIBILITY-MATRIX.md`.
+  - Validate 0 Oxlint errors and clean Vite production build.
+
+**Depends on:** Phase 29  
+**Plans:** 6 plans
+
+Plans:
+- [ ] **Plan 30-01: Centralized Permission Primitives, Real-Time Revocation & Auth Sync Engine** (`.planning/phases/30-complete-rbac-pbac-frontend-permission-visibility-audit-all-roles-all-modules/30-01-PLAN.md`)
+- [ ] **Plan 30-02: Core HR, Organization & Dashboard Frontend Visibility Audit** (`.planning/phases/30-complete-rbac-pbac-frontend-permission-visibility-audit-all-roles-all-modules/30-02-PLAN.md`)
+- [ ] **Plan 30-03: Time, Attendance, Shifts & Leaves Frontend Visibility Audit** (`.planning/phases/30-complete-rbac-pbac-frontend-permission-visibility-audit-all-roles-all-modules/30-03-PLAN.md`)
+- [ ] **Plan 30-04: Payroll, Loans, Expenses & Finance Frontend Visibility Audit** (`.planning/phases/30-complete-rbac-pbac-frontend-permission-visibility-audit-all-roles-all-modules/30-04-PLAN.md`)
+- [ ] **Plan 30-05: Talent, Recruitment, Performance, Assets & Governance Visibility Audit** (`.planning/phases/30-complete-rbac-pbac-frontend-permission-visibility-audit-all-roles-all-modules/30-05-PLAN.md`)
+- [ ] **Plan 30-06: End-to-End Multi-Role Automated Testing, Visibility Matrix & Verification Report** (`.planning/phases/30-complete-rbac-pbac-frontend-permission-visibility-audit-all-roles-all-modules/30-06-PLAN.md`)
 
 ---
 
