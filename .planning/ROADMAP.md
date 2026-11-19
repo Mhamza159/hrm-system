@@ -1266,6 +1266,51 @@ Plans:
 
 ---
 
+## Phase 35: Settings Module — Complete Enterprise-Wide Audit, Implementation, Integration & Full UI Overhaul
+
+**Goal:** Overhaul the entire Settings Module (Module M2 Company Settings & System-Wide Governance) into an enterprise-grade administration suite. Complete audit and implementation across all 10 mandatory sections: Company Profile with logo upload/removal and system-wide branding synchronization; Working Hours with Asia/Karachi timezone, shift alignment, and net duration calculation; Attendance Rules with Dynamic QR Kiosk rotating tokens and Facial Recognition Euclidean matching & biometric privacy; Leave Policy with accrual rules and visual multi-tier Approval Chains Builder; Payroll Cycle integration with payroll engine and cut-off scheduling; Statutory Tax with Pakistan FBR progressive salaried slabs, EOBI, PESSI, Provident Fund, and interactive Tax & Net Pay Simulator; Multi-Branch Geo-fencing Leaflet interactive map with branch CRUD and Haversine distance bounds; Communication Templates Studio with live preview and mustache tag injector; Omnichannel Notification channel routing; and Enterprise Disaster Recovery with backup archive listing, secure download endpoint, and non-destructive integrity verification. Redesign the master Settings command center adhering strictly to Elvara Forest (`#061A14`) & Emerald (`#00C471`).
+
+**Requirements**:
+- **1. Backend Core Schema Extension, Zod Validators, SettingService Cache Hardening (`Plan 35-01`)**:
+  - Register official Zod schemas for `qrAttendance`, `faceAttendance`, `approvalChains`, and `geoFences`.
+  - Canonical defaults in `setting.service.js` and fast in-memory cache bus alignment for attendance consumers.
+- **2. Company Profile & Identity Synchronization (`Plan 35-02`)**:
+  - Logo upload (PNG/JPEG/WEBP/SVG max 2MB) with Cloudinary & local storage fallback.
+  - Dedicated logo removal endpoint (`DELETE /api/v1/settings/company/logo`) and real-time branding synchronization across Topbar, Payslips, and Email headers.
+- **3. Working Hours & Attendance Rules Overhaul (`Plan 35-03`)**:
+  - Operating days toggle, Asia/Karachi canonical timezone, net working hours calculation, and shift alignment notes.
+  - Punctuality grace periods, late penalties in PKR/paisa, Dynamic QR rotation parameters (15s-60s), and Face Biometric Euclidean distance threshold slider & liveness protection.
+- **4. Leave Policy Overhaul & Visual Approval Chains Builder (`Plan 35-04`)**:
+  - Fiscal year cycle, carry-forward quota, encashment, sandwich rule, and probation restriction.
+  - Interactive multi-tier Approval Chains Builder (Reporting Manager -> Dept Head -> HR -> Super Admin) with configurable days threshold rules and absent manager delegation.
+- **5. Payroll Cycle & Pakistan Statutory Tax Engine (`Plan 35-05`)**:
+  - Payroll cycle calculation helpers integrated with `payroll.service.js` for attendance lock dates.
+  - Pakistan FBR salaried progressive tax slabs with continuity validation, FBR 2024-25 / 2025-26 presets, EOBI (5%/1%), PESSI (6%), Provident Fund, and interactive Gross-to-Net Pay Simulator.
+- **6. Multi-Branch Geo-fencing Interactive Map (`Plan 35-06`)**:
+  - Multi-office management (Headquarters, Regional branches, Client sites) with Leaflet pin dragging, circular radius resizing, reverse geocoding, and Haversine multi-fence validation.
+- **7. Communication Templates, Notifications & Disaster Recovery Backup Engine (`Plan 35-07`)**:
+  - Email/WhatsApp mustache template builder with split-screen live preview and reset to defaults.
+  - Backup archive listing endpoint (`GET /backups`), secure authenticated download endpoint (`GET /backups/:filename/download`), and non-destructive integrity validator.
+- **8. Master Settings Command Center UI Redesign & Verification (`Plan 35-08`)**:
+  - Redesign `SettingsPage.jsx` into a categorized sidebar/tab hub adhering strictly to `docs/UI-REFERENCE.md`.
+  - Unsaved changes dirty state detection, section completion badges, and RBAC-aware tab access control.
+  - 100% Vitest unit/integration tests and Playwright multi-role browser verification.
+
+**Depends on:** Phase 34  
+**Plans:** 8 plans
+
+Plans:
+- [ ] **Plan 35-01: Backend Core Schema Extension, Zod Validators, SettingService Cache Hardening & Cross-Module Consumer Alignment** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-01-PLAN.md`)
+- [ ] **Plan 35-02: Company Profile, Logo Management, Direct Removal & System-Wide Branding Synchronization** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-02-PLAN.md`)
+- [ ] **Plan 35-03: Working Hours, Shift Synchronization, Attendance Rules, Dynamic QR & Biometric Privacy Engine** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-03-PLAN.md`)
+- [ ] **Plan 35-04: Leave Policy Overhaul, Accrual Governance & Interactive Approval Chains Builder** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-04-PLAN.md`)
+- [ ] **Plan 35-05: Payroll Cycle Integration, Pakistan FBR Progressive Tax Engine & Statutory Compliance Simulator** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-05-PLAN.md`)
+- [ ] **Plan 35-06: Multi-Branch Geo-fencing Interactive Map & Spatial Perimeter Management** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-06-PLAN.md`)
+- [ ] **Plan 35-07: Communication Templates, Omnichannel Notification Routing & Enterprise Disaster Recovery Engine** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-07-PLAN.md`)
+- [ ] **Plan 35-08: Master Settings UI Redesign, Tab Navigation Hub, Unsaved Changes Guardrails & End-to-End Verification** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-08-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features
