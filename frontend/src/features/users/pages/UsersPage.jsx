@@ -1,541 +1,296 @@
 /**
  * @file UsersPage.jsx
- * @description Administrative User Accounts & Access Control Management Page.
+ * @description Enterprise User Accounts, Identity Governance & Access Security Management Center.
  * 
- * MODULE: M1 Authentication & Access Control (BUILD-GUIDE Section 4 · Row 1.13)
- * 
- * CORE RESPONSIBILITIES:
- * 1. Fetch system users via `useGetUsersQuery` with real-time RTK Query cache synchronization.
- * 2. Display users in an enterprise high-density `DataTable` with search and column sorting.
- * 3. Render semantic status badges (`active` in Emerald, `inactive` in Slate).
- * 4. Provide administrative account activation and deactivation toggle controls.
- * 5. Safeguard deactivation with `ConfirmDialog` warning modal to prevent accidental employee lockout.
- * 6. Invalidate sessions in real-time when deactivated (backend clears refresh token hash immediately).
+ * MODULE: M1 Authentication & Access Control (BUILD-GUIDE Section 4 · Row 1.13 & Section 26 · Row 26.11/26.12)
+ * Strictly conforms to docs/UI-REFERENCE.md (Elvara Forest & Emerald Enterprise Craft).
  */
 
-import React, { useState } from 'react';
-import { Shield, UserCheck, UserX, AlertCircle, RefreshCw, KeyRound, UserCog, Eye, Loader2, Smartphone } from 'lucide-react';
-import { ResetDeviceModal } from '../components/ResetDeviceModal.jsx';
-import { toast } from 'sonner';
+import React, { useState, useMemo, useCallback } from 'react';
+import {
+  Users,
+  ShieldCheck,
+  RefreshCw
+} from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
-import { DataTable } from '../../../components/common/DataTable.jsx';
-import { StatusBadge } from '../../../components/common/StatusBadge.jsx';
-import { ConfirmDialog } from '../../../components/common/ConfirmDialog.jsx';
-import { Can } from '../../../components/common/Can.jsx';
-import { EffectivePermissionsModal } from '../../roles/components/EffectivePermissionsModal.jsx';
+import { useAuth } from '../../../hooks/useAuth.js';
 import {
   useGetUsersQuery,
-  useUpdateUserStatusMutation,
-  useAdminResetPasswordMutation
-} from '../../auth/authApi.js';
-import {
-  useGetRolesQuery,
-  useAssignUserRolesMutation
-} from '../../roles/rolesApi.js';
-import { useAuth } from '../../../hooks/useAuth.js';
+  useGetUserStatsQuery
+} from '../usersApi.js';
+import { useGetRolesQuery } from '../../roles/rolesApi.js';
+import { useGetDepartmentsQuery } from '../../departments/departmentsApi.js';
+
+// Modular User Access Sub-Components
+import { UserAccessDashboard } from '../components/user-access/UserAccessDashboard.jsx';
+import { UserAccessFilterBar } from '../components/user-access/UserAccessFilterBar.jsx';
+import { UserAccessTable } from '../components/user-access/UserAccessTable.jsx';
+import { UserInspectModal } from '../components/user-access/UserInspectModal.jsx';
+import { UserRoleAssignModal } from '../components/user-access/UserRoleAssignModal.jsx';
+import { UserStatusActionModal } from '../components/user-access/UserStatusActionModal.jsx';
+import { UserSecurityActionsModal } from '../components/user-access/UserSecurityActionsModal.jsx';
 
 export default function UsersPage() {
-  // 1. Current user authorization status (Super Admin / HR Manager only)
-  const { user: currentUser, isHR, isSuperAdmin } = useAuth();
+  const { user: currentUser, can, isSuperAdmin } = useAuth();
 
-  // 2. Query system users with auto-polling/tag-based invalidation
-  const { data: usersResponse, isLoading, isFetching, refetch } = useGetUsersQuery();
+  // Permission guards
+  const canManageUsers = isSuperAdmin || can('user.manage') || can('user', 'manage');
+  const canAssignRoles = isSuperAdmin || can('role.assign') || can('role', 'assign');
 
-  // 3. Status mutation hook
-  const [updateUserStatus, { isLoading: isUpdating }] = useUpdateUserStatusMutation();
+  // Filter State
+  const [search, setSearch] = useState('');
+  const [selectedRoleId, setSelectedRoleId] = useState('all');
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedAccessStatus, setSelectedAccessStatus] = useState('all');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
-  // 4. Emergency password reset mutation hook (Slice 1.14)
-  const [adminResetPassword, { isLoading: isResetting }] = useAdminResetPasswordMutation();
+  // Construct query params
+  const queryParams = useMemo(() => {
+    const params = {
+      page,
+      limit
+    };
+    if (search.trim()) params.search = search.trim();
+    if (selectedRoleId !== 'all') params.roleId = selectedRoleId;
+    if (selectedDepartmentId !== 'all') params.departmentId = selectedDepartmentId;
+    if (selectedStatus !== 'all') params.status = selectedStatus;
+    if (selectedAccessStatus !== 'all') params.accessStatus = selectedAccessStatus;
+    return params;
+  }, [page, limit, search, selectedRoleId, selectedDepartmentId, selectedStatus, selectedAccessStatus]);
 
-  // 5. State for deactivation confirmation modal dialog
-  const [targetUser, setTargetUser] = useState(null);
-  const [deviceResetUser, setDeviceResetUser] = useState(null);
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  // RTK Queries
+  const {
+    data: usersResponse,
+    isLoading: isUsersLoading,
+    isFetching: isUsersFetching,
+    refetch: refetchUsers
+  } = useGetUsersQuery(queryParams);
 
-  // 6. State for emergency password reset confirmation modal dialog (Slice 1.14)
-  const [resetUser, setResetUser] = useState(null);
-  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const {
+    data: statsResponse,
+    isLoading: isStatsLoading,
+    refetch: refetchStats
+  } = useGetUserStatsQuery();
 
-  // 7. Role assignment modal state (Slice 26.11 & 26.12)
-  const { data: allRolesResponse } = useGetRolesQuery({ limit: 100 });
-  const allRoles = allRolesResponse?.data || [];
-  const [assignUserRoles, { isLoading: isAssigningRoles }] = useAssignUserRolesMutation();
-  const [rolesModalUser, setRolesModalUser] = useState(null);
-  const [selectedRoleIds, setSelectedRoleIds] = useState([]);
-  const [inspectorUser, setInspectorUser] = useState(null);
+  const { data: rolesResponse } = useGetRolesQuery({ limit: 100 });
+  const { data: deptsResponse } = useGetDepartmentsQuery({ limit: 100 });
 
-  // Privilege escalation check (Slice 26.12-FE)
-  const isRoleDisabled = (roleItem) => {
-    if (isSuperAdmin) return false;
-    if (roleItem.name === 'Super Admin') return true;
-
-    const currentUserActions = new Set();
-    for (const r of currentUser?.roles || []) {
-      for (const p of r?.permissions || []) {
-        currentUserActions.add(p.action);
-      }
-    }
-
-    for (const p of roleItem.permissions || []) {
-      if (p.action !== 'manage' && !currentUserActions.has(p.action)) {
-        return true;
-      }
-    }
-    return false;
-  };
-
-  const handleOpenRolesModal = (rowUser) => {
-    setRolesModalUser(rowUser);
-    const primaryRole = rowUser.roles?.[0];
-    const primaryRoleId = typeof primaryRole === 'string' ? primaryRole : primaryRole?._id;
-    setSelectedRoleIds(primaryRoleId ? [primaryRoleId] : []);
-  };
-
-  const handleSelectRole = (roleId) => {
-    // Single-role model: selecting a role replaces any prior role with only [roleId]
-    setSelectedRoleIds([roleId]);
-  };
-
-  const handleSaveUserRoles = async (e) => {
-    e.preventDefault();
-    if (!rolesModalUser) return;
-    if (selectedRoleIds.length === 0) {
-      toast.error('User must have at least one assigned role.');
-      return;
-    }
-    try {
-      await assignUserRoles({
-        userId: rolesModalUser._id,
-        roleIds: selectedRoleIds
-      }).unwrap();
-      toast.success(`Roles updated successfully for ${rolesModalUser.email}`);
-      setRolesModalUser(null);
-      refetch();
-    } catch (err) {
-      toast.error(err?.data?.message || 'Failed to update user roles.');
-    }
-  };
-
-  // Extract users list from standardized ApiResponse envelope
+  const roles = rolesResponse?.data || [];
+  const departments = deptsResponse?.data || [];
   const users = usersResponse?.data || [];
-
-  /**
-   * Handle user status toggle action
-   * @param {Object} rowUser - Selected user record
-   */
-  const handleToggleClick = (rowUser) => {
-    // Prevent admin from deactivating their own currently logged-in account
-    if (rowUser._id === currentUser?._id) {
-      toast.error('You cannot deactivate your own administrative account.');
-      return;
-    }
-
-    if (rowUser.isActive) {
-      // If active, open confirmation modal before revoking access
-      setTargetUser(rowUser);
-      setIsConfirmOpen(true);
-    } else {
-      // If inactive, re-activate directly with positive toast confirmation
-      handleStatusChange(rowUser._id, true);
-    }
+  const meta = usersResponse?.meta || {
+    total: users.length,
+    page,
+    limit,
+    totalPages: Math.ceil(users.length / limit) || 1
   };
+  const stats = statsResponse?.data || null;
 
-  /**
-   * Dispatch status update to backend API
-   * @param {string} userId - Target user MongoDB ObjectId
-   * @param {boolean} nextStatus - Desired active flag
-   */
-  const handleStatusChange = async (userId, nextStatus) => {
-    try {
-      const response = await updateUserStatus({
-        id: userId,
-        isActive: nextStatus,
-        reason: nextStatus
-          ? 'Account re-activated by HR Administrator'
-          : 'Account deactivated by HR Administrator'
-      }).unwrap();
+  // Modals Management State
+  const [inspectUserId, setInspectUserId] = useState(null);
+  const [roleAssignUser, setRoleAssignUser] = useState(null);
+  const [statusActionUser, setStatusActionUser] = useState(null);
+  const [statusActionNext, setStatusActionNext] = useState(true);
+  const [securityActionUser, setSecurityActionUser] = useState(null);
+  const [securityActionType, setSecurityActionType] = useState('unlock');
 
-      toast.success(
-        response?.message ||
-          (nextStatus ? 'User account activated successfully.' : 'User account deactivated successfully.')
-      );
-    } catch (err) {
-      const errorMsg =
-        err?.data?.message ||
-        err?.error ||
-        'Failed to update user status. Please check permissions.';
-      toast.error(errorMsg);
-    } finally {
-      setIsConfirmOpen(false);
-      setTargetUser(null);
-    }
-  };
+  const handleRefresh = useCallback(() => {
+    refetchUsers();
+    refetchStats();
+  }, [refetchUsers, refetchStats]);
 
-  /**
-   * Execute emergency password reset for target user (Slice 1.14)
-   */
-  const handleAdminReset = async () => {
-    if (!resetUser) return;
-    try {
-      const response = await adminResetPassword(resetUser._id).unwrap();
-      toast.success(
-        response?.message || 'Temporary password generated and sent to user email.'
-      );
-    } catch (err) {
-      const errorMsg =
-        err?.data?.message || err?.error || 'Failed to trigger emergency password reset.';
-      toast.error(errorMsg);
-    } finally {
-      setIsResetConfirmOpen(false);
-      setResetUser(null);
-    }
-  };
+  const handleResetFilters = useCallback(() => {
+    setSearch('');
+    setSelectedRoleId('all');
+    setSelectedDepartmentId('all');
+    setSelectedStatus('all');
+    setSelectedAccessStatus('all');
+    setPage(1);
+  }, []);
 
-  // Define table columns
-  const columns = [
-    {
-      key: 'email',
-      label: 'User Account',
-      sortable: true,
-      render: (row) => (
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-xs font-bold text-[#00C471]">
-            {row.email ? row.email.charAt(0).toUpperCase() : 'U'}
-          </div>
-          <div>
-            <span className="font-semibold text-slate-800 dark:text-slate-100 block">{row.email}</span>
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 block font-mono">
-              ID: {row._id ? String(row._id).slice(-8) : 'N/A'}
-            </span>
-          </div>
-        </div>
-      )
-    },
-    {
-      key: 'roles',
-      label: 'Assigned Roles',
-      render: (row) => (
-        <div className="flex flex-wrap gap-1">
-          {row.roles && row.roles.length > 0 ? (
-            row.roles.map((r, idx) => {
-              const roleName = typeof r === 'string' ? r : r.name || 'Role';
-              return (
-                <span
-                  key={idx}
-                  className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-slate-100 dark:bg-[#15241C] border border-slate-200 dark:border-[#1E362A] text-slate-700 dark:text-slate-300"
-                >
-                  {roleName}
-                </span>
-              );
-            })
-          ) : (
-            <span className="text-xs text-slate-400">Employee</span>
-          )}
-        </div>
-      )
-    },
-    {
-      key: 'isActive',
-      label: 'Account Status',
-      sortable: true,
-      render: (row) => (
-        <StatusBadge
-          status={row.isActive ? 'active' : 'inactive'}
-          label={row.isActive ? 'Active' : 'Deactivated'}
-        />
-      )
-    },
-    {
-      key: 'createdAt',
-      label: 'Registered On',
-      sortable: true,
-      render: (row) => (
-        <span className="text-xs text-slate-600 dark:text-slate-400 font-medium font-mono">
-          {row.createdAt ? new Date(row.createdAt).toLocaleDateString() : 'N/A'}
-        </span>
-      )
-    },
-    {
-      key: 'actions',
-      label: 'Access Control',
-      className: 'text-right',
-      render: (row) => {
-        const isSelf = row._id === currentUser?._id;
-        const canManage = isHR || isSuperAdmin;
+  const handleSearchChange = useCallback((newSearch) => {
+    setSearch(newSearch);
+    setPage(1);
+  }, []);
 
-        if (!canManage) {
-          return <span className="text-[11px] text-slate-400 font-medium">Read Only</span>;
-        }
+  const handleRoleChange = useCallback((newRoleId) => {
+    setSelectedRoleId(newRoleId);
+    setPage(1);
+  }, []);
 
-        if (isSelf) {
-          return (
-            <span className="text-[11px] text-slate-400 italic">Current Account</span>
-          );
-        }
+  const handleDepartmentChange = useCallback((newDeptId) => {
+    setSelectedDepartmentId(newDeptId);
+    setPage(1);
+  }, []);
 
-        return (
-          <div className="flex items-center justify-end gap-2">
-            <Can I="role.view">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setInspectorUser(row);
-                }}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#15241C] shadow-xs transition-all cursor-pointer"
-                title="Inspect effective compiled permissions"
-              >
-                <Eye className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                <span>Access</span>
-              </button>
-            </Can>
+  const handleStatusChange = useCallback((newStatus) => {
+    setSelectedStatus(newStatus);
+    setPage(1);
+  }, []);
 
-            <Can I="role.assign">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleOpenRolesModal(row);
-                }}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] text-slate-700 dark:text-slate-300 hover:text-[#00C471] hover:border-[#00C471]/40 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 shadow-xs transition-all cursor-pointer"
-                title="Assign / update user roles"
-              >
-                <UserCog className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                <span>Roles</span>
-              </button>
-            </Can>
+  const handleAccessStatusChange = useCallback((newAccessStatus) => {
+    setSelectedAccessStatus(newAccessStatus);
+    setPage(1);
+  }, []);
 
-            <button
-              type="button"
-              disabled={isResetting}
-              onClick={(e) => {
-                e.stopPropagation();
-                setResetUser(row);
-                setIsResetConfirmOpen(true);
-              }}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#15241C] shadow-xs transition-all cursor-pointer"
-              title="Dispatch temporary credentials to employee email"
-            >
-              <KeyRound className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-              <span>Reset Pass</span>
-            </button>
+  // Modal Triggers
+  const handleInspect = useCallback((targetUser) => {
+    setInspectUserId(targetUser._id);
+  }, []);
 
-                        <button
-              type="button"
-              title={row.deviceId ? `Device bound: ${row.deviceModel || 'Unknown'}. Click to reset.` : 'No device bound'}
-              onClick={(e) => {
-                e.stopPropagation();
-                setDeviceResetUser(row);
-              }}
-              className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold transition-all border border-amber-200 dark:border-amber-900/60 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-400 cursor-pointer"
-            >
-              <Smartphone className="w-3.5 h-3.5" />
-              <span>Reset Device</span>
-            </button>
+  const handleAssignRole = useCallback((targetUser) => {
+    setRoleAssignUser(targetUser);
+  }, []);
 
-            <button
-              type="button"
-              disabled={isUpdating}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleToggleClick(row);
-              }}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all border cursor-pointer ${
-                row.isActive
-                  ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/60'
-                  : 'bg-emerald-50 text-[#00C471] border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/60'
-              }`}
-            >
-              {row.isActive ? (
-                <>
-                  <UserX className="w-3.5 h-3.5" />
-                  <span>Deactivate</span>
-                </>
-              ) : (
-                <>
-                  <UserCheck className="w-3.5 h-3.5" />
-                  <span>Activate</span>
-                </>
-              )}
-            </button>
-          </div>
-        );
-      }
-    }
-  ];
+  const handleToggleStatus = useCallback((targetUser, nextStatus) => {
+    setStatusActionUser(targetUser);
+    setStatusActionNext(nextStatus);
+  }, []);
+
+  const handleUnlockAccount = useCallback((targetUser) => {
+    setSecurityActionUser(targetUser);
+    setSecurityActionType('unlock');
+  }, []);
+
+  const handleRevokeSessions = useCallback((targetUser) => {
+    setSecurityActionUser(targetUser);
+    setSecurityActionType('revoke_sessions');
+  }, []);
+
+  const handleResetPassword = useCallback((targetUser) => {
+    setSecurityActionUser(targetUser);
+    setSecurityActionType('reset_password');
+  }, []);
+
+  const handleResetDevice = useCallback((targetUser) => {
+    setSecurityActionUser(targetUser);
+    setSecurityActionType('reset_device');
+  }, []);
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
+    <div className="space-y-6 pb-12">
+      {/* Top Header */}
       <PageHeader
-        title="User Access & Security"
-        description="Oversee company system users, enforce security statuses, and manage account access"
+        title="User Accounts & Access Control"
+        subtitle="Forensic identity governance, role delegations, account security, and active session monitoring."
+        icon={Users}
         actions={
-          <button
-            type="button"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#15241C] shadow-xs transition-all cursor-pointer"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={isUsersFetching}
+              className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#14261D] transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+              title="Refresh users and security posture metrics"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isUsersFetching ? 'animate-spin text-[#00C471]' : ''}`} />
+              <span className="hidden sm:inline">Sync Data</span>
+            </button>
+            <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[#00C471] text-xs font-bold">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>RBAC / PBAC Enforced</span>
+            </div>
+          </div>
         }
       />
 
-      {/* Primary Data Grid */}
-      <DataTable
-        columns={columns}
-        data={users}
-        isLoading={isLoading}
-        searchPlaceholder="Search by email or role..."
-        emptyMessage="No system users found"
+      {/* KPI Dashboard & Analytics */}
+      <UserAccessDashboard
+        stats={stats}
+        isLoading={isStatsLoading}
+        selectedStatus={selectedStatus}
+        onSelectStatus={handleStatusChange}
+        selectedAccessStatus={selectedAccessStatus}
+        onSelectAccessStatus={handleAccessStatusChange}
       />
 
-      {/* Confirmation Dialog for Deactivation */}
-      <ConfirmDialog
-        isOpen={isConfirmOpen}
-        title="Deactivate User Account"
-        message={`Are you sure you want to deactivate ${targetUser?.email}? Their active session will be terminated immediately, and subsequent login attempts will be blocked.`}
-        confirmText="Deactivate Account"
-        cancelText="Keep Active"
-        isDestructive={true}
-        onConfirm={() => handleStatusChange(targetUser?._id, false)}
-        onCancel={() => {
-          setIsConfirmOpen(false);
-          setTargetUser(null);
+      {/* Multi-Criteria Filter Bar */}
+      <UserAccessFilterBar
+        search={search}
+        onSearchChange={handleSearchChange}
+        roles={roles}
+        selectedRoleId={selectedRoleId}
+        onRoleChange={handleRoleChange}
+        departments={departments}
+        selectedDepartmentId={selectedDepartmentId}
+        onDepartmentChange={handleDepartmentChange}
+        selectedStatus={selectedStatus}
+        onStatusChange={handleStatusChange}
+        selectedAccessStatus={selectedAccessStatus}
+        onAccessStatusChange={handleAccessStatusChange}
+        onResetFilters={handleResetFilters}
+      />
+
+      {/* High-Density Users DataTable */}
+      <UserAccessTable
+        users={users}
+        isLoading={isUsersLoading}
+        page={meta.page || page}
+        limit={meta.limit || limit}
+        total={meta.total || 0}
+        totalPages={meta.totalPages || 1}
+        onPageChange={(p) => setPage(p)}
+        onLimitChange={(l) => {
+          setLimit(l);
+          setPage(1);
+        }}
+        currentUser={currentUser}
+        canManage={canManageUsers}
+        canAssignRole={canAssignRoles}
+        onInspect={handleInspect}
+        onAssignRole={handleAssignRole}
+        onToggleStatus={handleToggleStatus}
+        onUnlockAccount={handleUnlockAccount}
+        onRevokeSessions={handleRevokeSessions}
+        onResetPassword={handleResetPassword}
+        onResetDevice={handleResetDevice}
+      />
+
+      {/* 5-Tab Forensic Inspection Modal */}
+      <UserInspectModal
+        userId={inspectUserId}
+        isOpen={Boolean(inspectUserId)}
+        onClose={() => setInspectUserId(null)}
+        onAssignRole={(u) => {
+          setInspectUserId(null);
+          setRoleAssignUser(u);
+        }}
+        onUnlockAccount={(u) => {
+          setInspectUserId(null);
+          handleUnlockAccount(u);
+        }}
+        onToggleStatus={(u, next) => {
+          setInspectUserId(null);
+          handleToggleStatus(u, next);
         }}
       />
 
-      {/* Confirmation Dialog for Emergency Password Reset (Slice 1.14) */}
-      <ConfirmDialog
-        isOpen={isResetConfirmOpen}
-        title="Emergency Password Reset"
-        message={`Are you sure you want to reset credentials for ${resetUser?.email}? A new temporary password will be dispatched to their email address, existing sessions will be invalidated, and they must choose a new password upon login.`}
-        confirmText="Reset Password"
-        cancelText="Cancel"
-        isDestructive={true}
-        onConfirm={handleAdminReset}
-        onCancel={() => {
-          setIsResetConfirmOpen(false);
-          setResetUser(null);
-        }}
+      {/* Guarded Role Assignment Modal */}
+      <UserRoleAssignModal
+        user={roleAssignUser}
+        isOpen={Boolean(roleAssignUser)}
+        onClose={() => setRoleAssignUser(null)}
+        onSuccess={handleRefresh}
       />
 
-      {/* Role Assignment Modal (Slice 26.11 & 26.12) */}
-      {rolesModalUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="w-full max-w-lg bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-[#1A3125]">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-emerald-50 text-[#00C471] border border-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60">
-                  <UserCog className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    Assign Role to User
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Select the single active role for <span className="font-medium text-slate-700 dark:text-slate-200">{rolesModalUser.email}</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <form onSubmit={handleSaveUserRoles} className="space-y-4 pt-1">
-              <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
-                {allRoles.map((roleItem) => {
-                  const isChecked = selectedRoleIds.includes(roleItem._id);
-                  const disabled = isRoleDisabled(roleItem);
-
-                  return (
-                    <div
-                      key={roleItem._id}
-                      onClick={() => !disabled && handleSelectRole(roleItem._id)}
-                      className={`p-3.5 rounded-xl border text-xs flex items-center justify-between gap-3 transition-all ${
-                        disabled
-                          ? 'opacity-40 cursor-not-allowed bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800'
-                          : isChecked
-                          ? 'border-[#00C471] bg-emerald-50/40 dark:bg-emerald-950/30 shadow-xs ring-1 ring-[#00C471]/30 cursor-pointer'
-                          : 'border-slate-200 dark:border-[#1A3125] hover:bg-slate-50/60 dark:hover:bg-[#14261D] cursor-pointer'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="userRoleSelection"
-                          checked={isChecked}
-                          disabled={disabled}
-                          onChange={() => handleSelectRole(roleItem._id)}
-                          className="h-4 w-4 border-slate-300 text-[#00C471] focus:ring-[#00C471] accent-[#00C471] cursor-pointer"
-                        />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-slate-900 dark:text-white block">
-                              {roleItem.name}
-                            </span>
-                            {isChecked && (
-                              <span className="text-[10px] font-bold text-emerald-600 bg-emerald-100/60 dark:bg-emerald-950 dark:text-emerald-400 px-1.5 py-0.2 rounded">
-                                Selected
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                            {roleItem.description || `${roleItem.permissions?.length || 0} permissions`}
-                          </span>
-                        </div>
-                      </div>
-
-                      {disabled && (
-                        <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-900">
-                          Restricted
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-[#1A3125]">
-                <button
-                  type="button"
-                  onClick={() => setRolesModalUser(null)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-[#14261D] transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isAssigningRoles}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#00C471] hover:bg-[#00B065] text-white text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
-                >
-                  {isAssigningRoles ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <span>Assign Role</span>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Effective Permissions Inspector Modal (Slice 26.15) */}
-      <EffectivePermissionsModal
-        isOpen={Boolean(inspectorUser)}
-        onClose={() => setInspectorUser(null)}
-        userId={inspectorUser?._id}
-        userEmail={inspectorUser?.email}
+      {/* Account Status Action Confirmation Modal */}
+      <UserStatusActionModal
+        user={statusActionUser}
+        nextStatus={statusActionNext}
+        isOpen={Boolean(statusActionUser)}
+        onClose={() => setStatusActionUser(null)}
+        onSuccess={handleRefresh}
       />
-      <ResetDeviceModal
-        isOpen={Boolean(deviceResetUser)}
-        user={deviceResetUser}
-        onClose={() => setDeviceResetUser(null)}
-        onSuccess={refetch}
+
+      {/* Multi-Action Security Center Modal */}
+      <UserSecurityActionsModal
+        user={securityActionUser}
+        initialAction={securityActionType}
+        isOpen={Boolean(securityActionUser)}
+        onClose={() => setSecurityActionUser(null)}
+        onSuccess={handleRefresh}
       />
     </div>
   );

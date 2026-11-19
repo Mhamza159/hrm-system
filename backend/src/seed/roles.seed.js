@@ -35,6 +35,7 @@ export const CORE_ROLES_DEFINITIONS = [
     description: 'Human Resources Manager with company-wide workforce, attendance, leave, and payroll preparation rights.',
     isSystem: true,
     permissions: [
+      { action: 'user.view', subject: 'User', scope: 'all' },
       { action: 'login.history', subject: 'User', scope: 'all' },
       { action: 'user.manage', subject: 'User', scope: 'all' },
       { action: 'role.view', subject: 'Role', scope: 'all' },
@@ -163,6 +164,7 @@ export const CORE_ROLES_DEFINITIONS = [
     description: 'Department Head or Team Lead with team-scoped management and approval delegation rights.',
     isSystem: true,
     permissions: [
+      { action: 'user.view', subject: 'User', scope: 'department' },
       { action: 'login.history', subject: 'User', scope: 'own' },
       { action: 'delegation.create', subject: 'Role', scope: 'own' },
       { action: 'delegation.view', subject: 'Role', scope: 'own' },
@@ -243,6 +245,7 @@ export const CORE_ROLES_DEFINITIONS = [
     description: 'Regular company employee with self-service attendance, leave, profile, and payslip access.',
     isSystem: true,
     permissions: [
+      { action: 'user.view', subject: 'User', scope: 'department' },
       { action: 'login.history', subject: 'User', scope: 'own' },
       { action: 'employee.view', subject: 'Employee', scope: 'own' },
       { action: 'change_request.view', subject: 'ChangeRequest', scope: 'own' },

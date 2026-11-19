@@ -28,6 +28,13 @@ const userSchema = new mongoose.Schema(
       match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address']
     },
 
+    // Full user name (synchronized with Employee.name or standalone admin name)
+    name: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+
     // Bcrypt salted hash (12 rounds) of user password
     passwordHash: {
       type: String,
@@ -215,6 +222,30 @@ userSchema.index({ lockUntil: 1 });
 
 // Optimize lookups by employee record
 userSchema.index({ employeeId: 1 });
+
+// Optimize role queries and search
+userSchema.index({ roles: 1 });
+userSchema.index({ name: 1 });
+
+// ==========================================
+// Virtual Fields
+// ==========================================
+
+// Virtual for lock status
+userSchema.virtual('isLocked').get(function () {
+  return Boolean(this.lockUntil && this.lockUntil > new Date());
+});
+
+// Virtual for unified account status ('locked' | 'inactive' | 'active')
+userSchema.virtual('accountStatus').get(function () {
+  if (this.lockUntil && this.lockUntil > new Date()) return 'locked';
+  if (!this.isActive) return 'inactive';
+  return 'active';
+});
+
+// Configure JSON serialization to include virtuals
+userSchema.set('toJSON', { virtuals: true });
+userSchema.set('toObject', { virtuals: true });
 
 // ==========================================
 // Instance & Static Helper Methods

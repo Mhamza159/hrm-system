@@ -1226,6 +1226,46 @@ Plans:
 
 ---
 
+## Phase 34: User Access Module — Complete Audit, RBAC/PBAC Compliance, Security, Integration & Full UI Redesign
+
+**Goal:** Overhaul the User Access Module into an enterprise-grade administration and security portal. Extend the User data schema with first-class name support, account lockout state, session revocation, and force password change triggers; develop a dedicated User Access Service supporting paginated search, deep employee identity population, and aggregated KPI metrics; register granular permissions with PBAC departmental scoping; construct an Elvara Forest (`#061A14`) & Emerald (`#00C471`) dashboard with pure SVG security analytics; build an enterprise DataTable with multi-criteria filters; create a 5-tab forensic inspect modal detailing user credentials, linked employee, roles, effective permissions matrix, and access history; provide guarded role assignment and security action dialogs; and achieve 100% automated test coverage.
+
+**Requirements**:
+- **1. User Data Model Alignment & Security State Engine (`Plan 34-01`)**:
+  - Add `name` field to User schema with compound indexes and `isLocked` state calculation.
+  - Zod validation schemas for query parameters, account unlocks, and session revocations.
+  - Employee-User synchronization hooks updating personal name across collections.
+- **2. Backend User Access Service & Scoped PBAC APIs (`Plan 34-02`)**:
+  - `user.service.js` with paginated search, deep employee population, and PBAC scoping.
+  - Aggregated KPI stats endpoint (`/users/stats`) and full user inspection (`/users/:id`).
+  - Administrative security endpoints: unlock, session revocation, and force password change.
+  - Granular permissions catalog (`user.view`, `user.manage`, `role.assign`) and audit log integration.
+- **3. User Access Dashboard & Security Analytics UI (`Plan 34-03`)**:
+  - 6-card actionable KPI deck (Total, Active, Inactive, Locked, Unassigned, 2FA Enforced).
+  - Pure SVG security analytics: Users by Role breakdown and Account Health status distribution.
+- **4. Enterprise User Access Explorer & Multi-Criteria Filter Suite (`Plan 34-04`)**:
+  - Sticky filter toolbar with debounced search, role dropdown, department filter, and status chips.
+  - High-density DataTable with user avatar, employee credentials, role badges, lockout banner, and action menus.
+- **5. Forensic User Inspect Modal (`Plan 34-05`)**:
+  - 5-tab modal: User Identity, Assigned Roles, Effective Permissions Matrix (grouped by module with PBAC scope pills), Account Security & Sessions, and Access & Audit History.
+- **6. Role Assignment Studio, Security Actions & End-to-End Testing (`Plan 34-06`)**:
+  - Role assignment modal with privilege escalation defense and assignment reason capture.
+  - Security action dialogs for unlock, session revocation, emergency password reset, and force password change.
+  - Comprehensive Vitest integration suite, 0 Oxlint errors, and clean Vite production build.
+
+**Depends on:** Phase 33  
+**Plans:** 6 plans
+
+Plans:
+- [x] **Plan 34-01: Data Model Alignment, User Schema Extension (`name`), User Status State Machine & Security Action Engine** (`.planning/phases/34-user-access-module-complete-audit-rbac-pbac-compliance-security-integration-full-ui-redesign/34-01-PLAN.md`)
+- [x] **Plan 34-02: Backend REST APIs, User Access Service, Scoped PBAC, Pagination, Security Actions, Audit Log & Notification Integration** (`.planning/phases/34-user-access-module-complete-audit-rbac-pbac-compliance-security-integration-full-ui-redesign/34-02-PLAN.md`)
+- [x] **Plan 34-03: User Access Dashboard, Actionable KPI Metrics & Security Analytics UI** (`.planning/phases/34-user-access-module-complete-audit-rbac-pbac-compliance-security-integration-full-ui-redesign/34-03-PLAN.md`)
+- [x] **Plan 34-04: Enterprise User Access Explorer, Multi-Criteria Filter Suite & High-Density DataTable** (`.planning/phases/34-user-access-module-complete-audit-rbac-pbac-compliance-security-integration-full-ui-redesign/34-04-PLAN.md`)
+- [x] **Plan 34-05: Forensic User Inspect Modal (Identity, Roles, Effective Permissions Matrix, Security State & Audit Timeline)** (`.planning/phases/34-user-access-module-complete-audit-rbac-pbac-compliance-security-integration-full-ui-redesign/34-05-PLAN.md`)
+- [x] **Plan 34-06: Guarded Role Assignment Studio, Security Action Modals (Unlock, Session Revocation, Password Management) & End-to-End Testing** (`.planning/phases/34-user-access-module-complete-audit-rbac-pbac-compliance-security-integration-full-ui-redesign/34-06-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features

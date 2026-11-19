@@ -22,6 +22,13 @@ export const PERMISSIONS_CATALOGUE = [
     description: 'System login, credential management, security audits, and user activation.',
     actions: [
       {
+        action: 'user.view',
+        label: 'View User Access Directory',
+        description: 'Inspect system users, account statuses, and access metadata.',
+        allowedScopes: ['all', 'department', 'own'],
+        defaultScope: 'department'
+      },
+      {
         action: 'login.history',
         label: 'View Login History',
         description: 'Inspect device, IP, and timestamp logs for sessions.',

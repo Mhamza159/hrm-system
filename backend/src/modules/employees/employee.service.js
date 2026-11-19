@@ -216,6 +216,7 @@ export const createEmployee = async (payload, actor) => {
 
     const newUser = await User.create({
       email: payload.email,
+      name: payload.name || '',
       passwordHash,
       roles: assignedRoleIds,
       isActive: true,
@@ -613,6 +614,11 @@ export const updateEmployee = async (id, payload, actor) => {
 
   Object.assign(employee, updates);
   await employee.save();
+
+  // If name updated and employee has a linked user account, keep user.name in sync
+  if (updates.name && employee.userId) {
+    await User.findByIdAndUpdate(employee.userId, { name: updates.name }).catch(() => {});
+  }
 
   // If roleId provided and employee has a linked user account, update user roles
   if (payload.roleId && employee.userId) {
