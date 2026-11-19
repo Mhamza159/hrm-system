@@ -13,6 +13,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
+import { ErrorState } from '../../../components/common/ErrorState.jsx';
 import { useAuth } from '../../../hooks/useAuth.js';
 import {
   useGetUsersQuery,
@@ -65,7 +66,9 @@ export default function UsersPage() {
     data: usersResponse,
     isLoading: isUsersLoading,
     isFetching: isUsersFetching,
-    refetch: refetchUsers
+    refetch: refetchUsers,
+    isError: isUsersError,
+    error: usersError
   } = useGetUsersQuery(queryParams);
 
   const {
@@ -77,9 +80,9 @@ export default function UsersPage() {
   const { data: rolesResponse } = useGetRolesQuery({ limit: 100 });
   const { data: deptsResponse } = useGetDepartmentsQuery({ limit: 100 });
 
-  const roles = rolesResponse?.data || [];
-  const departments = deptsResponse?.data || [];
-  const users = usersResponse?.data || [];
+  const roles = Array.isArray(rolesResponse?.data) ? rolesResponse.data : [];
+  const departments = Array.isArray(deptsResponse?.data) ? deptsResponse.data : [];
+  const users = Array.isArray(usersResponse?.data) ? usersResponse.data : [];
   const meta = usersResponse?.meta || {
     total: users.length,
     page,
@@ -224,30 +227,42 @@ export default function UsersPage() {
         onResetFilters={handleResetFilters}
       />
 
-      {/* High-Density Users DataTable */}
-      <UserAccessTable
-        users={users}
-        isLoading={isUsersLoading}
-        page={meta.page || page}
-        limit={meta.limit || limit}
-        total={meta.total || 0}
-        totalPages={meta.totalPages || 1}
-        onPageChange={(p) => setPage(p)}
-        onLimitChange={(l) => {
-          setLimit(l);
-          setPage(1);
-        }}
-        currentUser={currentUser}
-        canManage={canManageUsers}
-        canAssignRole={canAssignRoles}
-        onInspect={handleInspect}
-        onAssignRole={handleAssignRole}
-        onToggleStatus={handleToggleStatus}
-        onUnlockAccount={handleUnlockAccount}
-        onRevokeSessions={handleRevokeSessions}
-        onResetPassword={handleResetPassword}
-        onResetDevice={handleResetDevice}
-      />
+      {/* High-Density Users DataTable or Error Recovery View */}
+      {isUsersError && users.length === 0 ? (
+        <div className="bg-white dark:bg-[#111D17] rounded-2xl border border-slate-200 dark:border-[#1A3125] p-6 shadow-xs">
+          <ErrorState
+            error={usersError}
+            title="Failed to Load Users"
+            description="Unable to fetch user access directory from the server."
+            onRetry={handleRefresh}
+            isRetrying={isUsersFetching}
+          />
+        </div>
+      ) : (
+        <UserAccessTable
+          users={users}
+          isLoading={isUsersLoading}
+          page={meta.page || page}
+          limit={meta.limit || limit}
+          total={meta.total || 0}
+          totalPages={meta.totalPages || 1}
+          onPageChange={(p) => setPage(p)}
+          onLimitChange={(l) => {
+            setLimit(l);
+            setPage(1);
+          }}
+          currentUser={currentUser}
+          canManage={canManageUsers}
+          canAssignRole={canAssignRoles}
+          onInspect={handleInspect}
+          onAssignRole={handleAssignRole}
+          onToggleStatus={handleToggleStatus}
+          onUnlockAccount={handleUnlockAccount}
+          onRevokeSessions={handleRevokeSessions}
+          onResetPassword={handleResetPassword}
+          onResetDevice={handleResetDevice}
+        />
+      )}
 
       {/* 5-Tab Forensic Inspection Modal */}
       <UserInspectModal

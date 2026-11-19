@@ -12,6 +12,8 @@
 import dns from 'dns';
 import mongoose from 'mongoose';
 import { env } from './env.js';
+// Pre-register all models to ensure populate() never encounters MissingSchemaError
+import '../models/index.js';
 
 // Resolve MongoDB Atlas SRV DNS lookups reliably across all networks & ISPs
 try {

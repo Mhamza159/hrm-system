@@ -23,6 +23,9 @@ import { LeaveEncashment } from '../../models/leaveEncashment.model.js';
 import { MonthLock } from '../../models/monthLock.model.js';
 import { Loan } from '../../models/loan.model.js';
 import { Expense } from '../../models/expense.model.js';
+import { Holiday } from '../../models/holiday.model.js';
+import { SettingService } from '../settings/setting.service.js';
+import { calculateWorkingDaysInMonth, getEffectiveWorkDays } from '../../utils/workdayHelper.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { calculateAnnualIncomeTax } from './taxCalculator.js';
 import { calculateStatutoryContributions } from './contributionsCalculator.js';
@@ -96,6 +99,21 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
 
   const totalEmployees = eligibleStructures.length;
   let completed = 0;
+
+  // Working days resolution based on company operating schedule & gazetted holidays
+  const companyWorkingDays = (await SettingService.getSetting('workingDays')) || [
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday'
+  ];
+
+  const monthHolidays = await Holiday.find({
+    isActive: true,
+    date: { $gte: cycleStartDate, $lte: cycleEndDate }
+  }).lean();
+  const holidayDatesSet = new Set(monthHolidays.map((h) => new Date(h.date).toISOString().split('T')[0]));
 
   // Aggregate run totals (in integer paisa)
   let totalGrossPay = 0;
@@ -353,6 +371,9 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
     const slipDeductions = deductions.reduce((acc, curr) => acc + curr.amount, 0);
     const netPay = Math.max(0, grossPay - slipDeductions);
 
+    const effectiveWorkDays = getEffectiveWorkDays(emp.shiftId, companyWorkingDays);
+    const scheduledWorkingDays = calculateWorkingDaysInMonth(year, month, effectiveWorkDays, holidayDatesSet);
+
     // Save individual Payslip
     await Payslip.create({
       payrollRunId: payrollRun._id,
@@ -375,8 +396,8 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
       lateDeductionDays,
       unpaidLeaveDays: totalUnpaidAbsenceDays,
       attendanceSummary: {
-        workingDays: 30,
-        presentDays: attendanceRecords.length > 0 ? presentDays : Math.max(0, 30 - totalUnpaidAbsenceDays),
+        workingDays: scheduledWorkingDays,
+        presentDays: attendanceRecords.length > 0 ? presentDays : Math.max(0, scheduledWorkingDays - totalUnpaidAbsenceDays),
         unpaidLeaves: totalUnpaidAbsenceDays,
         overtimeHours
       },

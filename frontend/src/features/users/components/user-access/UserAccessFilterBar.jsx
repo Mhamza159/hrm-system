@@ -90,8 +90,8 @@ export function UserAccessFilterBar({
             className="w-full pl-8 pr-8 py-2 text-xs rounded-xl bg-slate-50 dark:bg-[#0A110D] border border-slate-200 dark:border-[#1A3125] text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] cursor-pointer appearance-none"
           >
             <option value="all">All Roles</option>
-            {Array.isArray(roles) && roles.map((r) => (
-              <option key={r._id} value={r._id}>
+            {Array.isArray(roles) && roles.filter(Boolean).map((r) => (
+              <option key={r._id || r.name} value={r._id}>
                 {r.name}
               </option>
             ))}
@@ -107,8 +107,8 @@ export function UserAccessFilterBar({
             className="w-full pl-8 pr-8 py-2 text-xs rounded-xl bg-slate-50 dark:bg-[#0A110D] border border-slate-200 dark:border-[#1A3125] text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#00C471]/30 focus:border-[#00C471] cursor-pointer appearance-none"
           >
             <option value="all">All Departments</option>
-            {Array.isArray(departments) && departments.map((dept) => (
-              <option key={dept._id} value={dept._id}>
+            {Array.isArray(departments) && departments.filter(Boolean).map((dept) => (
+              <option key={dept._id || dept.name} value={dept._id}>
                 {dept.name}
               </option>
             ))}

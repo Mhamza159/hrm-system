@@ -131,6 +131,29 @@ const shiftSchema = new mongoose.Schema(
   }
 );
 
+// Pre-save normalization hook for workDays and cross-midnight computation
+shiftSchema.pre('save', function (next) {
+  if (Array.isArray(this.workDays) && this.workDays.length > 0) {
+    this.workDays = Array.from(new Set(this.workDays.map((d) => String(d).trim().toLowerCase())));
+  }
+
+  // Cross-midnight detection
+  if (this.startTime && this.endTime) {
+    const [startH, startM] = this.startTime.split(':').map(Number);
+    const [endH, endM] = this.endTime.split(':').map(Number);
+    let diff = (endH * 60 + endM) - (startH * 60 + startM);
+    if (diff < 0) {
+      diff += 24 * 60;
+      this.isCrossMidnight = true;
+    } else {
+      this.isCrossMidnight = false;
+    }
+    this.durationMinutes = diff;
+  }
+
+  next();
+});
+
 // Indexes
 shiftSchema.index({ type: 1, isDeleted: 1 });
 shiftSchema.index({ isActive: 1, isDeleted: 1 });

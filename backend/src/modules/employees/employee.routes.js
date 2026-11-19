@@ -88,6 +88,7 @@ const avatarUpload = multer({
 
 // Self-Service Routes (Must come before /:id parameter matching)
 router.get('/me', authenticate, employeeController.getMyProfile);
+router.get('/me/id-card', authenticate, employeeController.getMyIdCard);
 router.patch(
   '/me/avatar',
   authenticate,
@@ -154,6 +155,13 @@ router
   );
 
 // Single Employee Operations
+router.get(
+  '/:id/id-card',
+  authenticate,
+  checkPermission('employee.view'),
+  employeeController.getEmployeeIdCard
+);
+
 router
   .route('/:id')
   .get(

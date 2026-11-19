@@ -95,7 +95,7 @@ export function UserInspectModal({
                   className="w-full h-full object-cover rounded-2xl"
                 />
               ) : (
-                displayName.charAt(0).toUpperCase()
+                displayName ? displayName.charAt(0).toUpperCase() : 'U'
               )}
             </div>
             <div>

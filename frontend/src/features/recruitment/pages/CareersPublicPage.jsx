@@ -27,6 +27,7 @@ import {
   Filter
 } from 'lucide-react';
 import { useGetPublicJobsQuery } from '../recruitmentApi.js';
+import { useGetPublicBrandingQuery } from '../../settings/settingsApi.js';
 
 export const CareersPublicPage = () => {
   const navigate = useNavigate();
@@ -40,6 +41,10 @@ export const CareersPublicPage = () => {
     departmentId: selectedDept !== 'all' ? selectedDept : undefined,
     employmentType: selectedType !== 'all' ? selectedType : undefined
   });
+
+  const { data: brandingRes } = useGetPublicBrandingQuery();
+  const company = brandingRes?.data || {};
+  const companyName = company.name || 'ELVARA';
 
   const jobs = jobsRes?.data?.items || [];
 
@@ -64,7 +69,7 @@ export const CareersPublicPage = () => {
               <Briefcase className="w-5 h-5 text-[#00C471]" />
             </div>
             <div>
-              <span className="font-bold text-sm tracking-wide text-white">ELVARA HRM</span>
+              <span className="font-bold text-sm tracking-wide text-white">{companyName}</span>
               <span className="text-[10px] text-[#00C471] font-mono block">CAREERS & TALENT</span>
             </div>
           </div>
@@ -325,7 +330,7 @@ export const CareersPublicPage = () => {
 
       {/* Footer */}
       <footer className="border-t border-[#1A3125] bg-[#0B1511] py-6 text-center text-xs text-slate-500">
-        © {new Date().getFullYear()} ELVARA HRM Enterprise Suite • Equal Opportunity Employer
+        © {new Date().getFullYear()} {companyName} • Equal Opportunity Employer
       </footer>
     </div>
   );

@@ -9,7 +9,9 @@
  */
 
 import { Holiday } from '../../models/holiday.model.js';
+import { Employee } from '../../models/employee.model.js';
 import { SettingService } from '../settings/setting.service.js';
+import { getEffectiveWorkDays } from '../../utils/workdayHelper.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { normalizeToUtcMidnight } from './leave.service.js';
 
@@ -22,9 +24,10 @@ const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'frid
  * @param {Date|string} startDateInput 
  * @param {Date|string} endDateInput 
  * @param {string} [halfDay='none'] - 'none' | 'first_half' | 'second_half'
+ * @param {string|null} [employeeId=null]
  * @returns {Promise<{ netDays: number, breakdown: Array<Object>, holidaysFound: Array<Object> }>}
  */
-export const calculateDeductibleDays = async (startDateInput, endDateInput, halfDay = 'none') => {
+export const calculateDeductibleDays = async (startDateInput, endDateInput, halfDay = 'none', employeeId = null) => {
   const start = normalizeToUtcMidnight(startDateInput);
   const end = normalizeToUtcMidnight(endDateInput);
 
@@ -47,7 +50,17 @@ export const calculateDeductibleDays = async (startDateInput, endDateInput, half
     'thursday',
     'friday'
   ];
-  const activeWorkingDays = new Set(workingDaysSetting.map((d) => d.toLowerCase()));
+
+  let shift = null;
+  if (employeeId) {
+    const emp = await Employee.findById(employeeId).populate('shiftId', 'workDays').lean();
+    if (emp?.shiftId) {
+      shift = emp.shiftId;
+    }
+  }
+
+  const effectiveWorkDays = getEffectiveWorkDays(shift, workingDaysSetting);
+  const activeWorkingDays = new Set(effectiveWorkDays.map((d) => d.toLowerCase()));
 
   const leavePolicy = (await SettingService.getSetting('leavePolicy')) || {
     sandwichRule: false

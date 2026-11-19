@@ -59,6 +59,7 @@ import { usePermission } from '../../hooks/usePermission.js';
 import { logout } from '../../features/auth/authSlice.js';
 import { useLogoutMutation } from '../../features/auth/authApi.js';
 import { useModuleNotificationCounts } from '../../features/notifications/hooks/useModuleNotificationCounts.js';
+import { useGetPublicPoliciesQuery } from '../../features/settings/settingsApi.js';
 import { RoleBadge } from '../common/RoleBadge.jsx';
 import { getUserDisplayName } from '../../lib/formatters.js';
 import { cn } from '../../lib/utils.js';
@@ -70,6 +71,10 @@ export function Sidebar({ isOpen = false, onClose }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [logoutApi] = useLogoutMutation();
+  const { data: publicPolicies } = useGetPublicPoliciesQuery();
+  const company = publicPolicies?.data?.company || {};
+  const companyName = company.name || 'ELVARA';
+  const companyLogo = company.logoUrl || '';
 
   const { totalUnread, groupCounts, moduleCounts = {}, getRouteCount } = useModuleNotificationCounts();
   const unreadCount = totalUnread;
@@ -333,16 +338,24 @@ export function Sidebar({ isOpen = false, onClose }) {
       >
         {/* Brand & Client Identification (Matching docs/ui-reference.png) */}
         <div className="h-[72px] flex items-center justify-between px-6 border-b border-[#0B261D]">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#00C471] flex items-center justify-center text-white shadow-[0_2px_8px_rgba(0,196,113,0.3)]">
-              <FolderKanban className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <span className="font-bold text-base tracking-wider text-white block leading-tight">
-                ELVARA
+          <div className="flex items-center gap-3 min-w-0">
+            {companyLogo ? (
+              <img
+                src={companyLogo}
+                alt={companyName}
+                className="w-9 h-9 rounded-xl object-contain bg-white p-1 shadow-[0_2px_8px_rgba(0,196,113,0.3)] shrink-0"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-xl bg-[#00C471] flex items-center justify-center text-white shadow-[0_2px_8px_rgba(0,196,113,0.3)] shrink-0 font-bold text-sm">
+                <FolderKanban className="w-5 h-5 text-white" />
+              </div>
+            )}
+            <div className="min-w-0">
+              <span className="font-bold text-base tracking-wider text-white block leading-tight truncate">
+                {companyName}
               </span>
-              <span className="text-[10px] text-emerald-400/80 font-medium block">
-                HRM Enterprise
+              <span className="text-[10px] text-emerald-400/80 font-medium block truncate">
+                {company.legalName || 'HRM Enterprise'}
               </span>
             </div>
           </div>

@@ -209,6 +209,34 @@ export const MyAttendancePage = () => {
   const selectedRecord = recordMap.get(selectedDate) || (selectedDate === todayStr ? todayRecord : null);
   const todayLeave = data?.data?.todayLeave || null;
 
+  // Single source of truth for dynamic weekly off calculations
+  const { data: workingDaysRes } = useGetSettingByKeyQuery('workingDays');
+  const companyWorkDays = useMemo(() => {
+    const raw = workingDaysRes?.data?.value || workingDaysRes?.data;
+    return Array.isArray(raw) && raw.length > 0
+      ? raw.map((d) => String(d).toLowerCase())
+      : ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+  }, [workingDaysRes]);
+
+  const effectiveWorkDays = useMemo(() => {
+    if (shiftInfo?.workDays && Array.isArray(shiftInfo.workDays) && shiftInfo.workDays.length > 0) {
+      return shiftInfo.workDays.map((d) => String(d).toLowerCase());
+    }
+    return companyWorkDays;
+  }, [shiftInfo, companyWorkDays]);
+
+  const checkIsOffDay = useCallback(
+    (targetDate) => {
+      if (!targetDate) return false;
+      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const d = targetDate instanceof Date ? targetDate : new Date(targetDate);
+      if (isNaN(d.getTime())) return false;
+      const dayName = dayNames[d.getDay()];
+      return !effectiveWorkDays.includes(dayName);
+    },
+    [effectiveWorkDays]
+  );
+
   const handleOpenFaceModal = () => {
     if (todayLeave && !isClockedIn) {
       setOnLeaveModalOpen(true);
@@ -608,7 +636,7 @@ export const MyAttendancePage = () => {
       const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
       const monthName = d.toLocaleDateString('en-US', { month: 'short' });
       const dayNum = d.getDate();
-      const isWeekend = dayName === 'Sat' || dayName === 'Sun';
+      const isWeekend = checkIsOffDay(d);
 
       const rec = recordMap.get(dateKey);
       let durationHours = 0;
@@ -622,7 +650,7 @@ export const MyAttendancePage = () => {
       }
 
       let dotType = 'grey';
-      let statusText = isWeekend ? 'Weekend Off' : 'Not Scheduled';
+      let statusText = isWeekend ? 'Weekly Off' : 'Not Scheduled';
 
       if (rec) {
         if (rec.flags?.includes('wfh') || rec.source === 'wfh') {
@@ -682,13 +710,13 @@ export const MyAttendancePage = () => {
       const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const rec = recordMap.get(dateKey);
       const dayObj = new Date(year, month - 1, day);
-      const isWeekend = dayObj.getDay() === 0 || dayObj.getDay() === 6;
+      const isWeekend = checkIsOffDay(dayObj);
 
       const isFuture = dateKey > todayStr;
       const isToday = dateKey === todayStr;
 
       let dotColor = 'grey';
-      let statusLabel = isWeekend ? 'Weekend Off' : 'Not Scheduled';
+      let statusLabel = isWeekend ? 'Weekly Off' : 'Not Scheduled';
 
       if (rec) {
         if (rec.flags?.includes('wfh') || rec.source === 'wfh' || rec.status === 'wfh') {
@@ -1790,7 +1818,7 @@ export const MyAttendancePage = () => {
               const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
               const dayObj = new Date(year, month - 1, day);
               const dayName = dayObj.toLocaleDateString('en-US', { weekday: 'short' });
-              const isWeekend = dayName === 'Sat' || dayName === 'Sun';
+              const isWeekend = checkIsOffDay(dayObj);
               const rec = recordMap.get(dateStr);
               const isFuture = dateStr > todayStr;
               const canClickDay =
@@ -1857,7 +1885,7 @@ export const MyAttendancePage = () => {
                     </div>
                   ) : (
                     <div className="h-14 flex items-center justify-center text-xs text-slate-400 italic">
-                      {isWeekend ? 'Weekend Off' : 'No Punch'}
+                      {isWeekend ? 'Weekly Off' : 'No Punch'}
                     </div>
                   )}
                 </div>

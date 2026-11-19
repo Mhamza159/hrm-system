@@ -105,7 +105,12 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
       const requestedUrl = typeof args === 'string' ? args : args.url;
 
       // Do NOT attempt refresh on public auth endpoints to avoid infinite loops
-      if (requestedUrl.includes('/auth/login') || requestedUrl.includes('/auth/refresh')) {
+      if (
+        requestedUrl.includes('/auth/login') ||
+        requestedUrl.includes('/auth/refresh') ||
+        requestedUrl.includes('/settings/public-branding') ||
+        requestedUrl.includes('/recruitment/public')
+      ) {
         return result;
       }
 

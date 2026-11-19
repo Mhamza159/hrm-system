@@ -17,6 +17,13 @@ import { WFHRequest } from '../../models/wfh.model.js';
 import { AttendanceCorrection } from '../../models/correction.model.js';
 import { Employee } from '../../models/employee.model.js';
 import { Setting } from '../../models/setting.model.js';
+import { SettingService } from '../settings/setting.service.js';
+import {
+  normalizeWorkDays,
+  getEffectiveWorkDays,
+  isWeeklyOff as checkIsWeeklyOff,
+  DAY_NAMES
+} from '../../utils/workdayHelper.js';
 import { User } from '../../models/user.model.js';
 import { Role } from '../../models/role.model.js';
 import { ApiError } from '../../utils/ApiError.js';
@@ -88,22 +95,17 @@ export const getShiftAndPolicies = async (employeeId) => {
     throw new ApiError(404, 'Employee record not found');
   }
 
-  const settingsDocs = await Setting.find({
-    key: { $in: ['officeHours', 'lateRules', 'workingDays', 'timeZone'] }
-  }).lean();
-
-  const settingsMap = {};
-  for (const doc of settingsDocs) {
-    settingsMap[doc.key] = doc.value;
-  }
+  const officeHours = (await SettingService.getSetting('officeHours')) || {};
+  const lateRules = (await SettingService.getSetting('lateRules')) || {};
+  const workingDays = (await SettingService.getSetting('workingDays')) || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
   return {
     employee,
     shift: employee.shiftId || null,
-    officeHours: settingsMap.officeHours || null,
-    lateRules: settingsMap.lateRules || null,
-    timeZone: settingsMap.timeZone || 'Asia/Karachi',
-    workingDays: settingsMap.workingDays || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+    officeHours,
+    lateRules,
+    timeZone: officeHours.timeZone || 'Asia/Karachi',
+    workingDays: normalizeWorkDays(workingDays)
   };
 };
 
@@ -151,8 +153,8 @@ export const checkAndConsumeQrToken = (nonce, userId) => {
 
 export const verifyQrTokenAndDevice = async ({ qrToken, deviceId, deviceModel, user, expectedDirection }) => {
   // 13.6 System-level governance: Check if QR attendance is enabled globally
-  const qrSetting = await Setting.findOne({ key: 'qrAttendance' }).lean();
-  if (qrSetting && qrSetting.value?.isEnabled === false) {
+  const qrSetting = (await SettingService.getSetting('qrAttendance')) || {};
+  if (qrSetting.isEnabled === false || qrSetting.value?.isEnabled === false) {
     throw new ApiError(400, 'Dynamic QR Code attendance is currently disabled by administrator.');
   }
   if (!qrToken) {
@@ -370,8 +372,8 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
     }
 
     // 14.2 Office Geofences Distance Evaluation
-    const geoFencesDoc = await Setting.findOne({ key: 'geoFences' }).lean();
-    const officeGeoFences = (Array.isArray(geoFencesDoc?.value) ? geoFencesDoc.value : []).filter((gf) => gf.isActive !== false);
+    const geoFencesData = (await SettingService.getSetting('geoFences')) || [];
+    const officeGeoFences = (Array.isArray(geoFencesData) ? geoFencesData : (Array.isArray(geoFencesData?.value) ? geoFencesData.value : [])).filter((gf) => gf.isActive !== false);
 
     let insideOffice = false;
     if (officeGeoFences.length > 0) {
@@ -1804,13 +1806,12 @@ export const getAttendanceHistory = async ({ user, month, search, departmentId, 
   }).format(new Date());
   const allDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-  const items = employees.map((emp) => {
-    const workDays =
-      emp.shiftId?.workDays && emp.shiftId.workDays.length > 0
-        ? emp.shiftId.workDays
-        : ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const companyWorkingDays = (await SettingService.getSetting('workingDays')) || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
-    const weeklyOffDays = allDays.filter((d) => !workDays.includes(d));
+  const items = employees.map((emp) => {
+    const effectiveWorkDays = getEffectiveWorkDays(emp.shiftId, companyWorkingDays);
+
+    const weeklyOffDays = allDays.filter((d) => !effectiveWorkDays.includes(d.toLowerCase()));
     let offLabel = 'Sun Off';
     if (weeklyOffDays.length === 1) {
       offLabel = `${weeklyOffDays[0].slice(0, 3)} Off`;
@@ -1824,7 +1825,7 @@ export const getAttendanceHistory = async ({ user, month, search, departmentId, 
       const dateKey = `${year}-${String(monthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const dayNameLong = allDays[dayDate.getDay()];
       const dayNameShort = dayNameLong.slice(0, 3).toUpperCase();
-      const isWeeklyOff = !workDays.includes(dayNameLong);
+      const isWeeklyOff = checkIsWeeklyOff(dayDate, emp.shiftId, companyWorkingDays);
       const isFuture = dateKey > todayStr;
 
       const att = attLookup.get(`${String(emp._id)}_${dateKey}`);
@@ -2191,14 +2192,14 @@ export const getPunchLocations = async ({ user, date, departmentId, onlyFlagged 
     filter.employeeId = { $in: deptEmployees.map((e) => e._id) };
   }
 
-  const [attendances, settingsDoc] = await Promise.all([
+  const [attendances, settingsData] = await Promise.all([
     Attendance.find(filter)
       .populate('employeeId', 'name employeeCode avatar departmentId designationId')
       .lean(),
-    Setting.findOne({ key: 'geoFences' }).lean()
+    SettingService.getSetting('geoFences')
   ]);
 
-  const activeGeofences = (Array.isArray(settingsDoc?.value) ? settingsDoc.value : []).filter((gf) => gf.isActive !== false);
+  const activeGeofences = (Array.isArray(settingsData) ? settingsData : (Array.isArray(settingsData?.value) ? settingsData.value : [])).filter((gf) => gf.isActive !== false);
 
   return {
     date: queryDate.toISOString().slice(0, 10),
@@ -2467,8 +2468,8 @@ export const deleteKiosk = async (id, actor) => {
  */
 export const getCurrentKioskQr = async (kioskId) => {
   // Check global setting toggle (13.6)
-  const qrSetting = await Setting.findOne({ key: 'qrAttendance' }).lean();
-  if (qrSetting && qrSetting.value?.isEnabled === false) {
+  const qrSetting = (await SettingService.getSetting('qrAttendance')) || {};
+  if (qrSetting.isEnabled === false || qrSetting.value?.isEnabled === false) {
     throw new ApiError(400, 'Dynamic QR Code attendance is currently disabled by administrator.');
   }
 
@@ -2602,8 +2603,8 @@ export const detectFaceCollision = async ({
 
   let matchThreshold = threshold;
   if (typeof matchThreshold !== 'number' || matchThreshold <= 0) {
-    const setting = await Setting.findOne({ key: 'faceAttendance' }).lean();
-    matchThreshold = setting?.value?.matchThreshold ?? 0.50;
+    const setting = (await SettingService.getSetting('faceAttendance')) || {};
+    matchThreshold = setting.matchThreshold ?? setting.value?.matchThreshold ?? 0.50;
   }
 
   const query = {
@@ -2657,8 +2658,8 @@ export const detectFaceCollision = async ({
 
 export const verifyFacePunch = async ({ user, liveDescriptor, snapshot }) => {
   const storedSnapshotUrl = await saveBase64Image(snapshot, 'attendance', `punch_${user?._id || 'emp'}`);
-  const setting = await Setting.findOne({ key: 'faceAttendance' }).lean();
-  const faceSettings = setting?.value || { isEnabled: true, matchThreshold: 0.50 };
+  const setting = (await SettingService.getSetting('faceAttendance')) || {};
+  const faceSettings = setting.isEnabled !== undefined ? setting : (setting.value || { isEnabled: true, matchThreshold: 0.50 });
 
   if (faceSettings.isEnabled === false) {
     throw new ApiError(400, 'Face recognition attendance is currently disabled by administrator');
@@ -2878,10 +2879,10 @@ export const getFaceEnrollments = async ({ status, search, page = 1, limit = 20 
       .select('name email employeeId faceEnrollment')
       .populate({ path: 'employeeId', select: 'name employeeCode avatar' })
       .lean(),
-    Setting.findOne({ key: 'faceAttendance' }).lean()
+    SettingService.getSetting('faceAttendance')
   ]);
 
-  const matchThreshold = setting?.value?.matchThreshold ?? 0.50;
+  const matchThreshold = setting?.matchThreshold ?? setting?.value?.matchThreshold ?? 0.50;
 
   // Annotate each user with biometric collision intelligence
   const enrichedUsers = users.map((u) => {

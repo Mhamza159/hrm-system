@@ -11,7 +11,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { SettingService } from './setting.service.js';
-import { executeBackup, getBackupStatus as getBackupMetrics } from '../../jobs/backup.job.js';
+import {
+  executeBackup,
+  getBackupStatus as getBackupMetrics,
+  listBackups,
+  getBackupFilePath,
+  verifyBackupArchiveIntegrity
+} from '../../jobs/backup.job.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { apiResponse } from '../../utils/apiResponse.js';
 import { ApiError } from '../../utils/ApiError.js';
@@ -113,6 +119,21 @@ export const uploadCompanyLogo = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Remove company logo and reset to default brandmark
+ * DELETE /api/v1/settings/company/logo
+ */
+export const deleteCompanyLogo = asyncHandler(async (req, res) => {
+  const existingCompany = (await SettingService.getSetting('company')) || {};
+  const updatedCompany = { ...existingCompany, logoUrl: '' };
+
+  await SettingService.updateSetting('company', updatedCompany, req.user, req.ip, 'Company logo removed');
+
+  return res.status(200).json(
+    apiResponse(200, { logoUrl: '', company: updatedCompany }, 'Company logo removed successfully')
+  );
+});
+
+/**
  * Execute immediate manual database backup
  * POST /api/v1/settings/backup-now
  * Guarded strictly for Super Admin
@@ -141,6 +162,71 @@ export const getBackupStatus = asyncHandler(async (req, res) => {
 });
 
 /**
+ * List all available database backup archives
+ * GET /api/v1/settings/backups
+ * Super Admin strictly
+ */
+export const getAllBackups = asyncHandler(async (req, res) => {
+  const isSuperAdmin = req.user?.roles?.some((r) =>
+    (typeof r === 'object' ? r.name : r) === 'Super Admin'
+  );
+  if (!isSuperAdmin) {
+    throw new ApiError(403, 'Listing database backup archives is strictly restricted to Super Admin');
+  }
+
+  const backups = listBackups();
+  return res.status(200).json(apiResponse(200, backups, 'Backups list retrieved successfully'));
+});
+
+/**
+ * Securely stream a backup archive for download
+ * GET /api/v1/settings/backups/:filename/download
+ * Super Admin strictly
+ */
+export const downloadBackupFile = asyncHandler(async (req, res) => {
+  const isSuperAdmin = req.user?.roles?.some((r) =>
+    (typeof r === 'object' ? r.name : r) === 'Super Admin'
+  );
+  if (!isSuperAdmin) {
+    throw new ApiError(403, 'Downloading database backup archives is strictly restricted to Super Admin');
+  }
+
+  const { filename } = req.params;
+  try {
+    const filePath = getBackupFilePath(filename);
+    return res.download(filePath, filename);
+  } catch (err) {
+    throw new ApiError(404, err.message || 'Backup file not found');
+  }
+});
+
+/**
+ * Non-destructively verify integrity of a backup archive
+ * POST /api/v1/settings/backups/verify-integrity
+ * Super Admin strictly
+ */
+export const verifyBackup = asyncHandler(async (req, res) => {
+  const isSuperAdmin = req.user?.roles?.some((r) =>
+    (typeof r === 'object' ? r.name : r) === 'Super Admin'
+  );
+  if (!isSuperAdmin) {
+    throw new ApiError(403, 'Verifying database backup integrity is strictly restricted to Super Admin');
+  }
+
+  const { filename } = req.body;
+  if (!filename) {
+    throw new ApiError(400, 'Backup filename is required for integrity verification');
+  }
+
+  try {
+    const report = verifyBackupArchiveIntegrity(filename);
+    return res.status(200).json(apiResponse(200, report, 'Backup archive integrity verified successfully'));
+  } catch (err) {
+    throw new ApiError(400, `Backup integrity verification failed: ${err.message}`);
+  }
+});
+
+/**
  * Retrieve public company handbook and non-sensitive policies
  * GET /api/v1/settings/public-policies
  * Accessible to all authenticated employees and managers
@@ -148,4 +234,24 @@ export const getBackupStatus = asyncHandler(async (req, res) => {
 export const getPublicPolicies = asyncHandler(async (req, res) => {
   const policies = await SettingService.getPublicPolicies();
   return res.status(200).json(apiResponse(200, policies, 'Public company policies retrieved successfully'));
+});
+
+/**
+ * Retrieve public-facing corporate brand identity (Unauthenticated)
+ * GET /api/v1/settings/public-branding
+ * Used by Login, Public Careers, and Job Application portals
+ */
+export const getPublicBranding = asyncHandler(async (req, res) => {
+  const company = (await SettingService.getSetting('company')) || {};
+  return res.status(200).json(
+    apiResponse(
+      200,
+      {
+        name: company.name || 'ELVARA',
+        legalName: company.legalName || company.name || 'ELVARA HRM Enterprise',
+        logoUrl: company.logoUrl || ''
+      },
+      'Public company branding retrieved successfully'
+    )
+  );
 });

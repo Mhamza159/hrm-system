@@ -98,6 +98,11 @@ const employeeSchema = new mongoose.Schema(
       type: String,
       enum: ['Male', 'Female', 'Other']
     },
+    bloodGroup: {
+      type: String,
+      trim: true,
+      default: ''
+    },
     address: {
       street: { type: String, trim: true },
       city: { type: String, trim: true },

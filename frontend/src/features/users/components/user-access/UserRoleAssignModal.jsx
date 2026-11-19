@@ -49,6 +49,7 @@ export function UserRoleAssignModal({
 
   // Privilege escalation check: Non-super admins cannot grant Super Admin or permissions they lack
   const isRoleDisabled = (roleItem) => {
+    if (!roleItem) return true;
     if (isSuperAdmin) return false;
     if (roleItem.name === 'Super Admin') return true;
 

@@ -9,13 +9,22 @@
 
 import ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
+import { SettingService } from '../modules/settings/setting.service.js';
 
 /**
  * 7.8-BE: Build formatted, styled Excel workbook buffer using ExcelJS
  */
 export const generateExcelReport = async ({ title = 'HRM Report', columns = [], rows = [] }) => {
+  let companyName = 'HRM Enterprise Suite';
+  try {
+    const company = await SettingService.getSetting('company');
+    if (company?.name) companyName = company.name;
+  } catch {
+    // fallback
+  }
+
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'HRM Enterprise Suite';
+  workbook.creator = companyName;
   workbook.created = new Date();
 
   const worksheet = workbook.addWorksheet(title.slice(0, 31), {
@@ -63,6 +72,14 @@ export const generateExcelReport = async ({ title = 'HRM Report', columns = [], 
  * 7.8-BE: Build formatted PDF document buffer using PDFKit
  */
 export const generatePdfReport = async ({ title = 'HRM Report', columns = [], rows = [] }) => {
+  let companyName = 'HRM Enterprise Suite';
+  try {
+    const company = await SettingService.getSetting('company');
+    if (company?.name) companyName = company.name;
+  } catch {
+    // fallback
+  }
+
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({
@@ -87,7 +104,7 @@ export const generatePdfReport = async ({ title = 'HRM Report', columns = [], ro
         .fontSize(9)
         .font('Helvetica')
         .fillColor('#64748b')
-        .text(`Generated on: ${new Date().toLocaleString('en-PK', { timeZone: 'Asia/Karachi' })} | HRM Enterprise Suite`, 30, 50);
+        .text(`Generated on: ${new Date().toLocaleString('en-PK', { timeZone: 'Asia/Karachi' })} | ${companyName}`, 30, 50);
 
       doc
         .moveTo(30, 65)

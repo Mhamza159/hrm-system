@@ -52,6 +52,15 @@ export const settingsApi = baseApi.injectEndpoints({
       invalidatesTags: ['Settings', { type: 'Settings', id: 'company' }, 'Policies']
     }),
 
+    // 2.2: Remove company logo
+    deleteLogo: builder.mutation({
+      query: () => ({
+        url: '/settings/company/logo',
+        method: 'DELETE'
+      }),
+      invalidatesTags: ['Settings', { type: 'Settings', id: 'company' }, 'Policies']
+    }),
+
     // 2.10: Inspect database backup status and metrics
     getBackupStatus: builder.query({
       query: () => '/settings/backup-status',
@@ -64,7 +73,28 @@ export const settingsApi = baseApi.injectEndpoints({
         url: '/settings/backup-now',
         method: 'POST'
       }),
-      invalidatesTags: ['Settings']
+      invalidatesTags: ['Settings', 'Backups']
+    }),
+
+    // 2.10: Retrieve list of generated database backup archives
+    getBackupsList: builder.query({
+      query: () => '/settings/backups',
+      providesTags: ['Backups']
+    }),
+
+    // 2.10: Verify backup archive structure and integrity
+    verifyBackupIntegrity: builder.mutation({
+      query: (filename) => ({
+        url: '/settings/backups/verify-integrity',
+        method: 'POST',
+        body: { filename }
+      })
+    }),
+
+    // Unauthenticated public branding for Login & Recruitment
+    getPublicBranding: builder.query({
+      query: () => '/settings/public-branding',
+      providesTags: ['Policies']
     }),
 
     // 2.11: Retrieve sanitized public company policies for all staff
@@ -80,7 +110,11 @@ export const {
   useGetSettingByKeyQuery,
   useUpdateSettingMutation,
   useUploadLogoMutation,
+  useDeleteLogoMutation,
   useGetBackupStatusQuery,
+  useGetBackupsListQuery,
   useTriggerBackupMutation,
+  useVerifyBackupIntegrityMutation,
+  useGetPublicBrandingQuery,
   useGetPublicPoliciesQuery
 } = settingsApi;

@@ -7,6 +7,7 @@ import { User } from '../../models/user.model.js';
 import { Employee } from '../../models/employee.model.js';
 import { Role } from '../../models/role.model.js';
 import { Department } from '../../models/department.model.js';
+import { Designation } from '../../models/designation.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { AuditService } from '../../services/audit.service.js';
 import { notify } from '../../services/notify.service.js';

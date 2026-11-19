@@ -32,7 +32,8 @@ import {
   LayoutList,
   LayoutGrid,
   UserX,
-  ShieldAlert
+  ShieldAlert,
+  CreditCard
 } from 'lucide-react';
 
 import {
@@ -54,6 +55,7 @@ import { Can } from '../../../components/common/Can.jsx';
 import { EmployeeCard } from '../components/EmployeeCard.jsx';
 import { EmployeeDetailModal } from '../components/EmployeeDetailModal.jsx';
 import { StatusChangeModal } from '../components/StatusChangeModal.jsx';
+import { EmployeeIdCardModal } from '../components/EmployeeIdCardModal.jsx';
 import { cn } from '../../../lib/utils.js';
 
 export default function EmployeeListPage() {
@@ -94,6 +96,7 @@ export default function EmployeeListPage() {
   const [deleteId, setDeleteId] = useState(null);
   const [permanentDeleteTarget, setPermanentDeleteTarget] = useState(null);
   const [resetTargetEmployee, setResetTargetEmployee] = useState(null);
+  const [idCardTargetEmployee, setIdCardTargetEmployee] = useState(null);
 
   const { token, isSuperAdmin } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
@@ -472,6 +475,15 @@ export default function EmployeeListPage() {
               title="View Quick Inspection Sheet"
             >
               <Eye className="w-4 h-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIdCardTargetEmployee(row)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-[#00C471] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+              title="View & Print Official Credential ID Card"
+            >
+              <CreditCard className="w-4 h-4" />
             </button>
 
             <Can I="employee.edit" a="Employee">
@@ -1051,6 +1063,13 @@ export default function EmployeeListPage() {
         isLoading={isResettingPassword}
         onConfirm={handleListAdminReset}
         onClose={() => setResetTargetEmployee(null)}
+      />
+
+      {/* Official Employee ID Card Modal (Phase 36) */}
+      <EmployeeIdCardModal
+        employeeId={idCardTargetEmployee?._id}
+        isOpen={Boolean(idCardTargetEmployee)}
+        onClose={() => setIdCardTargetEmployee(null)}
       />
     </div>
   );

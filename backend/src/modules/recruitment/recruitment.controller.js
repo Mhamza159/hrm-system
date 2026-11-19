@@ -12,6 +12,7 @@ import { ApiError } from '../../utils/ApiError.js';
 import * as recruitmentService from './recruitment.service.js';
 import { streamOfferLetterPdf } from '../../services/offerPdf.service.js';
 import { streamCandidateCv } from '../../services/cvPdf.service.js';
+import { SettingService } from '../settings/setting.service.js';
 
 // 15.1: Create Requisition
 export const createRequisition = asyncHandler(async (req, res) => {
@@ -232,10 +233,20 @@ export const downloadOfferLetterPdf = asyncHandler(async (req, res) => {
   if (!candidate?.offerDetails || candidate.offerDetails.status !== 'Issued') {
     throw new ApiError(404, 'No offer letter has been issued for this candidate yet.');
   }
+
+  let companyName = 'HRM Enterprise Suite';
+  try {
+    const company = await SettingService.getSetting('company');
+    if (company?.name) companyName = company.name;
+  } catch {
+    // fallback
+  }
+
   streamOfferLetterPdf(res, {
     candidate,
     job: candidate.jobId,
-    offerDetails: candidate.offerDetails
+    offerDetails: candidate.offerDetails,
+    companyName
   });
 });
 

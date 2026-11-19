@@ -10,6 +10,7 @@
 
 import PDFDocument from 'pdfkit';
 import { decrypt } from '../../utils/crypto.js';
+import { SettingService } from '../settings/setting.service.js';
 
 const safeDecrypt = (val) => {
   if (!val || typeof val !== 'string' || !val.includes(':')) return val;
@@ -61,14 +62,24 @@ export function numberToWords(amount) {
  * @returns {Promise<Buffer>}
  */
 export async function generatePayslipPdf(payslip) {
+  let company = null;
+  try {
+    company = await SettingService.getSetting('company');
+  } catch {
+    // fallback to defaults if database not reachable
+  }
+
   return new Promise((resolve, reject) => {
     try {
+      const companyName = company?.name || 'HRM ENTERPRISE SUITE';
+      const legalName = company?.legalName || companyName;
+
       const doc = new PDFDocument({
         size: 'A4',
         margin: 40,
         info: {
           Title: `Payslip_${payslip._id}`,
-          Author: 'HRM Corporate Payroll Engine',
+          Author: `${companyName} Payroll Engine`,
           Subject: 'Monthly Salary Disbursement Advice'
         }
       });
@@ -102,12 +113,12 @@ export async function generatePayslipPdf(payslip) {
       doc.fillColor('#00C471') // Emerald Accent
         .fontSize(18)
         .font('Helvetica-Bold')
-        .text('HRM ENTERPRISE SUITE', 55, 52);
+        .text(companyName.toUpperCase(), 55, 52);
 
       doc.fillColor('#94A3B8')
         .fontSize(8)
         .font('Helvetica')
-        .text('CONFIDENTIAL SALARY DISBURSEMENT ADVICE · PAKISTAN STATUTORY COMPLIANT', 55, 75);
+        .text(`CONFIDENTIAL SALARY DISBURSEMENT ADVICE · ${legalName.toUpperCase()}`, 55, 75);
 
       doc.fillColor('#FFFFFF')
         .fontSize(12)
@@ -267,14 +278,28 @@ export async function generatePayslipPdf(payslip) {
  * @returns {Promise<Buffer>}
  */
 export async function generateAnnualTaxCertificate(employee, taxYear, payslips = []) {
+  let company = null;
+  let tax = null;
+  try {
+    company = await SettingService.getSetting('company');
+    tax = await SettingService.getSetting('tax');
+  } catch {
+    // fallback
+  }
+
   return new Promise((resolve, reject) => {
     try {
+      const compName = company?.legalName || company?.name || 'HRM Tech Enterprise Ltd';
+      const employerNtn = tax?.ntnNumber || company?.registrationNumber || '9876543-2';
+      const compAddress = [company?.address, company?.city, company?.country].filter(Boolean).join(', ') || 'Business Avenue, Shahrah-e-Faisal, Karachi';
+      const jurisdiction = company?.city ? `RTO ${company.city}` : 'RTO-I Karachi';
+
       const doc = new PDFDocument({
         size: 'A4',
         margin: 40,
         info: {
           Title: `Form_IT3_${employee.employeeCode || 'EMP'}_${taxYear}`,
-          Author: 'FBR Tax Engine · HRM Suite',
+          Author: `FBR Tax Engine · ${compName}`,
           Subject: 'Form IT-3 Annual Salary & Tax Deduction Certificate'
         }
       });
@@ -326,10 +351,10 @@ export async function generateAnnualTaxCertificate(employee, taxYear, payslips =
 
       doc.font('Helvetica').fontSize(8).fillColor('#1E293B');
       // Left (Company)
-      doc.text('Company: HRM Tech Enterprise Ltd', 50, yPos + 22, { width: 235 });
-      doc.text('Employer NTN: 9876543-2', 50, yPos + 35, { width: 235 });
-      doc.text('Address: Business Avenue, Shahrah-e-Faisal, Karachi', 50, yPos + 48, { width: 235 });
-      doc.text('Jurisdiction: RTO-I Karachi', 50, yPos + 61, { width: 235 });
+      doc.text(`Company: ${compName}`, 50, yPos + 22, { width: 235, lineBreak: false, ellipsis: true });
+      doc.text(`Employer NTN: ${employerNtn}`, 50, yPos + 35, { width: 235 });
+      doc.text(`Address: ${compAddress}`, 50, yPos + 48, { width: 235, lineBreak: false, ellipsis: true });
+      doc.text(`Jurisdiction: ${jurisdiction}`, 50, yPos + 61, { width: 235 });
 
       // Right (Employee) - Safe masked CNIC preventing line-wrapping collision
       const rawCnic = safeDecrypt(employee.cnic || '');

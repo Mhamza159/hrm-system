@@ -326,3 +326,42 @@ export const uploadEmployeeAvatar = asyncHandler(async (req, res) => {
     .json(apiResponse(200, result, 'Employee profile photo updated successfully'));
 });
 
+/**
+ * Retrieve compiled Employee ID Card coordinates and verifiable token (Phase 36)
+ */
+export const getEmployeeIdCard = asyncHandler(async (req, res) => {
+  const result = await employeeService.getEmployeeIdCard(
+    req.params.id,
+    req.user,
+    req.permissionScope
+  );
+  return res
+    .status(200)
+    .json(apiResponse(200, result, 'Employee ID card generated successfully'));
+});
+
+/**
+ * Self-service: Retrieve logged-in employee's own ID Card
+ */
+export const getMyIdCard = asyncHandler(async (req, res) => {
+  let employeeId = req.user.employeeId || req.user.employee;
+  if (!employeeId) {
+    const emp = await Employee.findOne({
+      $or: [{ userId: req.user._id }, { _id: req.user.employeeId || req.user.employee }],
+      isDeleted: false
+    });
+    if (!emp) {
+      throw new ApiError(404, 'No employee record linked to current user account');
+    }
+    employeeId = emp._id;
+  }
+  const result = await employeeService.getEmployeeIdCard(
+    employeeId,
+    req.user,
+    'own'
+  );
+  return res
+    .status(200)
+    .json(apiResponse(200, result, 'Your official ID card retrieved successfully'));
+});
+

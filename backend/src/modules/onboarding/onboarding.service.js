@@ -23,6 +23,7 @@ import { recordAuditLog } from '../../services/audit.service.js';
 import { emailService } from '../../services/email.service.js';
 import { notify } from '../../services/notify.service.js';
 import { assertEmployeeAssetClearance } from '../assets/asset.service.js';
+import { SettingService } from '../settings/setting.service.js';
 import { assertSuperAdminIfApplicantIsHR } from '../../utils/hrApprovalGuard.js';
 
 // =========================================================================
@@ -1200,10 +1201,18 @@ export const streamServiceLetterPdf = async ({ employeeId, type, user, res }) =>
   doc.pipe(res);
 
   // Corporate Header
+  let companyName = 'HRM ENTERPRISE SUITE';
+  try {
+    const company = await SettingService.getSetting('company');
+    if (company?.name) companyName = company.name.toUpperCase();
+  } catch {
+    // fallback
+  }
+
   doc
     .fontSize(20)
     .font('Helvetica-Bold')
-    .text('HRM ENTERPRISE SUITE', { align: 'center' })
+    .text(companyName, { align: 'center' })
     .fontSize(10)
     .font('Helvetica')
     .text('Global Corporate Headquarters • Human Resources Operations', { align: 'center' })

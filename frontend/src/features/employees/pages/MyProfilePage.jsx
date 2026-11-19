@@ -12,7 +12,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
-import { FileEdit, AlertCircle } from 'lucide-react';
+import { FileEdit, AlertCircle, CreditCard } from 'lucide-react';
 
 import { useAuth } from '../../../hooks/useAuth.js';
 import { PageHeader } from '../../../components/common/PageHeader.jsx';
@@ -22,6 +22,7 @@ import { ChangeRequestModal } from '../components/ChangeRequestModal.jsx';
 import { MyChangeRequestsTab } from '../components/change-requests/MyChangeRequestsTab.jsx';
 import { TwoFactorModal } from '../../auth/components/TwoFactorModal.jsx';
 import { ChangePasswordModal } from '../../auth/components/ChangePasswordModal.jsx';
+import { EmployeeIdCardModal } from '../components/EmployeeIdCardModal.jsx';
 import { updateUser } from '../../auth/authSlice.js';
 import {
   useGetMyProfileQuery,
@@ -48,6 +49,7 @@ export default function MyProfilePage() {
   const [isChangeRequestOpen, setIsChangeRequestOpen] = useState(false);
   const [is2faModalOpen, setIs2faModalOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isIdCardOpen, setIsIdCardOpen] = useState(false);
 
   const employee = profileData?.data;
 
@@ -198,6 +200,14 @@ export default function MyProfilePage() {
         subtitle={pageSubtitle}
         action={
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsIdCardOpen(true)}
+              className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] hover:bg-slate-50 dark:hover:bg-[#162820] text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+              title="View and print your official corporate ID credential"
+            >
+              <CreditCard className="w-4 h-4 text-[#00C471]" /> My ID Card
+            </button>
             {!isSuperAdminRole && (
               <button
                 type="button"
@@ -303,6 +313,13 @@ export default function MyProfilePage() {
       <ChangePasswordModal
         isOpen={isChangePasswordOpen}
         onClose={() => setIsChangePasswordOpen(false)}
+      />
+
+      {/* Official Self-Service Employee ID Card Modal (Phase 36) */}
+      <EmployeeIdCardModal
+        isSelf={true}
+        isOpen={isIdCardOpen}
+        onClose={() => setIsIdCardOpen(false)}
       />
     </div>
   );

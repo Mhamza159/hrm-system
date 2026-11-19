@@ -3,10 +3,14 @@
   "flavor": "core",
   "milestone": "v1.0.0",
   "phases": [],
+  "completed_phases": ["35", "36", "37"],
+  "current_phase": "38",
+  "phase_name": "attendance-rules-sub-module",
+  "status": "completed",
   "next": {
-    "command": "/gsd-discuss-phase",
-    "label": "Discuss the first phase",
-    "reason": "Project initialized — plan your first phase"
+    "command": "/gsd-plan-phase 38",
+    "label": "Plan Phase 38: Attendance Rules Sub-Module",
+    "reason": "Phase 37 completed and verified"
   },
-  "updated_at": "2026-11-16T08:11:00.127Z"
+  "updated_at": "2026-11-19T22:15:00.000Z"
 }

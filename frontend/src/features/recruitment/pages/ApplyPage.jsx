@@ -29,6 +29,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { useGetPublicJobBySlugQuery, useApplyForJobMutation } from '../recruitmentApi.js';
+import { useGetPublicBrandingQuery } from '../../settings/settingsApi.js';
 import { toast } from 'sonner';
 
 export const ApplyPage = () => {
@@ -47,6 +48,8 @@ export const ApplyPage = () => {
 
   const { data: jobRes, isLoading: isLoadingJob } = useGetPublicJobBySlugQuery(slug);
   const [applyForJob, { isLoading: isSubmitting }] = useApplyForJobMutation();
+  const { data: brandingRes } = useGetPublicBrandingQuery();
+  const companyName = brandingRes?.data?.name || 'ELVARA';
 
   const job = jobRes?.data;
 
@@ -150,8 +153,8 @@ export const ApplyPage = () => {
             <ArrowLeft className="w-4 h-4" /> Back to open positions
           </button>
 
-          <span className="text-[11px] font-mono text-slate-500">
-            ELVARA TALENT ACQUISITION
+          <span className="text-[11px] font-mono text-slate-500 uppercase">
+            {companyName} TALENT ACQUISITION
           </span>
         </div>
 

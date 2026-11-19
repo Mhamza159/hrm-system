@@ -11,7 +11,9 @@ import {
   AlertOctagon,
   ShieldCheck,
   ShieldAlert,
-  Shield
+  Shield,
+  Users,
+  UserCheck
 } from 'lucide-react';
 
 export const USER_STATUS_CONFIG = {

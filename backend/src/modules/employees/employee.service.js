@@ -34,6 +34,7 @@ import { emitToCompany } from '../../services/socket.service.js';
 import { initializeEmployeeLeaveBalances } from '../leaves/leave.service.js';
 import { assertEmployeeAssetClearance } from '../assets/asset.service.js';
 import { initOnboardingForEmployee } from '../onboarding/onboarding.service.js';
+import { SettingService } from '../settings/setting.service.js';
 
 /**
  * Decrypt sensitive fields (CNIC and IBAN) on an employee object
@@ -2278,4 +2279,133 @@ export const exportEmployeesToExcel = async (queryFilters = {}, actor) => {
   });
 
   return await workbook.xlsx.writeBuffer();
+};
+
+/**
+ * Retrieve official compiled Employee ID Card coordinates and verifiable token (Phase 36)
+ * @param {string} employeeId
+ * @param {Object} actor
+ * @param {string} permissionScope
+ * @returns {Promise<Object>}
+ */
+export const getEmployeeIdCard = async (employeeId, actor, permissionScope = 'all') => {
+  const employee = await Employee.findById(employeeId)
+    .populate('departmentId', 'name code')
+    .populate('designationId', 'title code')
+    .populate('userId', 'avatar email isActive');
+
+  if (!employee || employee.isDeleted) {
+    throw new ApiError(404, 'Employee record not found or has been archived');
+  }
+
+  // Horizontal authorization & PBAC enforcement
+  const isOwn =
+    String(employee.userId?._id || employee.userId) === String(actor?._id) ||
+    String(employee._id) === String(actor?.employeeId) ||
+    String(employee._id) === String(actor?.employee);
+
+  const isActorSuperAdmin = actor?.roles?.some((r) => {
+    const roleName = typeof r === 'string' ? r : r.name;
+    return roleName === 'Super Admin';
+  });
+
+  const isActorHR = actor?.roles?.some((r) => {
+    const roleName = typeof r === 'string' ? r : r.name;
+    return roleName === 'HR Manager';
+  });
+
+  if (!isActorSuperAdmin && !isActorHR && !isOwn && permissionScope !== 'all') {
+    if (permissionScope === 'department') {
+      let actorDepartmentId = actor.departmentId;
+      if (!actorDepartmentId && actor.employeeId) {
+        const actorEmp = await Employee.findById(actor.employeeId).select('departmentId');
+        actorDepartmentId = actorEmp?.departmentId;
+      }
+      const targetDeptId = employee.departmentId?._id || employee.departmentId;
+      if (String(actorDepartmentId) !== String(targetDeptId)) {
+        throw new ApiError(403, 'Forbidden: You can only view ID cards of employees in your department');
+      }
+    } else {
+      throw new ApiError(403, 'Forbidden: You do not have permission to view this employee ID card');
+    }
+  }
+
+  // Central company settings
+  const company = (await SettingService.getSetting('company')) || {};
+  const idCardConfig = company.idCardConfig || {
+    layout: 'vertical',
+    primaryColor: '#00C471',
+    theme: 'forest',
+    showBloodGroup: true,
+    showEmergencyContact: true,
+    showDepartment: true,
+    showDesignation: true,
+    showJoiningDate: true,
+    showBarcode: true,
+    qrCodeType: 'verification',
+    cardValidityYears: 2,
+    backDisclaimer: 'This credential card remains the property of the organization. If found, please return to Human Resources.'
+  };
+
+  const issueDate = employee.joiningDate || employee.createdAt || new Date();
+  const validityYears = Number(idCardConfig.cardValidityYears) || 2;
+  const validUntil = new Date(issueDate);
+  validUntil.setFullYear(validUntil.getFullYear() + validityYears);
+
+  // Verifiable QR verification token / payload
+  const qrVerificationPayload = {
+    code: employee.employeeCode,
+    name: employee.name,
+    dept: employee.departmentId?.name || 'General',
+    desig: employee.designationId?.title || 'Staff',
+    validUntil: validUntil.toISOString().slice(0, 10),
+    verifyUrl: `/verify/id-card?code=${encodeURIComponent(employee.employeeCode)}`
+  };
+
+  // Record audit log
+  await recordAuditLog({
+    action: 'EMPLOYEE_ID_CARD_GENERATED',
+    actor,
+    target: { id: employee._id, type: 'Employee' },
+    details: {
+      employeeCode: employee.employeeCode,
+      employeeName: employee.name,
+      department: employee.departmentId?.name
+    }
+  });
+
+  return {
+    employee: {
+      _id: employee._id,
+      name: employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim(),
+      fullName: employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim(),
+      firstName: employee.firstName || (employee.name ? employee.name.split(' ')[0] : ''),
+      lastName: employee.lastName || (employee.name ? employee.name.split(' ').slice(1).join(' ') : ''),
+      employeeCode: employee.employeeCode,
+      avatar: employee.avatar || employee.userId?.avatar || '',
+      department: employee.departmentId?.name || 'Unassigned',
+      designation: employee.designationId?.title || 'Unassigned',
+      joiningDate: employee.joiningDate,
+      bloodGroup: employee.bloodGroup || '',
+      emergencyContact: employee.emergencyContact || null,
+      employmentStatus: employee.employmentStatus
+    },
+    company: {
+      name: company.name || 'Company',
+      legalName: company.legalName || '',
+      address: company.address || '',
+      city: company.city || '',
+      country: company.country || 'Pakistan',
+      phone: company.phone || '',
+      email: company.email || '',
+      website: company.website || '',
+      logoUrl: company.logoUrl || ''
+    },
+    idCardConfig,
+    meta: {
+      issueDate,
+      validUntil,
+      qrVerificationPayload
+    }
+  };
 };

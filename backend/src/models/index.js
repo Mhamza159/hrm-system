@@ -1,0 +1,70 @@
+/**
+ * @file index.js
+ * @description Centralized Mongoose Model Registry.
+ * Pre-registers every schema to guarantee populate('...') never fails with MissingSchemaError.
+ */
+
+export * from './announcement.model.js';
+export * from './appreciation.model.js';
+export * from './asset.model.js';
+export * from './assetRequest.model.js';
+export * from './attendance.model.js';
+export * from './attritionScore.model.js';
+export * from './auditLog.model.js';
+export { default as Award } from './award.model.js';
+export { default as AwardVote } from './awardVote.model.js';
+export * from './candidate.model.js';
+export * from './candidateCv.model.js';
+export * from './chatMessage.model.js';
+export * from './checklist.model.js';
+export * from './checklistTemplate.model.js';
+export * from './client.model.js';
+export * from './conversation.model.js';
+export * from './correction.model.js';
+export * from './delegation.model.js';
+export * from './department.model.js';
+export * from './designation.model.js';
+export * from './employee.model.js';
+export * from './employeeHistory.model.js';
+export * from './exitInterview.model.js';
+export * from './expense.model.js';
+export * from './expenseCategory.model.js';
+export * from './feedback.model.js';
+export * from './holiday.model.js';
+export * from './interview.model.js';
+export * from './job.model.js';
+export * from './kiosk.model.js';
+export * from './kpiTemplate.model.js';
+export * from './leave.model.js';
+export * from './leaveBalance.model.js';
+export * from './leaveEncashment.model.js';
+export * from './leaveType.model.js';
+export * from './loan.model.js';
+export * from './loginHistory.model.js';
+export * from './message.model.js';
+export * from './monthLock.model.js';
+export * from './notification.model.js';
+export * from './payrollRun.model.js';
+export * from './payslip.model.js';
+export * from './policy.model.js';
+export * from './policyAcknowledgement.model.js';
+export * from './policyCategory.model.js';
+export * from './policyDoc.model.js';
+export * from './policyVersion.model.js';
+export * from './profileChangeRequest.model.js';
+export * from './project.model.js';
+export * from './requisition.model.js';
+export * from './resignation.model.js';
+export { default as Review } from './review.model.js';
+export { default as ReviewCycle } from './reviewCycle.model.js';
+export * from './role.model.js';
+export * from './salaryStructure.model.js';
+export * from './setting.model.js';
+export * from './shift.model.js';
+export { default as Survey } from './survey.model.js';
+export { default as SurveyResponse } from './surveyResponse.model.js';
+export * from './timesheet.model.js';
+export * from './unanswered.model.js';
+export * from './user.model.js';
+export * from './wfh.model.js';
+export * from './wfhLocation.model.js';

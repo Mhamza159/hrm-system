@@ -15,6 +15,8 @@ import { Holiday } from '../../../models/holiday.model.js';
 import { Leave } from '../../../models/leave.model.js';
 import { WFHRequest } from '../../../models/wfh.model.js';
 import { Setting } from '../../../models/setting.model.js';
+import { SettingService } from '../../settings/setting.service.js';
+import { isWeeklyOff } from '../../../utils/workdayHelper.js';
 import { Role } from '../../../models/role.model.js';
 import { normalizeToUtcMidnight } from '../attendance.service.js';
 
@@ -41,10 +43,13 @@ export const runAutoAbsentSweep = async (runDate = new Date()) => {
   const dayName = dayNames[targetDate.getUTCDay()];
 
   // Fetch company default working days
-  const workingDaysSetting = await Setting.findOne({ key: 'workingDays' }).lean();
-  const defaultWorkingDays = (workingDaysSetting?.value || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']).map((d) =>
-    d.toLowerCase()
-  );
+  const defaultWorkingDays = (await SettingService.getSetting('workingDays')) || [
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday'
+  ];
 
   // Fetch Super Admin role to exempt executive owner from automated absenteeism
   const superAdminRole = await Role.findOne({ name: 'Super Admin' }).lean();
@@ -69,11 +74,8 @@ export const runAutoAbsentSweep = async (runDate = new Date()) => {
       skipped++;
       continue;
     }
-    // Check if today is a scheduled work day for this employee
-    const shiftDays = emp.shiftId?.workDays || emp.shiftId?.workingDays;
-    const workingDays = shiftDays && shiftDays.length > 0 ? shiftDays.map((d) => d.toLowerCase()) : defaultWorkingDays;
-
-    if (!workingDays.includes(dayName)) {
+    // Check if today is a weekly off day for this employee
+    if (isWeeklyOff(targetDate, emp.shiftId, defaultWorkingDays)) {
       skipped++;
       continue;
     }

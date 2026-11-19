@@ -988,7 +988,7 @@ export const applyLeave = async (employeeId, data, actor) => {
   }
 
   // 2. Calculate net deductible days excluding weekends & holidays
-  const { netDays } = await calculateDeductibleDays(start, end, halfDay);
+  const { netDays } = await calculateDeductibleDays(start, end, halfDay, employeeId);
   if (netDays <= 0) {
     throw new ApiError(
       400,
@@ -1213,6 +1213,35 @@ export const buildApprovalChain = async (employee, netDays) => {
     }
   }
 
+  // If structured approvalChains are configured in leavePolicy, evaluate dynamic tiers
+  if (Array.isArray(leavePolicy.approvalChains) && leavePolicy.approvalChains.length > 0) {
+    const sortedTiers = [...leavePolicy.approvalChains].sort((a, b) => a.tier - b.tier);
+    let stepNumber = 1;
+
+    for (const tierDef of sortedTiers) {
+      const threshold = tierDef.minDaysThreshold || 0;
+      // Skip tier if it only applies to leaves exceeding threshold days
+      if (threshold > 0 && netDays <= threshold) {
+        continue;
+      }
+
+      const approverRole = tierDef.role || 'Department Manager';
+      const approverId = (stepNumber === 1 && approverRole === 'Department Manager') ? level1ApproverUserId : null;
+
+      approvalChain.push({
+        step: stepNumber,
+        approverRole,
+        approverId,
+        status: 'pending'
+      });
+      stepNumber++;
+    }
+
+    if (approvalChain.length > 0) {
+      return approvalChain;
+    }
+  }
+
   approvalChain.push({
     step: 1,
     approverRole: 'Department Manager',
@@ -1249,7 +1278,7 @@ export const syncLeaveToAttendance = async (leave) => {
   const start = normalizeToUtcMidnight(leave.startDate);
   const end = normalizeToUtcMidnight(leave.endDate);
 
-  const { breakdown } = await calculateDeductibleDays(start, end, leave.halfDay);
+  const { breakdown } = await calculateDeductibleDays(start, end, leave.halfDay, leave.employeeId);
 
   for (const item of breakdown) {
     if (item.isDeductible) {
@@ -1670,7 +1699,7 @@ export const cancelLeave = async (leaveId, cancellationReason, user) => {
 
     let daysToRestore = leave.days;
     if (leave.startDate < todayMidnight) {
-      const { deductibleDays } = await calculateDeductibleDays(todayMidnight, leave.endDate, leave.halfDay);
+      const { netDays: deductibleDays } = await calculateDeductibleDays(todayMidnight, leave.endDate, leave.halfDay, leave.employeeId);
       daysToRestore = Math.min(leave.days, deductibleDays || 1);
     }
 

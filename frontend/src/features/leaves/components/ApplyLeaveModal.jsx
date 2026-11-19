@@ -16,6 +16,7 @@ import { usePermission } from '../../../hooks/usePermission.js';
 import { useAuth } from '../../../hooks/useAuth.js';
 import { FileUpload } from '../../../components/common/FileUpload.jsx';
 import { useGetMyAttendanceQuery } from '../../attendance/attendanceApi.js';
+import { useGetPublicPoliciesQuery } from '../../settings/settingsApi.js';
 import { cn } from '../../../lib/utils.js';
 
 export function ApplyLeaveModal({ isOpen, onClose }) {
@@ -38,6 +39,14 @@ export function ApplyLeaveModal({ isOpen, onClose }) {
 
   const { data: balanceResponse } = useGetLeaveBalanceQuery({}, { skip: isSuperAdmin });
   const balances = balanceResponse?.data?.balances || [];
+
+  const { data: publicPoliciesRes } = useGetPublicPoliciesQuery();
+  const activeWorkingDays = React.useMemo(() => {
+    const raw = publicPoliciesRes?.data?.workingDays;
+    return Array.isArray(raw) && raw.length > 0
+      ? raw.map((d) => String(d).toLowerCase())
+      : ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+  }, [publicPoliciesRes]);
 
   // Filter leave types by employee eligibility and active balances
   const eligibleLeaveTypes = React.useMemo(() => {
@@ -115,17 +124,18 @@ export function ApplyLeaveModal({ isOpen, onClose }) {
 
   const availableDays = activeBalance?.availableDays ?? (selectedType?.daysPerYear || 0);
 
-  // Client-side estimate of working days (Mon-Fri)
+  // Client-side estimate of working days respecting company workingDays setting
   const calculateEstimatedDays = () => {
     if (halfDay !== 'none') return 0.5;
     const s = new Date(startDate);
     const e = new Date(endDate);
     if (e < s) return 0;
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     let count = 0;
     const cur = new Date(s);
     while (cur <= e) {
-      const day = cur.getDay();
-      if (day !== 0 && day !== 6) count++;
+      const dayName = dayNames[cur.getDay()];
+      if (activeWorkingDays.includes(dayName)) count++;
       cur.setDate(cur.getDate() + 1);
     }
     return count;

@@ -46,7 +46,9 @@ export function UserAccessTable({
   onResetPassword,
   onResetDevice
 }) {
-  if (isLoading && users.length === 0) {
+  const safeUsers = Array.isArray(users) ? users : [];
+
+  if (isLoading && safeUsers.length === 0) {
     return (
       <div className="bg-white dark:bg-[#111D17] rounded-2xl border border-slate-200 dark:border-[#1A3125] p-6 space-y-4">
         {[...Array(5)].map((_, i) => (
@@ -56,7 +58,7 @@ export function UserAccessTable({
     );
   }
 
-  if (users.length === 0) {
+  if (safeUsers.length === 0) {
     return (
       <div className="bg-white dark:bg-[#111D17] rounded-2xl border border-slate-200 dark:border-[#1A3125] p-12 text-center">
         <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-[#00C471] flex items-center justify-center mx-auto mb-3">
@@ -70,8 +72,9 @@ export function UserAccessTable({
     );
   }
 
-  const startRecord = (page - 1) * limit + 1;
-  const endRecord = Math.min(page * limit, total);
+  const safeTotal = Number(total) || safeUsers.length;
+  const startRecord = safeTotal === 0 ? 0 : (page - 1) * limit + 1;
+  const endRecord = Math.min(page * limit, safeTotal);
 
   return (
     <div className="bg-white dark:bg-[#111D17] rounded-2xl border border-slate-200 dark:border-[#1A3125] shadow-xs overflow-hidden">
@@ -89,15 +92,16 @@ export function UserAccessTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-[#1A3125]">
-            {users.map((row) => {
+            {safeUsers.map((row) => {
+              if (!row) return null;
               const isSelf = row._id === currentUser?._id;
               const statusCfg = getUserStatusBadge(row.accountStatus);
               const twoFaCfg = get2faBadge(row.twoFactorEnabled);
-              const StatusIcon = statusCfg.icon;
-              const TwoFaIcon = twoFaCfg.icon;
+              const StatusIcon = statusCfg?.icon || Shield;
+              const TwoFaIcon = twoFaCfg?.icon || Shield;
 
               const emp = row.employee;
-              const displayName = row.name || emp?.name || row.email.split('@')[0];
+              const displayName = row.name || emp?.name || (row.email ? row.email.split('@')[0] : 'User');
               const empCode = emp?.employeeCode || null;
               const deptName = emp?.department || 'Unassigned';
               const desigTitle = emp?.designation || 'Unassigned';
@@ -118,7 +122,7 @@ export function UserAccessTable({
                             className="w-full h-full object-cover rounded-xl"
                           />
                         ) : (
-                          displayName.charAt(0).toUpperCase()
+                          displayName ? displayName.charAt(0).toUpperCase() : 'U'
                         )}
                       </div>
                       <div className="min-w-0">
@@ -157,9 +161,9 @@ export function UserAccessTable({
                   {/* Assigned Roles Cell */}
                   <td className="py-3 px-3">
                     <div className="flex flex-wrap gap-1 max-w-[180px]">
-                      {Array.isArray(row.roles) && row.roles.length > 0 ? (
-                        row.roles.map((r, idx) => {
-                          const roleName = typeof r === 'string' ? r : r.name;
+                      {Array.isArray(row.roles) && row.roles.filter(Boolean).length > 0 ? (
+                        row.roles.filter(Boolean).map((r, idx) => {
+                          const roleName = typeof r === 'string' ? r : (r?.name || 'Assigned Role');
                           const rBadge = getRoleBadge(roleName);
                           return (
                             <span
@@ -221,7 +225,7 @@ export function UserAccessTable({
                       {row.lastLoginAt ? formatDate(row.lastLoginAt) : 'Never logged in'}
                     </div>
                     <div className="text-[10px] text-slate-400 font-mono">
-                      Joined {row.createdAt ? new Date(row.createdAt).toLocaleDateString() : 'N/A'}
+                      Joined {row.createdAt && !isNaN(new Date(row.createdAt).getTime()) ? new Date(row.createdAt).toLocaleDateString() : 'N/A'}
                     </div>
                   </td>
 

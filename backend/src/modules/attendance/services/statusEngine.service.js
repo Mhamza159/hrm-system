@@ -144,7 +144,7 @@ export const calculateWorkMetrics = ({
   }
 
   // Deduct standard shift break if defined
-  const shiftBreak = shift?.breakMinutes || 60;
+  const shiftBreak = shift?.breakMinutes ?? officeHours?.breakMinutes ?? 60;
   const netScheduledMinutes = Math.max(0, scheduledMinutes - shiftBreak);
 
   // Overtime computation

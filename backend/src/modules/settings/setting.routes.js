@@ -36,8 +36,15 @@ const logoUpload = multer({
 });
 
 // ==============================================================================
-// PUBLIC & POLICY ROUTES (Accessible to all authenticated staff with settings.view)
+// PUBLIC & POLICY ROUTES
 // ==============================================================================
+// Completely unauthenticated public branding for Login & Careers pages
+router.get(
+  '/public-branding',
+  settingController.getPublicBranding
+);
+
+// Sanitized handbook & policies accessible to all authenticated staff
 router.get(
   '/public-policies',
   authenticate,
@@ -62,6 +69,27 @@ router.post(
   settingController.triggerBackup
 );
 
+router.get(
+  '/backups',
+  authenticate,
+  checkPermission('settings.manage'),
+  settingController.getAllBackups
+);
+
+router.get(
+  '/backups/:filename/download',
+  authenticate,
+  checkPermission('settings.manage'),
+  settingController.downloadBackupFile
+);
+
+router.post(
+  '/backups/verify-integrity',
+  authenticate,
+  checkPermission('settings.manage'),
+  settingController.verifyBackup
+);
+
 // ==============================================================================
 // LOGO UPLOAD (BUILD-GUIDE Row 2.2)
 // ==============================================================================
@@ -71,6 +99,13 @@ router.post(
   checkPermission('settings.manage'),
   logoUpload.single('logo'),
   settingController.uploadCompanyLogo
+);
+
+router.delete(
+  '/company/logo',
+  authenticate,
+  checkPermission('settings.manage'),
+  settingController.deleteCompanyLogo
 );
 
 // ==============================================================================

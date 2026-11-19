@@ -48,6 +48,8 @@ export function UserAccessDashboard({
     roleBreakdown = []
   } = stats || {};
 
+  const safeRoleBreakdown = Array.isArray(roleBreakdown) ? roleBreakdown : [];
+
   const kpis = [
     {
       id: 'total',
@@ -118,7 +120,7 @@ export function UserAccessDashboard({
   const activePct = totalUsers ? Math.round((activeUsers / totalUsers) * 100) : 0;
 
   // Max count for role breakdown bars
-  const maxRoleCount = Math.max(1, ...roleBreakdown.map((r) => r.count));
+  const maxRoleCount = Math.max(1, ...safeRoleBreakdown.map((r) => Number(r?.count) || 0));
 
   return (
     <div className="space-y-4">
@@ -178,26 +180,28 @@ export function UserAccessDashboard({
               </h4>
             </div>
             <span className="text-[11px] text-slate-400 font-medium">
-              {roleBreakdown.length} Roles Registered
+              {safeRoleBreakdown.length} Roles Registered
             </span>
           </div>
 
-          {roleBreakdown.length === 0 ? (
+          {safeRoleBreakdown.length === 0 ? (
             <div className="py-6 text-center text-xs text-slate-400">
               No role assignments recorded.
             </div>
           ) : (
             <div className="space-y-2.5 pt-1">
-              {roleBreakdown.map((r) => {
-                const pct = Math.round((r.count / maxRoleCount) * 100);
+              {safeRoleBreakdown.map((r) => {
+                const count = Number(r?.count) || 0;
+                const pct = Math.round((count / maxRoleCount) * 100);
+                const roleName = r?.roleName || 'Assigned Role';
                 return (
-                  <div key={r.roleId || r.roleName} className="space-y-1">
+                  <div key={r?.roleId || roleName} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-semibold text-slate-700 dark:text-slate-300">
-                        {r.roleName}
+                        {roleName}
                       </span>
                       <span className="text-[11px] font-mono text-slate-400 font-bold">
-                        {r.count} users ({totalUsers ? Math.round((r.count / totalUsers) * 100) : 0}%)
+                        {count} users ({totalUsers ? Math.round((count / totalUsers) * 100) : 0}%)
                       </span>
                     </div>
                     {/* SVG Progress Track */}

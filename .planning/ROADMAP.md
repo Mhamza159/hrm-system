@@ -1300,14 +1300,105 @@ Plans:
 **Plans:** 8 plans
 
 Plans:
-- [ ] **Plan 35-01: Backend Core Schema Extension, Zod Validators, SettingService Cache Hardening & Cross-Module Consumer Alignment** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-01-PLAN.md`)
-- [ ] **Plan 35-02: Company Profile, Logo Management, Direct Removal & System-Wide Branding Synchronization** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-02-PLAN.md`)
-- [ ] **Plan 35-03: Working Hours, Shift Synchronization, Attendance Rules, Dynamic QR & Biometric Privacy Engine** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-03-PLAN.md`)
-- [ ] **Plan 35-04: Leave Policy Overhaul, Accrual Governance & Interactive Approval Chains Builder** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-04-PLAN.md`)
-- [ ] **Plan 35-05: Payroll Cycle Integration, Pakistan FBR Progressive Tax Engine & Statutory Compliance Simulator** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-05-PLAN.md`)
-- [ ] **Plan 35-06: Multi-Branch Geo-fencing Interactive Map & Spatial Perimeter Management** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-06-PLAN.md`)
-- [ ] **Plan 35-07: Communication Templates, Omnichannel Notification Routing & Enterprise Disaster Recovery Engine** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-07-PLAN.md`)
-- [ ] **Plan 35-08: Master Settings UI Redesign, Tab Navigation Hub, Unsaved Changes Guardrails & End-to-End Verification** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-08-PLAN.md`)
+- [x] **Plan 35-01: Backend Core Schema Extension, Zod Validators, SettingService Cache Hardening & Cross-Module Consumer Alignment** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-01-PLAN.md`)
+- [x] **Plan 35-02: Company Profile, Logo Management, Direct Removal & System-Wide Branding Synchronization** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-02-PLAN.md`)
+- [x] **Plan 35-03: Working Hours, Shift Synchronization, Attendance Rules, Dynamic QR & Biometric Privacy Engine** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-03-PLAN.md`)
+- [x] **Plan 35-04: Leave Policy Overhaul, Accrual Governance & Interactive Approval Chains Builder** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-04-PLAN.md`)
+- [x] **Plan 35-05: Payroll Cycle Integration, Pakistan FBR Progressive Tax Engine & Statutory Compliance Simulator** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-05-PLAN.md`)
+- [x] **Plan 35-06: Multi-Branch Geo-fencing Interactive Map & Spatial Perimeter Management** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-06-PLAN.md`)
+- [x] **Plan 35-07: Communication Templates, Omnichannel Notification Routing & Enterprise Disaster Recovery Engine** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-07-PLAN.md`)
+- [x] **Plan 35-08: Master Settings UI Redesign, Tab Navigation Hub, Unsaved Changes Guardrails & End-to-End Verification** (`.planning/phases/35-settings-module-complete-enterprise-wide-audit-implementation-integration-full-ui-overhaul/35-08-PLAN.md`)
+
+---
+
+## Phase 36: Company Profile — Advanced UI Refinement, Employee ID Card Implementation & Complete System-Wide Settings Integration Audit
+
+**Goal:** Transform the Company Profile section of Module M2 into an enterprise-grade corporate identity and governance center. Completely redesign company text-field editing into a structured 5-category modal (`CompanyProfileEditModal.jsx`), replace browser-native logo removal with a dedicated confirmation modal (`CompanyLogoRemoveModal.jsx`), elevate the ID Card preview into a full design studio (`idCardConfig`), bridge the gap with the Employee Module by implementing complete employee ID card management (`EmployeeIdCardModal.jsx` with print/download/preview across Profile, List, and My Profile), and systematically eliminate hardcoded company branding across the entire HRMS (Sidebar, Login, Careers, PDF payslips, offer letters, experience certificates, reports) to make Company Profile the single source of truth.
+
+**Requirements**:
+- **1. Backend Core Schema Extension, Zod Validators, ID Card Config & SettingService Cache Bus (`Plan 36-01`)**:
+  - Extend `companyProfileSchema` with full corporate identity fields (Legal Name, SECP/Registration No., Industry, Description, City, State, Country, Postal Code, Timezone, Currency) and formal `idCardConfigSchema`.
+  - Canonical defaults in `setting.service.js` and fast in-memory cache bus alignment.
+- **2. Company Logo Removal Confirmation Modal & Text-Fields Redesign Studio (`Plan 36-02`)**:
+  - Build `CompanyLogoRemoveModal.jsx` eliminating browser-native `confirm()` dialogs.
+  - Build `CompanyProfileEditModal.jsx` with 5 logical corporate field categories and real-time Zod validation.
+- **3. Employee ID Card Configuration & Live Interactive Preview Studio in Company Profile (`Plan 36-03`)**:
+  - Interactive Front and Back switcher with CR80 physical badge geometry.
+  - Layout controls (vertical/horizontal), themes (Forest, Emerald, Light, Dark), and field toggles.
+- **4. Backend Employee ID Card REST API, Verifiable Payload & RBAC/PBAC Scoped Authorization (`Plan 36-04`)**:
+  - Endpoints `GET /api/v1/employees/:id/id-card` and `GET /api/v1/employees/me/id-card`.
+  - Merge live employee coordinates with company branding and ID card configuration, with digital QR verification token and audit logging.
+- **5. Employee Module ID Card Management Workflow (View, Preview, Download, Print) (`Plan 36-05`)**:
+  - Build `EmployeeIdCardModal.jsx` with dedicated `@media print` rules for CR80 badges and PNG/PDF export.
+  - Integrate across `EmployeeProfilePage.jsx`, `EmployeeListPage.jsx`, and `MyProfilePage.jsx`.
+- **6. Complete System-Wide Settings Integration Audit & Implementation (`Plan 36-06`)**:
+  - Refactor `Sidebar.jsx`, `LoginPage.jsx`, `CareersPublicPage.jsx`, and `ApplyPage.jsx` to consume live company branding.
+  - Refactor PDF generators (`payslipPdf.service.js`, `offerPdf.service.js`, `onboarding.service.js`, `reportExport.service.js`) to consume live company profile.
+- **7. Automated Test Suite, End-to-End Verification & Master Phase Documentation (`Plan 36-07`)**:
+  - 100% automated integration test coverage in `backend/tests/company-profile-id-card.test.js`.
+  - Oxlint and Vite production build verification.
+  - Multi-role Playwright verification and Serena Memory updates.
+
+**Depends on:** Phase 35  
+**Plans:** 7 plans
+
+Plans:
+- [x] **Plan 36-01: Backend Core Schema Extension, Zod Validators, ID Card Config & SettingService Cache Bus** (`.planning/phases/36-company-profile-advanced-ui-refinement-employee-id-card-implementation-complete-system-wide-settings-integration-audit/36-01-PLAN.md`)
+- [x] **Plan 36-02: Company Logo Removal Confirmation Modal & Text-Fields Redesign Studio** (`.planning/phases/36-company-profile-advanced-ui-refinement-employee-id-card-implementation-complete-system-wide-settings-integration-audit/36-02-PLAN.md`)
+- [x] **Plan 36-03: Employee ID Card Configuration & Live Interactive Preview Studio in Company Profile** (`.planning/phases/36-company-profile-advanced-ui-refinement-employee-id-card-implementation-complete-system-wide-settings-integration-audit/36-03-PLAN.md`)
+- [x] **Plan 36-04: Backend Employee ID Card REST API, Verifiable Payload & RBAC/PBAC Scoped Authorization** (`.planning/phases/36-company-profile-advanced-ui-refinement-employee-id-card-implementation-complete-system-wide-settings-integration-audit/36-04-PLAN.md`)
+- [x] **Plan 36-05: Employee Module ID Card Management Workflow (View, Preview, Download, Print)** (`.planning/phases/36-company-profile-advanced-ui-refinement-employee-id-card-implementation-complete-system-wide-settings-integration-audit/36-05-PLAN.md`)
+- [x] **Plan 36-06: Complete System-Wide Settings Integration Audit & Implementation (Sidebar, Login, Careers, PDFs, Reports)** (`.planning/phases/36-company-profile-advanced-ui-refinement-employee-id-card-implementation-complete-system-wide-settings-integration-audit/36-06-PLAN.md`)
+- [x] **Plan 36-07: Automated Test Suite, End-to-End Verification & Master Phase Documentation** (`.planning/phases/36-company-profile-advanced-ui-refinement-employee-id-card-implementation-complete-system-wide-settings-integration-audit/36-07-PLAN.md`)
+
+---
+
+## Phase 37: Working Hours Sub-Module — Complete System-Wide Audit, Implementation & UI Redesign
+
+**Goal:** Perform an end-to-end technical, architectural, and UI/UX overhaul of the Working Hours Sub-Module in Module M2. Establish a single source of truth for company working days (`workingDays`), standard shift hours (`officeHours`), break duration (`breakMinutes`), and half-day thresholds. Eliminate hardcoded weekend assumptions (`Sat/Sun`) and casing mismatches across Attendance, Shift Management, Leave Management, and Payroll. Guarantee that weekly offs are never marked absent, Saturday/Sunday toggling dynamically controls the entire HRMS, and historical finalized records remain protected.
+
+**Requirements**:
+- **1. Backend Schema Enhancement, Zod Validators, Break Duration & Canonical Workday Normalizer (`Plan 37-01`)**:
+  - Extend `officeHoursSchema` with `breakMinutes`, `fullDayMinutes`, and `timeZone`.
+  - Author `backend/src/utils/workdayHelper.js` with case-insensitive normalization, shift precedence resolution, and month working day calculations.
+  - Update `DEFAULT_SETTINGS` and cache bus invalidation in `SettingService`.
+- **2. Working Hours Form Complete Enterprise UI/UX Redesign (`Plan 37-02`)**:
+  - Overhaul `WorkingHoursForm.jsx` following `docs/UI-reference.md` (Elvara Forest `#061A14`, Emerald `#00C471`).
+  - 7-day visual schedule grid with Saturday and Sunday marked as default off, live work/off pills, and minimum 1-day validation guard.
+  - Time controls for shift start, end, and break duration with live net productive hours computation deck.
+  - Dedicated card for half-day thresholds and canonical timezone.
+- **3. Attendance Module System-Wide Integration (`Plan 37-03`)**:
+  - Harmonize `attendance.service.js` monthly sheets and daily punch logic with dynamic working days.
+  - Unpunched weekly offs marked strictly as `weekly_off`, never `absent`.
+  - Eliminate hardcoded `Sat/Sun` in `MyAttendancePage.jsx` and `TeamAttendancePage.jsx` calendars.
+- **4. Shift Management & Half-Day Engine Harmonization (`Plan 37-04`)**:
+  - Normalize `shift.model.js` `workDays` to canonical lowercase representation with company default inheritance.
+  - Dynamic `halfDayMinutes` and `breakMinutes` in `statusEngine.service.js`.
+  - Harmonize `ShiftManagementPage.jsx` day selectors.
+- **5. Leave Management Module Integration (`Plan 37-05`)**:
+  - Update `leaveCalculator.js` to dynamically exclude configured weekly offs and support shift-specific schedules.
+  - Eliminate hardcoded `if (day !== 0 && day !== 6)` in `ApplyLeaveModal.jsx`.
+  - Highlight weekly off columns dynamically in `TeamLeaveCalendarPage.jsx`.
+- **6. Payroll Engine Working Days Integration & Historical Snapshot Protection (`Plan 37-06`)**:
+  - Replace hardcoded `workingDays: 30` in `payrollProcessor.js` with true scheduled working days.
+  - Guarantee weekly offs never contribute to unexcused absence deductions.
+  - Enforce immutable historical snapshot protection for finalized/paid payroll records.
+- **7. Automated Test Suite, Verification & Final Documentation (`Plan 37-07`)**:
+  - Author `backend/tests/working-hours-integration.test.js` covering all 17 system-wide scenarios.
+  - Oxlint and Vite production build clean verification.
+  - Update Serena Memory and master documentation.
+
+**Depends on:** Phase 36  
+**Plans:** 7 plans
+
+Plans:
+- [x] **Plan 37-01: Backend Schema Enhancement, Zod Validators, Break Duration, Canonical Working Days Normalizer & SettingService Cache Bus** (`.planning/phases/37-working-hours-sub-module-complete-system-wide-audit-implementation-ui-redesign/37-01-PLAN.md`)
+- [x] **Plan 37-02: Working Hours & Office Hours Form Complete Enterprise UI/UX Redesign** (`.planning/phases/37-working-hours-sub-module-complete-system-wide-audit-implementation-ui-redesign/37-02-PLAN.md`)
+- [x] **Plan 37-03: Attendance Module System-Wide Integration — Dynamic Working Days, Monthly Attendance Sheet & Rest-Day Punch Logic** (`.planning/phases/37-working-hours-sub-module-complete-system-wide-audit-implementation-ui-redesign/37-03-PLAN.md`)
+- [x] **Plan 37-04: Shift Management & Half-Day Calculation Engine Harmonization** (`.planning/phases/37-working-hours-sub-module-complete-system-wide-audit-implementation-ui-redesign/37-04-PLAN.md`)
+- [x] **Plan 37-05: Leave Management Module Integration — Dynamic Working Day Deductions & Apply Modal Sync** (`.planning/phases/37-working-hours-sub-module-complete-system-wide-audit-implementation-ui-redesign/37-05-PLAN.md`)
+- [x] **Plan 37-06: Payroll Engine Working Days Integration & Historical Snapshot Protection** (`.planning/phases/37-working-hours-sub-module-complete-system-wide-audit-implementation-ui-redesign/37-06-PLAN.md`)
+- [x] **Plan 37-07: Automated Test Suite, System-Wide End-to-End Verification & Master Phase Documentation** (`.planning/phases/37-working-hours-sub-module-complete-system-wide-audit-implementation-ui-redesign/37-07-PLAN.md`)
 
 ---
 

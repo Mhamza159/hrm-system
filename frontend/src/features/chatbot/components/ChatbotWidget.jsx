@@ -37,14 +37,14 @@ export const ChatbotWidget = () => {
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef(null);
 
-  // Settings & Throttling
-  const { data: settingsRes } = useGetChatbotSettingsQuery();
+  // Settings & Throttling (only query when authenticated)
+  const { data: settingsRes } = useGetChatbotSettingsQuery(undefined, { skip: !user });
   const chatbotSettings = settingsRes?.data || { enabled: true };
 
   // RTK Query Hooks
   const { data: historyRes, isLoading: isLoadingHistory, refetch: refetchHistory } = useGetChatHistoryQuery(
     undefined,
-    { skip: !isOpen }
+    { skip: !isOpen || !user }
   );
   const [askChatbot, { isLoading: isAsking }] = useAskChatbotMutation();
   const [clearChatHistory, { isLoading: isClearing }] = useClearChatHistoryMutation();
@@ -64,6 +64,11 @@ export const ChatbotWidget = () => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [localMessages, isOpen, isAsking]);
+
+  // Unauthenticated guard: never render chatbot widget on unauthenticated views
+  if (!user) {
+    return null;
+  }
 
   // If chatbot is globally disabled in company settings, hide widget
   if (chatbotSettings.enabled === false && !user?.roles?.includes('Super Admin')) {

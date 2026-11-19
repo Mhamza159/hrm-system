@@ -50,6 +50,7 @@ import { ProfileSalaryTab } from '../components/ProfileSalaryTab.jsx';
 import { StatusChangeModal } from '../components/StatusChangeModal.jsx';
 import { LeaveBalanceCards } from '../../leaves/components/LeaveBalanceCards.jsx';
 import { EmployeePerformanceTab } from '../../performance/components/EmployeePerformanceTab.jsx';
+import { EmployeeIdCardModal } from '../components/EmployeeIdCardModal.jsx';
 import { Award } from 'lucide-react';
 import { cn } from '../../../lib/utils.js';
 
@@ -63,6 +64,7 @@ export default function EmployeeProfilePage() {
   const [isArchiveConfirmOpen, setIsArchiveConfirmOpen] = useState(false);
   const [isPermanentConfirmOpen, setIsPermanentConfirmOpen] = useState(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [isIdCardModalOpen, setIsIdCardModalOpen] = useState(false);
 
   const { data: employeeData, isLoading, error } = useGetEmployeeByIdQuery(id);
   const [deleteEmployee, { isLoading: isDeleting }] = useDeleteEmployeeMutation();
@@ -296,6 +298,17 @@ export default function EmployeeProfilePage() {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2 self-end md:self-center">
+            {/* Employee ID Card Action */}
+            <button
+              type="button"
+              onClick={() => setIsIdCardModalOpen(true)}
+              className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] hover:bg-slate-50 dark:hover:bg-[#15241C] text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+              title="View and print official employee credential ID card"
+            >
+              <CreditCard className="w-3.5 h-3.5 text-[#00C471]" />
+              <span>ID Card</span>
+            </button>
+
             <Can I="employee.edit" a="Employee">
               <button
                 type="button"
@@ -499,6 +512,13 @@ export default function EmployeeProfilePage() {
         isLoading={isResettingPassword}
         onConfirm={handleAdminResetPassword}
         onClose={() => setIsResetConfirmOpen(false)}
+      />
+
+      {/* Official Employee ID Card Modal (Phase 36) */}
+      <EmployeeIdCardModal
+        employeeId={id}
+        isOpen={isIdCardModalOpen}
+        onClose={() => setIsIdCardModalOpen(false)}
       />
     </div>
   );

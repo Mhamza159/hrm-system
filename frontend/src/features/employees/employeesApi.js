@@ -246,6 +246,22 @@ export const employeesApi = baseApi.injectEndpoints({
         method: 'POST',
         body: formData
       })
+    }),
+
+    getEmployeeIdCard: builder.query({
+      query: (id) => `/employees/${id}/id-card`,
+      providesTags: (result, error, id) => [
+        { type: 'Employee', id: `IDCARD_${id}` },
+        { type: 'Settings', id: 'company' }
+      ]
+    }),
+
+    getMyIdCard: builder.query({
+      query: () => '/employees/me/id-card',
+      providesTags: [
+        { type: 'Employee', id: 'MY_IDCARD' },
+        { type: 'Settings', id: 'company' }
+      ]
     })
   })
 });
@@ -277,5 +293,7 @@ export const {
   useGetMyChangeRequestsQuery,
   useReturnChangeRequestMutation,
   useCancelChangeRequestMutation,
-  useUploadChangeRequestAttachmentMutation
+  useUploadChangeRequestAttachmentMutation,
+  useGetEmployeeIdCardQuery,
+  useGetMyIdCardQuery
 } = employeesApi;
