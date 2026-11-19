@@ -14,7 +14,8 @@ import { validate } from '../../middlewares/validate.js';
 import {
   createShiftSchema,
   updateShiftSchema,
-  assignShiftEmployeesSchema
+  assignShiftEmployeesSchema,
+  shiftIdParamSchema
 } from './department.validation.js';
 import * as departmentController from './department.controller.js';
 
@@ -52,15 +53,17 @@ router.get(
 );
 
 router.get(
-  '/:id',
+  '/:id/employees',
   checkPermission('org.view'),
-  departmentController.getShiftById
+  validate(shiftIdParamSchema),
+  departmentController.getShiftEmployees
 );
 
 router.get(
-  '/:id/employees',
+  '/:id',
   checkPermission('org.view'),
-  departmentController.getShiftEmployees
+  validate(shiftIdParamSchema),
+  departmentController.getShiftById
 );
 
 router.post(
@@ -87,24 +90,28 @@ router.patch(
 router.patch(
   '/:id/archive',
   checkPermission('org.manage'),
+  validate(shiftIdParamSchema),
   departmentController.archiveShift
 );
 
 router.patch(
   '/:id/restore',
   checkPermission('org.manage'),
+  validate(shiftIdParamSchema),
   departmentController.restoreShift
 );
 
 router.delete(
   '/:id/permanent',
   checkPermission('org.manage'),
+  validate(shiftIdParamSchema),
   departmentController.permanentDeleteShift
 );
 
 router.delete(
   '/:id',
   checkPermission('org.manage'),
+  validate(shiftIdParamSchema),
   departmentController.deleteShift
 );
 

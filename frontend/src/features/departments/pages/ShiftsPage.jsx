@@ -66,6 +66,7 @@ export function ShiftsPage() {
   const [departmentFilter, setDepartmentFilter] = useState('ALL');
   const [overnightFilter, setOvernightFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [headcountFilter, setHeadcountFilter] = useState('ALL'); // 'ALL' | 'STAFFED' | 'EMPTY'
 
   // Archive Pagination
   const [archivePage, setArchivePage] = useState(1);
@@ -74,6 +75,40 @@ export function ShiftsPage() {
   // Active Shifts Pagination
   const [activePage, setActivePage] = useState(1);
   const activeLimit = 20;
+
+  // Wrapped Filter State Handlers with Automatic Pagination Reset
+  const handleSearchChange = (val) => {
+    setSearch(val);
+    setActivePage(1);
+    setArchivePage(1);
+  };
+
+  const handleTypeChange = (val) => {
+    setTypeFilter(val);
+    setActivePage(1);
+    setArchivePage(1);
+  };
+
+  const handleDepartmentChange = (val) => {
+    setDepartmentFilter(val);
+    setActivePage(1);
+    setArchivePage(1);
+  };
+
+  const handleStatusChange = (val) => {
+    setStatusFilter(val);
+    setActivePage(1);
+  };
+
+  const handleOvernightChange = (val) => {
+    setOvernightFilter(val);
+    setActivePage(1);
+  };
+
+  const handleHeadcountChange = (val) => {
+    setHeadcountFilter(val);
+    setActivePage(1);
+  };
 
   // Modals state
   const [isCreateEditModalOpen, setIsCreateEditModalOpen] = useState(false);
@@ -127,16 +162,23 @@ export function ShiftsPage() {
     totalPages: Math.ceil(activeShiftsRaw.length / activeLimit) || 1
   };
 
-  // Client-side guard for overnight filter if needed
+  // Client-side guard for overnight & headcount filters
   const activeShifts = useMemo(() => {
+    let list = activeShiftsRaw;
     if (overnightFilter === 'overnight') {
-      return activeShiftsRaw.filter((s) => s.isCrossMidnight || s.type === 'night');
+      list = list.filter((s) => s.isCrossMidnight || s.type === 'night');
+    } else if (overnightFilter === 'day') {
+      list = list.filter((s) => !s.isCrossMidnight && s.type !== 'night');
     }
-    if (overnightFilter === 'day') {
-      return activeShiftsRaw.filter((s) => !s.isCrossMidnight && s.type !== 'night');
+
+    if (headcountFilter === 'STAFFED') {
+      list = list.filter((s) => (s.headcount || 0) > 0);
+    } else if (headcountFilter === 'EMPTY') {
+      list = list.filter((s) => !s.headcount || s.headcount === 0);
     }
-    return activeShiftsRaw;
-  }, [activeShiftsRaw, overnightFilter]);
+
+    return list;
+  }, [activeShiftsRaw, overnightFilter, headcountFilter]);
 
   // Archived Shifts Query
   const {
@@ -162,12 +204,23 @@ export function ShiftsPage() {
   const handleStatCardClick = (cardId) => {
     if (cardId === 'ARCHIVED') {
       setActiveTab('ARCHIVED');
+      setArchivePage(1);
     } else if (cardId === 'ACTIVE') {
       setActiveTab('ACTIVE');
       setStatusFilter('ACTIVE');
+      setActivePage(1);
     } else if (cardId === 'NIGHT') {
       setActiveTab('ACTIVE');
       setOvernightFilter('overnight');
+      setActivePage(1);
+    } else if (cardId === 'STAFFED') {
+      setActiveTab('ACTIVE');
+      setHeadcountFilter('STAFFED');
+      setActivePage(1);
+    } else if (cardId === 'EMPTY') {
+      setActiveTab('ACTIVE');
+      setHeadcountFilter('EMPTY');
+      setActivePage(1);
     } else if (cardId === 'TOTAL') {
       setActiveTab('ACTIVE');
       handleResetFilters();
@@ -180,6 +233,7 @@ export function ShiftsPage() {
     setDepartmentFilter('ALL');
     setOvernightFilter('ALL');
     setStatusFilter('ALL');
+    setHeadcountFilter('ALL');
     setActivePage(1);
     setArchivePage(1);
   };
@@ -634,15 +688,17 @@ export function ShiftsPage() {
       {/* Multi-Dimensional Filter Bar */}
       <ShiftFilterBar
         search={search}
-        onSearchChange={setSearch}
+        onSearchChange={handleSearchChange}
         typeFilter={typeFilter}
-        onTypeChange={setTypeFilter}
+        onTypeChange={handleTypeChange}
         departmentFilter={departmentFilter}
-        onDepartmentChange={setDepartmentFilter}
+        onDepartmentChange={handleDepartmentChange}
+        headcountFilter={headcountFilter}
+        onHeadcountChange={handleHeadcountChange}
         statusFilter={statusFilter}
-        onStatusChange={setStatusFilter}
+        onStatusChange={handleStatusChange}
         overnightFilter={overnightFilter}
-        onOvernightChange={setOvernightFilter}
+        onOvernightChange={handleOvernightChange}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         departmentOptions={departmentOptions}
@@ -652,7 +708,7 @@ export function ShiftsPage() {
 
       {/* Tab 1: Active Shifts Content */}
       {activeTab === 'ACTIVE' && (
-        <>
+        <div className="space-y-4">
           {viewMode === 'table' ? (
             <div className="rounded-2xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] shadow-xs overflow-hidden">
               <DataTable
@@ -662,32 +718,6 @@ export function ShiftsPage() {
                 emptyTitle="No shifts registered"
                 emptyMessage="No active shifts match your current search and filter settings. Click '+ Create Shift' to add one."
               />
-
-              {activePagination.totalPages > 1 && (
-                <div className="px-5 py-3 border-t border-slate-100 dark:border-[#1A3125] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                  <span>
-                    Page {activePagination.page} of {activePagination.totalPages} ({activePagination.total} shifts total)
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      disabled={activePagination.page <= 1 || isActiveFetching}
-                      onClick={() => setActivePage((p) => Math.max(1, p - 1))}
-                      className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-[#1A3125] hover:bg-slate-100 dark:hover:bg-[#15241C] disabled:opacity-40"
-                    >
-                      Previous
-                    </button>
-                    <button
-                      type="button"
-                      disabled={activePagination.page >= activePagination.totalPages || isActiveFetching}
-                      onClick={() => setActivePage((p) => p + 1)}
-                      className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-[#1A3125] hover:bg-slate-100 dark:hover:bg-[#15241C] disabled:opacity-40"
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           ) : (
             <ShiftCardView
@@ -698,7 +728,34 @@ export function ShiftsPage() {
               onArchive={handleOpenArchive}
             />
           )}
-        </>
+
+          {/* Shared Active Shifts Pagination (Both Table & Card Grid Views) */}
+          {activePagination.totalPages > 1 && (
+            <div className="px-5 py-3 rounded-2xl border border-slate-200 dark:border-[#1A3125] bg-white dark:bg-[#111D17] shadow-xs flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+              <span>
+                Page {activePagination.page} of {activePagination.totalPages} ({activePagination.total} shifts total)
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={activePagination.page <= 1 || isActiveFetching}
+                  onClick={() => setActivePage((p) => Math.max(1, p - 1))}
+                  className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-[#1A3125] hover:bg-slate-100 dark:hover:bg-[#15241C] disabled:opacity-40 cursor-pointer"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  disabled={activePagination.page >= activePagination.totalPages || isActiveFetching}
+                  onClick={() => setActivePage((p) => p + 1)}
+                  className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-[#1A3125] hover:bg-slate-100 dark:hover:bg-[#15241C] disabled:opacity-40 cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Tab 2: Archived Shifts Content */}

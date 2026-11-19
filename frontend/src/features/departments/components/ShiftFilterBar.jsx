@@ -16,7 +16,8 @@ import {
   Moon,
   LayoutGrid,
   Table as TableIcon,
-  RotateCcw
+  RotateCcw,
+  Users
 } from 'lucide-react';
 
 const SHIFT_TYPES = [
@@ -32,6 +33,8 @@ export function ShiftFilterBar({
   onTypeChange = () => {},
   departmentFilter = 'ALL',
   onDepartmentChange = () => {},
+  headcountFilter = 'ALL',
+  onHeadcountChange = () => {},
   statusFilter = 'ALL',
   onStatusChange = () => {},
   overnightFilter = 'ALL',
@@ -46,6 +49,7 @@ export function ShiftFilterBar({
     Boolean(search) ||
     typeFilter !== 'ALL' ||
     departmentFilter !== 'ALL' ||
+    headcountFilter !== 'ALL' ||
     overnightFilter !== 'ALL' ||
     (showStatusFilter && statusFilter !== 'ALL');
 
@@ -124,6 +128,20 @@ export function ShiftFilterBar({
                 <option value="overnight">Overnight (Cross-Midnight)</option>
               </select>
               <Moon className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
+            {/* Headcount Threshold Filter */}
+            <div className="relative">
+              <select
+                value={headcountFilter}
+                onChange={(e) => onHeadcountChange(e.target.value)}
+                className="text-xs py-2 pl-3 pr-8 rounded-xl border border-slate-200 dark:border-[#1A3125] bg-slate-50/50 dark:bg-[#0E1712] text-slate-700 dark:text-slate-300 focus:outline-none focus:border-[#00C471] transition-colors cursor-pointer appearance-none"
+              >
+                <option value="ALL">All Staffing</option>
+                <option value="STAFFED">Staffed (≥1 member)</option>
+                <option value="EMPTY">Empty (0 staff)</option>
+              </select>
+              <Users className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
 
             {/* Status Pills (Only shown in Active tab) */}
@@ -230,6 +248,15 @@ export function ShiftFilterBar({
             <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200/50 dark:border-indigo-800/40">
               Schedule: {overnightFilter === 'overnight' ? 'Overnight' : 'Day Shifts'}
               <button type="button" onClick={() => onOvernightChange('ALL')} className="hover:text-indigo-800 dark:hover:text-indigo-200">
+                <X className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+
+          {headcountFilter !== 'ALL' && (
+            <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-md bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-400 border border-cyan-200/50 dark:border-cyan-800/40">
+              Staffing: {headcountFilter === 'STAFFED' ? 'Staffed (≥1)' : 'Empty (0 Staff)'}
+              <button type="button" onClick={() => onHeadcountChange('ALL')} className="hover:text-cyan-900 dark:hover:text-cyan-200">
                 <X className="w-3 h-3" />
               </button>
             </span>

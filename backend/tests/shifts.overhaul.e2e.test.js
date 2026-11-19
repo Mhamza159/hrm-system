@@ -407,14 +407,23 @@ describe('Phase 27: Work Shifts Module Overhaul, Archival Lifecycle & Employee G
     expect(emp.shiftId).toBeNull();
   });
 
-  it('18. GET /api/v1/shifts/invalid-id returns 404 without Mongoose CastError (WR-03)', async () => {
-    const res = await request(app)
+  it('18. GET /api/v1/shifts/invalid-id returns 400 on malformed ID & 404 on non-existent ID (WR-03)', async () => {
+    // 1. Malformed non-ObjectId string -> intercepted by Zod schema with 400
+    const malformedRes = await request(app)
       .get('/api/v1/shifts/invalid-non-objectid')
       .set('Authorization', `Bearer ${adminToken}`);
 
-    expect(res.status).toBe(404);
-    expect(res.body.success).toBe(false);
-    expect(res.body.message).toContain('Shift not found');
+    expect(malformedRes.status).toBe(400);
+    expect(malformedRes.body.success).toBe(false);
+
+    // 2. Syntactically valid ObjectId that does not exist -> returns 404
+    const notFoundRes = await request(app)
+      .get('/api/v1/shifts/507f1f77bcf86cd799439011')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(notFoundRes.status).toBe(404);
+    expect(notFoundRes.body.success).toBe(false);
+    expect(notFoundRes.body.message).toContain('Shift not found');
   });
 
   it('19. PATCH /api/v1/shifts/:id/restore unlinks department if department is archived (IN-01)', async () => {

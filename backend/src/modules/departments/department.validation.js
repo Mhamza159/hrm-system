@@ -172,3 +172,9 @@ export const assignShiftEmployeesSchema = z.object({
     action: z.enum(['add', 'set', 'remove', 'clear']).default('add')
   })
 });
+
+export const shiftIdParamSchema = z.object({
+  params: z.object({
+    id: objectIdSchema
+  })
+});
