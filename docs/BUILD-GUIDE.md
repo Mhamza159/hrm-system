@@ -266,7 +266,7 @@ Ye har module ka bunyadi dhancha hai. Isay pehle mukammal karein.
 
 ## 14. X1 — Security, Audit & Quality (Phase 1 ka aakhri check)
 
-| ID | Feature | Backend | Frontend | Test | ☐ |
+| ID | Feature | Backend | Frontend | Test | ☑ |
 | --- | --- | --- | --- | --- | --- |
 | X1.1 | Audit log screen | `GET /audit-logs` (audit.view, filters) | `AuditLogsPage.jsx` (before/after diff) | Har tabdeeli nazar aaye | ☑ |
 | X1.2 | Soft delete aur finalized payroll lock | sab models isDeleted; paid run delete band | — | Paid run delete na ho | ☑ |
