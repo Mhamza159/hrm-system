@@ -1014,15 +1014,62 @@ Plans:
   - 0 Oxlint errors across 417+ files and clean Vite production build.
 
 **Plans**:
-- [ ] **Plan 28-01: System-Wide Permission Discovery, Catalogue Synchronization & Serena Memory Audit** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-01-PLAN.md`)
-- [ ] **Plan 28-02: Backend RBAC/PBAC Core Roles Audit, Seed Alignment & Security Guards** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-02-PLAN.md`)
-- [ ] **Plan 28-03: System-Wide PBAC Policy Evaluation, Data Scoping Engine & Field-Level Masking** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-03-PLAN.md`)
-- [ ] **Plan 28-04: Roles & Permissions Dashboard Analytics, 8-KPI Summary Cards & SVG Visualizations** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-04-PLAN.md`)
-- [ ] **Plan 28-05: Enterprise Role Directory Overhaul, Dual View Switcher (Table vs Cards) & Multi-Dimensional Filter Toolbar** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-05-PLAN.md`)
-- [ ] **Plan 28-06: High-Performance Visual Permission Matrix Studio & Bulk Control Overhaul** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-06-PLAN.md`)
-- [ ] **Plan 28-07: Role Create/Edit, Detailed Inspection, Cloning & User Multi-Role Assignment Modals** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-07-PLAN.md`)
-- [ ] **Plan 28-08: System-Wide UI Permission Guarding Audit (Sidebar, Pages, Action Buttons & CASL Can)** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-08-PLAN.md`)
-- [ ] **Plan 28-09: Cross-Module Integration Testing, Privilege Escalation Security Audit & Comprehensive Vitest Suite** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-09-PLAN.md`)
+- [x] **Plan 28-01: System-Wide Permission Discovery, Catalogue Synchronization & Serena Memory Audit** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-01-PLAN.md`)
+- [x] **Plan 28-02: Backend RBAC/PBAC Core Roles Audit, Seed Alignment & Security Guards** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-02-PLAN.md`)
+- [x] **Plan 28-03: System-Wide PBAC Policy Evaluation, Data Scoping Engine & Field-Level Masking** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-03-PLAN.md`)
+- [x] **Plan 28-04: Roles & Permissions Dashboard Analytics, 8-KPI Summary Cards & SVG Visualizations** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-04-PLAN.md`)
+- [x] **Plan 28-05: Enterprise Role Directory Overhaul, Dual View Switcher (Table vs Cards) & Multi-Dimensional Filter Toolbar** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-05-PLAN.md`)
+- [x] **Plan 28-06: High-Performance Visual Permission Matrix Studio & Bulk Control Overhaul** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-06-PLAN.md`)
+- [x] **Plan 28-07: Role Create/Edit, Detailed Inspection, Cloning & User Multi-Role Assignment Modals** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-07-PLAN.md`)
+- [x] **Plan 28-08: System-Wide UI Permission Guarding Audit (Sidebar, Pages, Action Buttons & CASL Can)** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-08-PLAN.md`)
+- [x] **Plan 28-09: Cross-Module Integration Testing, Privilege Escalation Security Audit & Comprehensive Vitest Suite** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-09-PLAN.md`)
+
+---
+
+## Phase 29: Roles & Permissions Module — Edit Role & Permission Matrix UI Redesign + Complete Functional Audit
+
+**Goal:** Execute a comprehensive, high-craft UI/UX redesign and functional audit of the **Edit Role** screen (`RoleFormPage.jsx`) and its core engine, the **Visual Permission Matrix** (`PermissionMatrix.jsx`), where all module-wise permissions are displayed and managed. Transform the screen into an enterprise-grade command studio with high visual hierarchy, clean card/accordion architecture across all 26+ modules, granular action controls, tri-state bulk selection, sticky navigation, data scope controls (`all`, `department`, `team`, `own`), approval thresholds, unsaved state persistence, pre-save diff inspection, and robust validation guards.
+
+**Requirements**:
+- **1. Edit Role Studio Header & Metadata Card Redesign (`RoleFormPage.jsx`)**:
+  - Re-engineer the role specification card with Forest & Emerald design tokens (`#061A14`, `#111D17`, `#1A3125`, `#00C471`).
+  - System role locked visual indicators (gold crown, amber warning banner, disabled immutable fields).
+  - Clean input fields: Role Name, Slug (auto-generated monospace badge), Description with real-time character counter (0/300), and Status Toggle (`Active` vs `Inactive`).
+  - Breadcrumb navigation, quick exit with dirty state protection, and contextual action buttons.
+- **2. Module-Wise Permission Cards & Accordion Architecture (`PermissionMatrix.jsx`)**:
+  - Reorganize permissions across all 26 modules into structured, visually distinct module cards grouped by functional categories:
+    - `Core HR & Organization`
+    - `Time, Attendance & Leaves`
+    - `Payroll, Loans & Compensation`
+    - `Talent, Recruitment & Assets`
+    - `Governance, Policies & System`
+  - Each module card displays module icon, human-readable label, subject tag, description, total vs selected counter pill, tri-state module checkbox, and batch scope selector.
+- **3. High-Density Action Grid & Fine-Grained Controls (`PermissionRow.jsx` / `PermissionMatrix.jsx`)**:
+  - Consistent structured grid layout for permission actions (View, Create, Edit, Delete, Approve, Reject, Export, Import, Manage, Assign, Restore) only where supported by the catalogue.
+  - Emerald primary checkbox styling (`#00C471`) with instant toggle responsiveness (<16ms).
+  - Integrated data scope selector dropdown (`All Records`, `Department Scope`, `Direct Team`, `Self Only`) restricted to action's `allowedScopes`.
+  - Number input for actions supporting approval thresholds (e.g. max leave days, max expense PKR amount).
+- **4. Bulk Operations, Search, Filtering & Category Jump-Nav (`PermissionMatrix.jsx`)**:
+  - Sticky top toolbar with debounced permission search, "Show Enabled Only" filter toggle, "Expand All" / "Collapse All" triggers, and global "Grant All" / "Revoke All" actions (for custom roles).
+  - Sticky category quick-jump navigator bar with badge counters showing active selection density.
+- **5. Safety Guards, Dependency Validation & Pre-Save Diff Review (`PermissionMatrix.jsx`, `PermissionDiffModal.jsx`, `RoleFormPage.jsx`)**:
+  - Automated dependency resolution (auto-grants read/view permissions when write/edit/approve is selected).
+  - Sticky bottom unsaved changes bar displaying pending additions, modifications, and revocations count.
+  - Interactive Pre-Save Differential Review Modal (`PermissionDiffModal.jsx`) displaying color-coded delta before backend commit.
+- **6. Functional Audit & End-to-End Vitest Verification (`roles.matrix.audit.test.js`)**:
+  - Verify role mutation lifecycle, payload validation, system role lock, permission array integrity, and CASL compatibility.
+  - Validate 0 Oxlint errors across all touched files and clean Vite production build.
+
+**Depends on:** Phase 28  
+**Plans:** 6 plans
+
+Plans:
+- [ ] **Plan 29-01: Edit Role Studio Layout & Role Metadata Card Overhaul** (`.planning/phases/29-roles-permissions-module-edit-role-permission-matrix-ui-redesign-complete-functional-audit/29-01-PLAN.md`)
+- [ ] **Plan 29-02: Permission Matrix Category Jump-Nav, Search & Sticky Toolbar** (`.planning/phases/29-roles-permissions-module-edit-role-permission-matrix-ui-redesign-complete-functional-audit/29-02-PLAN.md`)
+- [ ] **Plan 29-03: Module Permission Cards, Tri-State Controls & Batch Scope Operations** (`.planning/phases/29-roles-permissions-module-edit-role-permission-matrix-ui-redesign-complete-functional-audit/29-03-PLAN.md`)
+- [ ] **Plan 29-04: Action Row Grid, Fine-Grained Data Scopes & Approval Limits** (`.planning/phases/29-roles-permissions-module-edit-role-permission-matrix-ui-redesign-complete-functional-audit/29-04-PLAN.md`)
+- [ ] **Plan 29-05: Safety Guards, Dependency Auto-Granting & Pre-Save Diff Modal Integration** (`.planning/phases/29-roles-permissions-module-edit-role-permission-matrix-ui-redesign-complete-functional-audit/29-05-PLAN.md`)
+- [ ] **Plan 29-06: End-to-End Functional Audit, Vitest Verification & Static Analysis** (`.planning/phases/29-roles-permissions-module-edit-role-permission-matrix-ui-redesign-complete-functional-audit/29-06-PLAN.md`)
 
 ---
 
