@@ -1115,6 +1115,41 @@ Plans:
 
 ---
 
+## Phase 31: Audit Log Module — Complete Enterprise-Level UI Overhaul, Audit Trail Architecture, System-Wide Activity Tracking, RBAC/PBAC Compliance & Security Audit
+
+**Goal:** Overhaul the Audit Log Module into a high-grade, immutable centralized audit and forensic monitoring console across the HRMS. Enrich the schema with status, severity, category, and device parsing; build real-time analytics aggregation pipelines, streaming export, and statutory retention management; redesign the dashboard with KPI cards and activity trend charts; author an enterprise explorer with table, timeline, and user activity views; and enforce strict RBAC/PBAC zero UI leakage with 100% automated test coverage.
+
+**Requirements**:
+- **1. Enriched Audit Schema & Sanitized Logging Engine (`Plan 31-01`)**:
+  - Add status, severity, category, description, device parsing, and archival fields with compound indexes.
+  - Implement deep sanitization masking passwords, tokens, and raw secrets.
+  - Verify system-wide event attribution across Auth, Employees, Roles, Payroll, Attendance, and Shifts.
+- **2. Real-Time Analytics & Aggregation Pipelines (`Plan 31-02`)**:
+  - Implement `/stats` and `/analytics` endpoints calculating activity velocity, success rate, and security distributions.
+- **3. Streaming Export & Retention Compliance Engine (`Plan 31-03`)**:
+  - Server-side CSV/Excel export respecting active filters and PBAC scoping.
+  - Statutory retention policy inspection and guarded soft-archival without destructive deletion.
+- **4. Enterprise Dashboard & Visual Analytics UI (`Plan 31-04`)**:
+  - 8-card responsive KPI grid, activity velocity curves, module distribution donuts, and security trend meters.
+- **5. Multi-View Audit Explorer & Forensic Details Studio (`Plan 31-05`)**:
+  - Table, Timeline, and User Activity views with debounced search and multi-criteria filters.
+  - Side-by-side state diff comparison with color-coded additions, edits, and removals.
+- **6. RBAC/PBAC Security Verification & Automated Test Suite (`Plan 31-06`)**:
+  - Strict zero UI leakage for non-admin roles and complete Vitest test suite (`audit.module.overhaul.test.js`).
+
+**Depends on:** Phase 30  
+**Plans:** 6 plans
+
+Plans:
+- [ ] **Plan 31-01: Enhanced Audit Log Data Model, Enriched Logging Engine & Cross-Module Event Attribution** (`.planning/phases/31-audit-log-module-complete-enterprise-level-ui-overhaul-audit-trail-architecture-system-wide-activity-tracking-rbac-pbac-compliance-security-audit/31-01-PLAN.md`)
+- [ ] **Plan 31-02: Audit Analytics, Aggregation Pipelines & Statistics Backend APIs** (`.planning/phases/31-audit-log-module-complete-enterprise-level-ui-overhaul-audit-trail-architecture-system-wide-activity-tracking-rbac-pbac-compliance-security-audit/31-02-PLAN.md`)
+- [ ] **Plan 31-03: Audit Export Engine, Retention Policies & Forensic Compliance APIs** (`.planning/phases/31-audit-log-module-complete-enterprise-level-ui-overhaul-audit-trail-architecture-system-wide-activity-tracking-rbac-pbac-compliance-security-audit/31-03-PLAN.md`)
+- [ ] **Plan 31-04: Audit Log Dashboard, Hero Metrics & Real-Time Analytics UI** (`.planning/phases/31-audit-log-module-complete-enterprise-level-ui-overhaul-audit-trail-architecture-system-wide-activity-tracking-rbac-pbac-compliance-security-audit/31-04-PLAN.md`)
+- [ ] **Plan 31-05: Enterprise Audit Explorer, Multi-View Suite & Forensic Details Modal** (`.planning/phases/31-audit-log-module-complete-enterprise-level-ui-overhaul-audit-trail-architecture-system-wide-activity-tracking-rbac-pbac-compliance-security-audit/31-05-PLAN.md`)
+- [ ] **Plan 31-06: RBAC/PBAC Enforcement, Zero UI Leakage, System-Wide Vitest Test Suite & Master Audit Documentation** (`.planning/phases/31-audit-log-module-complete-enterprise-level-ui-overhaul-audit-trail-architecture-system-wide-activity-tracking-rbac-pbac-compliance-security-audit/31-06-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features
