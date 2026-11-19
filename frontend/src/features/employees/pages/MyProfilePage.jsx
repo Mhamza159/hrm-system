@@ -19,6 +19,7 @@ import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { RefreshButton } from '../../../components/common/RefreshButton.jsx';
 import { ChangeRequestModal } from '../components/ChangeRequestModal.jsx';
+import { MyChangeRequestsTab } from '../components/change-requests/MyChangeRequestsTab.jsx';
 import { TwoFactorModal } from '../../auth/components/TwoFactorModal.jsx';
 import { ChangePasswordModal } from '../../auth/components/ChangePasswordModal.jsx';
 import { updateUser } from '../../auth/authSlice.js';
@@ -275,6 +276,13 @@ export default function MyProfilePage() {
           )}
         </div>
       </div>
+
+      {/* Self-Service Change Requests History Section */}
+      {!isSuperAdminRole && (
+        <div className="pt-2">
+          <MyChangeRequestsTab currentEmployee={employee} />
+        </div>
+      )}
 
       {/* Interactive Modals */}
       <ChangeRequestModal

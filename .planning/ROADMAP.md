@@ -1186,6 +1186,46 @@ Plans:
 
 ---
 
+## Phase 33: Change Request Module — Complete Functional Audit, Cross-Module Integration, RBAC/PBAC Compliance & Full UI Redesign
+
+**Goal:** Overhaul the Change Request Module into a production-grade enterprise workflow system. Expand the data schema with multi-category support, baseline snapshots, file attachments, and an immutable status timeline; build transactional cross-module synchronization updating Employee, Department, Designation, and Reporting Manager master records upon approval while tracking transfers/promotions in EmployeeHistory; register dedicated RBAC/PBAC permissions with departmental scoping; redesign the dashboard with KPI metrics and pure SVG analytics; author an enterprise data table with multi-criteria filters; create a forensic side-by-side Before/After diff modal; build an employee self-service hub with dynamic category request creation; and verify the complete lifecycle with 100% automated Vitest testing.
+
+**Requirements**:
+- **1. Change Request Data Model & Synchronization Engine (`Plan 33-01`)**:
+  - Add category enum, baseline snapshot (`oldValue`), file attachments, priority, reviewer assignment, and chronological timeline.
+  - Multi-category atomic approval engine mutating Employee (Personal, Contact, Address, Emergency, Bank with encrypted IBAN, Dept, Designation, Manager) and User (`name`).
+  - Transfer/promotion logging in `EmployeeHistory` and circular manager check prevention.
+- **2. Backend REST APIs, Scoped PBAC & Notification Integration (`Plan 33-02`)**:
+  - Dedicated permissions catalogue (`change_request.view`, `change_request.create`, `change_request.edit`, `change_request.approve`, `change_request.delete`).
+  - Scoped endpoints for listing, metrics, inspection, decision, return for correction, and self-cancellation.
+  - Immutable audit logs (`AuditService.log`) and multi-channel notification dispatch (in-app, email, Socket.io).
+- **3. Actionable KPI Dashboard & Visual Analytics UI (`Plan 33-03`)**:
+  - 6-card metric grid (Total, Pending Review, Pending My Action, Approved, Rejected, Returned for Correction).
+  - Pure SVG visual analytics (Status distribution, Category breakdown, 6-Month velocity curve).
+- **4. Enterprise Change Request Explorer & Multi-Criteria Filter Suite (`Plan 33-04`)**:
+  - Full-featured DataTable with employee credentials, category badges, inline old vs new preview, and action menu.
+  - Sticky filter bar with debounced search, category dropdown, status chips, department filter, and pagination.
+- **5. Request Details Forensic Modal, Before/After Diff & Decision Studio (`Plan 33-05`)**:
+  - Side-by-side comparative grid contrasting current baseline with requested values.
+  - Reviewer decision studio with confirmation modal, mandatory rejection/return rationale capture, and Super Admin escalation protection.
+- **6. Employee Self-Service Hub, Dynamic Submission Modal & End-to-End Testing (`Plan 33-06`)**:
+  - Dynamic multi-category submission modal with current value pre-fill, validation, and attachment upload.
+  - Self-service tracking tab in `MyProfilePage.jsx`.
+  - Comprehensive automated Vitest integration suite, 0 Oxlint errors, and clean Vite production build.
+
+**Depends on:** Phase 32  
+**Plans:** 6 plans
+
+Plans:
+- [x] **Plan 33-01: Change Request Data Model, Lifecycle Engine & Cross-Module Master Synchronization** (`.planning/phases/33-change-request-module-complete-functional-audit-cross-module-integration-rbac-pbac-compliance-full-ui-redesign/33-01-PLAN.md`)
+- [x] **Plan 33-02: Backend Change Request APIs, Multi-Tier Approval Chain, Scoped PBAC & Audit/Notification Integration** (`.planning/phases/33-change-request-module-complete-functional-audit-cross-module-integration-rbac-pbac-compliance-full-ui-redesign/33-02-PLAN.md`)
+- [x] **Plan 33-03: Change Request Dashboard, Actionable KPI Metrics & Category Analytics UI** (`.planning/phases/33-change-request-module-complete-functional-audit-cross-module-integration-rbac-pbac-compliance-full-ui-redesign/33-03-PLAN.md`)
+- [x] **Plan 33-04: Enterprise Change Request Explorer & Multi-Criteria Filter Suite** (`.planning/phases/33-change-request-module-complete-functional-audit-cross-module-integration-rbac-pbac-compliance-full-ui-redesign/33-04-PLAN.md`)
+- [x] **Plan 33-05: Request Details Forensic Modal, Before/After Diff Inspector & Reviewer Decision Studio** (`.planning/phases/33-change-request-module-complete-functional-audit-cross-module-integration-rbac-pbac-compliance-full-ui-redesign/33-05-PLAN.md`)
+- [x] **Plan 33-06: Employee Self-Service Hub, Dynamic Multi-Category Submission Modal & End-to-End Testing** (`.planning/phases/33-change-request-module-complete-functional-audit-cross-module-integration-rbac-pbac-compliance-full-ui-redesign/33-06-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features

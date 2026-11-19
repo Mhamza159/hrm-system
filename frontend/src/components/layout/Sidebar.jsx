@@ -260,7 +260,7 @@ export function Sidebar({ isOpen = false, onClose }) {
     { name: 'Work Shifts', path: '/shifts', icon: Clock, permission: 'org.view' },
     { name: 'Roles & Permissions', path: '/roles', icon: Shield, permission: 'role.view' },
     { name: 'Audit Logs', path: '/audit-logs', icon: ShieldCheck, permission: 'audit.view', superAdminOnly: true },
-    { name: 'Change Requests', path: '/change-requests', icon: FileCheck, permission: 'employee.edit' },
+    { name: 'Change Requests', path: '/change-requests', icon: FileCheck, permission: ['change_request.view', 'employee.edit'] },
     { name: 'User Access', path: '/users', icon: Users, permission: 'user.manage' },
     { name: 'Settings', path: '/settings', icon: Settings, permission: 'settings.manage' }
   ];

@@ -202,6 +202,50 @@ export const employeesApi = baseApi.injectEndpoints({
         body
       }),
       invalidatesTags: ['ChangeRequests', { type: 'Employee', id: 'LIST' }]
+    }),
+
+    getChangeRequestStats: builder.query({
+      query: () => '/change-requests/stats',
+      providesTags: ['ChangeRequests']
+    }),
+
+    getChangeRequestById: builder.query({
+      query: (id) => `/change-requests/${id}`,
+      providesTags: (result, error, id) => [{ type: 'ChangeRequests', id }]
+    }),
+
+    getMyChangeRequests: builder.query({
+      query: (params) => ({
+        url: '/change-requests/my',
+        params
+      }),
+      providesTags: ['ChangeRequests']
+    }),
+
+    returnChangeRequest: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/change-requests/${id}/return`,
+        method: 'PATCH',
+        body
+      }),
+      invalidatesTags: ['ChangeRequests']
+    }),
+
+    cancelChangeRequest: builder.mutation({
+      query: ({ id, ...body }) => ({
+        url: `/change-requests/${id}/cancel`,
+        method: 'PATCH',
+        body
+      }),
+      invalidatesTags: ['ChangeRequests']
+    }),
+
+    uploadChangeRequestAttachment: builder.mutation({
+      query: (formData) => ({
+        url: '/change-requests/upload',
+        method: 'POST',
+        body: formData
+      })
     })
   })
 });
@@ -227,5 +271,11 @@ export const {
   useGetSalaryHistoryQuery,
   useSubmitChangeRequestMutation,
   useGetChangeRequestsQuery,
-  useDecideChangeRequestMutation
+  useDecideChangeRequestMutation,
+  useGetChangeRequestStatsQuery,
+  useGetChangeRequestByIdQuery,
+  useGetMyChangeRequestsQuery,
+  useReturnChangeRequestMutation,
+  useCancelChangeRequestMutation,
+  useUploadChangeRequestAttachmentMutation
 } = employeesApi;

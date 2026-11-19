@@ -30,6 +30,7 @@ import { emailService } from '../../services/email.service.js';
 import { uploadBufferToCloudinary, deleteFromCloudinary, isCloudinaryConfigured } from '../../config/cloudinary.js';
 import { assertSuperAdminIfApplicantIsHR, isApplicantHR, notifySuperAdmins, notifyHRManagers } from '../../utils/hrApprovalGuard.js';
 import { notify } from '../../services/notify.service.js';
+import { emitToCompany } from '../../services/socket.service.js';
 import { initializeEmployeeLeaveBalances } from '../leaves/leave.service.js';
 import { assertEmployeeAssetClearance } from '../assets/asset.service.js';
 import { initOnboardingForEmployee } from '../onboarding/onboarding.service.js';
@@ -1179,66 +1180,491 @@ export const getSalaryHistory = async (employeeId, actor) => {
  * @param {Object} requestData
  * @returns {Promise<Object>}
  */
-export const submitChangeRequest = async (userId, { field, requestedValue, reason }) => {
+export const submitChangeRequest = async (userId, { category, field, requestedValue, reason, priority = 'normal', attachments = [] }) => {
   const employee = await Employee.findOne({ userId, isDeleted: false });
   if (!employee) {
     throw new ApiError(404, 'No employee record linked to your user account');
   }
 
+  // Determine category if not explicitly provided
+  let determinedCategory = category;
+  if (!determinedCategory) {
+    if (field === 'bankDetails' || field === 'bank_details') determinedCategory = 'bank_details';
+    else if (field === 'address') determinedCategory = 'address';
+    else if (field === 'emergencyContact' || field === 'emergency_contact') determinedCategory = 'emergency_contact';
+    else if (field === 'departmentId' || field === 'department') determinedCategory = 'department';
+    else if (field === 'designationId' || field === 'designation') determinedCategory = 'designation';
+    else if (field === 'reportingManagerId' || field === 'reporting_manager') determinedCategory = 'reporting_manager';
+    else if (field === 'phone' || field === 'personalEmail' || field === 'contact') determinedCategory = 'contact';
+    else determinedCategory = 'personal';
+  }
+
+  // Extract current baseline oldValue snapshot from employee
+  let oldValue = null;
+  if (determinedCategory === 'bank_details') {
+    let plainIban = '';
+    if (employee.bankDetails?.iban) {
+      try {
+        plainIban = decrypt(employee.bankDetails.iban);
+      } catch {
+        plainIban = employee.bankDetails.iban;
+      }
+    }
+    oldValue = {
+      bankName: employee.bankDetails?.bankName || '',
+      accountTitle: employee.bankDetails?.accountTitle || '',
+      accountNumber: employee.bankDetails?.accountNumber || '',
+      iban: plainIban
+    };
+  } else if (determinedCategory === 'address') {
+    oldValue = employee.address?.toObject?.() || employee.address || null;
+  } else if (determinedCategory === 'emergency_contact') {
+    oldValue = employee.emergencyContact?.toObject?.() || employee.emergencyContact || null;
+  } else if (determinedCategory === 'department') {
+    const dept = await Department.findById(employee.departmentId).select('name code');
+    oldValue = {
+      departmentId: employee.departmentId,
+      name: dept?.name || '',
+      code: dept?.code || ''
+    };
+  } else if (determinedCategory === 'designation') {
+    const desig = await Designation.findById(employee.designationId).select('title code');
+    oldValue = {
+      designationId: employee.designationId,
+      title: desig?.title || '',
+      code: desig?.code || ''
+    };
+  } else if (determinedCategory === 'reporting_manager') {
+    let mgrName = '';
+    const mgrId = employee.managerId || employee.reportingManagerId;
+    if (mgrId) {
+      const mgr = await Employee.findById(mgrId).select('name employeeCode');
+      mgrName = mgr ? `${mgr.name} (${mgr.employeeCode})` : '';
+    }
+    oldValue = {
+      reportingManagerId: mgrId,
+      managerId: mgrId,
+      name: mgrName
+    };
+  } else if (determinedCategory === 'contact') {
+    oldValue = {
+      phone: employee.phone || '',
+      personalEmail: employee.personalEmail || ''
+    };
+  } else {
+    oldValue = {
+      name: employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim(),
+      gender: employee.gender || '',
+      dob: employee.dob || null,
+      maritalStatus: employee.maritalStatus || '',
+      bloodGroup: employee.bloodGroup || ''
+    };
+  }
+
+  const applicantName = employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Employee';
+
+  const timelineEntry = {
+    action: 'submitted',
+    actor: userId,
+    actorName: applicantName,
+    actorRole: 'Employee',
+    note: reason,
+    timestamp: new Date()
+  };
+
   const request = await ProfileChangeRequest.create({
     employeeId: employee._id,
     requestedBy: userId,
+    category: determinedCategory,
     field,
+    oldValue,
     requestedValue,
     reason,
-    status: 'pending'
+    priority,
+    attachments,
+    status: 'pending',
+    timeline: [timelineEntry]
   });
 
   const isHr = await isApplicantHR(employee._id, userId);
-  const applicantName = employee.name || `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || 'Employee';
   if (isHr) {
     await notifySuperAdmins({
       type: 'profile',
       title: 'Profile Change Request (HR Personnel)',
       body: `${applicantName} requested an update to their ${field}. Awaiting Super Admin review.`,
-      link: '/admin/change-requests'
+      link: '/change-requests'
     }).catch(() => {});
   } else {
     await notifyHRManagers({
       type: 'profile',
       title: 'New Profile Change Request',
       body: `${applicantName} submitted a change request for ${field}.`,
-      link: '/admin/change-requests'
+      link: '/change-requests'
     }).catch(() => {});
   }
+
+  emitToCompany('change_request:created', {
+    requestId: request._id,
+    employeeId: employee._id,
+    category: determinedCategory,
+    status: 'pending'
+  });
+
+  await recordAuditLog({
+    actor: { _id: userId, name: applicantName },
+    action: 'change_request.created',
+    entity: 'ProfileChangeRequest',
+    entityId: request._id,
+    details: { category: determinedCategory, field, priority }
+  }).catch(() => {});
 
   return request;
 };
 
 /**
- * Retrieve all pending profile change requests for HR inspection
+ * Retrieve all profile change requests with PBAC scoping and filters
  * @param {Object} query
- * @returns {Promise<Array<Object>>}
+ * @param {Object} actor
+ * @returns {Promise<Object>}
  */
-export const getChangeRequests = async (query = {}) => {
-  const filter = {};
-  if (query.status) filter.status = query.status;
+export const getChangeRequests = async (query = {}, actor = null) => {
+  const filter = { isDeleted: false };
+  if (query.status && query.status !== 'all') filter.status = query.status;
+  if (query.category && query.category !== 'all') filter.category = query.category;
+  if (query.priority && query.priority !== 'all') filter.priority = query.priority;
+  if (query.assignedTo) filter.assignedTo = query.assignedTo;
 
-  return await ProfileChangeRequest.find(filter)
-    .populate('employeeId', 'name employeeCode email')
-    .populate('requestedBy', 'email')
-    .populate('decidedBy', 'email')
-    .sort({ createdAt: -1 });
+  // PBAC scoping
+  if (actor) {
+    let isSuperAdmin = actor.role === 'Super Admin' || actor.roles?.some((r) => r === 'Super Admin' || r?.name === 'Super Admin');
+    if (!isSuperAdmin && Array.isArray(actor.roles) && actor.roles.length > 0) {
+      const saRole = await Role.findOne({ name: 'Super Admin' }).select('_id');
+      if (saRole && actor.roles.some((r) => String(r._id || r) === String(saRole._id))) {
+        isSuperAdmin = true;
+      }
+    }
+
+    if (!isSuperAdmin) {
+      const actorEmployee = await Employee.findOne({ userId: actor._id, isDeleted: false });
+      const ability = actor.ability;
+
+      let scope = 'own';
+      if (ability && typeof ability.can === 'function') {
+        if (ability.can('all', 'ChangeRequest') || ability.can('all', 'change_request.view')) {
+          scope = 'all';
+        } else if (ability.can('department', 'ChangeRequest') || ability.can('department', 'change_request.view')) {
+          scope = 'department';
+        } else if (ability.can('team', 'ChangeRequest') || ability.can('team', 'change_request.view')) {
+          scope = 'team';
+        }
+      } else {
+        let isHR = actor.roles?.some((r) => r === 'HR Manager' || r?.name === 'HR Manager');
+        if (!isHR && Array.isArray(actor.roles) && actor.roles.length > 0) {
+          const hrRoleDoc = await Role.findOne({ name: 'HR Manager' }).select('_id');
+          if (hrRoleDoc && actor.roles.some((r) => String(r._id || r) === String(hrRoleDoc._id))) {
+            isHR = true;
+          }
+        }
+        let isDeptMgr = actor.roles?.some((r) => r === 'Department Manager' || r?.name === 'Department Manager');
+        if (!isDeptMgr && Array.isArray(actor.roles) && actor.roles.length > 0) {
+          const dmRoleDoc = await Role.findOne({ name: 'Department Manager' }).select('_id');
+          if (dmRoleDoc && actor.roles.some((r) => String(r._id || r) === String(dmRoleDoc._id))) {
+            isDeptMgr = true;
+          }
+        }
+        if (isHR) scope = 'all';
+        else if (isDeptMgr) scope = 'department';
+      }
+
+      if (scope === 'department' && actorEmployee?.departmentId) {
+        const deptEmployees = await Employee.find({ departmentId: actorEmployee.departmentId }).select('_id');
+        filter.employeeId = { $in: deptEmployees.map((e) => e._id) };
+      } else if (scope === 'team' && actorEmployee?._id) {
+        const teamEmployees = await Employee.find({
+          $or: [{ reportingManagerId: actorEmployee._id }, { managerId: actorEmployee._id }]
+        }).select('_id');
+        filter.employeeId = { $in: teamEmployees.map((e) => e._id) };
+      } else if (scope === 'own') {
+        const ownFilters = [{ requestedBy: actor._id }];
+        if (actorEmployee?._id) ownFilters.push({ employeeId: actorEmployee._id });
+        filter.$or = ownFilters;
+      }
+    }
+  }
+
+  if (query.departmentId && query.departmentId !== 'all') {
+    const deptEmployees = await Employee.find({ departmentId: query.departmentId }).select('_id');
+    if (filter.employeeId && filter.employeeId.$in) {
+      const existingIds = new Set(filter.employeeId.$in.map(String));
+      const filteredIds = deptEmployees.map((e) => e._id).filter((id) => existingIds.has(String(id)));
+      filter.employeeId = { $in: filteredIds };
+    } else {
+      filter.employeeId = { $in: deptEmployees.map((e) => e._id) };
+    }
+  }
+
+  if (query.search && query.search.trim()) {
+    const searchRegex = new RegExp(query.search.trim(), 'i');
+    const matchedEmployees = await Employee.find({
+      $or: [
+        { name: searchRegex },
+        { firstName: searchRegex },
+        { lastName: searchRegex },
+        { employeeCode: searchRegex }
+      ]
+    }).select('_id');
+
+    const searchConditions = [
+      { reason: searchRegex },
+      { field: searchRegex },
+      { employeeId: { $in: matchedEmployees.map((e) => e._id) } }
+    ];
+
+    if (filter.$or) {
+      filter.$and = [{ $or: filter.$or }, { $or: searchConditions }];
+      delete filter.$or;
+    } else {
+      filter.$or = searchConditions;
+    }
+  }
+
+  const page = Math.max(1, parseInt(query.page, 10) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(query.limit, 10) || 10));
+  const skip = (page - 1) * limit;
+
+  const [requests, total] = await Promise.all([
+    ProfileChangeRequest.find(filter)
+      .populate({
+        path: 'employeeId',
+        select: 'name employeeCode email phone departmentId designationId avatar',
+        populate: [
+          { path: 'departmentId', select: 'name code' },
+          { path: 'designationId', select: 'title code' }
+        ]
+      })
+      .populate('requestedBy', 'email name')
+      .populate('decidedBy', 'email name')
+      .populate('assignedTo', 'email name')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    ProfileChangeRequest.countDocuments(filter)
+  ]);
+
+  return {
+    requests,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit) || 1
+  };
 };
 
 /**
- * Decide (approve / reject) sensitive field change request
+ * Retrieve aggregated statistics for change requests dashboard
+ * @param {Object} actor
+ * @returns {Promise<Object>}
+ */
+export const getChangeRequestStats = async (actor = null) => {
+  const baseFilter = { isDeleted: false };
+  if (actor) {
+    let isSuperAdmin = actor.role === 'Super Admin' || actor.roles?.some((r) => r === 'Super Admin' || r?.name === 'Super Admin');
+    if (!isSuperAdmin && Array.isArray(actor.roles) && actor.roles.length > 0) {
+      const saRole = await Role.findOne({ name: 'Super Admin' }).select('_id');
+      if (saRole && actor.roles.some((r) => String(r._id || r) === String(saRole._id))) {
+        isSuperAdmin = true;
+      }
+    }
+
+    if (!isSuperAdmin) {
+      let isHR = actor.roles?.some((r) => r === 'HR Manager' || r?.name === 'HR Manager');
+      if (!isHR && Array.isArray(actor.roles) && actor.roles.length > 0) {
+        const hrRoleDoc = await Role.findOne({ name: 'HR Manager' }).select('_id');
+        if (hrRoleDoc && actor.roles.some((r) => String(r._id || r) === String(hrRoleDoc._id))) {
+          isHR = true;
+        }
+      }
+
+      let isDeptMgr = actor.roles?.some((r) => r === 'Department Manager' || r?.name === 'Department Manager');
+      if (!isDeptMgr && Array.isArray(actor.roles) && actor.roles.length > 0) {
+        const dmRoleDoc = await Role.findOne({ name: 'Department Manager' }).select('_id');
+        if (dmRoleDoc && actor.roles.some((r) => String(r._id || r) === String(dmRoleDoc._id))) {
+          isDeptMgr = true;
+        }
+      }
+
+      const actorEmployee = await Employee.findOne({ userId: actor._id, isDeleted: false });
+      if (!isHR && isDeptMgr && actorEmployee?.departmentId) {
+        const deptEmps = await Employee.find({ departmentId: actorEmployee.departmentId }).select('_id');
+        baseFilter.employeeId = { $in: deptEmps.map((e) => e._id) };
+      } else if (!isHR && !isDeptMgr) {
+        const ownFilters = [{ requestedBy: actor._id }];
+        if (actorEmployee?._id) ownFilters.push({ employeeId: actorEmployee._id });
+        baseFilter.$or = ownFilters;
+      }
+    }
+  }
+
+  const [
+    total,
+    pending,
+    underReview,
+    approved,
+    rejected,
+    returned,
+    categoryAgg
+  ] = await Promise.all([
+    ProfileChangeRequest.countDocuments(baseFilter),
+    ProfileChangeRequest.countDocuments({ ...baseFilter, status: 'pending' }),
+    ProfileChangeRequest.countDocuments({ ...baseFilter, status: 'under_review' }),
+    ProfileChangeRequest.countDocuments({ ...baseFilter, status: 'approved' }),
+    ProfileChangeRequest.countDocuments({ ...baseFilter, status: 'rejected' }),
+    ProfileChangeRequest.countDocuments({ ...baseFilter, status: 'returned' }),
+    ProfileChangeRequest.aggregate([
+      { $match: baseFilter },
+      { $group: { _id: '$category', count: { $sum: 1 } } }
+    ])
+  ]);
+
+  const categoryBreakdown = {};
+  categoryAgg.forEach((c) => {
+    categoryBreakdown[c._id || 'other'] = c.count;
+  });
+
+  let myPendingAction = pending;
+  if (actor) {
+    const isSuperAdmin = actor.roles?.some((r) => r.name === 'Super Admin' || r === 'Super Admin');
+    const isHR = actor.roles?.some((r) => r.name === 'HR Manager' || r === 'HR Manager');
+    if (!isSuperAdmin && !isHR) {
+      myPendingAction = 0;
+    }
+  }
+
+  return {
+    total,
+    pending,
+    under_review: underReview,
+    approved,
+    rejected,
+    returned,
+    myPendingAction,
+    categoryBreakdown
+  };
+};
+
+/**
+ * Retrieve single change request with deep population
+ * @param {string} id
+ * @param {Object} actor
+ * @returns {Promise<Object>}
+ */
+export const getChangeRequestById = async (id, actor = null) => {
+  const req = await ProfileChangeRequest.findOne({ _id: id, isDeleted: false })
+    .populate({
+      path: 'employeeId',
+      select: 'name firstName lastName employeeCode email phone departmentId designationId reportingManagerId avatar employmentStatus',
+      populate: [
+        { path: 'departmentId', select: 'name code' },
+        { path: 'designationId', select: 'title code' },
+        { path: 'reportingManagerId', select: 'name employeeCode email' }
+      ]
+    })
+    .populate('requestedBy', 'email name')
+    .populate('decidedBy', 'email name')
+    .populate('assignedTo', 'email name')
+    .populate('timeline.actor', 'email name');
+
+  if (!req) {
+    throw new ApiError(404, 'Change request not found');
+  }
+
+  if (actor) {
+    let isSuperAdmin = actor.role === 'Super Admin' || actor.roles?.some((r) => r === 'Super Admin' || r?.name === 'Super Admin');
+    if (!isSuperAdmin && Array.isArray(actor.roles) && actor.roles.length > 0) {
+      const saRole = await Role.findOne({ name: 'Super Admin' }).select('_id');
+      if (saRole && actor.roles.some((r) => String(r._id || r) === String(saRole._id))) {
+        isSuperAdmin = true;
+      }
+    }
+
+    if (!isSuperAdmin) {
+      let isHR = actor.roles?.some((r) => r === 'HR Manager' || r?.name === 'HR Manager');
+      if (!isHR && Array.isArray(actor.roles) && actor.roles.length > 0) {
+        const hrRoleDoc = await Role.findOne({ name: 'HR Manager' }).select('_id');
+        if (hrRoleDoc && actor.roles.some((r) => String(r._id || r) === String(hrRoleDoc._id))) {
+          isHR = true;
+        }
+      }
+
+      if (!isHR) {
+        const actorEmployee = await Employee.findOne({ userId: actor._id, isDeleted: false });
+        let isDeptMgr = actor.roles?.some((r) => r === 'Department Manager' || r?.name === 'Department Manager');
+        if (!isDeptMgr && Array.isArray(actor.roles) && actor.roles.length > 0) {
+          const dmRoleDoc = await Role.findOne({ name: 'Department Manager' }).select('_id');
+          if (dmRoleDoc && actor.roles.some((r) => String(r._id || r) === String(dmRoleDoc._id))) {
+            isDeptMgr = true;
+          }
+        }
+
+        const isApplicant = String(req.requestedBy?._id || req.requestedBy) === String(actor._id) ||
+          (actorEmployee && String(req.employeeId?._id || req.employeeId) === String(actorEmployee._id));
+
+        const isSameDept = isDeptMgr && actorEmployee?.departmentId &&
+          String(req.employeeId?.departmentId?._id || req.employeeId?.departmentId) === String(actorEmployee.departmentId);
+
+        if (!isApplicant && !isSameDept) {
+          throw new ApiError(403, 'You do not have permission to view this change request');
+        }
+      }
+    }
+  }
+
+  return req;
+};
+
+/**
+ * Retrieve employee self-service list of their own change requests
+ * @param {string} userId
+ * @param {Object} query
+ * @returns {Promise<Array<Object>>}
+ */
+export const getMyChangeRequests = async (userId, query = {}) => {
+  const employee = await Employee.findOne({ userId, isDeleted: false });
+  const filter = {
+    isDeleted: false,
+    $or: [{ requestedBy: userId }]
+  };
+  if (employee?._id) {
+    filter.$or.push({ employeeId: employee._id });
+  }
+
+  if (query.status && query.status !== 'all') {
+    filter.status = query.status;
+  }
+
+  const requests = await ProfileChangeRequest.find(filter)
+    .populate({
+      path: 'employeeId',
+      select: 'name employeeCode email departmentId designationId avatar',
+      populate: [
+        { path: 'departmentId', select: 'name code' },
+        { path: 'designationId', select: 'title code' }
+      ]
+    })
+    .populate('decidedBy', 'name email')
+    .sort({ createdAt: -1 });
+
+  return requests;
+};
+
+/**
+ * Decide (approve / reject) sensitive field change request with cross-module sync
  * @param {string} id
  * @param {Object} decision
  * @param {Object} actor
  * @returns {Promise<Object>}
  */
-export const decideChangeRequest = async (id, { action, rejectionReason }, actor) => {
+export const decideChangeRequest = async (id, { action, rejectionReason, decisionReason }, actor) => {
   const changeReq = await ProfileChangeRequest.findById(id);
   if (!changeReq) {
     throw new ApiError(404, 'Change request not found');
@@ -1246,31 +1672,49 @@ export const decideChangeRequest = async (id, { action, rejectionReason }, actor
 
   await assertSuperAdminIfApplicantIsHR(changeReq.employeeId, actor, 'profile change request');
 
-  if (changeReq.status !== 'pending') {
+  if (changeReq.status !== 'pending' && changeReq.status !== 'under_review') {
     throw new ApiError(400, `Request is already ${changeReq.status}`);
   }
 
+  const finalReason = decisionReason || rejectionReason || (action === 'approved' ? 'Approved by HR' : 'Rejected by HR');
+
   if (action === 'rejected') {
     changeReq.status = 'rejected';
-    changeReq.rejectionReason = rejectionReason || 'Rejected by HR';
+    changeReq.decisionReason = finalReason;
+    changeReq.rejectionReason = finalReason;
     changeReq.decidedBy = actor._id;
     changeReq.decidedAt = new Date();
+
+    changeReq.timeline.push({
+      action: 'rejected',
+      actor: actor._id,
+      actorName: actor.name || 'HR Reviewer',
+      actorRole: actor.role || 'HR',
+      note: finalReason,
+      timestamp: new Date()
+    });
+
     await changeReq.save();
 
     await recordAuditLog({
       actor,
-      action: 'employee.change_request_rejected',
+      action: 'change_request.rejected',
       entity: 'ProfileChangeRequest',
       entityId: changeReq._id,
-      details: { rejectionReason }
-    });
+      details: { rejectionReason: finalReason }
+    }).catch(() => {});
 
     await notify(changeReq.requestedBy, {
       type: 'profile',
       title: 'Profile Change Request Declined',
-      body: `Your request to update ${changeReq.field} was declined: ${rejectionReason || 'Contact HR for details.'}`,
-      link: '/profile'
+      body: `Your request to update ${changeReq.field} was declined: ${finalReason}`,
+      link: '/change-requests'
     }).catch(() => {});
+
+    emitToCompany('change_request:updated', {
+      requestId: changeReq._id,
+      status: 'rejected'
+    });
 
     return changeReq;
   }
@@ -1282,9 +1726,11 @@ export const decideChangeRequest = async (id, { action, rejectionReason }, actor
   }
 
   const beforeSnapshot = employee.toObject();
+  const category = changeReq.category;
+  const requestedValue = changeReq.requestedValue;
 
-  if (changeReq.field === 'bankDetails') {
-    const bankVal = changeReq.requestedValue;
+  if (category === 'bank_details' || changeReq.field === 'bankDetails') {
+    const bankVal = { ...requestedValue };
     if (bankVal.iban) {
       bankVal.iban = encrypt(bankVal.iban);
     }
@@ -1292,42 +1738,230 @@ export const decideChangeRequest = async (id, { action, rejectionReason }, actor
       ...employee.bankDetails?.toObject?.(),
       ...bankVal
     };
-  } else if (changeReq.field === 'address') {
+  } else if (category === 'address' || changeReq.field === 'address') {
     employee.address = {
       ...employee.address?.toObject?.(),
-      ...changeReq.requestedValue
+      ...requestedValue
     };
-  } else if (changeReq.field === 'emergencyContact') {
+  } else if (category === 'emergency_contact' || changeReq.field === 'emergencyContact') {
     employee.emergencyContact = {
       ...employee.emergencyContact?.toObject?.(),
-      ...changeReq.requestedValue
+      ...requestedValue
     };
+  } else if (category === 'contact') {
+    if (requestedValue.phone) employee.phone = requestedValue.phone;
+    if (requestedValue.personalEmail || requestedValue.email) {
+      employee.email = requestedValue.personalEmail || requestedValue.email;
+    }
+  } else if (category === 'personal') {
+    if (requestedValue.gender) employee.gender = requestedValue.gender;
+    if (requestedValue.dob) employee.dob = requestedValue.dob;
+    if (requestedValue.maritalStatus) employee.maritalStatus = requestedValue.maritalStatus;
+    if (requestedValue.bloodGroup) employee.bloodGroup = requestedValue.bloodGroup;
+
+    const newName = requestedValue.name || requestedValue.fullName;
+    if (newName) {
+      employee.name = newName;
+      if (employee.userId) {
+        await User.findByIdAndUpdate(employee.userId, { name: newName }).catch(() => {});
+      }
+    }
+  } else if (category === 'department' || changeReq.field === 'departmentId') {
+    const newDeptId = requestedValue.departmentId || requestedValue;
+    const targetDept = await Department.findById(newDeptId);
+    if (!targetDept) {
+      throw new ApiError(400, 'Target department does not exist');
+    }
+    const prevDeptId = employee.departmentId;
+    employee.departmentId = newDeptId;
+
+    await EmployeeHistory.create({
+      employeeId: employee._id,
+      eventType: 'Transfer',
+      previousDepartmentId: prevDeptId,
+      newDepartmentId: newDeptId,
+      remarks: changeReq.reason || 'Approved Department Change Request'
+    }).catch(() => {});
+  } else if (category === 'designation' || changeReq.field === 'designationId') {
+    const newDesigId = requestedValue.designationId || requestedValue;
+    const targetDesig = await Designation.findById(newDesigId);
+    if (!targetDesig) {
+      throw new ApiError(400, 'Target designation does not exist');
+    }
+    const prevDesigId = employee.designationId;
+    employee.designationId = newDesigId;
+
+    await EmployeeHistory.create({
+      employeeId: employee._id,
+      eventType: 'Promotion',
+      previousDesignationId: prevDesigId,
+      newDesignationId: newDesigId,
+      remarks: changeReq.reason || 'Approved Designation Change Request'
+    }).catch(() => {});
+  } else if (category === 'reporting_manager' || changeReq.field === 'reportingManagerId') {
+    const newManagerId = requestedValue.reportingManagerId || requestedValue;
+    if (String(newManagerId) === String(employee._id)) {
+      throw new ApiError(400, 'Employee cannot be their own reporting manager');
+    }
+    const targetMgr = await Employee.findById(newManagerId);
+    if (!targetMgr) {
+      throw new ApiError(400, 'Target reporting manager does not exist');
+    }
+    employee.reportingManagerId = newManagerId;
+    employee.managerId = newManagerId;
   } else {
-    employee[changeReq.field] = changeReq.requestedValue;
+    employee[changeReq.field] = requestedValue;
   }
 
   await employee.save();
 
   changeReq.status = 'approved';
+  changeReq.decisionReason = finalReason;
   changeReq.decidedBy = actor._id;
   changeReq.decidedAt = new Date();
+
+  changeReq.timeline.push({
+    action: 'approved',
+    actor: actor._id,
+    actorName: actor.name || 'HR Reviewer',
+    actorRole: actor.role || 'HR',
+    note: finalReason,
+    timestamp: new Date()
+  });
+
   await changeReq.save();
 
   await recordAuditLog({
     actor,
-    action: 'employee.change_request_approved',
+    action: 'change_request.approved',
     entity: 'Employee',
     entityId: employee._id,
     before: beforeSnapshot,
     after: employee.toObject()
-  });
+  }).catch(() => {});
 
   await notify(changeReq.requestedBy, {
     type: 'profile',
     title: 'Profile Change Request Approved',
     body: `Your request to update ${changeReq.field} has been approved and applied to your profile.`,
+    link: '/change-requests'
+  }).catch(() => {});
+
+  emitToCompany('change_request:updated', {
+    requestId: changeReq._id,
+    status: 'approved'
+  });
+
+  return changeReq;
+};
+
+/**
+ * Return change request for correction
+ * @param {string} id
+ * @param {Object} payload
+ * @param {Object} actor
+ * @returns {Promise<Object>}
+ */
+export const returnChangeRequest = async (id, { notes }, actor) => {
+  const changeReq = await ProfileChangeRequest.findById(id);
+  if (!changeReq) {
+    throw new ApiError(404, 'Change request not found');
+  }
+
+  await assertSuperAdminIfApplicantIsHR(changeReq.employeeId, actor, 'profile change request');
+
+  if (changeReq.status !== 'pending' && changeReq.status !== 'under_review') {
+    throw new ApiError(400, `Cannot return a request that is already ${changeReq.status}`);
+  }
+
+  changeReq.status = 'returned';
+  changeReq.decisionReason = notes;
+  changeReq.decidedBy = actor._id;
+  changeReq.decidedAt = new Date();
+
+  changeReq.timeline.push({
+    action: 'returned',
+    actor: actor._id,
+    actorName: actor.name || 'Reviewer',
+    actorRole: actor.role || 'HR Manager',
+    note: notes,
+    timestamp: new Date()
+  });
+
+  await changeReq.save();
+
+  await recordAuditLog({
+    actor,
+    action: 'change_request.returned',
+    entity: 'ProfileChangeRequest',
+    entityId: changeReq._id,
+    details: { notes }
+  }).catch(() => {});
+
+  await notify(changeReq.requestedBy, {
+    type: 'profile',
+    title: 'Change Request Returned for Correction',
+    body: `Your change request for ${changeReq.field} was returned: "${notes}". Please revise and resubmit.`,
     link: '/profile'
   }).catch(() => {});
+
+  emitToCompany('change_request:updated', {
+    requestId: changeReq._id,
+    status: 'returned'
+  });
+
+  return changeReq;
+};
+
+/**
+ * Cancel change request by employee requester
+ * @param {string} id
+ * @param {Object} payload
+ * @param {Object} actor
+ * @returns {Promise<Object>}
+ */
+export const cancelChangeRequest = async (id, { reason }, actor) => {
+  const changeReq = await ProfileChangeRequest.findById(id);
+  if (!changeReq) {
+    throw new ApiError(404, 'Change request not found');
+  }
+
+  if (changeReq.status !== 'pending' && changeReq.status !== 'returned' && changeReq.status !== 'under_review') {
+    throw new ApiError(400, `Cannot cancel a request that is already ${changeReq.status}`);
+  }
+
+  const isOwner = String(changeReq.requestedBy) === String(actor._id);
+  const isSuperAdmin = actor.roles?.some((r) => r.name === 'Super Admin' || r === 'Super Admin');
+  if (!isOwner && !isSuperAdmin) {
+    throw new ApiError(403, 'You are not authorized to cancel this change request');
+  }
+
+  changeReq.status = 'cancelled';
+  changeReq.decisionReason = reason || 'Cancelled by employee';
+
+  changeReq.timeline.push({
+    action: 'cancelled',
+    actor: actor._id,
+    actorName: actor.name || 'Requester',
+    actorRole: isOwner ? 'Employee' : 'Admin',
+    note: reason || 'Cancelled by employee',
+    timestamp: new Date()
+  });
+
+  await changeReq.save();
+
+  await recordAuditLog({
+    actor,
+    action: 'change_request.cancelled',
+    entity: 'ProfileChangeRequest',
+    entityId: changeReq._id,
+    details: { reason }
+  }).catch(() => {});
+
+  emitToCompany('change_request:updated', {
+    requestId: changeReq._id,
+    status: 'cancelled'
+  });
 
   return changeReq;
 };

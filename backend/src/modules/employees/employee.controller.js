@@ -12,6 +12,7 @@ import { apiResponse } from '../../utils/apiResponse.js';
 import { ApiError } from '../../utils/ApiError.js';
 import * as employeeService from './employee.service.js';
 import { checkProbationExpiry } from '../../jobs/probation.job.js';
+import { uploadBufferToCloudinary, isCloudinaryConfigured } from '../../config/cloudinary.js';
 
 export const createEmployee = asyncHandler(async (req, res) => {
   const result = await employeeService.createEmployee(req.body, req.user);
@@ -178,10 +179,40 @@ export const submitChangeRequest = asyncHandler(async (req, res) => {
 });
 
 export const getChangeRequests = asyncHandler(async (req, res) => {
-  const result = await employeeService.getChangeRequests(req.query);
+  const result = await employeeService.getChangeRequests(req.query, req.user);
+  const requestsList = Array.isArray(result) ? result : result.requests || [];
+  const meta = Array.isArray(result)
+    ? null
+    : {
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages
+      };
   return res
     .status(200)
-    .json(apiResponse(200, result, 'Change requests retrieved successfully'));
+    .json(apiResponse(200, requestsList, 'Change requests retrieved successfully', meta));
+});
+
+export const getChangeRequestStats = asyncHandler(async (req, res) => {
+  const result = await employeeService.getChangeRequestStats(req.user);
+  return res
+    .status(200)
+    .json(apiResponse(200, result, 'Change request statistics retrieved successfully'));
+});
+
+export const getChangeRequestById = asyncHandler(async (req, res) => {
+  const result = await employeeService.getChangeRequestById(req.params.id, req.user);
+  return res
+    .status(200)
+    .json(apiResponse(200, result, 'Change request details retrieved successfully'));
+});
+
+export const getMyChangeRequests = asyncHandler(async (req, res) => {
+  const result = await employeeService.getMyChangeRequests(req.user._id, req.query);
+  return res
+    .status(200)
+    .json(apiResponse(200, result, 'My change requests retrieved successfully'));
 });
 
 export const decideChangeRequest = asyncHandler(async (req, res) => {
@@ -193,6 +224,56 @@ export const decideChangeRequest = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(apiResponse(200, result, `Change request ${req.body.action} successfully`));
+});
+
+export const returnChangeRequest = asyncHandler(async (req, res) => {
+  const result = await employeeService.returnChangeRequest(
+    req.params.id,
+    req.body,
+    req.user
+  );
+  return res
+    .status(200)
+    .json(apiResponse(200, result, 'Change request returned for correction successfully'));
+});
+
+export const cancelChangeRequest = asyncHandler(async (req, res) => {
+  const result = await employeeService.cancelChangeRequest(
+    req.params.id,
+    req.body,
+    req.user
+  );
+  return res
+    .status(200)
+    .json(apiResponse(200, result, 'Change request cancelled successfully'));
+});
+
+export const uploadChangeRequestAttachment = asyncHandler(async (req, res) => {
+  if (!req.file || !req.file.buffer) {
+    throw new ApiError(400, 'Please upload a document file (PDF, PNG, or JPEG, max 5MB)');
+  }
+
+  let fileUrl = '';
+  if (isCloudinaryConfigured()) {
+    const uploadRes = await uploadBufferToCloudinary(req.file.buffer, {
+      folder: 'hrm/change-requests',
+      resource_type: 'auto'
+    });
+    fileUrl = uploadRes.secure_url;
+  } else {
+    fileUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+  }
+
+  const attachment = {
+    name: req.file.originalname,
+    url: fileUrl,
+    fileType: req.file.mimetype,
+    size: req.file.size
+  };
+
+  return res
+    .status(200)
+    .json(apiResponse(200, attachment, 'Attachment uploaded successfully'));
 });
 
 export const importEmployees = asyncHandler(async (req, res) => {

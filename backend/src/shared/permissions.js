@@ -128,6 +128,41 @@ export const PERMISSIONS_CATALOGUE = [
         allowedScopes: ['own', 'all'],
         defaultScope: 'own',
         sensitive: true
+      },
+      {
+        action: 'change_request.view',
+        label: 'View Change Requests',
+        description: 'Inspect profile and organizational change requests.',
+        allowedScopes: ['own', 'team', 'department', 'all'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'change_request.create',
+        label: 'Submit Change Requests',
+        description: 'Request updates to personal, contact, address, bank, and organizational data.',
+        allowedScopes: ['own'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'change_request.edit',
+        label: 'Edit Change Requests',
+        description: 'Modify or resubmit returned/pending change requests.',
+        allowedScopes: ['own'],
+        defaultScope: 'own'
+      },
+      {
+        action: 'change_request.approve',
+        label: 'Approve / Reject Change Requests',
+        description: 'Review and approve or reject employee profile and organizational changes.',
+        allowedScopes: ['department', 'all'],
+        defaultScope: 'department'
+      },
+      {
+        action: 'change_request.delete',
+        label: 'Cancel / Archive Change Requests',
+        description: 'Cancel own pending change requests or archive completed requests.',
+        allowedScopes: ['own', 'all'],
+        defaultScope: 'own'
       }
     ]
   },

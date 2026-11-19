@@ -365,7 +365,7 @@ export default function App() {
           <Route
             path="change-requests"
             element={
-              <ProtectedRoute requiredPermission="employee.edit">
+              <ProtectedRoute requiredPermission={['change_request.view', 'employee.edit']}>
                 <ChangeRequestsPage />
               </ProtectedRoute>
             }

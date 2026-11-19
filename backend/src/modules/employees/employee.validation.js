@@ -184,12 +184,36 @@ export const updateSkillsSchema = z.object({
 
 export const changeRequestSchema = z.object({
   body: z.object({
+    category: z
+      .enum([
+        'personal',
+        'contact',
+        'address',
+        'emergency_contact',
+        'bank_details',
+        'department',
+        'designation',
+        'reporting_manager'
+      ])
+      .optional(),
     field: z.string({ required_error: 'Field is required' }),
     requestedValue: z.any({ required_error: 'Requested value is required' }),
     reason: z
       .string({ required_error: 'Reason is required' })
       .min(3, 'Reason must be at least 3 characters')
-      .trim()
+      .trim(),
+    priority: z.enum(['normal', 'high', 'urgent']).optional().default('normal'),
+    attachments: z
+      .array(
+        z.object({
+          name: z.string(),
+          url: z.string(),
+          fileType: z.string().optional(),
+          size: z.number().optional()
+        })
+      )
+      .optional()
+      .default([])
   })
 });
 
@@ -199,7 +223,26 @@ export const decideChangeRequestSchema = z.object({
   }),
   body: z.object({
     action: z.enum(['approved', 'rejected'], { required_error: 'Action must be approved or rejected' }),
-    rejectionReason: z.string().trim().optional()
+    rejectionReason: z.string().trim().optional(),
+    decisionReason: z.string().trim().optional()
+  })
+});
+
+export const returnChangeRequestSchema = z.object({
+  params: z.object({
+    id: z.string().regex(objectIdRegex, 'Invalid change request ID')
+  }),
+  body: z.object({
+    notes: z.string().trim().min(3, 'Return notes must be at least 3 characters')
+  })
+});
+
+export const cancelChangeRequestSchema = z.object({
+  params: z.object({
+    id: z.string().regex(objectIdRegex, 'Invalid change request ID')
+  }),
+  body: z.object({
+    reason: z.string().trim().optional()
   })
 });
 
