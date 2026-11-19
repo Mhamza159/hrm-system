@@ -982,6 +982,50 @@ Plans:
 
 ---
 
+## Phase 28: Roles & Permissions Module — Complete System-Wide RBAC/PBAC Audit, Permission Architecture Overhaul, Serena Memory Verification & Premium Enterprise UI Redesign
+
+**Goal:** Conduct an exhaustive, system-wide security, architectural, and visual overhaul of the Roles & Permissions Module (M26) across the entire HRMS. Audit all 26+ modules to discover, standardize, and catalogue every permission key, action, resource, and scope in `backend/src/shared/permissions.js`. Align core system roles (`Super Admin`, `HR Manager`, `Department Manager`, `Employee`) strictly with `docs/FRD.md` Section 11. Implement real-time database-backed analytics (`GET /api/v1/roles/stats` and `GET /api/v1/roles/analytics`) featuring 8 KPI summary cards, a Role Workforce Distribution Bar Chart, and a Module Permission Coverage Donut Chart. Overhaul `RolesListPage.jsx` with a dual view switcher (high-density Enterprise Table View vs Role Cards Grid View (`RoleCardView.jsx`)) and multi-dimensional filter toolbar. Redesign `PermissionMatrix.jsx` and `RoleFormPage.jsx` into a high-performance visual permission assignment studio with sticky category navigation, tri-state bulk controls, numerical approval limits, and pre-save diff reviews. Redesign all modals (Create, Edit, Deep Inspection Details with staff roster, Cloning, Guarded Deletion, and User Multi-Role Assignment). Eliminate all hardcoded role checks across the entire frontend application, standardizing 100% of UI conditional rendering onto `usePermission` and `<Can>` so unauthorized functionality is never displayed. Enforce independent server-side PBAC authorization (`checkPermission`, `scopeFilter`, `fieldFilter`) across all backend routes and services. Verify complete functionality through an automated Vitest E2E suite, 0 Oxlint errors, and a clean Vite production build.
+
+**Requirements**:
+- **1. System-Wide Permission Discovery, Catalogue Synchronization & Serena Memory Audit (`shared/permissions.js`, `role.routes.js`, `checkPermission.js`)**:
+  - Discover and reconcile all permissions across 26+ modules into an exhaustive master catalogue.
+  - Structure permissions with module grouping, resource subjects, human-readable labels, and allowed data scopes (`['own', 'team', 'department', 'all']`).
+- **2. Backend RBAC/PBAC Core Roles Audit, Seed Alignment & Security Guards (`role.model.js`, `roles.seed.js`, `role.service.js`)**:
+  - Align `roles.seed.js` with `docs/FRD.md` Section 11 (Permission Matrix).
+  - Add `GET /api/v1/roles/stats` and `GET /api/v1/roles/analytics` with live MongoDB aggregations.
+  - Enforce privilege escalation guards (`grant ⊆ actor.permissions`), system role rename/delete blocks, and active user assignment deletion locks (`HTTP 409 Conflict`).
+- **3. System-Wide PBAC Policy Evaluation, Data Scoping Engine & Field-Level Masking (`scopeFilter.js`, `fieldFilter.js`)**:
+  - Standardize `buildScopeQuery` across `Employee`, `Attendance`, `Leave`, `Payroll`, `Loan`, `Expense` services.
+  - Mask confidential financial and identification fields (`salary`, `cnic`, `bankAccount`) for non-privileged scopes.
+- **4. Roles & Permissions Dashboard Analytics, 8-KPI Summary Cards & SVG Visualizations (`RoleStatsCards.jsx`, `RoleAnalyticsSection.jsx`)**:
+  - 8 live KPI summary cards: Total Roles, Active Roles, System Roles, Custom Roles, Assigned Staff, Total Permissions, Permission Coverage, Active Delegations.
+  - Native SVG Role Workforce Distribution Bar Chart and Module Permission Coverage Donut Chart.
+- **5. Enterprise Role Directory Overhaul, Dual View Switcher (Table vs Cards) & Multi-Dimensional Filter Toolbar (`RolesListPage.jsx`, `RoleCardView.jsx`, `RoleFilterBar.jsx`)**:
+  - Dual view modes: High-Density Enterprise Table View vs. Visual Role Cards Grid View.
+  - Multi-dimensional filter toolbar with keyword search, role type, headcount status, active status, dismissible chips, and shared pagination.
+- **6. High-Performance Visual Permission Matrix Studio & Bulk Control Overhaul (`PermissionMatrix.jsx`, `RoleFormPage.jsx`)**:
+  - Memoized permission rows with sticky module category tabs, tri-state module checkboxes, bulk scope dropdown, approval limit inputs, and pre-save diff review modal (`PermissionDiffModal.jsx`).
+- **7. Role Create/Edit, Detailed Inspection, Cloning & User Multi-Role Assignment Modals (`RoleDetailModal.jsx`, `RoleCloneModal.jsx`, `RoleDeleteModal.jsx`, `UserRoleAssignModal.jsx`)**:
+  - Complete lifecycle modal suite with system role lock, assigned staff roster sub-table, and privilege escalation prevention.
+- **8. System-Wide UI Permission Guarding Audit (`Sidebar.jsx`, Core Pages, Action Buttons & CASL Can)**:
+  - Eliminate hardcoded role checks; enforce 100% permission-based conditional rendering so unauthorized buttons and menus are never displayed.
+- **9. Cross-Module Integration Testing, Privilege Escalation Security Audit & Comprehensive Vitest Suite (`roles.overhaul.e2e.test.js`)**:
+  - Automated Vitest E2E suite covering core roles, custom lifecycle, delegation, scoping, and cross-module 403 API rejections.
+  - 0 Oxlint errors across 417+ files and clean Vite production build.
+
+**Plans**:
+- [ ] **Plan 28-01: System-Wide Permission Discovery, Catalogue Synchronization & Serena Memory Audit** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-01-PLAN.md`)
+- [ ] **Plan 28-02: Backend RBAC/PBAC Core Roles Audit, Seed Alignment & Security Guards** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-02-PLAN.md`)
+- [ ] **Plan 28-03: System-Wide PBAC Policy Evaluation, Data Scoping Engine & Field-Level Masking** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-03-PLAN.md`)
+- [ ] **Plan 28-04: Roles & Permissions Dashboard Analytics, 8-KPI Summary Cards & SVG Visualizations** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-04-PLAN.md`)
+- [ ] **Plan 28-05: Enterprise Role Directory Overhaul, Dual View Switcher (Table vs Cards) & Multi-Dimensional Filter Toolbar** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-05-PLAN.md`)
+- [ ] **Plan 28-06: High-Performance Visual Permission Matrix Studio & Bulk Control Overhaul** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-06-PLAN.md`)
+- [ ] **Plan 28-07: Role Create/Edit, Detailed Inspection, Cloning & User Multi-Role Assignment Modals** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-07-PLAN.md`)
+- [ ] **Plan 28-08: System-Wide UI Permission Guarding Audit (Sidebar, Pages, Action Buttons & CASL Can)** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-08-PLAN.md`)
+- [ ] **Plan 28-09: Cross-Module Integration Testing, Privilege Escalation Security Audit & Comprehensive Vitest Suite** (`.planning/phases/28-roles-permissions-module-complete-system-wide-rbac-pbac-audit-permission-architecture-overhaul-serena-memory-verification-premium-enterprise-ui-redesign/28-09-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features
