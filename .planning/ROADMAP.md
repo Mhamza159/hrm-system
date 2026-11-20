@@ -1453,6 +1453,47 @@ Plans:
 
 ---
 
+## Phase 39: Complete Software-Wide Modal Audit & UI Standardization
+
+**Goal:** Perform a complete software-wide audit of every modal, dialog, drawer, and slide-over panel across the entire application. Identify all right-side opening modals/drawers and convert them into horizontally and vertically centered modals. Eliminate heavy, opaque black backdrop overlays and sprawling shadows in favor of a unified subtle backdrop (`bg-slate-900/40 backdrop-blur-sm`), clean `shadow-2xl` elevation, rounded corners (`rounded-2xl`), and internal scrolling.
+
+**Requirements**:
+- **1. Shared Modal Architecture & Universal Design Contract (`Plan 39-01`)**:
+  - Audit and standardize shared dialogs in `frontend/src/components/common` (`ConfirmDialog`, `ErrorModal`, `PermissionDeniedModal`, `SessionExpiredModal`, `SuccessModal`, `ModalSkeleton`).
+  - Establish universal modal tokens: `bg-slate-900/40 backdrop-blur-sm`, `rounded-2xl`, `border border-slate-200 dark:border-[#1A3125]`, `shadow-2xl`, and `zoom-in-95` transitions.
+- **2. Core Management Drawers Conversion (`Plan 39-02`)**:
+  - Convert `OrgChartDetailDrawer.jsx` (the exact staff hierarchy inspection panel from the user's screenshot) to a centered, responsive modal.
+  - Convert `PolicyDetailDrawer.jsx` to a centered document inspection modal.
+  - Convert `NotificationDrawer.jsx` to a centered notification center modal.
+- **3. Financial & Operational Drawers Conversion (`Plan 39-03`)**:
+  - Convert `ExpenseDetailDrawer.jsx` to a centered claim inspection & approval modal.
+  - Convert `LoanScheduleDrawer.jsx` to a centered borrower & amortization schedule modal.
+  - Convert `PayslipAdjustmentDrawer.jsx` to a centered adjustment editor modal.
+  - Convert `SalaryStructuresPage.jsx` revision history drawer to a centered audit modal.
+- **4. Feedback & Collaboration Drawers Conversion (`Plan 39-04`)**:
+  - Convert `CaseDetailsDrawer.jsx` to a centered confidential case docket modal.
+  - Convert `GroupInfoDrawer.jsx` to a centered chat channel member management modal.
+- **5. Software-Wide Modal Backdrop & Black Shadow Cleanup (`Plan 39-05`)**:
+  - Audit and clean up heavy, opaque black backdrops (`bg-black/70`, `bg-black/80`, `bg-slate-950/70`, etc.) and duplicate backdrops across all feature module modals.
+  - Enforce subtle `bg-slate-900/40 backdrop-blur-sm` and eliminate screen-blackout shadows.
+- **6. Cross-Module Verification & Master Deliverable Report (`Plan 39-06`)**:
+  - Run static analysis with Oxlint (0 errors) and full Vite production build.
+  - Validate responsive breakpoints (mobile, tablet, desktop) and interaction integrity (Esc key, backdrop click, form submissions).
+  - Generate comprehensive `39-REPORT.md` with complete software-wide metrics.
+
+**Depends on:** Phase 38  
+**Plans:** 6 plans
+
+Plans:
+- [ ] **Plan 39-01: Shared Modal Architecture & Universal Modal Standard Contract** (`.planning/phases/39-complete-software-wide-modal-audit-ui-standardization/39-01-PLAN.md`)
+- [ ] **Plan 39-02: Conversion of Core Management Drawers to Centered Modals** (`.planning/phases/39-complete-software-wide-modal-audit-ui-standardization/39-02-PLAN.md`)
+- [ ] **Plan 39-03: Conversion of Financial & Operational Drawers to Centered Modals** (`.planning/phases/39-complete-software-wide-modal-audit-ui-standardization/39-03-PLAN.md`)
+- [ ] **Plan 39-04: Conversion of Feedback & Collaboration Drawers to Centered Modals** (`.planning/phases/39-complete-software-wide-modal-audit-ui-standardization/39-04-PLAN.md`)
+- [ ] **Plan 39-05: Software-Wide Modal Backdrop & Black Shadow Cleanup** (`.planning/phases/39-complete-software-wide-modal-audit-ui-standardization/39-05-PLAN.md`)
+- [ ] **Plan 39-06: Cross-Module Functional Verification, Responsive Audit & Master Phase 39 Deliverable Report** (`.planning/phases/39-complete-software-wide-modal-audit-ui-standardization/39-06-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features
