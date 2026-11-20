@@ -81,6 +81,19 @@ export const OrgChartPage = () => {
 
   const { tree = [], reportingChain = [], totalNodes = 0, stats = {} } = orgData;
 
+  // Build high-performance lookup map of all nodes in tree for instant complete retrieval
+  const nodeMap = useMemo(() => {
+    const map = new Map();
+    const traverse = (nodes) => {
+      nodes.forEach((n) => {
+        map.set(n.id, n);
+        if (n.children?.length) traverse(n.children);
+      });
+    };
+    traverse(tree);
+    return map;
+  }, [tree]);
+
   // Extract unique departments for filter dropdown
   const departments = useMemo(() => {
     const deptSet = new Set();
@@ -95,6 +108,38 @@ export const OrgChartPage = () => {
     extractDepts(tree);
     return Array.from(deptSet).sort();
   }, [tree]);
+
+  // Real-time search matches and ancestral branch lighting
+  const { searchMatchIds, searchAncestorIds } = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return { searchMatchIds: new Set(), searchAncestorIds: new Set() };
+    }
+    const term = searchTerm.trim().toLowerCase();
+    const matchIds = new Set();
+    const ancestorIds = new Set();
+
+    const searchRecursive = (nodes, currentPath = []) => {
+      for (const node of nodes) {
+        const matches =
+          node.name?.toLowerCase().includes(term) ||
+          node.employeeCode?.toLowerCase().includes(term) ||
+          node.designation?.toLowerCase().includes(term) ||
+          node.department?.toLowerCase().includes(term);
+
+        if (matches) {
+          matchIds.add(node.id);
+          currentPath.forEach((pId) => ancestorIds.add(pId));
+        }
+
+        if (node.children?.length) {
+          searchRecursive(node.children, [...currentPath, node.id]);
+        }
+      }
+    };
+
+    searchRecursive(tree, []);
+    return { searchMatchIds: matchIds, searchAncestorIds: ancestorIds };
+  }, [tree, searchTerm]);
 
   // Find user's own node in the hierarchy
   const findMyNodeId = useMemo(() => {
@@ -114,7 +159,6 @@ export const OrgChartPage = () => {
 
   // Canvas Drag & Pan Handlers
   const handlePointerDown = (e) => {
-    // Only drag when clicking canvas background, not on interactive node cards or buttons
     if (e.target.closest('button, select, input, [id^="org-node-"], [id^="org-compact-node-"]')) {
       return;
     }
@@ -143,6 +187,48 @@ export const OrgChartPage = () => {
     }
   };
 
+  // Transform-Aware Canvas Auto-Centering
+  const handleFocusNode = useCallback((nodeId) => {
+    if (!nodeId) return;
+    setHighlightedNodeId(nodeId);
+
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`org-node-${nodeId}`) || document.getElementById(`org-compact-node-${nodeId}`);
+      const canvasEl = canvasRef.current;
+      if (el && canvasEl) {
+        const canvasRect = canvasEl.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const currentCenterX = elRect.left + elRect.width / 2;
+        const currentCenterY = elRect.top + elRect.height / 2;
+        const targetCenterX = canvasRect.left + canvasRect.width / 2;
+        const targetCenterY = canvasRect.top + canvasRect.height / 3;
+        const dx = targetCenterX - currentCenterX;
+        const dy = targetCenterY - currentCenterY;
+        setPan((prev) => ({
+          x: Math.round(prev.x + dx),
+          y: Math.round(prev.y + dy)
+        }));
+      }
+    });
+  }, []);
+
+  // Auto-focus first search match
+  useEffect(() => {
+    if (searchMatchIds.size > 0) {
+      const firstMatchId = searchMatchIds.values().next().value;
+      handleFocusNode(firstMatchId);
+    }
+  }, [searchMatchIds, handleFocusNode]);
+
+  // Complete Node Selection Handler (resolves from nodeMap)
+  const handleSelectEmployee = useCallback((empOrId) => {
+    if (!empOrId) return;
+    const id = typeof empOrId === 'string' ? empOrId : empOrId?.id;
+    const fullNode = nodeMap.get(id) || empOrId;
+    setSelectedEmployee(fullNode);
+    handleFocusNode(id);
+  }, [nodeMap, handleFocusNode]);
+
   // Auto-centering & Viewport Fitters
   const handleFitToScreen = () => {
     if (!canvasRef.current || !contentRef.current) return;
@@ -167,20 +253,7 @@ export const OrgChartPage = () => {
   // Find My Position with focal zoom
   const handleFindMyPosition = () => {
     if (!findMyNodeId) return;
-    setHighlightedNodeId(findMyNodeId);
-    const element = document.getElementById(`org-node-${findMyNodeId}`) || document.getElementById(`org-compact-node-${findMyNodeId}`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-    }
-  };
-
-  // Focus specific node from detail modal or search
-  const handleFocusNode = (nodeId) => {
-    setHighlightedNodeId(nodeId);
-    const element = document.getElementById(`org-node-${nodeId}`) || document.getElementById(`org-compact-node-${nodeId}`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-    }
+    handleFocusNode(findMyNodeId);
   };
 
   // Fullscreen Toggle
@@ -191,6 +264,11 @@ export const OrgChartPage = () => {
     } else {
       document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
     }
+  };
+
+  // Export to Print/PNG Snapshot
+  const handleExportPng = () => {
+    window.print();
   };
 
   // Refresh handler
@@ -369,13 +447,12 @@ export const OrgChartPage = () => {
                 node={rootNode}
                 reportingChain={reportingChain}
                 highlightedId={highlightedNodeId}
+                searchMatchIds={searchMatchIds}
+                searchAncestorIds={searchAncestorIds}
                 selectedDept={selectedDept}
                 selectedStatus={statusFilter}
                 isCompact={isCompact}
-                onSelectNode={(node) => {
-                  setHighlightedNodeId(node.id);
-                  setSelectedEmployee(node);
-                }}
+                onSelectNode={(node) => handleSelectEmployee(node)}
               />
             ))}
           </div>
@@ -400,6 +477,7 @@ export const OrgChartPage = () => {
             onCollapseAll={() => setMaxDepthLimit(1)}
             isCompact={isCompact}
             onToggleCompact={() => setIsCompact(!isCompact)}
+            onExportPng={handleExportPng}
           />
         </div>
       </div>
@@ -409,10 +487,7 @@ export const OrgChartPage = () => {
         <OrgChartDetailDrawer
           employee={selectedEmployee}
           onClose={() => setSelectedEmployee(null)}
-          onSelectEmployee={(emp) => {
-            setSelectedEmployee(emp);
-            handleFocusNode(emp.id);
-          }}
+          onSelectEmployee={(emp) => handleSelectEmployee(emp)}
           onCenterOnCanvas={(nodeId) => handleFocusNode(nodeId)}
           onSetFocalRoot={(nodeId) => {
             setFocalEmployeeId(nodeId);

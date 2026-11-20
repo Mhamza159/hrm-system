@@ -2244,7 +2244,9 @@ export const deleteShift = async (id, actor) => {
  */
 export const getOrgChart = async (requestingUserId, permissionScope = 'all', actor = null, options = {}) => {
   const query = { isDeleted: false };
-  if (options.status !== 'all') {
+  if (options.status === 'probation') {
+    query.status = 'Probation';
+  } else if (options.status !== 'all') {
     query.status = { $nin: ['Terminated', 'Resigned'] };
   }
   if (options.departmentId && mongoose.Types.ObjectId.isValid(options.departmentId)) {
@@ -2427,12 +2429,17 @@ export const getOrgChart = async (requestingUserId, permissionScope = 'all', act
         }
       }
     }
-  } else if (permissionScope === 'department') {
-    // For department scope: Roots are nodes whose manager is either not in this department,
+  } else if (permissionScope === 'department' || requestedViewMode === 'department') {
+    // For department scope / view: Roots are nodes whose manager is either in another department,
     // or is null, or not in active department employees
     for (const [id, node] of employeeMap.entries()) {
       if (!node.managerId || !employeeMap.has(node.managerId)) {
         rootIds.push(id);
+      } else {
+        const mgrNode = employeeMap.get(node.managerId);
+        if (mgrNode && mgrNode.departmentId !== node.departmentId) {
+          rootIds.push(id);
+        }
       }
     }
   } else if (requestedViewMode === 'employee' && (options.employeeId || userEmployeeId)) {

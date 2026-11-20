@@ -23,6 +23,7 @@ export const OrgChartCompactNode = ({
   isMe = false,
   isSelected = false,
   isInReportingChain = false,
+  isSearchMatch = false,
   isExpanded = true,
   onToggleExpand,
   onSelectNode
@@ -36,6 +37,8 @@ export const OrgChartCompactNode = ({
       className={`relative flex items-center justify-between gap-2 w-48 px-2.5 py-2 rounded-xl cursor-pointer select-none transition-all duration-200 group shadow-xs ${
         isMe
           ? 'bg-emerald-50/95 dark:bg-emerald-950/70 border-2 border-[#00C471] shadow-[0_0_16px_rgba(0,196,113,0.35)] scale-[1.02]'
+          : isSearchMatch
+          ? 'bg-cyan-50/95 dark:bg-cyan-950/80 border-2 border-cyan-400 ring-2 ring-cyan-400/40 shadow-md scale-[1.03]'
           : isSelected
           ? 'bg-cyan-50/90 dark:bg-cyan-950/60 border-2 border-cyan-500 shadow-sm'
           : isInReportingChain

@@ -188,7 +188,7 @@ export const getOrgChartQuerySchema = z.object({
     viewMode: z.enum(['company', 'department', 'team', 'employee']).optional().default('company'),
     employeeId: z.string().optional(),
     maxDepth: z.coerce.number().int().min(1).max(10).optional(),
-    status: z.enum(['active', 'all']).optional().default('active'),
+    status: z.enum(['active', 'probation', 'all']).optional().default('active'),
     search: z.string().optional()
   }).optional().default({})
 });

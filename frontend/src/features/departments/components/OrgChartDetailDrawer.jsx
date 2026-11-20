@@ -164,7 +164,7 @@ export const OrgChartDetailDrawer = ({
 
             {employee.managerName ? (
               <div
-                onClick={() => employee.managerId && onSelectEmployee && onSelectEmployee({ id: employee.managerId, name: employee.managerName })}
+                onClick={() => employee.managerId && onSelectEmployee && onSelectEmployee(employee.managerId)}
                 className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-[#061A14] border border-slate-200 dark:border-[#1A3125] hover:border-emerald-500/60 transition-colors cursor-pointer group"
               >
                 <div className="flex items-center gap-3">

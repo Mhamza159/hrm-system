@@ -29,11 +29,15 @@ export const OrgChartNode = ({
   node,
   reportingChain = [],
   highlightedId = null,
+  searchMatchIds = new Set(),
+  searchAncestorIds = new Set(),
   selectedDept = 'ALL',
   selectedStatus = 'all',
   isCompact = false,
   onSelectNode
 }) => {
+  const isSearchAncestor = searchAncestorIds && searchAncestorIds.has(node.id);
+  const isSearchMatch = searchMatchIds && searchMatchIds.has(node.id);
   const [isExpanded, setIsExpanded] = useState(true);
 
   if (!node) return null;
@@ -41,9 +45,12 @@ export const OrgChartNode = ({
   const hasChildren = node.children && node.children.length > 0;
   const isMe = node.isMe;
   const isInReportingChain = reportingChain.includes(node.id);
-  const isSelected = highlightedId === node.id;
+  const isSelected = highlightedId === node.id || isSearchMatch;
   const isDeptMatch = !selectedDept || selectedDept === 'ALL' || node.department === selectedDept;
   const isStatusMatch = selectedStatus === 'all' || node.status?.toLowerCase() === selectedStatus?.toLowerCase();
+
+  // If node is an ancestor of a search match, force expanded so match is exposed
+  const effectivelyExpanded = isExpanded || isSearchAncestor;
 
   // Check if all children are leaves (no subordinates of their own)
   const areAllChildrenLeaves = hasChildren && node.children.every((c) => !c.children || c.children.length === 0);
@@ -67,7 +74,8 @@ export const OrgChartNode = ({
           isMe={isMe}
           isSelected={isSelected}
           isInReportingChain={isInReportingChain}
-          isExpanded={isExpanded}
+          isSearchMatch={isSearchMatch}
+          isExpanded={effectivelyExpanded}
           onToggleExpand={() => setIsExpanded(!isExpanded)}
           onSelectNode={onSelectNode}
         />
@@ -80,6 +88,8 @@ export const OrgChartNode = ({
           } ${
             isMe
               ? 'bg-emerald-50/90 dark:bg-emerald-950/60 border-2 border-[#00C471] shadow-[0_4px_24px_rgba(0,196,113,0.22)] dark:shadow-[0_0_24px_rgba(0,196,113,0.35)] scale-[1.02]'
+              : isSearchMatch
+              ? 'bg-cyan-50/95 dark:bg-cyan-950/70 border-2 border-cyan-400 ring-4 ring-cyan-400/25 shadow-[0_4px_24px_rgba(6,182,212,0.3)] scale-[1.03] animate-pulse'
               : isSelected
               ? 'bg-cyan-50/90 dark:bg-cyan-950/50 border-2 border-cyan-500 shadow-[0_4px_20px_rgba(6,182,212,0.25)] scale-[1.01]'
               : isInReportingChain
@@ -243,12 +253,12 @@ export const OrgChartNode = ({
       )}
 
       {/* Children Tree Connectors & Children Rendering */}
-      {hasChildren && isExpanded && (
+      {hasChildren && effectivelyExpanded && (
         <div className="flex flex-col items-center">
           {/* Vertical Trunk Line down from parent */}
           <div
             className={`w-0.5 h-6 ${
-              isInReportingChain ? 'bg-[#00C471]' : 'bg-slate-300 dark:bg-slate-700'
+              isInReportingChain || isSearchAncestor ? 'bg-[#00C471]' : 'bg-slate-300 dark:bg-slate-700'
             }`}
           />
 
@@ -265,7 +275,8 @@ export const OrgChartNode = ({
                     node={child}
                     isMe={child.isMe}
                     isSelected={highlightedId === child.id}
-                    isInReportingChain={reportingChain.includes(child.id)}
+                    isInReportingChain={reportingChain.includes(child.id) || (searchAncestorIds && searchAncestorIds.has(child.id))}
+                    isSearchMatch={searchMatchIds && searchMatchIds.has(child.id)}
                     isExpanded={false}
                     onSelectNode={onSelectNode}
                   />
@@ -278,6 +289,7 @@ export const OrgChartNode = ({
                 const isFirst = index === 0;
                 const isLast = index === node.children.length - 1;
                 const isOnlyChild = node.children.length === 1;
+                const isChildActiveInChain = child.isMe || reportingChain.includes(child.id) || (searchAncestorIds && searchAncestorIds.has(child.id));
 
                 return (
                   <div key={child.id} className="relative flex flex-col items-center">
@@ -291,7 +303,7 @@ export const OrgChartNode = ({
                             ? 'left-0 right-1/2'
                             : 'left-0 right-0'
                         } ${
-                          child.isMe || reportingChain.includes(child.id)
+                          isChildActiveInChain
                             ? 'bg-[#00C471]'
                             : 'bg-slate-300 dark:bg-slate-700'
                         }`}
@@ -301,7 +313,7 @@ export const OrgChartNode = ({
                     {/* Vertical drop line to child card */}
                     <div
                       className={`w-0.5 h-4 -mt-4 mb-2 ${
-                        child.isMe || reportingChain.includes(child.id)
+                        isChildActiveInChain
                           ? 'bg-[#00C471]'
                           : 'bg-slate-300 dark:bg-slate-700'
                       }`}
@@ -312,6 +324,8 @@ export const OrgChartNode = ({
                       node={child}
                       reportingChain={reportingChain}
                       highlightedId={highlightedId}
+                      searchMatchIds={searchMatchIds}
+                      searchAncestorIds={searchAncestorIds}
                       selectedDept={selectedDept}
                       selectedStatus={selectedStatus}
                       isCompact={isCompact}
