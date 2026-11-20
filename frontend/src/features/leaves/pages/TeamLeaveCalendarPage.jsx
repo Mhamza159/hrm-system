@@ -473,7 +473,7 @@ export function TeamLeaveCalendarPage() {
 
       {/* Employee Leave Profile Details Modal */}
       {profileModalLeave && (
-        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-emerald-950/80 rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in-95">
             {/* Header with Avatar & Close */}
             <div className="flex items-start justify-between border-b border-slate-100 dark:border-slate-800 pb-4">

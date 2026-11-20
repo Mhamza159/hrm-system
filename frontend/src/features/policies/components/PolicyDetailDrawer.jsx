@@ -80,17 +80,18 @@ export const PolicyDetailDrawer = ({
   const StatusIcon = statusCfg.icon;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
-      {/* Backdrop */}
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={onClose}
+    >
       <div
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
-        onClick={onClose}
-      />
-
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-2xl bg-white dark:bg-[#111D17] border-l border-slate-200 dark:border-[#1A3125] shadow-2xl flex flex-col">
-          {/* Header */}
-          <div className="px-6 py-4 border-b border-slate-100 dark:border-[#1A3125] flex items-start justify-between bg-slate-50/50 dark:bg-[#0C1712]/50">
+        className="relative w-full max-w-3xl max-h-[90vh] bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="shrink-0 px-6 py-4 border-b border-slate-100 dark:border-[#1A3125] flex items-start justify-between bg-slate-50/50 dark:bg-[#0C1712]/50">
             <div className="space-y-1.5 min-w-0 pr-4">
               <div className="flex items-center gap-2 flex-wrap">
                 <span
@@ -348,18 +349,17 @@ export const PolicyDetailDrawer = ({
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-3 border-t border-slate-100 dark:border-[#1A3125] bg-slate-50/50 dark:bg-[#0C1712]/50 flex justify-between items-center text-xs text-slate-400">
+          <div className="shrink-0 px-6 py-3 border-t border-slate-100 dark:border-[#1A3125] bg-slate-50/50 dark:bg-[#0C1712]/50 flex justify-between items-center text-xs text-slate-400">
             <span>Last updated: {new Date(policy.updatedAt).toLocaleDateString()}</span>
             <button
               type="button"
               onClick={onClose}
-              className="h-8 px-4 rounded-lg border border-slate-200 dark:border-[#1A3125] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162820] font-semibold transition"
+              className="h-8 px-4 rounded-lg border border-slate-200 dark:border-[#1A3125] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#162820] font-semibold transition cursor-pointer"
             >
               Close
             </button>
           </div>
         </div>
-      </div>
     </div>
   );
 };

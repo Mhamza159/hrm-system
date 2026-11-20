@@ -459,7 +459,7 @@ export function SubmitFeedbackPage() {
 
       {/* Success / Tracking Code Dialog */}
       {isSuccessModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
           <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl max-w-md w-full p-6 text-center shadow-2xl animate-in fade-in zoom-in-95">
             <div className="w-14 h-14 rounded-2xl bg-[#00C471]/15 text-[#00C471] border border-[#00C471]/30 mx-auto flex items-center justify-center mb-4">
               <CheckCircle2 className="w-7 h-7" />

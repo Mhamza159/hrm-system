@@ -81,11 +81,19 @@ export function PayslipAdjustmentDrawer({ isOpen, onClose, payslip, runId, onSuc
   const currentNet = (payslip.netPay || 0) / 100;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-lg h-full bg-white dark:bg-slate-900 shadow-2xl p-6 overflow-y-auto border-l border-slate-200 dark:border-slate-800 flex flex-col justify-between">
-        <div className="space-y-6">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-xl max-h-[85vh] bg-white dark:bg-[#111D17] rounded-2xl border border-slate-200 dark:border-[#1A3125] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200"
+      >
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-[#1A3125]">
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                 Adjust Payslip: {empName}

@@ -72,18 +72,19 @@ export const NotificationDrawer = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
-      {/* Backdrop overlay */}
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      {/* Centered Modal Container */}
       <div
-        onClick={onClose}
-        className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
-      />
-
-      {/* Slide-out drawer panel */}
-      <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-white dark:bg-[#061A14] border-l border-slate-200 dark:border-[#1A3125] shadow-2xl flex flex-col">
-          {/* Drawer Header */}
-          <div className="p-4 border-b border-slate-200 dark:border-[#1A3125] flex items-center justify-between bg-slate-50/80 dark:bg-[#111D17]">
+        className="relative w-full max-w-lg max-h-[85vh] bg-white dark:bg-[#061A14] border border-slate-200 dark:border-[#1A3125] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal Header */}
+        <div className="shrink-0 p-4 border-b border-slate-200 dark:border-[#1A3125] flex items-center justify-between bg-slate-50/80 dark:bg-[#111D17]">
             <div className="flex items-center gap-2.5">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                 Notifications
@@ -195,8 +196,8 @@ export const NotificationDrawer = ({ isOpen, onClose }) => {
             )}
           </div>
 
-          {/* Drawer Footer */}
-          <div className="p-3.5 border-t border-slate-200 dark:border-[#1A3125] bg-slate-50/80 dark:bg-[#111D17] flex items-center justify-between gap-2">
+          {/* Modal Footer */}
+          <div className="shrink-0 p-3.5 border-t border-slate-200 dark:border-[#1A3125] bg-slate-50/80 dark:bg-[#111D17] flex items-center justify-between gap-2">
             <button
               type="button"
               onClick={handleArchiveAllRead}
@@ -218,7 +219,6 @@ export const NotificationDrawer = ({ isOpen, onClose }) => {
             </button>
           </div>
         </div>
-      </div>
     </div>
   );
 };

@@ -177,18 +177,18 @@ export function LoanScheduleDrawer({ loanId, onClose, onPrepayClick }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="loan-drawer-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="loan-drawer-title"
         onClick={(e) => e.stopPropagation()}
-        className="flex h-full w-full max-w-2xl flex-col border-s border-[#EAECF0] bg-white shadow-2xl animate-in slide-in-from-right duration-300 dark:border-[#1A3125] dark:bg-[#111D17]"
+        className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-2xl border border-[#EAECF0] bg-white shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 dark:border-[#1A3125] dark:bg-[#111D17]"
       >
         {/* Header: borrower identity */}
-        <header className="flex items-start gap-4 border-b border-[#EAECF0] px-6 py-5 dark:border-[#1A3125]">
+        <header className="shrink-0 flex items-start gap-4 border-b border-[#EAECF0] px-6 py-5 dark:border-[#1A3125]">
           {emp.avatar ? (
             <img src={emp.avatar} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover" />
           ) : (
@@ -384,7 +384,7 @@ export function LoanScheduleDrawer({ loanId, onClose, onPrepayClick }) {
         {/* Footer: early settlement */}
         {loan?.status === 'active' && remaining > 0 && onPrepayClick && (
           <Can I="loan.prepay" a="Loan">
-            <footer className="flex items-center justify-between gap-4 border-t border-[#EAECF0] px-6 py-4 dark:border-[#1A3125]">
+            <footer className="shrink-0 flex items-center justify-between gap-4 border-t border-[#EAECF0] px-6 py-4 dark:border-[#1A3125]">
               <span className="text-xs text-slate-500 dark:text-slate-400">Settle the outstanding balance early</span>
               <button
                 type="button"

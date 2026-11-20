@@ -253,7 +253,7 @@ export const CareersPublicPage = () => {
 
       {/* Job Details Modal Drawer */}
       {selectedJob && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-150">
           <div className="bg-[#111D17] border border-[#1A3125] w-full max-w-2xl rounded-2xl p-6 space-y-5 max-h-[85vh] overflow-y-auto shadow-2xl">
             <div className="flex items-start justify-between">
               <div>

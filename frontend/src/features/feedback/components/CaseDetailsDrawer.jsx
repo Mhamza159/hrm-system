@@ -60,10 +60,18 @@ export default function CaseDetailsDrawer({ isOpen, onClose, caseId }) {
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm flex justify-end">
-        <div className="w-full max-w-2xl bg-white dark:bg-[#111D17] h-full shadow-2xl flex flex-col border-l border-slate-200 dark:border-[#1A3125] animate-in slide-in-from-right duration-200">
-          {/* Drawer Header */}
-          <div className="p-6 border-b border-slate-200 dark:border-[#1A3125] flex items-center justify-between">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+        onClick={onClose}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="relative w-full max-w-2xl max-h-[90vh] bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        >
+          {/* Modal Header */}
+          <div className="shrink-0 p-6 border-b border-slate-200 dark:border-[#1A3125] flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-[#00C471]/15 text-[#00C471] border border-[#00C471]/30">
                 <Shield className="w-6 h-6" />

@@ -343,10 +343,18 @@ export function SalaryStructuresPage() {
         )}
       </div>
 
-      {/* Revision History Drawer / Modal */}
+      {/* Revision History Modal */}
       {selectedForHistoryId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-950/60 backdrop-blur-xs animate-in fade-in">
-          <div className="w-full max-w-xl h-full bg-white dark:bg-[#111D17] shadow-2xl p-6 sm:p-8 overflow-y-auto border-l border-slate-200/80 dark:border-[#1A3125] flex flex-col justify-between">
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setSelectedForHistoryId(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-2xl max-h-[85vh] bg-white dark:bg-[#111D17] border border-slate-200/80 dark:border-[#1A3125] rounded-2xl shadow-2xl p-6 sm:p-8 overflow-y-auto flex flex-col justify-between animate-in zoom-in-95 duration-200"
+          >
             <div className="space-y-6">
               {/* Drawer Top Header */}
               <div className="flex items-center justify-between pb-5 border-b border-slate-200/80 dark:border-[#1A3125]">
@@ -530,7 +538,7 @@ export function SalaryStructuresPage() {
                 onClick={() => setSelectedForHistoryId(null)}
                 className="h-9 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-[#15231C] border border-slate-200/80 dark:border-[#1A3125] rounded-xl hover:bg-slate-50 dark:hover:bg-[#1A3125] shadow-xs cursor-pointer transition-colors"
               >
-                Close Drawer
+                Close History
               </button>
             </div>
           </div>

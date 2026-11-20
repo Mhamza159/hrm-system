@@ -25,7 +25,7 @@ export function CompanyLogoRemoveModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-150">
       <div className="w-full max-w-md bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
         {/* Modal Header */}
         <div className="p-6 border-b border-slate-100 dark:border-[#1A3125] bg-rose-50/40 dark:bg-rose-950/20 flex items-center justify-between">

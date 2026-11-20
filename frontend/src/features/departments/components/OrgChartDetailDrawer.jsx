@@ -57,14 +57,19 @@ export const OrgChartDetailDrawer = ({
   const isMaskedPhone = employee.phone && employee.phone.includes('***');
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-950/60 dark:bg-black/75 backdrop-blur-xs animate-in fade-in duration-200 flex justify-end">
-      {/* Backdrop Dismiss Area */}
-      <div className="flex-1" onClick={onClose} />
-
-      {/* Drawer Container */}
-      <div className="relative w-full max-w-md md:max-w-lg h-full bg-white dark:bg-[#111D17] border-l border-slate-200 dark:border-[#1A3125] shadow-2xl flex flex-col z-10 animate-in slide-in-from-right duration-300">
-        {/* Drawer Header */}
-        <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-[#0E1712]">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      {/* Centered Modal Container */}
+      <div
+        className="relative w-full max-w-xl max-h-[88vh] bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal Header */}
+        <div className="shrink-0 flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-[#0E1712]">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
               Staff Hierarchy Coordinates
@@ -73,6 +78,7 @@ export const OrgChartDetailDrawer = ({
           <button
             type="button"
             onClick={onClose}
+            aria-label="Close dialog"
             className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
@@ -264,9 +270,9 @@ export const OrgChartDetailDrawer = ({
           </div>
         </div>
 
-        {/* Drawer Footer: Profile Navigation Bridge */}
+        {/* Modal Footer: Profile Navigation Bridge */}
         {canViewProfile && (
-          <div className="p-4 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-[#0E1712]">
+          <div className="shrink-0 p-4 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-[#0E1712]">
             <button
               type="button"
               onClick={() => navigate(`/employees?id=${employee.id}`)}

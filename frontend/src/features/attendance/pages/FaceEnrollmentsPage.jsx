@@ -936,7 +936,7 @@ export const FaceEnrollmentsPage = () => {
 
       {/* ================= BIOMETRIC PHOTO INSPECTION LIGHTBOX MODAL ================= */}
       {selectedPhotoModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-emerald-950/80 rounded-3xl max-w-2xl w-full p-6 space-y-6 shadow-2xl animate-in fade-in zoom-in-95">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
@@ -1093,7 +1093,7 @@ export const FaceEnrollmentsPage = () => {
 
       {/* ================= REJECTION MODAL WITH PRESET REASONS ================= */}
       {rejectModalUser && (
-        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-emerald-950/80 rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl animate-in fade-in zoom-in-95">
             <div className="flex items-center gap-3.5">
               <div className="w-11 h-11 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200/80 dark:border-rose-800/40 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 shadow-xs">
@@ -1182,7 +1182,7 @@ export const FaceEnrollmentsPage = () => {
 
       {/* ================= RESET MODAL ================= */}
       {resetModalUser && (
-        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-emerald-950/80 rounded-3xl max-w-md w-full p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in-95">
             <div className="flex items-center gap-3.5">
               <div className="w-11 h-11 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200/80 dark:border-amber-800/40 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-xs">

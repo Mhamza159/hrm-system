@@ -84,10 +84,18 @@ export const GroupInfoDrawer = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-[#111D17] border-l border-slate-200 dark:border-[#1A3125] w-full max-w-sm h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] w-full max-w-md max-h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+      >
         {/* Header */}
-        <div className="p-4 border-b border-slate-100 dark:border-[#1A3125] flex items-center justify-between bg-slate-50/50 dark:bg-[#061A14]/30">
+        <div className="shrink-0 p-4 border-b border-slate-100 dark:border-[#1A3125] flex items-center justify-between bg-slate-50/50 dark:bg-[#061A14]/30">
           <div className="flex items-center gap-2.5 font-bold text-sm text-slate-900 dark:text-white">
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-[#00C471]">
               <Users className="w-4 h-4" />

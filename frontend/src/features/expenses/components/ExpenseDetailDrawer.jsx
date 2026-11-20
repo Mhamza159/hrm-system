@@ -138,15 +138,18 @@ export default function ExpenseDetailDrawer({ expenseId, onClose, actions }) {
   const footer = expense && actions ? actions(expense) : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="expense-drawer-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={onClose}
+    >
       <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="expense-drawer-title"
         onClick={(e) => e.stopPropagation()}
-        className="flex h-full w-full max-w-2xl flex-col border-s border-[#EAECF0] bg-white shadow-2xl animate-in slide-in-from-right duration-300 dark:border-[#1A3125] dark:bg-[#111D17]"
+        className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl border border-[#EAECF0] bg-white shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 dark:border-[#1A3125] dark:bg-[#111D17]"
       >
-        <header className="flex items-start justify-between gap-4 border-b border-[#EAECF0] px-6 py-5 dark:border-[#1A3125]">
+        <header className="shrink-0 flex items-start justify-between gap-4 border-b border-[#EAECF0] px-6 py-5 dark:border-[#1A3125]">
           <div className="min-w-0">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Expense claim</p>
             <h3 id="expense-drawer-title" className="mt-0.5 font-mono text-base font-semibold text-slate-900 dark:text-white">
@@ -288,7 +291,7 @@ export default function ExpenseDetailDrawer({ expenseId, onClose, actions }) {
         </div>
 
         {footer && (
-          <footer className="flex items-center justify-end gap-3 border-t border-[#EAECF0] px-6 py-4 dark:border-[#1A3125]">{footer}</footer>
+          <footer className="shrink-0 flex items-center justify-end gap-3 border-t border-[#EAECF0] px-6 py-4 dark:border-[#1A3125]">{footer}</footer>
         )}
       </div>
     </div>
