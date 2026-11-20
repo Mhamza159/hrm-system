@@ -2232,8 +2232,26 @@ export const deleteShift = async (id, actor) => {
  * @param {Object} [actor=null] - Authenticated user context
  * @returns {Object} { tree, reportingChain, totalNodes }
  */
-export const getOrgChart = async (requestingUserId, permissionScope = 'all', actor = null) => {
-  const employees = await Employee.find({ isDeleted: false })
+/**
+ * 4.5 & 4.7: Retrieve hierarchical organizational chart with dynamic DAG resolution,
+ * multi-root trees, cycle prevention, PBAC scoping & field masking.
+ * 
+ * @param {string} requestingUserId 
+ * @param {string} permissionScope ('all' | 'department' | 'team' | 'own')
+ * @param {Object} actor User token payload
+ * @param {Object} options Query parameters (departmentId, viewMode, employeeId, maxDepth, status, canViewSensitive)
+ * @returns {Object} Tree structure, ancestral reportingChain, totalNodes and hierarchy stats
+ */
+export const getOrgChart = async (requestingUserId, permissionScope = 'all', actor = null, options = {}) => {
+  const query = { isDeleted: false };
+  if (options.status !== 'all') {
+    query.status = { $nin: ['Terminated', 'Resigned'] };
+  }
+  if (options.departmentId && mongoose.Types.ObjectId.isValid(options.departmentId)) {
+    query.departmentId = options.departmentId;
+  }
+
+  const employees = await Employee.find(query)
     .select('name employeeCode email phone departmentId designationId managerId userId status avatar')
     .populate('departmentId', 'name code')
     .populate('designationId', 'title grade')
@@ -2243,7 +2261,16 @@ export const getOrgChart = async (requestingUserId, permissionScope = 'all', act
     return {
       tree: [],
       reportingChain: [],
-      totalNodes: 0
+      totalNodes: 0,
+      stats: {
+        totalNodes: 0,
+        departmentsCount: 0,
+        managersCount: 0,
+        maxDepth: 0,
+        spanOfControlAvg: 0,
+        unassignedCount: 0
+      },
+      viewMode: options.viewMode || 'company'
     };
   }
 
@@ -2266,13 +2293,20 @@ export const getOrgChart = async (requestingUserId, permissionScope = 'all', act
     return {
       tree: [],
       reportingChain: [],
-      totalNodes: 0
+      totalNodes: 0,
+      stats: {
+        totalNodes: 0,
+        departmentsCount: 0,
+        managersCount: 0,
+        maxDepth: 0,
+        spanOfControlAvg: 0,
+        unassignedCount: 0
+      },
+      viewMode: options.viewMode || 'company'
     };
   }
 
   // Filter employees according to permissionScope:
-  // - 'department': only employees belonging to the requesting user's department
-  // - 'team', 'own', 'all': handled via tree rooting and traversal below
   let scopedEmployees = employees;
   let userDeptId = null;
   if (permissionScope === 'department' && userEmp) {
@@ -2281,7 +2315,16 @@ export const getOrgChart = async (requestingUserId, permissionScope = 'all', act
       return {
         tree: [],
         reportingChain: [],
-        totalNodes: 0
+        totalNodes: 0,
+        stats: {
+          totalNodes: 0,
+          departmentsCount: 0,
+          managersCount: 0,
+          maxDepth: 0,
+          spanOfControlAvg: 0,
+          unassignedCount: 0
+        },
+        viewMode: options.viewMode || 'company'
       };
     }
     scopedEmployees = employees.filter((emp) => {
@@ -2290,54 +2333,100 @@ export const getOrgChart = async (requestingUserId, permissionScope = 'all', act
     });
   }
 
+  // Helpers for PBAC contact masking
+  const maskEmail = (email) => {
+    if (!email) return '';
+    const parts = email.split('@');
+    if (parts.length !== 2) return '***@company.com';
+    return `${parts[0].slice(0, 1)}***@${parts[1]}`;
+  };
+
+  const maskPhone = (phone) => {
+    if (!phone) return '';
+    if (phone.length < 6) return '***-***';
+    return `${phone.slice(0, 4)}***${phone.slice(-2)}`;
+  };
+
   // 1. Build lookup maps for scoped employees
   const employeeMap = new Map();
   const childrenMap = new Map();
 
   for (const emp of scopedEmployees) {
     const id = emp._id.toString();
-    const isRootExecutive = emp.employeeCode === 'EMP-000' || !emp.managerId;
+    // Neutralize self-reporting loop if present
+    let rawManagerId = emp.managerId ? emp.managerId.toString() : null;
+    if (rawManagerId === id) {
+      rawManagerId = null;
+    }
+
+    const isMe = emp.userId
+      ? emp.userId.toString() === requestingUserId?.toString()
+      : (userEmployeeId ? id === userEmployeeId : false);
+
+    const canSeeSensitive = options.canViewSensitive || isMe;
+
     employeeMap.set(id, {
       id,
       name: emp.name,
       employeeCode: emp.employeeCode,
-      email: emp.email || '',
-      phone: emp.phone || '',
+      email: canSeeSensitive ? (emp.email || '') : maskEmail(emp.email),
+      phone: canSeeSensitive ? (emp.phone || '') : maskPhone(emp.phone),
       avatar: emp.avatar || '',
-      department: emp.departmentId?.name || (isRootExecutive ? 'Executive Management' : 'General'),
-      departmentCode: emp.departmentId?.code || (isRootExecutive ? 'EXEC' : ''),
-      designation: emp.designationId?.title || (isRootExecutive ? 'Chief Executive Officer' : 'Team Member'),
-      grade: emp.designationId?.grade || (isRootExecutive ? 'Executive' : 'Mid'),
+      department: emp.departmentId?.name || 'Unassigned Department',
+      departmentCode: emp.departmentId?.code || '',
+      departmentId: emp.departmentId?._id?.toString() || (emp.departmentId ? emp.departmentId.toString() : null),
+      designation: emp.designationId?.title || 'Team Member',
+      designationId: emp.designationId?._id?.toString() || (emp.designationId ? emp.designationId.toString() : null),
+      grade: emp.designationId?.grade || 'Mid',
       status: emp.status || 'Active',
       userId: emp.userId ? emp.userId.toString() : null,
-      managerId: emp.managerId ? emp.managerId.toString() : null,
-      isMe: emp.userId ? emp.userId.toString() === requestingUserId?.toString() : (userEmployeeId ? id === userEmployeeId : false)
+      managerId: rawManagerId,
+      isMe
     });
 
-    const mId = emp.managerId ? emp.managerId.toString() : 'ROOT';
+    const mId = rawManagerId || 'ROOT';
     if (!childrenMap.has(mId)) {
       childrenMap.set(mId, []);
     }
     childrenMap.get(mId).push(id);
   }
 
-  // 2. Resolve manager name and designation for all nodes
+  // 2. Resolve manager name and designation for all nodes, handle dangling managers
   for (const [id, node] of employeeMap.entries()) {
     if (node.managerId && employeeMap.has(node.managerId)) {
       const mgr = employeeMap.get(node.managerId);
       node.managerName = mgr.name;
       node.managerDesignation = mgr.designation;
     } else {
+      // If managerId references an inactive/missing record, safely handle as unassigned parent
+      if (node.managerId && !employeeMap.has(node.managerId)) {
+        node.danglingManager = true;
+      }
       node.managerName = null;
       node.managerDesignation = null;
     }
   }
 
-  // 3. Identify Root nodes based on scope
+  // 3. Identify Root nodes based on scope and viewMode
   const rootIds = [];
-  if (permissionScope === 'team' && userEmployeeId && employeeMap.has(userEmployeeId)) {
-    // For team scope: Manager is the sole root of their team tree
-    rootIds.push(userEmployeeId);
+  const requestedViewMode = options.viewMode || 'company';
+
+  if (permissionScope === 'team' || requestedViewMode === 'team') {
+    // For team scope / view: Root at target manager or user
+    const targetManagerId = options.employeeId && employeeMap.has(options.employeeId)
+      ? options.employeeId
+      : userEmployeeId;
+
+    if (targetManagerId && employeeMap.has(targetManagerId)) {
+      rootIds.push(targetManagerId);
+    } else {
+      // Fallback to top-level roots
+      for (const [id, node] of employeeMap.entries()) {
+        if (!node.managerId || !employeeMap.has(node.managerId)) {
+          rootIds.push(id);
+        }
+      }
+    }
   } else if (permissionScope === 'department') {
     // For department scope: Roots are nodes whose manager is either not in this department,
     // or is null, or not in active department employees
@@ -2346,8 +2435,28 @@ export const getOrgChart = async (requestingUserId, permissionScope = 'all', act
         rootIds.push(id);
       }
     }
+  } else if (requestedViewMode === 'employee' && (options.employeeId || userEmployeeId)) {
+    // Employee-centered view mode: Show focal node or its immediate manager
+    const focalId = options.employeeId && employeeMap.has(options.employeeId)
+      ? options.employeeId
+      : userEmployeeId;
+
+    if (focalId && employeeMap.has(focalId)) {
+      const focalNode = employeeMap.get(focalId);
+      if (focalNode.managerId && employeeMap.has(focalNode.managerId)) {
+        rootIds.push(focalNode.managerId);
+      } else {
+        rootIds.push(focalId);
+      }
+    } else {
+      for (const [id, node] of employeeMap.entries()) {
+        if (!node.managerId || !employeeMap.has(node.managerId)) {
+          rootIds.push(id);
+        }
+      }
+    }
   } else {
-    // For 'all' and 'own': Global roots (managerId is null or not in active employees)
+    // Global company roots (managerId is null or dangling)
     for (const [id, node] of employeeMap.entries()) {
       if (!node.managerId || !employeeMap.has(node.managerId)) {
         rootIds.push(id);
@@ -2355,10 +2464,15 @@ export const getOrgChart = async (requestingUserId, permissionScope = 'all', act
     }
   }
 
-  // 4. Recursive tree builder with DAG cycle prevention
-  const buildSubtree = (nodeId, visitedPath = new Set()) => {
+  // 4. Recursive tree builder with DAG cycle prevention and maxDepth limiter
+  const maxDepthLimit = options.maxDepth || 10;
+
+  const buildSubtree = (nodeId, visitedPath = new Set(), currentDepth = 1) => {
     if (visitedPath.has(nodeId)) {
       // Cycle detected: prune branch to prevent stack overflow
+      return null;
+    }
+    if (currentDepth > maxDepthLimit) {
       return null;
     }
 
@@ -2372,7 +2486,7 @@ export const getOrgChart = async (requestingUserId, permissionScope = 'all', act
     const children = [];
 
     for (const childId of childIds) {
-      const childNode = buildSubtree(childId, nextVisited);
+      const childNode = buildSubtree(childId, nextVisited, currentDepth + 1);
       if (childNode) {
         children.push(childNode);
       }
@@ -2380,13 +2494,14 @@ export const getOrgChart = async (requestingUserId, permissionScope = 'all', act
 
     return {
       ...node,
+      depth: currentDepth,
       directReportsCount: children.length,
       children
     };
   };
 
   const tree = rootIds
-    .map((rootId) => buildSubtree(rootId, new Set()))
+    .map((rootId) => buildSubtree(rootId, new Set(), 1))
     .filter(Boolean);
 
   // 5. Compute reportingChain (Slice 4.7): ancestral path upwards from user to root
@@ -2403,23 +2518,49 @@ export const getOrgChart = async (requestingUserId, permissionScope = 'all', act
     }
   }
 
-  // 6. Calculate totalNodes for the rendered hierarchy
-  const countNodes = (nodes) => {
-    let count = 0;
+  // 6. Calculate totalNodes and comprehensive hierarchy metrics
+  let totalNodes = 0;
+  let maxObservedDepth = 0;
+  const deptSet = new Set();
+  let managersCount = 0;
+  let totalDirectReports = 0;
+
+  const traverseMetrics = (nodes, depth = 1) => {
     for (const n of nodes) {
-      count += 1;
-      if (n.children?.length) {
-        count += countNodes(n.children);
+      totalNodes += 1;
+      if (depth > maxObservedDepth) maxObservedDepth = depth;
+      if (n.department && n.department !== 'Unassigned Department') {
+        deptSet.add(n.department);
+      }
+      if (n.children && n.children.length > 0) {
+        managersCount += 1;
+        totalDirectReports += n.children.length;
+        traverseMetrics(n.children, depth + 1);
       }
     }
-    return count;
   };
-  const totalNodes = countNodes(tree);
+
+  traverseMetrics(tree, 1);
+
+  const spanOfControlAvg = managersCount > 0
+    ? parseFloat((totalDirectReports / managersCount).toFixed(1))
+    : 0;
+
+  const stats = {
+    totalNodes,
+    departmentsCount: deptSet.size,
+    managersCount,
+    maxDepth: maxObservedDepth,
+    spanOfControlAvg,
+    unassignedCount: scopedEmployees.filter((e) => !e.managerId).length
+  };
 
   return {
     tree,
     reportingChain,
-    totalNodes
+    totalNodes,
+    stats,
+    viewMode: requestedViewMode
   };
 };
 

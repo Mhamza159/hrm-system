@@ -178,3 +178,18 @@ export const shiftIdParamSchema = z.object({
     id: objectIdSchema
   })
 });
+
+/**
+ * 4.5 & 4.7: Schema for querying hierarchical organizational chart
+ */
+export const getOrgChartQuerySchema = z.object({
+  query: z.object({
+    departmentId: z.string().optional(),
+    viewMode: z.enum(['company', 'department', 'team', 'employee']).optional().default('company'),
+    employeeId: z.string().optional(),
+    maxDepth: z.coerce.number().int().min(1).max(10).optional(),
+    status: z.enum(['active', 'all']).optional().default('active'),
+    search: z.string().optional()
+  }).optional().default({})
+});
+

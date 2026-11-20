@@ -589,10 +589,11 @@ export const deleteShift = asyncHandler(async (req, res) => {
  */
 export const getOrgChart = asyncHandler(async (req, res) => {
   let scope = req.permissionScope;
+  const isSuperAdmin = req.user?.roles?.some(
+    (r) => r === 'Super Admin' || r?.name === 'Super Admin' || r?.name === 'HR Manager'
+  );
+
   if (!scope || scope === 'all') {
-    const isSuperAdmin = req.user?.roles?.some(
-      (r) => r === 'Super Admin' || r?.name === 'Super Admin' || r?.name === 'HR Manager'
-    );
     if (!isSuperAdmin) {
       const orgScope = getEffectiveScopeForAction(req.user, 'org.view');
       const empScope = getEffectiveScopeForAction(req.user, 'employee.view');
@@ -604,7 +605,21 @@ export const getOrgChart = asyncHandler(async (req, res) => {
     }
   }
 
-  const chartData = await departmentService.getOrgChart(req.user?._id, scope, req.user);
+  const canViewSensitive = isSuperAdmin || req.user?.roles?.some(
+    (r) => r === 'HR Manager' || r?.name === 'HR Manager'
+  );
+
+  const options = {
+    departmentId: req.query.departmentId,
+    viewMode: req.query.viewMode || 'company',
+    employeeId: req.query.employeeId,
+    maxDepth: req.query.maxDepth ? parseInt(req.query.maxDepth, 10) : undefined,
+    status: req.query.status || 'active',
+    search: req.query.search,
+    canViewSensitive
+  };
+
+  const chartData = await departmentService.getOrgChart(req.user?._id, scope, req.user, options);
   return res.status(200).json(
     apiResponse(200, chartData, 'Organizational hierarchy retrieved successfully.')
   );

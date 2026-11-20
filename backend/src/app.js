@@ -63,6 +63,7 @@ import * as leaveController from './modules/leaves/leave.controller.js';
 import * as payrollController from './modules/payroll/payroll.controller.js';
 import { exportAttendanceSchema } from './modules/attendance/attendance.validation.js';
 import { adjustBalanceSchema } from './modules/leaves/leave.validation.js';
+import { getOrgChartQuerySchema } from './modules/departments/department.validation.js';
 import { validate } from './middlewares/validate.js';
 import { authenticate } from './middlewares/authenticate.js';
 import { checkPermission } from './middlewares/checkPermission.js';
@@ -187,7 +188,7 @@ app.use('/api/v1/audit-logs', auditRoutes);
 app.use('/api/v1/files', fileRoutes);
 app.patch('/api/v1/leave-balances/:id', authenticate, checkPermission('leave.settings', 'all'), validate(adjustBalanceSchema), leaveController.adjustLeaveBalance);
 app.get('/api/v1/permissions', authenticate, checkPermission('role.view'), roleController.getPermissions);
-app.get('/api/v1/org-chart', authenticate, checkPermission('org.view'), departmentController.getOrgChart);
+app.get('/api/v1/org-chart', authenticate, checkPermission('org.view'), validate(getOrgChartQuerySchema), departmentController.getOrgChart);
 app.get('/api/v1/teams/my', authenticate, checkPermission('org.view'), departmentController.getMyTeam);
 
 // 7. Global Centralized Error Handler (M0 Row 0.4)

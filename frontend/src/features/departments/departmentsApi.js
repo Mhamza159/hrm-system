@@ -451,7 +451,10 @@ export const departmentsApi = baseApi.injectEndpoints({
 
     // 4.5 & 4.7: Org Chart Endpoint
     getOrgChart: builder.query({
-      query: () => '/org-chart',
+      query: (params) => ({
+        url: '/org-chart',
+        params
+      }),
       providesTags: ['OrgChart']
     }),
 

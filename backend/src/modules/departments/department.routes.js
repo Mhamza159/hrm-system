@@ -14,7 +14,8 @@ import { validate } from '../../middlewares/validate.js';
 import {
   createDepartmentSchema,
   updateDepartmentSchema,
-  assignHeadSchema
+  assignHeadSchema,
+  getOrgChartQuerySchema
 } from './department.validation.js';
 import * as departmentController from './department.controller.js';
 
@@ -58,6 +59,7 @@ router.get(
 
 router.get(
   '/org-chart',
+  validate(getOrgChartQuerySchema),
   checkPermission('org.view'),
   departmentController.getOrgChart
 );
