@@ -1402,6 +1402,57 @@ Plans:
 
 ---
 
+## Phase 38: Org Chart Module — Complete Audit, Implementation, System Integration & UI Redesign
+
+**Goal:** Perform an end-to-end technical, architectural, functional, security (RBAC/PBAC), and UI/UX overhaul of the Org Chart Module (Module M4 · Row 4.5 & 4.7). Build a production-grade, highly interactive, scalable organizational hierarchy visualization canvas in Elvara Forest theme (`#061A14`, `#00C471`). Dynamically reflect true corporate relationships from MongoDB (`Employee`, `Department`, `Designation`). Support multi-root company trees, cycle-proof DAG assembly, dangling manager resolution, multi-dimensional filters, real-time search with ancestral path lighting, 4 first-class view modes (Company Wide, Department Tree, My Team, Employee Centric), a slide-over inspection drawer, and PBAC field-level contact masking.
+
+**Requirements**:
+- **1. Backend API & Hierarchy Engine Hardening (`Plan 38-01`)**:
+  - Eliminate hardcoded executive titles (`CEO`, `Executive Management`, `EMP-000`).
+  - Support multi-root trees and prune circular reporting loops without infinite recursion.
+  - Safe skip-level reparenting for dangling/inactive managers so no subtrees disappear.
+  - Add query filtering (`departmentId`, `viewMode`, `employeeId`, `maxDepth`, `status`).
+  - Enforce PBAC field masking for sensitive contact coordinates (phone, email).
+  - Compute enterprise hierarchy summary stats (`totalNodes`, `departmentsCount`, `managersCount`, `maxDepth`, `spanOfControlAvg`).
+- **2. Interactive Canvas & Viewport Navigation Studio (`Plan 38-02`)**:
+  - Smooth custom drag-to-pan pointer engine and mouse wheel / pinch zooming (20% to 200%).
+  - Fit-to-Screen auto-scale calculator and Center on Root action.
+  - Depth level limiter (L1 Executive, L2 Heads, L3 Leads, All Levels).
+  - Bulk Expand All / Collapse All controls.
+  - Blueprint dot-grid canvas background and PNG/SVG export capability.
+- **3. High-Density Enterprise Node & Connector Redesign (`Plan 38-03`)**:
+  - Redesign nodes to Elvara Forest palette (`#061A14` canvas, `#111D17` cards, `#1A3125` borders, `#00C471` emerald).
+  - Differentiated visual tiers for Executives, Department Heads, People Managers, and Individual Contributors.
+  - Compact Node View toggle (170px chips) to prevent horizontal explosion on broad hierarchies.
+  - Leaf grid stacking for managers with > 6 individual contributor reports.
+  - Crisp SVG branch connectors with emerald ancestral path illumination.
+- **4. Multi-Dimensional Filters, Real-Time Search & View Modes (`Plan 38-04`)**:
+  - 4 specialized view modes: Company Wide, Department Tree, My Team, Employee Centric.
+  - Department, Designation, and Employment Status filter dropdowns with live count pills and clear-all action.
+  - High-performance real-time search auto-expanding ancestral branches, lighting the path, and focal-scrolling to matches.
+- **5. Employee Detail Inspection Drawer & Profile Bridge (`Plan 38-05`)**:
+  - Slide-over inspection drawer (`480px`) with avatar, status, code, grade, designation, and department.
+  - Interactive reporting manager card and direct reports roster with instant click-to-navigate.
+  - Visual ancestral breadcrumb chain (`CEO -> VP -> Manager -> Employee`).
+  - Permission-aware "View Full Profile" bridge to Employee module.
+- **6. Automated Test Suite, System-Wide End-to-End Verification & Master Phase Documentation (`Plan 38-06`)**:
+  - Comprehensive Vitest test suite (`backend/tests/orgchart-overhaul.test.js`) testing all 15 audit scenarios.
+  - 0-error Oxlint run and clean Vite production build.
+  - Complete Phase 38 audit report and Serena Memory synchronization.
+
+**Depends on:** Phase 37  
+**Plans:** 6 plans
+
+Plans:
+- [ ] **Plan 38-01: Backend API & Hierarchy Engine Hardening** (`.planning/phases/38-org-chart-module-complete-audit-implementation-system-integration-ui-redesign/38-01-PLAN.md`)
+- [ ] **Plan 38-02: Interactive Canvas & Viewport Navigation Studio** (`.planning/phases/38-org-chart-module-complete-audit-implementation-system-integration-ui-redesign/38-02-PLAN.md`)
+- [ ] **Plan 38-03: High-Density Enterprise Node & Connector Redesign** (`.planning/phases/38-org-chart-module-complete-audit-implementation-system-integration-ui-redesign/38-03-PLAN.md`)
+- [ ] **Plan 38-04: Multi-Dimensional Filters, Real-Time Search & View Modes** (`.planning/phases/38-org-chart-module-complete-audit-implementation-system-integration-ui-redesign/38-04-PLAN.md`)
+- [ ] **Plan 38-05: Employee Detail Inspection Drawer & Profile Bridge** (`.planning/phases/38-org-chart-module-complete-audit-implementation-system-integration-ui-redesign/38-05-PLAN.md`)
+- [ ] **Plan 38-06: Automated Test Suite, System-Wide End-to-End Verification & Master Phase Documentation** (`.planning/phases/38-org-chart-module-complete-audit-implementation-system-integration-ui-redesign/38-06-PLAN.md`)
+
+---
+
 ## Summary of Master Roadmap Metrics
 
 - **Phase 1 (Core HR & Payroll):** 12 modules · 148 features
