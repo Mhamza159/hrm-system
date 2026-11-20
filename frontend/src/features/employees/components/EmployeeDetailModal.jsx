@@ -137,7 +137,7 @@ export function EmployeeDetailModal({
     : null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/15 backdrop-blur-xs p-4 overflow-y-auto">
       <div className="bg-white dark:bg-[#111D17] rounded-3xl max-w-4xl w-full shadow-2xl border border-slate-200 dark:border-[#1A3125] overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
         {/* Modal Top Header */}
         <div className="relative overflow-hidden bg-gradient-to-br from-[#0B1A13] via-[#11241B] to-[#0A1811] p-6 text-white border-b border-[#1A3125] shrink-0">

@@ -1068,7 +1068,7 @@ export default function EmployeeFormPage() {
 
       {/* Onboarding Credentials Modal */}
       {createdAccountModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/15 backdrop-blur-xs p-4">
           <div className="bg-[#0B261D] border border-emerald-500/30 rounded-2xl p-6 max-w-md w-full shadow-2xl text-white space-y-4">
             <div className="flex items-center gap-3 text-emerald-400">
               <CheckCircle2 className="w-6 h-6 shrink-0" />

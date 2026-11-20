@@ -52,7 +52,7 @@ export function ChangeRequestDecisionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/15 backdrop-blur-xs p-4 animate-in fade-in duration-200">
       <div className="bg-white dark:bg-[#111D17] rounded-3xl max-w-md w-full shadow-2xl border border-slate-200 dark:border-[#1A3125] p-6 space-y-4 animate-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#1A3125] pb-3">

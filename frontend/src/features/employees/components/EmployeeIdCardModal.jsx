@@ -68,7 +68,7 @@ export function EmployeeIdCardModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/15 backdrop-blur-xs animate-in fade-in duration-150">
       {/* Dedicated Print Stylesheet: Isolates the card badge during window.print() */}
       <style>{`
         @media print {

@@ -572,7 +572,7 @@ export const ResignationPage = () => {
 
       {/* Confidential Exit Interview Submission Modal for Employee */}
       {isInterviewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/15 backdrop-blur-xs animate-in fade-in duration-150">
           <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] w-full max-w-xl rounded-2xl shadow-2xl p-6 space-y-5 overflow-hidden max-h-[90vh] flex flex-col text-xs">
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#1A3125] pb-3">
               <div className="flex items-center gap-2">

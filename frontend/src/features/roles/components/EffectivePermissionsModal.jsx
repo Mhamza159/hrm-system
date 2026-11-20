@@ -39,7 +39,7 @@ export function EffectivePermissionsModal({
   const delegations = userData?.activeDelegations || [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/15 backdrop-blur-xs animate-in fade-in duration-150">
       <div className="w-full max-w-2xl bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-6 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
         {/* Header */}
         <div className="flex items-start justify-between pb-3 border-b border-slate-100 dark:border-[#1A3125]">

@@ -114,7 +114,7 @@ export function PrePayrollAuditModal({ isOpen, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/15 backdrop-blur-xs animate-in fade-in">
       <div className="relative w-full max-w-6xl bg-white dark:bg-[#111D17] rounded-2xl shadow-2xl border border-slate-200 dark:border-[#1A3125] overflow-hidden flex flex-col max-h-[92vh]">
         
         {/* Header */}

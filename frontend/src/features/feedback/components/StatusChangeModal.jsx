@@ -35,7 +35,7 @@ export default function StatusChangeModal({ isOpen, onClose, caseItem }) {
   const isFinalState = ['Resolved', 'Dismissed'].includes(newStatus);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/15 backdrop-blur-xs">
       <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in-95">
         <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-[#1A3125] mb-4">
           <div>

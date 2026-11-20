@@ -226,7 +226,7 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/15 backdrop-blur-xs animate-in fade-in duration-150">
       <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] w-full max-w-3xl rounded-2xl shadow-2xl p-6 overflow-hidden max-h-[92vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-[#1A3125]">
@@ -692,7 +692,7 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
 
       {/* Technical Test Prompt Modal */}
       {isTestPromptOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/15 backdrop-blur-xs">
           <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] w-full max-w-md rounded-2xl p-5 space-y-3">
             <h4 className="font-bold text-sm text-slate-900 dark:text-white">
               Dispatch Technical Assessment
@@ -740,7 +740,7 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
 
       {/* Reject Confirmation Modal */}
       {isRejectOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/15 backdrop-blur-xs">
           <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] w-full max-w-md rounded-2xl p-5 space-y-3">
             <h4 className="font-bold text-sm text-rose-600 flex items-center gap-1.5">
               <AlertCircle className="w-4 h-4" /> Confirm Candidate Rejection
@@ -776,7 +776,7 @@ export const CandidateDetailModal = ({ isOpen, onClose, candidateId, onHiredSucc
 
       {/* Candidate Deletion Confirmation Modal */}
       {isDeleteOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/15 backdrop-blur-xs">
           <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] w-full max-w-md rounded-2xl p-5 space-y-3 shadow-xl">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 flex items-center justify-center border border-rose-200 dark:border-rose-900/40">

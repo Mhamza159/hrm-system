@@ -18,45 +18,49 @@ function walk(dir) {
 
 const files = walk('./frontend/src');
 let changedFilesCount = 0;
-let totalReplacements = 0;
 
 files.forEach(f => {
   const base = path.basename(f);
-  // Do not touch non-modal files like camera feeds / pill badges
+  // Skip non-modals
   if (/OfflineBanner|EnrollmentCaptureWizard|FaceEnrollPage/.test(base)) return;
+  if (/^(Sidebar|Navbar|Header|AppLayout|Layout)\.jsx$/.test(base)) return;
 
   let content = fs.readFileSync(f, 'utf8');
   let original = content;
 
-  // Pattern 1: `bg-black/(60|70|75|80) backdrop-blur-(xs|sm|md)` inside a fixed overlay
+  // Replace dark 40%, 50%, 60% backdrops with ultra-subtle, transparent 15% backdrop
   content = content.replace(
-    /(fixed\s+inset-0[^"'>]*\b)bg-black\/(?:60|70|75|80)\s+backdrop-blur-(?:xs|sm|md)([^"'>]*)/g,
-    '$1bg-slate-900/40 backdrop-blur-sm$2'
+    /(fixed\s+inset-0[^"'>]*\b)bg-slate-900\/40\s+backdrop-blur-(?:sm|xs)([^"'>]*)/g,
+    '$1bg-black/15 backdrop-blur-xs$2'
   );
 
-  // Pattern 2: `bg-slate-950/(?:60|70|75|80)\s+backdrop-blur-(?:xs|sm|md)` inside a fixed overlay
   content = content.replace(
-    /(fixed\s+inset-0[^"'>]*\b)bg-slate-950\/(?:60|70|75|80)\s+backdrop-blur-(?:xs|sm|md)([^"'>]*)/g,
-    '$1bg-slate-900/40 backdrop-blur-sm$2'
+    /(fixed\s+inset-0[^"'>]*\b)bg-slate-900\/(?:50|60)\s+backdrop-blur-(?:sm|xs)([^"'>]*)/g,
+    '$1bg-black/15 backdrop-blur-xs$2'
   );
 
-  // Pattern 3: `bg-slate-900/(?:60|70|80)\s+backdrop-blur-(?:xs|sm|md)` inside a fixed overlay
   content = content.replace(
-    /(fixed\s+inset-0[^"'>]*\b)bg-slate-900\/(?:60|70|80)\s+backdrop-blur-(?:xs|sm|md)([^"'>]*)/g,
-    '$1bg-slate-900/40 backdrop-blur-sm$2'
+    /(fixed\s+inset-0[^"'>]*\b)bg-slate-950\/(?:40|50|60)\s+backdrop-blur-(?:sm|xs)([^"'>]*)/g,
+    '$1bg-black/15 backdrop-blur-xs$2'
   );
 
-  // Pattern 4: in backdrop child div e.g. `<div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs ..."`
   content = content.replace(
-    /(className=["'][^"']*fixed\s+inset-0[^"']*?\b)bg-(?:black|slate-950|slate-900)\/(?:60|70|75|80)\s+backdrop-blur-(?:xs|sm|md)([^"']*["'])/g,
-    '$1bg-slate-900/40 backdrop-blur-sm$2'
+    /(fixed\s+inset-0[^"'>]*\b)bg-black\/(?:40|50|60)\s+backdrop-blur-(?:sm|xs)([^"'>]*)/g,
+    '$1bg-black/15 backdrop-blur-xs$2'
+  );
+
+  // Upgrade modal z-index from z-50 or z-40 to z-[100] to prevent topbar / sidebar clipping
+  // Only where fixed inset-0 is present and it is a modal/dialog
+  content = content.replace(
+    /(fixed\s+inset-0\s+)z-(?:40|50)(\s+)/g,
+    '$1z-[100]$2'
   );
 
   if (content !== original) {
     fs.writeFileSync(f, content, 'utf8');
     changedFilesCount++;
-    console.log(`Updated backdrop in: ${path.relative('.', f)}`);
+    console.log(`Subtle Backdrop Applied: ${path.relative('.', f)}`);
   }
 });
 
-console.log(`\nStandardization Complete: Updated ${changedFilesCount} files.`);
+console.log(`\nUltra-Subtle Transparent Backdrop Applied to ${changedFilesCount} files.`);

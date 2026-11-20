@@ -112,7 +112,7 @@ export function SalaryRevisionModal({ isOpen, onClose, currentStructure, onSucce
   const empCode = currentStructure.employeeId?.employeeCode || '';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/15 backdrop-blur-xs animate-in fade-in overflow-y-auto">
       <div className="relative w-full max-w-2xl bg-white dark:bg-[#111D17] rounded-3xl shadow-2xl border border-slate-200/80 dark:border-[#1A3125] overflow-hidden flex flex-col max-h-[90vh] my-8">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/80 dark:border-[#1A3125] bg-slate-50/50 dark:bg-[#0E1A14] shrink-0">

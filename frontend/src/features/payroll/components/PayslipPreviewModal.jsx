@@ -80,7 +80,7 @@ export function PayslipPreviewModal({ isOpen, onClose, payslip, onDownloadPdf })
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/15 backdrop-blur-xs animate-fade-in overflow-y-auto">
       <div className="bg-white dark:bg-[#111D17] border border-slate-200/80 dark:border-[#1A3125] rounded-3xl max-w-3xl w-full shadow-2xl relative my-8 overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Modal Top Actions */}

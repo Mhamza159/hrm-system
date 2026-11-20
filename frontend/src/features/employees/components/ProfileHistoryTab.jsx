@@ -154,7 +154,7 @@ export function ProfileHistoryTab({ employeeId, canManage = false }) {
 
       {/* Record Milestone Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/15 backdrop-blur-xs p-4">
           <div className="bg-white dark:bg-[#111D17] rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 dark:border-[#1A3125] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-[#1A3125]">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">Record Career Milestone</h3>

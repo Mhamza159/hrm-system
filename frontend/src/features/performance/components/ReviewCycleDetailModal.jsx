@@ -26,7 +26,7 @@ export const ReviewCycleDetailModal = ({ isOpen, onClose, cycle, onStatusToggle 
   const isPastMgr = now > mgrDeadline;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/15 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
       <div
         className="relative w-full max-w-2xl rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden my-8 animate-in zoom-in-95 duration-150"
         role="dialog"

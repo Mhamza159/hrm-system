@@ -348,7 +348,7 @@ export function SalaryStructuresPage() {
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/15 backdrop-blur-xs animate-in fade-in duration-200"
           onClick={() => setSelectedForHistoryId(null)}
         >
           <div

@@ -54,7 +54,7 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm animate-in fade-in duration-150"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/15 p-4 backdrop-blur-xs animate-in fade-in duration-150"
       onClick={() => !isLoading && handleClose?.()}
     >
       <div
