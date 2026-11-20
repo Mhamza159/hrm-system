@@ -127,8 +127,11 @@ export function ApplyLeaveModal({ isOpen, onClose }) {
   // Client-side estimate of working days respecting company workingDays setting
   const calculateEstimatedDays = () => {
     if (halfDay !== 'none') return 0.5;
-    const s = new Date(startDate);
-    const e = new Date(endDate);
+    if (!startDate || !endDate) return 0;
+    const [sY, sM, sD] = startDate.split('-').map(Number);
+    const [eY, eM, eD] = endDate.split('-').map(Number);
+    const s = new Date(sY, sM - 1, sD);
+    const e = new Date(eY, eM - 1, eD);
     if (e < s) return 0;
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     let count = 0;

@@ -2119,7 +2119,7 @@ export const MyAttendancePage = () => {
                                 className="py-2 px-1 min-w-[68px] max-w-[68px] text-center border-r border-slate-100 dark:border-slate-800/60 align-middle"
                               >
                                 <div className="w-full h-[62px] rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 p-1 flex flex-col justify-between items-center transition-all hover:border-slate-300 dark:hover:border-slate-700">
-                                  {rec?.isWeeklyOff ? (
+                                  {rec?.isWeeklyOff && !rec?.checkIn && rec?.status !== 'present' ? (
                                     <div className="h-full flex items-center justify-center">
                                       <span className="px-2 py-0.5 rounded-md text-[10px] font-bold text-orange-600 dark:text-orange-300 border border-orange-300/80 dark:border-orange-800/60 bg-orange-50/70 dark:bg-orange-950/30">
                                         OFF
@@ -2135,8 +2135,14 @@ export const MyAttendancePage = () => {
                                         <span className="text-emerald-600 font-bold">▲ {checkInTime}</span>
                                         <span className="text-rose-600 font-bold">▼ {checkOutTime}</span>
                                       </div>
-                                      <span className="text-[10px] font-semibold text-emerald-600 flex items-center gap-0.5 leading-none">
-                                        ✓ Present
+                                      <span className={`text-[10px] font-semibold flex items-center gap-0.5 leading-none ${
+                                        rec?.flags?.includes('rest_day_work') || (rec?.isWeeklyOff && rec?.checkIn)
+                                          ? 'text-amber-600 dark:text-amber-400 font-bold'
+                                          : 'text-emerald-600'
+                                      }`}>
+                                        {rec?.flags?.includes('rest_day_work') || (rec?.isWeeklyOff && rec?.checkIn)
+                                          ? '⚡ Rest Day'
+                                          : '✓ Present'}
                                       </span>
                                     </>
                                   ) : rec?.status === 'late' || rec?.isLate ? (

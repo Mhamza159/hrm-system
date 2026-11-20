@@ -25,7 +25,7 @@ import { Loan } from '../../models/loan.model.js';
 import { Expense } from '../../models/expense.model.js';
 import { Holiday } from '../../models/holiday.model.js';
 import { SettingService } from '../settings/setting.service.js';
-import { calculateWorkingDaysInMonth, getEffectiveWorkDays } from '../../utils/workdayHelper.js';
+import { calculateWorkingDaysInMonth, getEffectiveWorkDays, isWeeklyOff } from '../../utils/workdayHelper.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { calculateAnnualIncomeTax } from './taxCalculator.js';
 import { calculateStatutoryContributions } from './contributionsCalculator.js';
@@ -219,18 +219,21 @@ export async function executeBatchPayrollCalculation({ month, year, actor }) {
       }
     }
 
-    // Unexcused absences: attendance records with status 'absent' not covered by approved leave
+    // Unexcused absences: attendance records with status 'absent' on scheduled work days not covered by approved leave
     let unexcusedAbsenceDays = 0;
     for (const att of attendanceRecords) {
       if (att.status === 'absent') {
-        const attTime = new Date(att.date).getTime();
-        const covered = leaves.some((lv) => {
-          const s = new Date(lv.startDate).getTime();
-          const e = new Date(lv.endDate).getTime();
-          return attTime >= s && attTime <= e;
-        });
-        if (!covered) {
-          unexcusedAbsenceDays += 1;
+        const isOffDay = isWeeklyOff(att.date, emp.shiftId, companyWorkingDays);
+        if (!isOffDay) {
+          const attTime = new Date(att.date).getTime();
+          const covered = leaves.some((lv) => {
+            const s = new Date(lv.startDate).getTime();
+            const e = new Date(lv.endDate).getTime();
+            return attTime >= s && attTime <= e;
+          });
+          if (!covered) {
+            unexcusedAbsenceDays += 1;
+          }
         }
       }
     }

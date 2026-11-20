@@ -30,7 +30,7 @@ export const ShiftManagementPage = () => {
   const [graceMinutes, setGraceMinutes] = useState(15);
   const [breakMinutes, setBreakMinutes] = useState(60);
   const [halfDayMinutes, setHalfDayMinutes] = useState(240);
-  const [workDays, setWorkDays] = useState(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']);
+  const [workDays, setWorkDays] = useState(['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
   const [errorMessage, setErrorMessage] = useState('');
 
   const { data, isLoading, isFetching, refetch } = useGetShiftsQuery();
@@ -76,10 +76,11 @@ export const ShiftManagementPage = () => {
   };
 
   const toggleDay = (day) => {
-    if (workDays.includes(day)) {
-      setWorkDays(workDays.filter((d) => d !== day));
+    const dayLower = day.toLowerCase();
+    if (workDays.includes(dayLower)) {
+      setWorkDays(workDays.filter((d) => d !== dayLower));
     } else {
-      setWorkDays([...workDays, day]);
+      setWorkDays([...workDays, dayLower]);
     }
   };
 
@@ -195,14 +196,17 @@ export const ShiftManagementPage = () => {
                   <div className="pt-2">
                     <span className="text-slate-400 block mb-1">Working Days:</span>
                     <div className="flex flex-wrap gap-1">
-                      {(shift.workDays || []).map((d) => (
-                        <span
-                          key={d}
-                          className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded text-[11px] font-medium"
-                        >
-                          {d.slice(0, 3)}
-                        </span>
-                      ))}
+                      {(shift.workDays || []).map((d) => {
+                        const cap = String(d).charAt(0).toUpperCase() + String(d).slice(1, 3).toLowerCase();
+                        return (
+                          <span
+                            key={d}
+                            className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded text-[11px] font-medium"
+                          >
+                            {cap}
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -340,20 +344,23 @@ export const ShiftManagementPage = () => {
                   Scheduled Work Days
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
-                    <button
-                      type="button"
-                      key={day}
-                      onClick={() => toggleDay(day)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${
-                        workDays.includes(day)
-                          ? 'border-purple-600 bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300'
-                          : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
-                      }`}
-                    >
-                      {day}
-                    </button>
-                  ))}
+                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
+                    const isSelected = workDays.includes(day.toLowerCase());
+                    return (
+                      <button
+                        type="button"
+                        key={day}
+                        onClick={() => toggleDay(day)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${
+                          isSelected
+                            ? 'border-purple-600 bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300'
+                            : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
+                        }`}
+                      >
+                        {day}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

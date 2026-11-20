@@ -4,7 +4,7 @@
  * Strictly adheres to docs/UI-REFERENCE.md (Elvara Forest & Emerald Enterprise Craft).
  */
 
-import React from 'react';
+import React from "react";
 import {
   Shield,
   Eye,
@@ -17,14 +17,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Building2,
-  Briefcase
-} from 'lucide-react';
+  Briefcase,
+} from "lucide-react";
 import {
   getUserStatusBadge,
   getRoleBadge,
-  get2faBadge
-} from './userAccessTheme.js';
-import { formatDate } from '../../../../lib/formatters.js';
+  get2faBadge,
+} from "./userAccessTheme.js";
+import { formatDate } from "../../../../lib/formatters.js";
 
 export function UserAccessTable({
   users = [],
@@ -44,7 +44,7 @@ export function UserAccessTable({
   onUnlockAccount,
   onRevokeSessions: _onRevokeSessions,
   onResetPassword,
-  onResetDevice
+  onResetDevice,
 }) {
   const safeUsers = Array.isArray(users) ? users : [];
 
@@ -52,7 +52,10 @@ export function UserAccessTable({
     return (
       <div className="bg-white dark:bg-[#111D17] rounded-2xl border border-slate-200 dark:border-[#1A3125] p-6 space-y-4">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-14 rounded-xl bg-slate-100 dark:bg-white/5 animate-pulse" />
+          <div
+            key={i}
+            className="h-14 rounded-xl bg-slate-100 dark:bg-white/5 animate-pulse"
+          />
         ))}
       </div>
     );
@@ -64,9 +67,12 @@ export function UserAccessTable({
         <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-[#00C471] flex items-center justify-center mx-auto mb-3">
           <Shield className="w-6 h-6 stroke-[1.5]" />
         </div>
-        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">No Users Found</h3>
+        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+          No Users Found
+        </h3>
         <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mt-1">
-          No user accounts match your selected filter criteria. Try searching with different terms or resetting filters.
+          No user accounts match your selected filter criteria. Try searching
+          with different terms or resetting filters.
         </p>
       </div>
     );
@@ -101,10 +107,13 @@ export function UserAccessTable({
               const TwoFaIcon = twoFaCfg?.icon || Shield;
 
               const emp = row.employee;
-              const displayName = row.name || emp?.name || (row.email ? row.email.split('@')[0] : 'User');
+              const displayName =
+                row.name ||
+                emp?.name ||
+                (row.email ? row.email.split("@")[0] : "User");
               const empCode = emp?.employeeCode || null;
-              const deptName = emp?.department || 'Unassigned';
-              const desigTitle = emp?.designation || 'Unassigned';
+              const deptName = emp?.department || "Unassigned";
+              const desigTitle = emp?.designation || "Unassigned";
 
               return (
                 <tr
@@ -121,8 +130,10 @@ export function UserAccessTable({
                             alt={displayName}
                             className="w-full h-full object-cover rounded-xl"
                           />
+                        ) : displayName ? (
+                          displayName.charAt(0).toUpperCase()
                         ) : (
-                          displayName ? displayName.charAt(0).toUpperCase() : 'U'
+                          "U"
                         )}
                       </div>
                       <div className="min-w-0">
@@ -161,9 +172,13 @@ export function UserAccessTable({
                   {/* Assigned Roles Cell */}
                   <td className="py-3 px-3">
                     <div className="flex flex-wrap gap-1 max-w-[180px]">
-                      {Array.isArray(row.roles) && row.roles.filter(Boolean).length > 0 ? (
+                      {Array.isArray(row.roles) &&
+                      row.roles.filter(Boolean).length > 0 ? (
                         row.roles.filter(Boolean).map((r, idx) => {
-                          const roleName = typeof r === 'string' ? r : (r?.name || 'Assigned Role');
+                          const roleName =
+                            typeof r === "string"
+                              ? r
+                              : r?.name || "Assigned Role";
                           const rBadge = getRoleBadge(roleName);
                           return (
                             <span
@@ -211,7 +226,7 @@ export function UserAccessTable({
                       {row.deviceId && (
                         <span
                           className="p-1 rounded bg-slate-100 dark:bg-white/5 text-slate-500"
-                          title={`Device bound: ${row.deviceModel || 'Bound'}`}
+                          title={`Device bound: ${row.deviceModel || "Bound"}`}
                         >
                           <Smartphone className="w-3 h-3" />
                         </span>
@@ -222,10 +237,16 @@ export function UserAccessTable({
                   {/* Last Login Cell */}
                   <td className="py-3 px-3 whitespace-nowrap">
                     <div className="text-slate-700 dark:text-slate-300 font-medium">
-                      {row.lastLoginAt ? formatDate(row.lastLoginAt) : 'Never logged in'}
+                      {row.lastLoginAt
+                        ? formatDate(row.lastLoginAt)
+                        : "Never logged in"}
                     </div>
                     <div className="text-[10px] text-slate-400 font-mono">
-                      Joined {row.createdAt && !isNaN(new Date(row.createdAt).getTime()) ? new Date(row.createdAt).toLocaleDateString() : 'N/A'}
+                      Joined{" "}
+                      {row.createdAt &&
+                      !isNaN(new Date(row.createdAt).getTime())
+                        ? new Date(row.createdAt).toLocaleDateString()
+                        : "N/A"}
                     </div>
                   </td>
 
@@ -297,10 +318,14 @@ export function UserAccessTable({
                           onClick={() => onToggleStatus(row)}
                           className={`p-1.5 rounded-xl border transition-colors cursor-pointer ${
                             row.isActive
-                              ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/60'
-                              : 'bg-emerald-50 text-[#00C471] border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/60'
+                              ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/60"
+                              : "bg-emerald-50 text-[#00C471] border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-900/60"
                           }`}
-                          title={row.isActive ? 'Deactivate user account' : 'Re-activate user account'}
+                          title={
+                            row.isActive
+                              ? "Deactivate user account"
+                              : "Re-activate user account"
+                          }
                         >
                           {row.isActive ? (
                             <UserX className="w-3.5 h-3.5" />
@@ -322,9 +347,19 @@ export function UserAccessTable({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-slate-100 dark:border-[#1A3125] bg-slate-50/50 dark:bg-[#0A110D] text-xs">
         <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
           <span>
-            Showing <span className="font-semibold text-slate-800 dark:text-slate-200">{startRecord}</span> to{' '}
-            <span className="font-semibold text-slate-800 dark:text-slate-200">{endRecord}</span> of{' '}
-            <span className="font-semibold text-slate-800 dark:text-slate-200">{total}</span> users
+            Showing{" "}
+            <span className="font-semibold text-slate-800 dark:text-slate-200">
+              {startRecord}
+            </span>{" "}
+            to{" "}
+            <span className="font-semibold text-slate-800 dark:text-slate-200">
+              {endRecord}
+            </span>{" "}
+            of{" "}
+            <span className="font-semibold text-slate-800 dark:text-slate-200">
+              {total}
+            </span>{" "}
+            users
           </span>
           <select
             value={limit}

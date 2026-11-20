@@ -331,7 +331,7 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
     kioskId = kiosk._id;
   }
 
-  const { employee, shift, officeHours, lateRules, timeZone } = await getShiftAndPolicies(employeeId);
+  const { employee, shift, officeHours, lateRules, timeZone, workingDays } = await getShiftAndPolicies(employeeId);
 
   const now = new Date();
   const isSuperAdmin =
@@ -339,9 +339,24 @@ export const checkIn = async ({ user, source = 'web', location, ipAddress, userA
     employee?.employeeCode === 'EMP-000' ||
     employee?.email === 'mhamzaofficial159@gmail.com';
 
-  const evalResult = evaluateAttendanceStatus({ checkIn: now, shift, officeHours, lateRules, timeZone });
-  const status = isSuperAdmin ? 'present' : evalResult.status;
-  const flags = isSuperAdmin ? ['flexible_executive'] : evalResult.flags;
+  // Check if today is a scheduled weekly off / rest day for this employee
+  const isRestDayPunch = checkIsWeeklyOff(now, shift, workingDays, timeZone);
+
+  let status = 'present';
+  let flags = [];
+
+  if (isSuperAdmin) {
+    status = 'present';
+    flags = ['flexible_executive'];
+  } else if (isRestDayPunch) {
+    // Voluntary rest day / weekend attendance: never mark as late or penalty
+    status = 'present';
+    flags = ['rest_day_work'];
+  } else {
+    const evalResult = evaluateAttendanceStatus({ checkIn: now, shift, officeHours, lateRules, timeZone });
+    status = evalResult.status;
+    flags = evalResult.flags;
+  }
 
   // Check if approved WFH exists for today
   const wfh = await WFHRequest.findOne({ employeeId, date: todayUtc, status: 'approved' }).lean();
@@ -1821,9 +1836,9 @@ export const getAttendanceHistory = async ({ user, month, search, departmentId, 
 
     const records = {};
     for (let day = 1; day <= daysInMonth; day++) {
-      const dayDate = new Date(year, monthNum - 1, day);
+      const dayDate = new Date(Date.UTC(year, monthNum - 1, day, 12, 0, 0));
       const dateKey = `${year}-${String(monthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      const dayNameLong = allDays[dayDate.getDay()];
+      const dayNameLong = allDays[dayDate.getUTCDay()];
       const dayNameShort = dayNameLong.slice(0, 3).toUpperCase();
       const isWeeklyOff = checkIsWeeklyOff(dayDate, emp.shiftId, companyWorkingDays);
       const isFuture = dateKey > todayStr;
@@ -1850,6 +1865,7 @@ export const getAttendanceHistory = async ({ user, month, search, departmentId, 
         checkOut: att?.checkOut || null,
         workDurationMinutes: att?.workDurationMinutes || 0,
         isLate: att?.status === 'late' || att?.flags?.includes('late') || false,
+        flags: att?.flags || [],
         isWeeklyOff,
         isUpcoming: isFuture
       };

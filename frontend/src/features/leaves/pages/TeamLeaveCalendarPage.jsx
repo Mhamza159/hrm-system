@@ -37,6 +37,7 @@ import { PageHeader } from '../../../components/common/PageHeader.jsx';
 import { ScreenSkeleton } from '../../../components/common/ScreenSkeleton.jsx';
 import { useGetLeaveCalendarQuery } from '../leavesApi.js';
 import { useGetDepartmentsQuery } from '../../departments/departmentsApi.js';
+import { useGetPublicPoliciesQuery } from '../../settings/settingsApi.js';
 import { ExportLeaveModal } from '../components/ExportLeaveModal.jsx';
 import { usePermission } from '../../../hooks/usePermission.js';
 import { cn } from '../../../lib/utils.js';
@@ -56,12 +57,21 @@ const getEmployeeRole = (emp) => {
 };
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAY_FULL_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
 export function TeamLeaveCalendarPage() {
   const { can } = usePermission();
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [profileModalLeave, setProfileModalLeave] = useState(null);
   const canFilterAllDepartments = can('leave.view', 'all') || can('manage', 'all');
+
+  const { data: publicPoliciesRes } = useGetPublicPoliciesQuery();
+  const activeWorkingDays = useMemo(() => {
+    const raw = publicPoliciesRes?.data?.workingDays;
+    return Array.isArray(raw) && raw.length > 0
+      ? raw.map((d) => String(d).toLowerCase())
+      : ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+  }, [publicPoliciesRes]);
 
   const today = new Date();
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
@@ -352,11 +362,14 @@ export function TeamLeaveCalendarPage() {
       <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
         {/* Weekday Headers */}
         <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-center text-xs font-bold text-slate-500 dark:text-slate-400 py-3 uppercase tracking-wider">
-          {WEEKDAYS.map((w, idx) => (
-            <div key={w} className={cn(idx === 0 || idx === 6 ? 'text-slate-400 dark:text-slate-500' : '')}>
-              {w}
-            </div>
-          ))}
+          {WEEKDAYS.map((w, idx) => {
+            const isOffDay = !activeWorkingDays.includes(WEEKDAY_FULL_NAMES[idx]);
+            return (
+              <div key={w} className={cn(isOffDay ? 'text-slate-400 dark:text-slate-500 bg-slate-100/50 dark:bg-slate-800/20' : '')}>
+                {w}
+              </div>
+            );
+          })}
         </div>
 
         {/* Days Grid */}

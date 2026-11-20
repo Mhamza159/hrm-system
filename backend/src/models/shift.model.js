@@ -65,7 +65,7 @@ const shiftSchema = new mongoose.Schema(
     },
     workDays: {
       type: [String],
-      default: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+      default: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
     },
     isCrossMidnight: {
       type: Boolean,

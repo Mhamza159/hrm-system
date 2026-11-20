@@ -17,7 +17,7 @@
  *   10. Financial Coordinates (PBAC Protected)
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   X,
