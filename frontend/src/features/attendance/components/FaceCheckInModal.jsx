@@ -265,7 +265,7 @@ export const FaceCheckInModal = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 selection:bg-emerald-500 selection:text-white">
-      <div className="relative bg-slate-950/95 border border-slate-800 text-slate-100 rounded-3xl max-w-lg w-full overflow-hidden shadow-[0_25px_70px_rgba(0,0,0,0.85)] ring-1 ring-white/10 animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative bg-slate-950/95 border border-slate-800 text-slate-100 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl ring-1 ring-white/10 animate-in fade-in zoom-in-95 duration-200">
         
         {/* Subtle Ambient Radial Lighting Glow */}
         <div className="absolute -top-24 -left-24 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
