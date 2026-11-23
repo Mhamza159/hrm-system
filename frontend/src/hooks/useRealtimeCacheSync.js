@@ -11,7 +11,7 @@
 
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useSocket } from '../features/notifications/hooks/useSocket.js';
+import { useSocket, getSocket } from '../features/notifications/hooks/useSocket.js';
 import { baseApi } from '../lib/baseApi.js';
 
 export const useRealtimeCacheSync = () => {
@@ -19,9 +19,10 @@ export const useRealtimeCacheSync = () => {
   const socket = useSocket();
   const token = useSelector((state) => state.auth?.accessToken);
   const user = useSelector((state) => state.auth?.user);
+  const activeSocket = socket || getSocket();
 
   useEffect(() => {
-    if (!socket || !token || !user) return;
+    if (!activeSocket || !token || !user) return;
 
     // 1. Generic Structured Invalidation Signal from Backend
     const handleCacheInvalidate = (payload) => {
@@ -68,30 +69,30 @@ export const useRealtimeCacheSync = () => {
     };
 
     // Register listeners
-    socket.on('cache:invalidate', handleCacheInvalidate);
-    socket.on('attendance:sync', handleAttendanceSync);
-    socket.on('attendance:punch', handleAttendanceSync);
-    socket.on('leave:sync', handleLeaveSync);
-    socket.on('employee:sync', handleEmployeeSync);
-    socket.on('department:sync', handleDepartmentSync);
-    socket.on('shift:sync', handleShiftSync);
-    socket.on('role:sync', handleRoleSync);
-    socket.on('asset:sync', handleAssetSync);
-    socket.on('payroll:sync', handlePayrollSync);
-    socket.on('settings:sync', handleSettingsSync);
+    activeSocket.on('cache:invalidate', handleCacheInvalidate);
+    activeSocket.on('attendance:sync', handleAttendanceSync);
+    activeSocket.on('attendance:punch', handleAttendanceSync);
+    activeSocket.on('leave:sync', handleLeaveSync);
+    activeSocket.on('employee:sync', handleEmployeeSync);
+    activeSocket.on('department:sync', handleDepartmentSync);
+    activeSocket.on('shift:sync', handleShiftSync);
+    activeSocket.on('role:sync', handleRoleSync);
+    activeSocket.on('asset:sync', handleAssetSync);
+    activeSocket.on('payroll:sync', handlePayrollSync);
+    activeSocket.on('settings:sync', handleSettingsSync);
 
     return () => {
-      socket.off('cache:invalidate', handleCacheInvalidate);
-      socket.off('attendance:sync', handleAttendanceSync);
-      socket.off('attendance:punch', handleAttendanceSync);
-      socket.off('leave:sync', handleLeaveSync);
-      socket.off('employee:sync', handleEmployeeSync);
-      socket.off('department:sync', handleDepartmentSync);
-      socket.off('shift:sync', handleShiftSync);
-      socket.off('role:sync', handleRoleSync);
-      socket.off('asset:sync', handleAssetSync);
-      socket.off('payroll:sync', handlePayrollSync);
-      socket.off('settings:sync', handleSettingsSync);
+      activeSocket.off('cache:invalidate', handleCacheInvalidate);
+      activeSocket.off('attendance:sync', handleAttendanceSync);
+      activeSocket.off('attendance:punch', handleAttendanceSync);
+      activeSocket.off('leave:sync', handleLeaveSync);
+      activeSocket.off('employee:sync', handleEmployeeSync);
+      activeSocket.off('department:sync', handleDepartmentSync);
+      activeSocket.off('shift:sync', handleShiftSync);
+      activeSocket.off('role:sync', handleRoleSync);
+      activeSocket.off('asset:sync', handleAssetSync);
+      activeSocket.off('payroll:sync', handlePayrollSync);
+      activeSocket.off('settings:sync', handleSettingsSync);
     };
-  }, [socket, token, user, dispatch]);
+  }, [activeSocket, token, user, dispatch]);
 };

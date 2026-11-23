@@ -10,7 +10,7 @@
  * 3. Graceful Lifecycle Cleanup: Disconnects cleanly on user logout or application unmount, avoiding memory leaks.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { io } from 'socket.io-client';
 import { toast } from 'sonner';
@@ -26,7 +26,8 @@ export const useSocket = () => {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth?.accessToken);
   const user = useSelector((state) => state.auth?.user);
-  const socketRef = useRef(null);
+  const [socket, setSocket] = useState(() => sharedSocket);
+  const socketRef = useRef(sharedSocket);
 
   useEffect(() => {
     // If not authenticated, disconnect any existing socket
@@ -34,6 +35,8 @@ export const useSocket = () => {
       if (sharedSocket) {
         sharedSocket.disconnect();
         sharedSocket = null;
+        socketRef.current = null;
+        setSocket(null);
       }
       return;
     }
@@ -42,6 +45,8 @@ export const useSocket = () => {
     if (sharedSocket && sharedSocket.auth?.token !== token) {
       sharedSocket.disconnect();
       sharedSocket = null;
+      socketRef.current = null;
+      setSocket(null);
     }
 
     if (!sharedSocket) {
@@ -57,6 +62,7 @@ export const useSocket = () => {
 
       sharedSocket.on('connect', () => {
         // Socket connection established
+        setSocket(sharedSocket);
       });
 
       // Real-time notification handler
@@ -115,13 +121,14 @@ export const useSocket = () => {
     }
 
     socketRef.current = sharedSocket;
+    setSocket(sharedSocket);
 
     return () => {
       // Retain socket connection across re-renders while user remains authenticated
     };
   }, [token, user, dispatch]);
 
-  return socketRef.current;
+  return socket || sharedSocket;
 };
 
 export const getSocket = () => sharedSocket;

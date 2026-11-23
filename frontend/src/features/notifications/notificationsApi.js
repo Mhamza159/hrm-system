@@ -33,21 +33,7 @@ export const notificationsApi = baseApi.injectEndpoints({
         { type: 'Notification', id },
         { type: 'Notification', id: 'LIST' },
         'NotificationCounts'
-      ],
-      // Phase 41: Optimistic UI update for instant feedback
-      async onQueryStarted(id, { dispatch, queryFulfilled }) {
-        const patchResult = dispatch(
-          notificationsApi.util.updateQueryData('getNotifications', undefined, (draft) => {
-            const item = draft?.items?.find((n) => n._id === id);
-            if (item) item.isRead = true;
-          })
-        );
-        try {
-          await queryFulfilled;
-        } catch {
-          patchResult.undo();
-        }
-      }
+      ]
     }),
 
     // Mark single notification as unread
@@ -69,22 +55,7 @@ export const notificationsApi = baseApi.injectEndpoints({
         url: '/notifications/read-all',
         method: 'PATCH'
       }),
-      invalidatesTags: [{ type: 'Notification', id: 'LIST' }, 'NotificationCounts'],
-      // Phase 41: Optimistic bulk update
-      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
-        const patchResult = dispatch(
-          notificationsApi.util.updateQueryData('getNotifications', undefined, (draft) => {
-            draft?.items?.forEach((n) => {
-              n.isRead = true;
-            });
-          })
-        );
-        try {
-          await queryFulfilled;
-        } catch {
-          patchResult.undo();
-        }
-      }
+      invalidatesTags: [{ type: 'Notification', id: 'LIST' }, 'NotificationCounts']
     }),
 
     // Archive single notification
