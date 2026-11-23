@@ -63,7 +63,7 @@ export const FaceCheckInModal = ({
   // User enrollment query
   const { data: faceStatusRes, isLoading: isStatusLoading } =
     useGetFaceStatusQuery(undefined, { skip: !isOpen });
-  const effectiveStatus =
+  const enrollmentStatus =
     propEnrollmentStatus ?? faceStatusRes?.data?.status; // 'approved' | 'pending' | 'none' | 'rejected'
   const isCheckingStatus = !propEnrollmentStatus && isStatusLoading;
 
@@ -81,7 +81,7 @@ export const FaceCheckInModal = ({
     modelsLoaded &&
     isCameraReady &&
     !cameraError &&
-    effectiveStatus === "approved";
+    enrollmentStatus === "approved";
 
   // Initialize camera stream
   const startCamera = async () => {
@@ -300,7 +300,7 @@ export const FaceCheckInModal = ({
     return () => {
       stopCamera();
     };
-  }, [isOpen, isClockedIn, isClockedOut, effectiveStatus]);
+  }, [isOpen, isClockedIn, isClockedOut, enrollmentStatus]);
 
   // Kick off detection loop immediately once engine is fully armed
   useEffect(() => {
@@ -331,12 +331,12 @@ export const FaceCheckInModal = ({
   }
 
   // Unenrolled User Guard: Show clean enrollment required modal
-  const isUnenrolled = effectiveStatus !== "approved";
+  const isUnenrolled = enrollmentStatus !== "approved";
   if (isUnenrolled) {
     return (
       <FaceEnrollmentRequiredModal
         isOpen={isOpen}
-        status={effectiveStatus || "none"}
+        status={enrollmentStatus || "none"}
         onClose={onClose}
       />
     );
