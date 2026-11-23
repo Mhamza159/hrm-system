@@ -3,7 +3,6 @@ import React, {
   useState,
   useEffect,
   useCallback,
-  useNavigate,
 } from "react";
 import {
   ScanFace,
@@ -37,7 +36,6 @@ export const FaceCheckInModal = ({
   isClockedOut = false,
   onOpenCorrectionModal,
 }) => {
-  const navigate = useNavigate();
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const blinkTrackerRef = useRef(
