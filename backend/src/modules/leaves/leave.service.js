@@ -19,6 +19,7 @@ import { SettingService } from '../settings/setting.service.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { recordAuditLog } from '../../services/audit.service.js';
 import { notify } from '../../services/notify.service.js';
+import { broadcastCacheInvalidation } from '../../services/socket.service.js';
 import { Role } from '../../models/role.model.js';
 import { User } from '../../models/user.model.js';
 import { checkApprovalLimit } from '../../utils/approvalLimit.js';
@@ -1626,6 +1627,9 @@ export const decideLeave = async (leaveId, action, reason, user) => {
   }
 
   await leave.save();
+
+  // Phase 41: Dispatch real-time cache invalidation across all connected clients
+  broadcastCacheInvalidation(['Leave', 'LeaveType', 'Attendance'], { company: true });
 
   // Audit record
   recordAuditLog({

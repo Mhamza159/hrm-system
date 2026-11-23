@@ -16,6 +16,7 @@ import { PageHeader } from "../../components/common/PageHeader.jsx";
 import { RoleBadge } from "../../components/common/RoleBadge.jsx";
 import { useAuth } from "../../hooks/useAuth.js";
 import { getUserDisplayName } from "../../lib/formatters.js";
+import { useSmartPolling } from "../../hooks/useSmartPolling.js";
 import { dashboardApi } from "./dashboardApi.js";
 
 import { AdminDashboard } from "./components/AdminDashboard.jsx";
@@ -72,6 +73,16 @@ export default function DashboardPage() {
   };
 
   const [activeRoleView, setActiveRoleView] = useState(determineInitialRole);
+
+  // Phase 41: Visibility-aware smart background auto-refresh for executive KPI consoles (30s)
+  const dashboardPollingInterval = useSmartPolling(30000);
+  useEffect(() => {
+    if (!dashboardPollingInterval) return;
+    const intervalId = setInterval(() => {
+      dispatch(dashboardApi.util.invalidateTags(["Dashboard"]));
+    }, dashboardPollingInterval);
+    return () => clearInterval(intervalId);
+  }, [dashboardPollingInterval, dispatch]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);

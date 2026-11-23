@@ -273,3 +273,32 @@ export const getOnlineUserIds = () => {
   return Array.from(activeUserSockets.keys());
 };
 
+/**
+ * Broadcast real-time cache invalidation signal to clients (Phase 41)
+ * Triggers automatic background query refetching in active RTK Query sessions
+ * @param {string|string[]} tags - RTK Query tag or array of tags (e.g. ['Attendance', 'Leave'])
+ * @param {Object} [scope={}] - Target scope: { userId, departmentId, company }
+ * @returns {boolean} Whether emission was dispatched
+ */
+export const broadcastCacheInvalidation = (tags, { userId, departmentId, company = true } = {}) => {
+  if (!ioInstance) {
+    return false;
+  }
+  const tagList = Array.isArray(tags) ? tags : [tags];
+  const payload = {
+    event: 'cache:invalidate',
+    tags: tagList,
+    timestamp: Date.now()
+  };
+
+  if (userId) {
+    ioInstance.to(`user:${String(userId)}`).emit('cache:invalidate', payload);
+  } else if (departmentId) {
+    ioInstance.to(`dept:${String(departmentId)}`).emit('cache:invalidate', payload);
+  } else if (company) {
+    ioInstance.to('company:broadcast').emit('cache:invalidate', payload);
+  }
+  return true;
+};
+
+

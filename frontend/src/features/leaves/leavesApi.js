@@ -187,7 +187,7 @@ export const leavesApi = baseApi.injectEndpoints({
         method: 'POST',
         body
       }),
-      invalidatesTags: ['Leave']
+      invalidatesTags: ['Leave', 'Dashboard']
     }),
 
     // 6.3: My Leaves History
@@ -221,7 +221,7 @@ export const leavesApi = baseApi.injectEndpoints({
         method: 'PATCH',
         body
       }),
-      invalidatesTags: ['Leave']
+      invalidatesTags: ['Leave', 'Attendance', 'Dashboard']
     }),
 
     // 6.8: Cancel Leave

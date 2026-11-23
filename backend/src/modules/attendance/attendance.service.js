@@ -28,7 +28,7 @@ import { User } from '../../models/user.model.js';
 import { Role } from '../../models/role.model.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { evaluateAttendanceStatus, calculateWorkMetrics } from './services/statusEngine.service.js';
-import { emitToCompany, emitToDepartment } from '../../services/socket.service.js';
+import { emitToCompany, emitToDepartment, broadcastCacheInvalidation } from '../../services/socket.service.js';
 import { notify } from '../../services/notify.service.js';
 import { calculateHaversineDistance, isWithinGeofence } from '../../utils/haversine.js';
 import { WfhLocation } from '../../models/wfhLocation.model.js';
@@ -258,7 +258,10 @@ export const buildPunchBroadcast = (attendance, employee) => ({
   date: attendance.date
 });
 
-const emitDashboardChanged = () => emitToCompany('dashboard:changed', { module: 'attendance' });
+const emitDashboardChanged = () => {
+  emitToCompany('dashboard:changed', { module: 'attendance' });
+  broadcastCacheInvalidation(['Attendance', 'Team', 'WFH', 'Correction', 'AttendanceLock'], { company: true });
+};
 
 export const checkIn = async ({ user, source = 'web', location, ipAddress, userAgent, qrToken, deviceId, deviceModel, liveDescriptor, snapshot }) => {
   const employeeId = await resolveEmployeeId(user);

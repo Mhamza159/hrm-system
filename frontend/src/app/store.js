@@ -1,4 +1,5 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
+import { setupListeners } from '@reduxjs/toolkit/query';
 import authReducer from '../features/auth/authSlice.js';
 import { baseApi } from '../lib/baseApi.js';
 
@@ -21,5 +22,7 @@ export const store = configureStore({
     getDefaultMiddleware().concat(baseApi.middleware)
 });
 
+// Phase 41: Activate global lifecycle auto-refetch listeners (focus, network reconnect)
+setupListeners(store.dispatch);
 
 if (typeof window !== 'undefined') { window.store = store; }

@@ -41,7 +41,7 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'POST',
         body
       }),
-      invalidatesTags: ['Attendance', 'Dashboard', 'FlaggedAttendance', 'AttendanceLocations']
+      invalidatesTags: ['Attendance', 'Team', 'Dashboard', 'FlaggedAttendance', 'AttendanceLocations']
     }),
 
     // 5.4: Clock out
@@ -51,7 +51,7 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'POST',
         body
       }),
-      invalidatesTags: ['Attendance', 'Dashboard', 'FlaggedAttendance', 'AttendanceLocations']
+      invalidatesTags: ['Attendance', 'Team', 'Dashboard', 'FlaggedAttendance', 'AttendanceLocations']
     }),
 
     // 5.5: Start break
@@ -118,7 +118,7 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'POST',
         body
       }),
-      invalidatesTags: ['WFH', 'Dashboard']
+      invalidatesTags: ['WFH', 'Attendance', 'Team', 'Dashboard']
     }),
 
     getMyWFHRequests: builder.query({
@@ -134,7 +134,7 @@ export const attendanceApi = baseApi.injectEndpoints({
         url: '/attendance/wfh/team',
         params
       }),
-      providesTags: ['WFH']
+      providesTags: ['WFH', 'Team']
     }),
 
     decideWFH: builder.mutation({
@@ -143,7 +143,7 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'PATCH',
         body
       }),
-      invalidatesTags: ['WFH', 'Attendance', 'Dashboard']
+      invalidatesTags: ['WFH', 'Attendance', 'Team', 'Dashboard']
     }),
 
     getWFHAuditContext: builder.query({
@@ -158,7 +158,7 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'POST',
         body
       }),
-      invalidatesTags: ['Correction', 'Dashboard']
+      invalidatesTags: ['Correction', 'Attendance', 'Team', 'Dashboard']
     }),
 
     getMyCorrections: builder.query({
@@ -174,7 +174,7 @@ export const attendanceApi = baseApi.injectEndpoints({
         url: '/attendance/corrections/team',
         params
       }),
-      providesTags: ['Correction']
+      providesTags: ['Correction', 'Team']
     }),
 
     decideCorrection: builder.mutation({
@@ -183,7 +183,7 @@ export const attendanceApi = baseApi.injectEndpoints({
         method: 'PATCH',
         body
       }),
-      invalidatesTags: ['Correction', 'Attendance', 'Dashboard']
+      invalidatesTags: ['Correction', 'Attendance', 'Team', 'Dashboard']
     }),
 
     getCorrectionAuditContext: builder.query({

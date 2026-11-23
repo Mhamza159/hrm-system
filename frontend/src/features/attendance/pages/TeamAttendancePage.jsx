@@ -58,6 +58,7 @@ import { toast } from 'sonner';
 import { AttendanceStatusBadge } from '../components/AttendanceStatusBadge.jsx';
 import { EditAttendanceModal } from '../components/EditAttendanceModal.jsx';
 import { ExportAttendanceModal } from '../components/ExportAttendanceModal.jsx';
+import { useSmartPolling } from '../../../hooks/useSmartPolling.js';
 import { PunchCorrectionReviewModal } from '../components/PunchCorrectionReviewModal.jsx';
 import { WFHReviewModal } from '../components/WFHReviewModal.jsx';
 import { getSocket } from '../../notifications/hooks/useSocket.js';
@@ -114,9 +115,11 @@ export const TeamAttendancePage = () => {
   };
 
   // Queries
-  const { data: teamData, isLoading: teamLoading, isFetching: isTeamFetching, refetch: refetchTeam } = useGetTeamAttendanceQuery({
-    date: selectedDate
-  });
+  const teamPollingInterval = useSmartPolling(15000);
+  const { data: teamData, isLoading: teamLoading, isFetching: isTeamFetching, refetch: refetchTeam } = useGetTeamAttendanceQuery(
+    { date: selectedDate },
+    { pollingInterval: teamPollingInterval }
+  );
 
   const {
     data: historyData,

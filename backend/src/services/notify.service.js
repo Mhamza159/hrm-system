@@ -74,6 +74,26 @@ const MODULE_MAP = {
   security: 'system'
 };
 
+// Phase 41: Real-time RTK Query tag mapping for automated client cache synchronization
+const MODULE_TAGS_MAP = {
+  attendance: ['Attendance', 'Team', 'WFH', 'Correction', 'AttendanceLock'],
+  leaves: ['Leave', 'LeaveType', 'Attendance'],
+  payroll: ['Payroll'],
+  loans: ['Loan', 'Loans'],
+  expenses: ['Expenses'],
+  assets: ['Assets', 'Asset', 'AssetRequests'],
+  recruitment: ['Candidates', 'Candidate', 'Jobs', 'Job'],
+  projects: ['Projects', 'Timesheets'],
+  performance: ['Reviews', 'ReviewCycles'],
+  lifecycle: ['Checklists', 'Resignations', 'ExitInterviews'],
+  policies: ['Policies', 'PolicyDoc'],
+  announcements: ['Announcement'],
+  rewards: ['Awards', 'Kudos', 'Celebrations'],
+  feedback: ['Feedback'],
+  settings: ['Settings'],
+  employees: ['Employee', 'Users', 'Departments', 'Designations', 'OrgChart']
+};
+
 /**
  * Dispatch multi-channel notification to one or more users
  * 
@@ -225,6 +245,13 @@ export const notify = async (userIds, payload) => {
             isArchived: notif.isArchived,
             createdAt: notif.createdAt,
             metadata: notif.metadata
+          });
+
+          // Phase 41: Dispatch real-time cache invalidation for the target user's active UI view
+          const moduleTags = MODULE_TAGS_MAP[notif.module] || [];
+          emitToUser(notif.userId, 'cache:invalidate', {
+            tags: ['Notification', 'NotificationCounts', ...moduleTags],
+            timestamp: Date.now()
           });
         } catch (socketErr) {
           console.warn(`[notify.service] Socket emission failed for user ${notif.userId}: ${socketErr.message}`);

@@ -14,6 +14,7 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar.jsx';
 import { Topbar } from './Topbar.jsx';
 import { useIdleTimer } from '../../hooks/useIdleTimer.js';
+import { useRealtimeCacheSync } from '../../hooks/useRealtimeCacheSync.js';
 import { AbilityProvider } from '../../lib/ability.js';
 import { ErrorBoundary } from '../common/ErrorBoundary.jsx';
 import { OfflineProvider } from '../common/OfflineProvider.jsx';
@@ -24,6 +25,9 @@ import { SessionExpiredModal } from '../common/SessionExpiredModal.jsx';
 export function AppLayout() {
   // Activate automatic 30-minute inactivity auto-logout (Slice 1.11)
   useIdleTimer();
+
+  // Phase 41: Activate global real-time WebSocket cache invalidation across all views
+  useRealtimeCacheSync();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
