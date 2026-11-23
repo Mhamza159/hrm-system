@@ -277,20 +277,6 @@ export const MyAttendancePage = () => {
       setOnLeaveModalOpen(true);
       return;
     }
-    if (faceEnrollmentStatus !== "approved") {
-      toast.error(
-        faceEnrollmentStatus === "pending"
-          ? "Your facial biometric enrollment is pending HR approval. Please wait for approval before clocking in."
-          : "Facial biometric not enrolled. Please register your face first to enable camera attendance.",
-        {
-          action: {
-            label: "Enroll Face",
-            onClick: () => navigate("/attendance/face/enroll"),
-          },
-        },
-      );
-      return;
-    }
     setFaceModalOpen(true);
   };
 
@@ -2781,6 +2767,7 @@ export const MyAttendancePage = () => {
 
       <FaceCheckInModal
         isOpen={faceModalOpen}
+        enrollmentStatus={faceEnrollmentStatus}
         isClockedIn={isClockedIn}
         isClockedOut={isClockedOut}
         onOpenCorrectionModal={() => {

@@ -35,6 +35,7 @@ export const FaceCheckInModal = ({
   isClockedIn = false,
   isClockedOut = false,
   onOpenCorrectionModal,
+  enrollmentStatus: propEnrollmentStatus,
 }) => {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -62,7 +63,9 @@ export const FaceCheckInModal = ({
   // User enrollment query
   const { data: faceStatusRes, isLoading: isStatusLoading } =
     useGetFaceStatusQuery(undefined, { skip: !isOpen });
-  const enrollmentStatus = faceStatusRes?.data?.status; // 'approved' | 'pending' | 'none' | 'rejected'
+  const effectiveStatus =
+    propEnrollmentStatus ?? faceStatusRes?.data?.status; // 'approved' | 'pending' | 'none' | 'rejected'
+  const isCheckingStatus = !propEnrollmentStatus && isStatusLoading;
 
   const {
     isLoaded: modelsLoaded,
@@ -78,7 +81,7 @@ export const FaceCheckInModal = ({
     modelsLoaded &&
     isCameraReady &&
     !cameraError &&
-    enrollmentStatus === "approved";
+    effectiveStatus === "approved";
 
   // Initialize camera stream
   const startCamera = async () => {
@@ -297,7 +300,7 @@ export const FaceCheckInModal = ({
     return () => {
       stopCamera();
     };
-  }, [isOpen, isClockedIn, isClockedOut, enrollmentStatus]);
+  }, [isOpen, isClockedIn, isClockedOut, effectiveStatus]);
 
   // Kick off detection loop immediately once engine is fully armed
   useEffect(() => {
@@ -313,14 +316,27 @@ export const FaceCheckInModal = ({
 
   if (!isOpen) return null;
 
+  // While checking status without any cached/prop value, display clean transient spinner
+  if (isCheckingStatus) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/15 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+        <div className="bg-white dark:bg-[#111D17] border border-slate-200 dark:border-[#1A3125] rounded-2xl p-6 shadow-2xl flex items-center gap-3">
+          <div className="w-5 h-5 border-2 border-[#00C471] border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+            Verifying biometric profile...
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   // Unenrolled User Guard: Show clean enrollment required modal
-  const isUnenrolled =
-    !isStatusLoading && enrollmentStatus && enrollmentStatus !== "approved";
+  const isUnenrolled = effectiveStatus !== "approved";
   if (isUnenrolled) {
     return (
       <FaceEnrollmentRequiredModal
         isOpen={isOpen}
-        status={enrollmentStatus || "none"}
+        status={effectiveStatus || "none"}
         onClose={onClose}
       />
     );
