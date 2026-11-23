@@ -1029,6 +1029,35 @@ export const getMonthLockStatus = async (yearMonth) => {
 };
 
 /**
+ * Resolves all active User IDs belonging to HR Managers and Super Admins
+ * @param {string|import('mongoose').Types.ObjectId} [excludeUserId]
+ * @returns {Promise<Array<string>>}
+ */
+export const resolveHRAndAdminRecipients = async (excludeUserId = null) => {
+  const recipientIds = new Set();
+  try {
+    const adminRoles = await Role.find({ name: { $in: ['Super Admin', 'HR Manager'] } }, '_id').lean();
+    const adminRoleIds = adminRoles.map((r) => r._id);
+    const query = {
+      $or: [
+        ...(adminRoleIds.length > 0 ? [{ roles: { $in: adminRoleIds } }] : []),
+        { role: { $in: ['Super Admin', 'HR Manager'] } }
+      ],
+      isActive: true,
+      isDeleted: { $ne: true }
+    };
+    if (excludeUserId) {
+      query._id = { $ne: excludeUserId };
+    }
+    const adminUsers = await User.find(query, '_id').lean();
+    adminUsers.forEach((u) => recipientIds.add(String(u._id)));
+  } catch (err) {
+    console.warn(`[attendance.service] Failed to resolve HR/Admin recipients: ${err.message}`);
+  }
+  return Array.from(recipientIds);
+};
+
+/**
  * Helper to fetch all recipient User IDs for management notifications
  * (Direct Manager + HR Managers + Super Admins)
  */
@@ -1041,23 +1070,8 @@ const getApprovalNotificationRecipients = async (applicantEmp) => {
   }
 
   // 2. HR Managers and Super Admins
-  try {
-    const adminRoles = await Role.find({ name: { $in: ['Super Admin', 'HR Manager'] } }, '_id').lean();
-    const adminRoleIds = adminRoles.map((r) => r._id);
-    if (adminRoleIds.length > 0) {
-      const adminUsers = await User.find(
-        {
-          roles: { $in: adminRoleIds },
-          isActive: true,
-          isDeleted: { $ne: true }
-        },
-        '_id'
-      ).lean();
-      adminUsers.forEach((u) => recipientIds.add(String(u._id)));
-    }
-  } catch (err) {
-    console.warn(`[attendance.service] Failed to fetch admin recipient user IDs: ${err.message}`);
-  }
+  const hrAndAdminIds = await resolveHRAndAdminRecipients(applicantEmp?.userId);
+  hrAndAdminIds.forEach((id) => recipientIds.add(String(id)));
 
   // Don't send notification to the applicant themselves if they are an admin
   if (applicantEmp?.userId) {
@@ -1072,8 +1086,27 @@ const getApprovalNotificationRecipients = async (applicantEmp) => {
  */
 export const applyWFH = async ({ user, date, reason }) => {
   const employeeId = await resolveEmployeeId(user);
-  const targetDate = normalizeToUtcMidnight(new Date(date));
+  const timeZone = 'Asia/Karachi';
 
+  // 1. Mandatory 1-Day-Before Advance Notice Restriction (Phase 40 / Section 3)
+  // Compute tomorrow 00:00:00 in Asia/Karachi
+  const nowInKarachi = new Date(new Date().toLocaleString('en-US', { timeZone }));
+  const tomorrowInKarachi = new Date(nowInKarachi);
+  tomorrowInKarachi.setDate(tomorrowInKarachi.getDate() + 1);
+  tomorrowInKarachi.setHours(0, 0, 0, 0);
+
+  const targetDateKarachi = new Date(new Date(date).toLocaleString('en-US', { timeZone }));
+  targetDateKarachi.setHours(0, 0, 0, 0);
+
+  if (targetDateKarachi.getTime() < tomorrowInKarachi.getTime()) {
+    throw new ApiError(
+      400,
+      'WFH applications must be submitted at least one day before the requested date. Same-day applications are not allowed.',
+      [{ code: 'WFH_ADVANCE_NOTICE_REQUIRED', minAllowedDate: tomorrowInKarachi.toISOString().split('T')[0] }]
+    );
+  }
+
+  const targetDate = normalizeToUtcMidnight(new Date(date));
   await assertMonthNotLocked(targetDate);
 
   const existing = await WFHRequest.findOne({ employeeId, date: targetDate });
@@ -1092,19 +1125,30 @@ export const applyWFH = async ({ user, date, reason }) => {
   recordAuditLog({ actor: user, action: 'WFH_REQUESTED', entity: 'WFHRequest', entityId: wfh._id, after: { date: targetDate, status: 'pending' } }).catch(() => {});
   emitDashboardChanged();
 
-  // Notify manager + HR Managers + Super Admin about new WFH request
+  // Notify manager + HR Managers + Super Admin about new WFH request (Phase 40 / Section 4)
   try {
     const applicantEmp = await Employee.findById(employeeId)
-      .select('name userId managerId')
+      .select('name employeeCode userId managerId departmentId')
       .populate('managerId', 'userId');
     const recipientUserIds = await getApprovalNotificationRecipients(applicantEmp);
     if (recipientUserIds.length > 0) {
-      notify(recipientUserIds, {
+      const formattedDate = targetDate.toISOString().split('T')[0];
+      const empName = applicantEmp?.name || 'Team member';
+      const empCode = applicantEmp?.employeeCode ? ` (${applicantEmp.employeeCode})` : '';
+      await notify(recipientUserIds, {
         type: 'attendance',
+        module: 'attendance',
+        priority: 'normal',
         title: 'New WFH Request',
-        body: `${applicantEmp?.name || 'Team member'} applied for WFH on ${targetDate.toISOString().split('T')[0]}.`,
-        link: '/attendance/team'
-      }).catch(() => {});
+        body: `${empName}${empCode} has submitted a Work From Home request for ${formattedDate}. Please review the application.`,
+        link: '/attendance/team?tab=wfh',
+        metadata: {
+          requestId: wfh._id,
+          employeeId: wfh.employeeId,
+          date: formattedDate,
+          status: 'pending'
+        }
+      });
     }
   } catch (notifErr) {
     console.warn(`[attendance.service] WFH submission notification failed: ${notifErr.message}`);
@@ -1227,16 +1271,24 @@ export const decideWFH = async ({ requestId, user, decision, decisionReason }) =
   recordAuditLog({ actor: user, action: decision === 'approved' ? 'WFH_APPROVED' : 'WFH_REJECTED', entity: 'WFHRequest', entityId: wfh._id, after: { status: decision } }).catch(() => {});
   emitDashboardChanged();
 
-  // Notify applicant of manager decision (BUG-04 Fix)
+  // Notify applicant of manager decision (Phase 40 / Section 4)
   try {
-    const applicantEmp = await Employee.findById(wfh.employeeId).select('userId name');
+    const applicantEmp = await Employee.findById(wfh.employeeId).select('userId name employeeCode');
     if (applicantEmp?.userId) {
-      notify(applicantEmp.userId, {
+      const formattedDate = wfh.date.toISOString().split('T')[0];
+      await notify(applicantEmp.userId, {
         type: 'attendance',
+        module: 'attendance',
+        priority: 'normal',
         title: `WFH Request ${decision === 'approved' ? 'Approved' : 'Rejected'}`,
-        body: `Your WFH request for ${wfh.date.toISOString().split('T')[0]} has been ${decision}.`,
-        link: '/attendance/my'
-      }).catch(() => {});
+        body: `Your Work From Home request for ${formattedDate} has been ${decision}.`,
+        link: '/attendance/my?tab=wfh',
+        metadata: {
+          requestId: wfh._id,
+          decision,
+          date: formattedDate
+        }
+      });
     }
   } catch (notifErr) {
     console.warn(`[attendance.service] WFH decision notification failed: ${notifErr.message}`);
@@ -2683,7 +2735,27 @@ export const verifyFacePunch = async ({ user, liveDescriptor, snapshot }) => {
 
   const dbUser = await User.findById(user._id);
   if (!dbUser || !dbUser.faceEnrollment || dbUser.faceEnrollment.status !== 'approved' || !dbUser.faceEnrollment.descriptors?.length) {
-    throw new ApiError(400, 'Face enrollment is not approved. Please enroll your face and await HR approval before clocking in.');
+    const currentStatus = dbUser?.faceEnrollment?.status || 'none';
+    const msg = currentStatus === 'pending'
+      ? 'Your face enrollment is pending HR review. You cannot use Face Punch until your enrollment is approved.'
+      : currentStatus === 'rejected'
+      ? 'Your face enrollment was rejected. Please re-enroll your face before using Face Punch.'
+      : 'Face enrollment is required before using Face Punch. Your face has not been enrolled yet.';
+
+    // Audit Log entry for blocked face punch due to missing/unapproved biometric enrollment (Module M12 / Section 7)
+    await recordAuditLog({
+      actor: { _id: user._id, name: user.name, email: user.email },
+      action: 'FACE_PUNCH_BLOCKED_UNENROLLED',
+      entity: 'Attendance',
+      details: {
+        reason: 'Face punch attempted without approved face enrollment',
+        enrollmentStatus: currentStatus
+      }
+    }).catch(() => {});
+
+    throw new ApiError(400, msg, [
+      { code: 'FACE_ENROLLMENT_REQUIRED', status: currentStatus }
+    ]);
   }
 
   if (!liveDescriptor || !Array.isArray(liveDescriptor) || liveDescriptor.length !== 128) {
@@ -2791,6 +2863,34 @@ export const enrollFace = async (userId, { descriptors, photo }) => {
 
   await user.save();
 
+  // Phase 40: Dispatch notification to authorized HR Managers and Super Admins (Section 2)
+  try {
+    const applicantEmp = await Employee.findOne({ userId: user._id })
+      .select('name employeeCode departmentId')
+      .lean();
+    const hrRecipients = await resolveHRAndAdminRecipients(user._id);
+    if (hrRecipients.length > 0) {
+      const empName = applicantEmp?.name || user.name || 'An employee';
+      const empCode = applicantEmp?.employeeCode ? ` (${applicantEmp.employeeCode})` : '';
+      await notify(hrRecipients, {
+        type: 'attendance',
+        module: 'attendance',
+        priority: 'normal',
+        title: 'Face Enrollment Completed',
+        body: `${empName}${empCode} has successfully completed Face Enrollment and their enrollment record is available for review.`,
+        link: '/attendance/face-enrollments',
+        metadata: {
+          userId: user._id,
+          employeeId: applicantEmp?._id || null,
+          status: 'pending',
+          enrolledAt: user.faceEnrollment.enrolledAt
+        }
+      });
+    }
+  } catch (notifErr) {
+    console.warn(`[attendance.service] Face enrollment HR notification failed: ${notifErr.message}`);
+  }
+
   await recordAuditLog({
     actor: { _id: user._id, name: user.name, email: user.email },
     action: 'FACE_ENROLLMENT_SUBMITTED',
@@ -2798,7 +2898,8 @@ export const enrollFace = async (userId, { descriptors, photo }) => {
     entityId: user._id,
     details: {
       descriptorsCount: descriptors.length,
-      hasPhoto: Boolean(photo)
+      hasPhoto: Boolean(photo),
+      notifiedHR: true
     }
   });
 

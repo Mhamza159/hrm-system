@@ -11,15 +11,14 @@ import {
   LogIn,
   LogOut,
   Cpu,
-  UserX,
   ArrowRight
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useFaceApi } from '../hooks/useFaceApi';
 import { BlinkTracker } from '../utils/livenessDetector';
 import { useCheckInMutation, useCheckOutMutation, useGetFaceStatusQuery } from '../attendanceApi';
 import { useGeolocation } from '../../../hooks/useGeolocation';
 import { toast } from 'sonner';
+import { FaceEnrollmentRequiredModal } from './FaceEnrollmentRequiredModal.jsx';
 
 export const FaceCheckInModal = ({
   isOpen,
@@ -260,8 +259,17 @@ export const FaceCheckInModal = ({
 
   if (!isOpen) return null;
 
-  // Unenrolled User Guard: Show clean enrollment required state
+  // Unenrolled User Guard: Show clean enrollment required modal
   const isUnenrolled = !isStatusLoading && enrollmentStatus && enrollmentStatus !== 'approved';
+  if (isUnenrolled) {
+    return (
+      <FaceEnrollmentRequiredModal
+        isOpen={isOpen}
+        status={enrollmentStatus || 'none'}
+        onClose={onClose}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/15 backdrop-blur-xs flex items-center justify-center p-4 selection:bg-emerald-500 selection:text-white">
@@ -299,47 +307,7 @@ export const FaceCheckInModal = ({
           </button>
         </div>
 
-        {/* UNENROLLED USER GUARD: Inform and redirect directly */}
-        {isUnenrolled ? (
-          <div className="p-8 text-center space-y-5">
-            <div className="w-16 h-16 mx-auto rounded-3xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-inner">
-              <UserX className="w-8 h-8" />
-            </div>
-            <div className="space-y-1.5 max-w-sm mx-auto">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-white">
-                Biometric Enrollment Required
-              </h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                {enrollmentStatus === 'pending'
-                  ? 'Your facial biometric registration is currently awaiting HR approval. Attendance check-in will activate once approved.'
-                  : 'You have not registered your facial biometrics yet. Please complete Face Enrollment first to punch attendance via camera.'}
-              </p>
-            </div>
-
-            <div className="flex items-center justify-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2.5 rounded-xl border border-slate-800 bg-slate-900 text-slate-300 hover:text-white text-xs font-semibold transition"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  navigate('/attendance/face/enroll');
-                }}
-                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.35)] transition cursor-pointer"
-              >
-                <span>Go to Face Enrollment</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Segmented Direction Switcher (Clock In vs Clock Out) */}
+        {/* Segmented Direction Switcher (Clock In vs Clock Out) */}
             <div className="px-6 pt-4">
               <div className="grid grid-cols-2 p-1 bg-slate-900/90 border border-slate-800/80 rounded-2xl gap-1.5">
                 <button
@@ -609,8 +577,6 @@ export const FaceCheckInModal = ({
                 <span>Active Liveness</span>
               </div>
             </div>
-          </>
-        )}
       </div>
     </div>
   );
