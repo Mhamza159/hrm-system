@@ -1494,33 +1494,69 @@ Plans:
 
 ---
 
-## Phase 40: Software-Wide Real-Time Data Synchronization, RTK Query Cache Invalidation & Automatic Refresh System (Pending)
+## Phase 40: Attendance Module — Face Enrollment, HR Notifications & WFH Workflow Fixes
+
+**Goal:** Perform an end-to-end functional audit and complete implementation of four critical Attendance Module issues: (1) Block Face Punch if Face Enrollment is incomplete or not approved and show a dedicated "Face Enrollment Required" modal, (2) Trigger authorized HR in-app and email notifications upon successful Face Enrollment completion, (3) Strictly enforce the one-day-before advance notice rule for Work From Home (WFH) applications across frontend and backend in `Asia/Karachi` timezone, and (4) Resolve and deliver WFH submission and decision notifications to Reporting Managers, HR Managers, and Super Admins linking directly to `/attendance/team?tab=wfh`.
+
+**Status:** 🚀 **In Progress / Ready for Execution**
+
+**Requirements**:
+- **1. Face Punch Validation & Face Enrollment Required Modal (`Plan 40-01`)**:
+  - Enforce backend validation in `checkIn` and `verifyFacePunch` blocking Face Punch if `dbUser.faceEnrollment.status !== 'approved'`.
+  - Prevent attendance record creation and presence marking; return structured `FACE_ENROLLMENT_REQUIRED` code.
+  - Implement centered, accessible `FaceEnrollmentRequiredModal.jsx` with "Complete Face Enrollment" and "Cancel" actions; suppress camera and neural preloader if un-enrolled.
+- **2. Face Enrollment HR Notification Flow & Recipient Resolution (`Plan 40-02`)**:
+  - In `enrollFace`, dispatch authoritative notifications to active HR Managers and Super Admins upon successful enrollment submission.
+  - Include employee name, code, timestamp, and link (`/attendance/face-enrollments`), excluding raw biometric embeddings or image buffers.
+- **3. Work From Home (WFH) One-Day-Before Advance Notice Restriction (`Plan 40-03`)**:
+  - Enforce advance notice: WFH application permitted only if requested date $\ge$ tomorrow in `Asia/Karachi`.
+  - Reject same-day and past applications on backend (`ApiError(400, 'WFH applications must be submitted at least one day before...')`) and frontend (datepicker `min` constraint & error banner).
+- **4. WFH HR/Manager Notification Delivery & Notification Module Audit (`Plan 40-04`)**:
+  - Resolve both Reporting Manager and all HR Managers / Super Admins on WFH submission.
+  - Deliver notifications linking directly to `/attendance/team?tab=wfh`; notify applicant on approval/rejection linking to `/attendance/my?tab=wfh`.
+- **5. Comprehensive Vitest E2E Test Suite, Cross-Module Verification & Phase Deliverables (`Plan 40-05`)**:
+  - Implement full Vitest integration suite (`backend/tests/attendance.wfh-face-notifications.e2e.test.js`) covering all 28 acceptance criteria.
+  - Ensure 0 Oxlint errors, clean Vite production build, and generate `40-REPORT.md`.
+
+**Depends on:** Phase 39  
+**Plans:** 5 plans
+
+Plans:
+- [ ] **Plan 40-01: Face Punch Validation & Face Enrollment Required Modal** (`.planning/phases/40-attendance-module-face-enrollment-hr-notifications-wfh-workflow-fixes/40-01-PLAN.md`)
+- [ ] **Plan 40-02: Face Enrollment HR Notification Flow & Recipient Resolution** (`.planning/phases/40-attendance-module-face-enrollment-hr-notifications-wfh-workflow-fixes/40-02-PLAN.md`)
+- [ ] **Plan 40-03: Work From Home (WFH) One-Day-Before Advance Notice Restriction** (`.planning/phases/40-attendance-module-face-enrollment-hr-notifications-wfh-workflow-fixes/40-03-PLAN.md`)
+- [ ] **Plan 40-04: WFH HR/Manager Notification Delivery & Notification Module Audit** (`.planning/phases/40-attendance-module-face-enrollment-hr-notifications-wfh-workflow-fixes/40-04-PLAN.md`)
+- [ ] **Plan 40-05: Comprehensive Vitest E2E Test Suite, Cross-Module Verification & Phase Deliverables** (`.planning/phases/40-attendance-module-face-enrollment-hr-notifications-wfh-workflow-fixes/40-05-PLAN.md`)
+
+---
+
+## Phase 41: Software-Wide Real-Time Data Synchronization, RTK Query Cache Invalidation & Automatic Refresh System (Pending)
 
 **Goal:** Permanently eliminate the need for manual page refreshes (F5) across both local development and production environments by establishing automatic data synchronization, comprehensive RTK Query cache invalidation, focus-driven auto-refetching, targeted operational polling, and multi-user Socket.io real-time cache dispatching.
 
 **Status:** ⏳ **Pending / Backlog (Queued for Implementation)**
 
 **Requirements**:
-- **1. Centralized Base API Auto-Refetch & Focus Rehydration (`Plan 40-01`)**:
+- **1. Centralized Base API Auto-Refetch & Focus Rehydration (`Plan 41-01`)**:
   - Configure `refetchOnFocus: true` and `refetchOnReconnect: true` in `frontend/src/lib/baseApi.js`.
   - Ensure switching back to the HRM browser tab or recovering network connectivity automatically rehydrates and refreshes active views without manual F5 reloads.
   - Tune `keepUnusedDataFor` and cache retention policies to prevent memory leaks while guaranteeing data freshness.
-- **2. Software-Wide RTK Query Mutation Cache Invalidation Audit (`Plan 40-02`)**:
+- **2. Software-Wide RTK Query Mutation Cache Invalidation Audit (`Plan 41-02`)**:
   - Comprehensive audit of all feature endpoints across Attendance, Leaves, Employees, Payroll, Departments, Roles, Assets, Expenses, Recruitment, and Company Settings.
   - Identify and fix all missing or mismatched `invalidatesTags` definitions across mutations (Add, Edit, Delete, Status Change, Approval, Rejection) so UI views instantly update upon form submission.
-- **3. Optimistic Cache Updates for High-Frequency Self-Service Actions (`Plan 40-03`)**:
+- **3. Optimistic Cache Updates for High-Frequency Self-Service Actions (`Plan 41-03`)**:
   - Implement `onQueryStarted` optimistic cache patching for fast interactions (attendance check-in/out toggles, status updates, bookmarking).
   - Provide instant UI feedback with automated rollback on server-side validation error.
-- **4. Targeted Smart Background Polling for Mission-Critical Consoles (`Plan 40-04`)**:
+- **4. Targeted Smart Background Polling for Mission-Critical Consoles (`Plan 41-04`)**:
   - Add configurable `pollingInterval` (10s–30s) on live operations screens (`TeamAttendancePage.jsx`, `CandidatePipelinePage.jsx`, `Notifications`, `DashboardPage.jsx`).
   - Gracefully pause polling when the document is hidden / tab inactive via `document.visibilityState` to preserve bandwidth and battery.
-- **5. Multi-User Real-Time Socket.io Cache Dispatcher (`Plan 40-05`)**:
+- **5. Multi-User Real-Time Socket.io Cache Dispatcher (`Plan 41-05`)**:
   - Wire Socket.io broadcast events to trigger client-side RTK Query cache invalidation (`dispatch(baseApi.util.invalidateTags([...]))`) when actions occur across different users/devices (e.g. manager approval reflecting on employee screen immediately).
-- **6. Cross-Environment Verification (Local vs Vercel / Render Production) (`Plan 40-06`)**:
+- **6. Cross-Environment Verification (Local vs Vercel / Render Production) (`Plan 41-06`)**:
   - Verify WebSocket reconnection resilience, CORS headers, WSS security, and browser cache compatibility in production.
   - End-to-end multi-tab verification ensuring data changes in Tab A instantly sync to Tab B without page reload.
 
-**Depends on:** Phase 39  
+**Depends on:** Phase 40  
 **Plans:** 6 plans (Pending)
 
 ---
