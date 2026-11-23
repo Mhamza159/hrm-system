@@ -8,7 +8,7 @@
  * - Standardized Elvara Forest theme tokens & centered modal styling.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Laptop, AlertCircle, Info } from 'lucide-react';
 import { useApplyWFHMutation } from '../attendanceApi.js';
 
@@ -25,6 +25,19 @@ export const ApplyWFHModal = ({ isOpen, onClose, onSuccess }) => {
   const [errorMessage, setErrorMessage] = useState('');
 
   const [applyWFH, { isLoading }] = useApplyWFHMutation();
+
+  // Close on Escape key press (Universal Modal Accessibility Contract)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && typeof onClose === 'function') {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 

@@ -1099,10 +1099,15 @@ export const applyWFH = async ({ user, date, reason }) => {
   targetDateKarachi.setHours(0, 0, 0, 0);
 
   if (targetDateKarachi.getTime() < tomorrowInKarachi.getTime()) {
+    const minYear = tomorrowInKarachi.getFullYear();
+    const minMonth = String(tomorrowInKarachi.getMonth() + 1).padStart(2, '0');
+    const minDay = String(tomorrowInKarachi.getDate()).padStart(2, '0');
+    const minAllowedDate = `${minYear}-${minMonth}-${minDay}`;
+
     throw new ApiError(
       400,
       'WFH applications must be submitted at least one day before the requested date. Same-day applications are not allowed.',
-      [{ code: 'WFH_ADVANCE_NOTICE_REQUIRED', minAllowedDate: tomorrowInKarachi.toISOString().split('T')[0] }]
+      [{ code: 'WFH_ADVANCE_NOTICE_REQUIRED', minAllowedDate }]
     );
   }
 
